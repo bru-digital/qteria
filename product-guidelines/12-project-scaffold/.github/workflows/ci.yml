@@ -1,0 +1,338 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ========================================
+  # Frontend: Lint & Type Check
+  # ========================================
+  frontend-lint:
+    name: Frontend - Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Prettier check
+        run: npm run format:check
+
+      - name: Run TypeScript type check
+        run: npm run type-check
+
+  # ========================================
+  # Frontend: Tests
+  # ========================================
+  frontend-test:
+    name: Frontend - Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./apps/web/coverage/lcov.info
+          flags: frontend
+
+  # ========================================
+  # Frontend: Build
+  # ========================================
+  frontend-build:
+    name: Frontend - Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/v1
+
+  # ========================================
+  # Backend: Lint & Type Check
+  # ========================================
+  backend-lint:
+    name: Backend - Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd apps/api
+          pip install -r requirements-dev.txt
+
+      - name: Run Ruff (linter)
+        run: |
+          cd apps/api
+          ruff check .
+
+      - name: Run Black (formatter check)
+        run: |
+          cd apps/api
+          black --check .
+
+      - name: Run MyPy (type checker)
+        run: |
+          cd apps/api
+          mypy app
+
+  # ========================================
+  # Backend: Tests
+  # ========================================
+  backend-test:
+    name: Backend - Unit & Integration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: qteria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd apps/api
+          pip install -r requirements-dev.txt
+
+      - name: Run database migrations
+        run: |
+          cd apps/api
+          alembic upgrade head
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qteria_test
+
+      - name: Run tests with coverage
+        run: |
+          cd apps/api
+          pytest --cov=app --cov-report=xml --cov-report=term
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qteria_test
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET: test-secret-key-for-ci
+          ANTHROPIC_API_KEY: test-key
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./apps/api/coverage.xml
+          flags: backend
+
+  # ========================================
+  # E2E Tests (Smoke Tests on PR)
+  # ========================================
+  e2e-smoke:
+    name: E2E - Smoke Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: qteria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/api && pip install -r requirements-dev.txt
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend
+        run: |
+          cd apps/api
+          alembic upgrade head
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qteria_test
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET: test-secret-key-for-ci
+          ANTHROPIC_API_KEY: test-key
+
+      - name: Start frontend
+        run: |
+          npm run build
+          npm start &
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/v1
+
+      - name: Wait for services
+        run: |
+          npx wait-on http://localhost:3000 http://localhost:8000/health -t 60000
+
+      - name: Run Playwright smoke tests
+        run: npx playwright test --grep @smoke
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ========================================
+  # Security Scan
+  # ========================================
+  security-scan:
+    name: Security - Dependency Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  # ========================================
+  # Quality Gate Summary
+  # ========================================
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    needs:
+      - frontend-lint
+      - frontend-test
+      - frontend-build
+      - backend-lint
+      - backend-test
+    if: always()
+
+    steps:
+      - name: Check quality gate
+        run: |
+          if [ "${{ needs.frontend-lint.result }}" != "success" ] || \
+             [ "${{ needs.frontend-test.result }}" != "success" ] || \
+             [ "${{ needs.frontend-build.result }}" != "success" ] || \
+             [ "${{ needs.backend-lint.result }}" != "success" ] || \
+             [ "${{ needs.backend-test.result }}" != "success" ]; then
+            echo "Quality gate failed"
+            exit 1
+          fi
+          echo "Quality gate passed"

@@ -1,0 +1,36 @@
+# Stack-Driven product guidelines directory (generated per user)
+/product-guidelines/*
+!/product-guidelines/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+ENV/
+
+# Logs
+*.log
+
+# Temporary files
+.tmp/
+temp/

@@ -1,0 +1,42 @@
+# ========================================
+# Qteria API - Production Dependencies
+# ========================================
+# Generated from pyproject.toml
+# Install: pip install -r requirements.txt
+
+# Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Data Validation & Settings
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Database
+sqlalchemy==2.0.25
+alembic==1.13.1
+psycopg2-binary==2.9.9
+
+# Cache & Queue
+redis==5.0.1
+celery==5.3.6
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+
+# AI & Document Processing
+anthropic==0.17.0
+PyPDF2==3.0.1
+pdfplumber==0.10.3
+python-docx==1.1.0
+reportlab==4.0.9
+pillow==10.2.0
+
+# HTTP Client & Utilities
+httpx==0.26.0
+tenacity==8.2.3
+
+# Monitoring
+sentry-sdk[fastapi]==1.40.0
