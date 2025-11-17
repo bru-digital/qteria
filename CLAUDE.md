@@ -4,430 +4,465 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## Repository Overview
+## Product Overview
 
-This is a **Stack-Driven v2.0** repository - an AI-powered product development framework that guides users through creating products via a cascading series of 14 strategic sessions. The framework helps users go from user journey to production-ready system in 8-10 hours.
+**Qteria** is an AI-driven document pre-assessment platform for the TIC (Testing, Inspection, Certification) industry. The product helps Project Handlers validate certification documents 400x faster through evidence-based AI assessments.
 
-**Current State**: This repository contains a complete cascade output for **Qteria** - an AI-driven document pre-assessment SaaS for the TIC (Testing, Inspection, Certification) industry. The cascade has been completed through Session 14.
+**Core Mission**: Transform manual compliance checks (1-2 day turnaround via outsourced teams) into AI-powered assessments with evidence-based results in <10 minutes.
 
-**Key Principle**: Everything flows from the user journey. Tech stack, architecture, design, and backlog are all **derived** from understanding user needs, not prescribed templates.
-
----
-
-## Core Concepts
-
-### The Cascade Flow
-
-The framework uses 14 progressive sessions where each builds on previous outputs:
-
-1. `/refine-journey` → Define user journey through progressive interrogation
-2. `/create-product-strategy` → Market validation and strategic positioning
-3. `/choose-tech-stack` → Derive optimal tech from journey requirements
-4. `/generate-strategy` → Create mission, metrics, monetization, architecture
-5. `/create-brand-strategy` → Brand strategy foundation
-6. `/create-design` → Design system optimized for journey
-7. `/design-database-schema` → Database schema with ERD
-8. `/generate-api-contracts` → API contracts with OpenAPI specs
-9. `/create-test-strategy` → Comprehensive testing strategy
-10. `/generate-backlog` → Prioritized user stories with RICE scoring
-11. `/create-gh-issues` → Push backlog to GitHub
-12. `/scaffold-project` → Generate working development environment
-13. `/plan-deployment` → Deployment strategy and CI/CD
-14. `/design-observability` → Monitoring, alerting, SLO strategy
-
-**Check progress**: Use `/cascade-status` to see what's been completed.
-
-### Directory Structure
-
-```
-qteria/
-├── .claude/commands/        # Slash command definitions (framework prompts)
-├── product-guidelines/      # Generated cascade outputs (gitignored per user)
-│   ├── 00-user-journey.md
-│   ├── 01-product-strategy.md
-│   ├── 02-tech-stack.md
-│   ├── 03-mission.md
-│   ├── 04-*.md            # metrics, monetization, architecture
-│   ├── 05-brand-strategy.md
-│   ├── 06-design-system.md
-│   ├── 07-database-schema.md
-│   ├── 08-api-contracts.md
-│   ├── 09-test-strategy.md
-│   ├── 10-backlog/        # Generated user stories
-│   ├── 12-project-scaffold/  # Actual code/config files
-│   ├── 13-deployment-plan.md
-│   └── 14-observability-strategy.md
-├── templates/              # Blank templates used by slash commands
-└── README.md              # Framework documentation
-```
+**Key Differentiators**:
+- Evidence-based validation (AI links to exact page/section in documents)
+- Radical simplicity (workflow → buckets → criteria → validate)
+- Enterprise data privacy (zero-retention AI, SOC2/ISO 27001 compliance)
+- White-glove support (dedicated relationship manager per customer)
 
 ---
 
-## Tech Stack (Qteria Example)
+## Tech Stack
 
-The current cascade generated this stack (derived from journey requirements):
+### Frontend
+- **Next.js 14+** with App Router (React 18, TypeScript strict mode)
+- **Tailwind CSS** for styling
+- **shadcn/ui** component library
+- **Auth.js** for authentication (migrating to Clerk when revenue allows)
+- **React Query** for data fetching
+- **Zustand** for state management
 
-- **Frontend**: Next.js 14+ (TypeScript, App Router)
-- **Backend**: FastAPI (Python 3.11+)
-- **Database**: PostgreSQL 15+ with JSONB
-- **Cache/Queue**: Redis (Upstash)
-- **Storage**: Vercel Blob → AWS S3
-- **AI**: Claude 3.5 Sonnet (Anthropic)
-- **Auth**: Auth.js (NextAuth) → Clerk (when revenue allows)
-- **Hosting**: Vercel (frontend) + Railway/Render (backend)
+### Backend
+- **FastAPI** (Python web framework)
+- **SQLAlchemy 2.0** ORM with **Alembic** migrations
+- **Pydantic v2** for data validation
+- **Celery** for background jobs (AI validation takes 5-10 min)
+- **Redis** for job queue + caching
+- **PyPDF2** + **pdfplumber** for PDF parsing
+- **Claude 3.5 Sonnet** (Anthropic) for AI validation with zero-retention
 
-**Why these choices**: See `product-guidelines/02-tech-stack.md` for detailed reasoning traced to user journey requirements (fast PDF processing, AI validation, data privacy).
+### Infrastructure
+- **PostgreSQL 15** (database with JSONB for flexible AI responses)
+- **Redis 7** (cache + background job queue)
+- **Vercel** (frontend hosting)
+- **Railway/Render** (backend hosting)
+- **Vercel Blob** (PDF storage, encrypted at rest)
+- **GitHub Actions** (CI/CD)
+
+### Architecture
+- **Monorepo** with npm workspaces (`apps/web/` + `apps/api/`)
+- **API-first design** (REST endpoints, versioned at `/v1/`)
+- **Background jobs** for long-running AI validation (async via Celery + Redis)
+- **Multi-tenancy** via organization-based row-level isolation
 
 ---
 
-## Development Commands
+## Development Setup
 
-### Scaffold Development (if using generated scaffold)
+### Prerequisites
+- Node.js 20+
+- Python 3.11+
+- Docker & Docker Compose
+- Git
 
-Located in `product-guidelines/12-project-scaffold/`:
-
+### Quick Start
 ```bash
-# Start local services (PostgreSQL + Redis)
+# 1. Clone and setup environment
+cp .env.template .env
+# Edit .env with required secrets (NEXTAUTH_SECRET, JWT_SECRET, ANTHROPIC_API_KEY)
+
+# 2. Start local services (PostgreSQL + Redis)
 npm run docker:up
 
-# Install dependencies
+# 3. Install dependencies
 npm install
 cd apps/api && pip install -r requirements-dev.txt && cd ../..
 
-# Run database migrations
+# 4. Run database migrations
 npm run db:migrate
 
-# Start development servers
-npm run dev        # Next.js frontend (port 3000)
-npm run dev:api    # FastAPI backend (port 8000)
-
-# Testing
-npm run test       # All tests
-npm run test:unit  # Unit tests only
-npm run test:e2e   # E2E tests (Playwright)
-
-# Code quality
-npm run lint       # Lint all code
-npm run format     # Format all code
-
-# Database
-npm run db:seed    # Seed development data
-npm run db:reset   # Reset database (destructive)
+# 5. Start development servers
+npm run dev          # Frontend (http://localhost:3000)
+npm run dev:api      # Backend (http://localhost:8000)
 ```
 
-### Framework Development
+### Common Commands
 
+**Development:**
 ```bash
-# Check cascade progress
-/cascade-status
+npm run dev                    # Start Next.js frontend
+npm run dev:api                # Start FastAPI backend
+npm run docker:up              # Start PostgreSQL + Redis
+npm run docker:down            # Stop Docker services
+npm run docker:logs            # View Docker logs
+```
 
-# Run full cascade automatically
-/run-cascade
+**Database:**
+```bash
+npm run db:migrate             # Apply migrations
+npm run db:migrate:create "msg"  # Create new migration
+npm run db:reset               # Reset database (⚠️ destroys data)
+```
 
-# Individual sessions (run in order)
-/refine-journey
-/create-product-strategy
-/choose-tech-stack
-# ... etc
+**Testing:**
+```bash
+npm run test                   # All tests
+npm run lint                   # Lint all code
+npm run type-check             # TypeScript/MyPy type checking
+npm run format                 # Format with Prettier
+npm run format:check           # Check formatting
+```
 
-# Post-cascade sessions (optional)
-/design-user-experience
-/discover-naming
-/define-messaging
-/design-brand-identity
-/create-financial-model
-/design-growth-strategy
-/setup-analytics
+**Backend-specific (from apps/api/):**
+```bash
+pytest                         # Run all tests
+pytest --cov                   # With coverage
+black .                        # Format Python
+ruff check .                   # Lint Python
+mypy app                       # Type check Python
+celery -A app.workers worker   # Start Celery worker
+```
+
+**Frontend-specific (from apps/web/):**
+```bash
+npm run test                   # Vitest unit tests
+npm run test:watch             # Watch mode
+npx playwright test            # E2E tests
 ```
 
 ---
 
 ## Architecture Principles
 
-Derived from the cascade (see `product-guidelines/04-architecture.md`):
+### 1. Journey-Step Optimization
+Optimize for **Step 3** (AI validation in <10 minutes), not theoretical scale. The critical path is:
+- PDF parsing → Claude API → Evidence extraction → Results storage
 
-1. **Monolith First**: Single Next.js + FastAPI codebase. Split when revenue validates need.
-2. **Background Jobs**: Long AI operations (10 min) run async via Celery + Redis
-3. **API-First**: FastAPI exposes REST API, Next.js consumes it
-4. **Data Privacy by Design**: Encrypted storage, zero-retention AI, audit logs
-5. **Boring Technology**: Proven stack (no bleeding-edge experiments)
+**Key optimizations:**
+- PDF parsing parallelization (concurrent document processing)
+- Claude batch API (multiple criteria in single prompt)
+- Caching parsed PDF text in PostgreSQL (avoid re-parsing on re-assessment)
+- Target: P95 processing time <10 min
 
-### Key Backend Patterns
+### 2. Boring Technology + Strategic Innovation
+- **Boring (proven):** Next.js, FastAPI, PostgreSQL, Redis, Vercel/Railway
+- **Innovation (where we differentiate):**
+  - Evidence-based AI prompting (Claude returns `{pass, page, section, reason}`)
+  - PDF section detection (precise evidence links beyond page numbers)
+  - Confidence scoring (green/yellow/red based on AI uncertainty)
+  - Feedback loop for AI improvement (store corrections, refine prompts)
 
-- **Database**: SQLAlchemy ORM with Alembic migrations
-- **Multi-tenancy**: Organization-based isolation (all queries filtered by org_id)
-- **Error Handling**: Structured exceptions with user-friendly messages
-- **Validation**: Pydantic models for request/response validation
-- **Background Jobs**: Celery tasks for AI processing with retry logic
+### 3. API-First Design
+Backend exposes clean REST API at `/v1/` endpoints. Frontend is one client among potential future clients (mobile app, integrations).
 
-### Key Frontend Patterns
+**Core endpoints:**
+- `POST /v1/workflows` - Create workflow
+- `POST /v1/assessments` - Start assessment (returns 202 Accepted)
+- `GET /v1/assessments/:id` - Poll status (pending → processing → completed)
+- `GET /v1/assessments/:id/results` - Evidence-based pass/fail results
+- `POST /v1/assessments/:id/rerun` - Re-run with updated documents
 
-- **Routing**: Next.js App Router with server actions
-- **State Management**: React Context for global state, server state with React Query
-- **UI Components**: shadcn/ui + Tailwind CSS
-- **Forms**: React Hook Form + Zod validation
-- **File Upload**: Direct to blob storage with progress tracking
+### 4. Fail-Safe Architecture
+Reliability > speed. One missed error (false negative) = lost customer trust.
+
+**Error handling:**
+- Frontend validation → Backend re-validation → AI validation with confidence levels
+- Claude API timeout: 3 retries with exponential backoff
+- Graceful degradation when services unavailable
+- Comprehensive audit logs (SOC2/ISO 27001 compliance)
+
+### 5. Observable & Debuggable
+- **Structured logging** (JSON format with timestamp, level, event, user_id, workflow_id)
+- **Critical alerts** (P0: all assessments failing, DB down, invalid API key)
+- **Metrics tracked:** Assessment completion time, pass/fail ratio, false positive/negative rate, AI cost per assessment
 
 ---
 
 ## Database Schema
 
-See `product-guidelines/07-database-schema.md` for complete schema.
+### Key Tables
+- **organizations** - Multi-tenant isolation (notified bodies)
+- **users** - User accounts (Process Managers, Project Handlers, Admin roles)
+- **workflows** - Validation workflow definitions
+- **buckets** - Document categories in workflows (e.g., "Test Reports", "Risk Assessment")
+- **criteria** - Validation rules per workflow
+- **assessments** - Validation runs with status tracking
+- **assessment_documents** - Junction table for uploaded documents per bucket
+- **assessment_results** - Per-criteria pass/fail with evidence (page, section, reasoning)
+- **audit_logs** - Immutable audit trail (SOC2/ISO 27001)
 
-**Core Tables**:
-- `organizations` - Multi-tenant isolation
-- `users` - Authentication (via Auth.js)
-- `workflows` - Validation workflow definitions
-- `buckets` - Document categories in workflows
-- `criteria` - Validation rules
-- `assessments` - Document validation jobs
-- `assessment_documents` - Uploaded files
-- `assessment_results` - AI validation outputs
-- `audit_logs` - Compliance audit trail
+### Design Patterns
+- **Multi-tenancy:** All queries filter by `organization_id` from JWT
+- **JSONB flexibility:** `assessment_results.ai_response_raw` stores full Claude JSON for debugging
+- **Cascade deletes:** Organization → Users/Workflows (GDPR compliance)
+- **RESTRICT deletes:** Workflow with assessments can't be deleted (preserve history)
 
-**Key Design Decisions**:
-- UUID primary keys (non-guessable, distributed-safe)
-- JSONB for flexible AI results storage
-- Strategic indexes for common query patterns
-- Foreign keys with CASCADE/RESTRICT for data integrity
+### Indexes
+- Foreign keys automatically indexed
+- Common filters: `assessments.status`, `assessments.created_at DESC`
+- Composite: `assessments(organization_id, status)` for billing queries
 
 ---
 
-## API Structure
+## API Contracts
 
-See `product-guidelines/08-api-contracts.md` for complete API specification.
+### Authentication
+- **JWT Bearer tokens** in `Authorization: Bearer <token>` header
+- Token payload includes: `{sub, org_id, email, role}`
+- **Roles:** `process_manager`, `project_handler`, `admin`
 
-**Key Endpoints**:
-- `POST /api/v1/workflows` - Create validation workflow
-- `GET /api/v1/workflows` - List workflows
-- `POST /api/v1/assessments` - Start document assessment
-- `GET /api/v1/assessments/{id}/status` - Poll assessment progress
-- `GET /api/v1/assessments/{id}/results` - Retrieve validation results
+### Rate Limiting
+- 1000 req/hour per user
+- 100 uploads/hour
+- 50 assessments/hour
 
-**API Conventions**:
-- RESTful design with standard HTTP verbs
-- JSON request/response bodies
-- JWT authentication (Bearer tokens)
-- Pagination: `?page=1&limit=20`
-- Filtering: `?status=completed&created_after=2025-01-01`
-- Standard error format: `{error: string, details?: object}`
+### Async Patterns
+Assessments use async processing:
+1. `POST /v1/assessments` → 202 Accepted `{id, status: "pending"}`
+2. Frontend polls `GET /v1/assessments/:id` every 30s
+3. Status: `pending` → `processing` → `completed`
+4. `GET /v1/assessments/:id/results` returns evidence when complete
+
+### Error Responses
+Consistent error structure:
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": {"field": "workflow_id", "reason": "Workflow not found"},
+    "request_id": "req_abc123"
+  }
+}
+```
+
+Common error codes: `VALIDATION_ERROR` (400), `INVALID_TOKEN` (401), `INSUFFICIENT_PERMISSIONS` (403), `RESOURCE_NOT_FOUND` (404), `INSUFFICIENT_CREDITS` (422), `RATE_LIMIT_EXCEEDED` (429)
 
 ---
 
 ## Testing Strategy
 
-See `product-guidelines/09-test-strategy.md` for complete strategy.
+### Coverage Targets
+- **Overall:** 70% code coverage
+- **AI validation logic:** 95% (false positives/negatives unacceptable)
+- **Evidence extraction:** 90% (aha moment must be precise)
+- **Multi-tenancy security:** 100% (zero tolerance for data leakage)
+- **PDF parsing:** 85%
+- **API routes:** 80%
+- **Background jobs:** 90%
 
-**Coverage Targets**:
-- Backend: 80% line coverage (Pytest)
-- Frontend: 70% line coverage (Vitest)
-- E2E: Critical user flows (Playwright)
+### Quality Gates (CI/CD)
+All PRs must pass:
+- ✅ All unit + integration tests pass (<5 min)
+- ✅ Code coverage >= 70% (not decreased vs main)
+- ✅ E2E smoke tests pass (<10 min)
+- ✅ No high/critical security vulnerabilities
+- ✅ ESLint, Ruff linting passes
+- ✅ TypeScript, MyPy type checking passes
 
-**Test Organization**:
+### Test Organization
 ```
-apps/api/tests/
-├── unit/           # Pure functions, utilities
-├── integration/    # API endpoints, database
-└── e2e/           # Full user flows
+backend/app/assessment/
+  engine.py              # Business logic
+  engine.test.py         # Co-located unit tests
 
-apps/web/tests/
-├── unit/          # Components, hooks
-└── e2e/           # Playwright flows
-```
-
-**Running Tests**:
-```bash
-# Backend
-cd apps/api
-pytest                    # All tests
-pytest -m unit           # Unit tests only
-pytest -m integration    # Integration tests only
-pytest --cov             # With coverage
-
-# Frontend
-npm run test             # All tests
-npm run test:unit        # Unit tests only
-npm run test:e2e         # E2E tests
-npm run test:coverage    # With coverage
+tests/
+  integration/           # API + database tests
+  e2e/                   # Playwright E2E tests
+  fixtures/              # Test data (PDFs, JSON)
 ```
 
----
+### Critical Test Scenarios
+**Every authenticated endpoint needs:**
+- Authentication test (401 without token)
+- Authorization test (403 for insufficient role)
+- Multi-tenancy test (404 for different org's data)
 
-## Working with Slash Commands
-
-Slash commands are located in `.claude/commands/*.md`. Each command:
-1. Reads previous cascade outputs from `product-guidelines/`
-2. Applies framework templates from `templates/`
-3. Generates new outputs in `product-guidelines/`
-
-**Modifying Commands**:
-- Edit `.claude/commands/{name}.md` to change prompts
-- Test with `/cascade-status` to verify command is recognized
-- Commands should maintain traceability to user journey
-
-**Creating New Commands**:
-1. Add `.claude/commands/new-command.md`
-2. Follow existing patterns (read inputs, apply framework, write outputs)
-3. Update cascade flow documentation if adding to core 14 sessions
+**AI validation tests:**
+- Evidence extraction accuracy (page/section detection)
+- False positive/negative rates
+- Confidence scoring correctness
+- Performance benchmarks (<10 min for typical assessment)
 
 ---
 
-## Important Constraints
+## User Journey (Critical Context)
 
-### Data Privacy
+The entire product serves **5 journey steps:**
 
-The Qteria product handles sensitive certification documents:
-- **Zero-retention AI**: Anthropic enterprise agreement required
-- **Encryption at rest**: All blob storage encrypted
-- **Audit logs**: Track all document access
-- **Multi-tenant isolation**: Row-level security via organization_id
+### Step 1: Process Manager Creates Workflow
+- Action: Define document buckets (required vs optional) + validation criteria
+- Goal: <30 min workflow creation time
+- Tech: `POST /v1/workflows` with nested buckets + criteria
 
-### Performance Requirements
+### Step 2: Project Handler Uploads Documents
+- Action: Drag-drop PDFs into buckets, click "Start Assessment"
+- Goal: Clear upload progress, fast handling of 50+ page PDFs
+- Tech: `POST /v1/documents` → `POST /v1/assessments`
 
-From user journey (Step 3 - "AHA MOMENT"):
-- **Assessment completion**: <10 minutes target
-- **Evidence linking**: Must show exact page/section in PDF
-- **False positive rate**: <5% (target)
-- **False negative rate**: <1% (critical - can't miss real issues)
+### Step 3: AI Validates & Returns Evidence ⭐ **AHA MOMENT**
+- Action: Wait 5-10 min, receive notification, view results
+- Value: See "Criteria 2: FAIL → test-report.pdf, page 8, section 3.2"
+- Tech: Celery background job → PyPDF2 parsing → Claude API → PostgreSQL storage
+- **This is the most critical step - optimize here first**
 
-### Solo Founder Constraints
+### Step 4: Re-run Assessment After Fix
+- Action: Replace failing document, re-validate quickly
+- Optimization: Partial re-assessment (only re-check updated doc's criteria)
+- Tech: `POST /v1/assessments/:id/rerun`
 
-Stack optimized for single developer:
-- **Simple deployment**: Vercel + Railway (no Kubernetes)
-- **Boring technology**: Proven tools, no experiments
-- **Monolith architecture**: Split only when revenue validates
-- **Managed services**: PostgreSQL, Redis, blob storage all managed
-
----
-
-## Migration Paths
-
-### When to Scale Up
-
-Defined in product strategy (see `product-guidelines/01-product-strategy.md`):
-
-- **Auth.js → Clerk**: At $30K ARR (first paying customer)
-- **Vercel Blob → AWS S3**: When storage limits hit (~50GB)
-- **Monolith → Microservices**: At $500K+ ARR (not before)
-- **API AI → Self-hosted**: Only if customers require (expensive)
-
-### When NOT to Optimize
-
-- **Don't add Kubernetes**: Not until $1M+ ARR
-- **Don't split services**: Monolith handles 10 customers easily
-- **Don't self-host AI**: API is 10-50x cheaper for MVP scale
-- **Don't add GraphQL**: REST works fine for this use case
+### Step 5: Export Validation Report
+- Action: Download PDF summary for forwarding to Certification Person
+- Tech: `POST /v1/assessments/:id/reports` → PDF generation (ReportLab/WeasyPrint)
 
 ---
 
-## Common Patterns
+## Product Decision Framework
 
-### Adding a New API Endpoint
+### Mission Test
+**"Does this feature help Project Handlers validate documents faster through evidence-based AI?"**
 
-1. Define route in `apps/api/app/api/v1/` (if scaffold exists)
-2. Create Pydantic request/response models
-3. Add business logic in service layer
-4. Write tests (unit + integration)
-5. Update OpenAPI spec in `product-guidelines/08-api-contracts.md`
+Examples:
+- ✅ Confidence scoring (green/yellow/red) - builds trust in AI results
+- ✅ Feedback loop (flag false positives) - improves AI accuracy
+- ❌ Batch processing 50 assessments - adds complexity, violates simplicity
+- ❌ Custom reporting dashboards - feature creep, doesn't accelerate validation
 
-### Adding a New UI Component
+### What We Say YES To
+- Features reducing validation time (current <10 min, goal <5 min)
+- Features improving evidence clarity (better page/section linking)
+- Features increasing AI accuracy (<5% false positive, <1% false negative)
+- Maintaining radical simplicity (remove steps, don't add)
 
-1. Create component in `apps/web/src/components/` (if scaffold exists)
-2. Follow shadcn/ui patterns (Tailwind CSS)
-3. Add to Storybook (if implemented)
-4. Write tests (unit + integration)
-5. Update design system docs in `product-guidelines/06-design-system.md`
-
-### Running a Background Job
-
-1. Define Celery task in `apps/api/app/tasks/` (if scaffold exists)
-2. Trigger from API endpoint: `task.delay(params)`
-3. Store job ID in database for status polling
-4. Implement status endpoint: `GET /api/v1/jobs/{id}/status`
-5. Handle retries and error states
+### What We Say NO To
+- Features unrelated to validation speed/accuracy (project management, chat)
+- Customers wanting "everything in one platform" (not our mission)
+- Technologies sacrificing data privacy for convenience (no consumer AI APIs)
+- Pricing models misaligned with value (charge per assessment value, not per user)
 
 ---
 
-## Philosophy
+## Data Privacy & Security
 
-When working in this repository, remember:
+**Non-negotiable requirements:**
+- **AI zero-retention:** Claude enterprise agreement (no training on customer data)
+- **PDF encryption:** Vercel Blob storage with encryption at rest
+- **Audit logs:** Every action logged with user context (SOC2/ISO 27001)
+- **Multi-tenancy:** Row-level isolation, 100% test coverage for data leakage
+- **RBAC:** Role-based access (process_manager, project_handler, admin)
 
-1. **User journey first**: Every decision traces back to `product-guidelines/00-user-journey.md`
-2. **Generative, not prescriptive**: Tech choices are derived from requirements, not templates
-3. **Cascading decisions**: Each session builds on previous outputs
-4. **Boring is beautiful**: Proven tech > exotic tech
-5. **Ship fast**: Solo founder needs velocity, not complexity
-
-**Before adding complexity**, ask:
-- Does this serve a specific user journey step?
-- Is this needed now, or premature optimization?
-- Can we defer this until revenue validates the need?
-
----
-
-## Deployment
-
-See `product-guidelines/13-deployment-plan.md` for complete strategy.
-
-**Environments**:
-- **Local**: Docker Compose (PostgreSQL + Redis)
-- **Staging**: Vercel Preview + Railway staging
-- **Production**: Vercel Production + Railway production
-
-**CI/CD** (via GitHub Actions):
-```bash
-# Defined in .github/workflows/ci.yml (if scaffold exists)
-# Triggered on: push to main, pull requests
-
-# Pipeline steps:
-# 1. Lint (ESLint, Black, Ruff)
-# 2. Type check (TypeScript, MyPy)
-# 3. Test (Pytest, Vitest)
-# 4. Build (Next.js, FastAPI)
-# 5. Deploy (Vercel, Railway)
-```
-
-**Deployment Commands**:
-```bash
-# Preview deployment (automatic on PR)
-# - Vercel creates preview URL
-# - Railway creates staging backend
-
-# Production deployment (automatic on merge to main)
-# - Vercel deploys to production
-# - Railway deploys to production
-# - Run migrations: npm run db:migrate
-```
+**Security tests required:**
+- Authentication: Invalid/expired/missing tokens rejected
+- Authorization: Role-based access enforced
+- Multi-tenancy: Organization isolation (user A cannot see user B's data)
+- Input validation: XSS/SQL injection prevented
+- File upload: Type/size validation (PDF/DOCX only, max 50MB)
 
 ---
 
-## Monitoring & Observability
+## Performance Requirements
 
-See `product-guidelines/14-observability-strategy.md` for complete strategy.
+**Assessment Processing:**
+- Target: P95 latency <10 minutes for typical assessment
+- Bottlenecks: PDF parsing (10-20s per 50-page doc), Claude API (10s per criteria batch)
+- Optimization: Cache parsed text, batch criteria in single prompt, parallel document processing
 
-**Key Metrics**:
-- **Golden Signals**: Latency, traffic, errors, saturation
-- **Business Metrics**: Assessments/day, validation accuracy, user retention
-- **SLOs**: 99.5% uptime, <10 min assessment completion
+**API Response Times:**
+- Target: P95 <500ms for CRUD operations
+- Target: P99 <2s for CRUD operations
+- Load: Handle 10 concurrent uploads, 50 polling requests/min
 
-**Tools**:
-- **Error Tracking**: Sentry
-- **Logging**: Structured logs (JSON) to stdout
-- **Metrics**: Vercel Analytics + custom metrics
-- **APM**: Consider Datadog when revenue allows
+**PDF Processing:**
+- Target: <5 seconds for 10MB PDF parsing
+- Support: PDF and DOCX formats
+- Max file size: 50MB per document
 
 ---
 
-## Support & Resources
+## Development Workflow
 
-- **Cascade Status**: Run `/cascade-status` to see progress
-- **Framework Docs**: See `README.md` for full Stack-Driven documentation
-- **Product Guidelines**: All strategic decisions in `product-guidelines/`
-- **Backlog**: Generated user stories in `product-guidelines/10-backlog/`
-- **GitHub Issues**: If `/create-gh-issues` was run, issues are on GitHub
+### Feature Development
+1. Check product-guidelines/ for relevant specs (journey, API contracts, database schema)
+2. Create feature branch: `feature/your-feature-name`
+3. Write tests first for critical business logic (TDD for AI validation, evidence extraction)
+4. Implement feature with co-located unit tests
+5. Run full test suite: `npm run test && npm run lint`
+6. Commit with conventional format: `feat: add your feature description`
+7. Open PR (CI will run all quality gates)
 
-**When Stuck**:
-1. Check `/cascade-status` - are you missing a prerequisite session?
-2. Read `product-guidelines/00-user-journey.md` - does this serve the journey?
-3. Consult `product-guidelines/02-tech-stack.md` - why was this tech chosen?
-4. Review `product-guidelines/01-product-strategy.md` - is this aligned with strategy?
+### Database Changes
+1. Edit SQLAlchemy models in `apps/api/app/models/`
+2. Generate migration: `npm run db:migrate:create "description"`
+3. Review generated migration in `apps/api/alembic/versions/`
+4. Apply: `npm run db:migrate`
+
+### API Development
+1. Define Pydantic schema in `apps/api/app/schemas/`
+2. Create/update SQLAlchemy model
+3. Implement service logic in `apps/api/app/services/`
+4. Create API router in `apps/api/app/api/v1/endpoints/`
+5. Write tests (auth, authorization, multi-tenancy, validation)
+6. Update OpenAPI docs automatically via FastAPI
+
+---
+
+## Cost Structure
+
+**MVP Phase (100 assessments/month):**
+- Vercel (frontend): $0-20/month
+- Railway (backend): $5-10/month
+- Vercel Postgres: $0-20/month
+- Upstash Redis: $0 (free tier)
+- Vercel Blob: $0 (free tier 1GB)
+- Claude AI: $21/month (~$0.21 per assessment)
+- **Total: $25-40/month**
+
+**Target Gross Margin: 97%+** (SaaS at scale)
+
+**Scaling Triggers:**
+- Add Celery worker when: Queue time >30 min consistently
+- Upgrade PostgreSQL when: Query time >1s or storage >80%
+- Migrate to S3 when: Vercel Blob costs >$20/month
+- Scale backend when: API P95 response time >2s
+
+---
+
+## Key Files to Reference
+
+**Product Strategy:**
+- `product-guidelines/00-user-journey.md` - Complete user journey (5 steps)
+- `product-guidelines/02-tech-stack.md` - Tech decisions with journey justification
+- `product-guidelines/03-mission.md` - Mission statement and decision framework
+- `product-guidelines/04-architecture.md` - Architecture principles
+
+**Technical Specs:**
+- `product-guidelines/07-database-schema-essentials.md` - Database design
+- `product-guidelines/08-api-contracts-essentials.md` - API endpoint reference
+- `product-guidelines/09-test-strategy-essentials.md` - Testing requirements
+
+**Development Setup:**
+- `product-guidelines/12-project-scaffold/README.md` - Complete setup guide
+- `product-guidelines/12-project-scaffold/package.json` - Available npm scripts
+- `product-guidelines/12-project-scaffold/docker-compose.yml` - Local services
+
+**Important:** When implementing features, always trace back to the user journey to ensure alignment with product mission.
+
+---
+
+## Common Pitfalls to Avoid
+
+1. **Don't over-engineer for scale we don't have** - 10 customers with 2000 assessments/month is trivial for PostgreSQL. Optimize Step 3 (AI validation), not theoretical bottlenecks.
+
+2. **Don't skip multi-tenancy tests** - 100% coverage required. Data leakage between organizations is catastrophic for enterprise customers.
+
+3. **Don't sacrifice data privacy** - Always use zero-retention AI agreements. If Claude/GPT unavailable, evaluate self-hosted (but factor in $500-2K/month GPU cost).
+
+4. **Don't add features without mission test** - "Does this help Project Handlers validate documents faster through evidence-based AI?" If no, reject.
+
+5. **Don't tightly couple frontend to backend** - Keep clean HTTP/REST boundary. Frontend should only know about API contracts, not database or internal services.
+
+6. **Don't optimize prematurely** - Focus on Step 3 (AI validation speed/accuracy). Steps 1, 2, 5 are already fast enough.
+
+7. **Don't use bleeding-edge tech** - Stick to boring, proven stack unless journey explicitly requires new tech (it doesn't).
+
+---
+
+**Last Updated:** 2025-11-17
+**Product Version:** 0.1.0 (MVP in development)
+**For questions:** Reference product-guidelines/ directory for comprehensive strategy and technical documentation.

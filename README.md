@@ -1,545 +1,550 @@
-# Stack-Driven: AI Product Development Powerhouse
+# Qteria
 
-> **Mission**: A cascading system where AI analyzes your user journey and derives optimal decisions for your product—from strategy to shipped code.
+**AI-driven document pre-assessment for TIC industry**
 
-**License:** Apache License 2.0 - See the `LICENSE` file for details.
-
----
-
-## What's New in v2.0?
-
-**v2.0** transforms Stack-Driven from a prescriptive template collection into a **generative cascade**—AI analyzes YOUR specific user journey and recommends the optimal stack, strategy, and architecture for your needs (not generic templates).
-
-Previous versions prescribed "use Next.js, FastAPI, and PostgreSQL" for everyone. v2.0 says "tell me about your users, and I'll recommend the optimal stack for YOUR journey."
-
----
-
-## What is Stack-Driven?
-
-Stack-Driven is a comprehensive framework for building products the right way:
-
-1. **Start with user experience** (the post-modern axiom)
-2. **Let strategic decisions flow from user value**
-3. **Derive technology choices from journey requirements**
-4. **Generate a complete product strategy in 3-5 hours**
-
-This isn't just a prompt collection—it's a complete product development system that guides you through **14 progressive sessions**, each building on previous outputs, to go from idea to production-ready system.
-
----
-
-## User Experience is the Core of Every Product.
-
-Everything flows from the user journey:
-- Your mission → Promise to deliver value at a specific journey step
-- Your metrics → Measure progress through the journey
-- Your monetization → Charge where value is delivered
-- Your tech stack → Optimize critical journey steps
-- Your architecture → Enable journey optimization
-
-**Start with the user, and everything else follows.**
-
----
-
-## The Cascade
-
-Stack-Driven guides you through **14 progressive sessions**, each building on previous outputs:
-
-```
-Session 1: /refine-journey             → product-guidelines/00-user-journey.md
-  ↓ (AI reads journey, validates with market)
-
-Session 2: /create-product-strategy     → product-guidelines/01-product-strategy.md
-  ↓ (AI reads journey + strategy, chooses tech)
-
-Session 3: /choose-tech-stack          → product-guidelines/02-tech-stack.md
-  ↓ (AI reads journey + strategy + tech, derives tactics)
-
-Session 4: /generate-strategy          → product-guidelines/03-mission.md
-                                        product-guidelines/04-metrics.md
-                                        product-guidelines/04-monetization.md
-                                        product-guidelines/04-architecture.md
-  ↓ (AI reads all previous, creates brand strategy)
-
-Session 5: /create-brand-strategy      → product-guidelines/05-brand-strategy.md
-  ↓ (AI reads brand strategy, creates design system)
-
-Session 6: /create-design               → product-guidelines/06-design-system.md
-  ↓ (AI reads all previous, designs technical specs)
-
-Session 7: /design-database-schema     → product-guidelines/07-database-schema.md
-  ↓ (AI reads schema, designs API surface)
-
-Session 8: /generate-api-contracts     → product-guidelines/08-api-contracts.md
-  ↓ (AI reads APIs, defines testing strategy)
-
-Session 9: /create-test-strategy       → product-guidelines/09-test-strategy.md
-  ↓ (AI reads everything, generates backlog)
-
-Session 10: /generate-backlog          → product-guidelines/10-backlog/
-  ↓ (Push to GitHub)
-
-Session 11: /create-gh-issues          → GitHub issues
-  ↓ (Generate working development environment)
-
-Session 12: /scaffold-project          → product-guidelines/12-project-scaffold.md
-                                        product-guidelines/12-project-scaffold/ (actual code files)
-  ↓ (Plan deployment strategy)
-
-Session 13: /plan-deployment           → product-guidelines/13-deployment-plan.md
-  ↓ (Design observability)
-
-Session 14: /design-observability      → product-guidelines/14-observability-strategy.md
-```
-
-**In 14 sessions** (8-10 hours total), you go from idea to production-ready system with technical specifications, deployment and monitoring strategy.
+Fast, evidence-based validation that saves time and reduces certification back-and-forth.
 
 ---
 
 ## Quick Start
 
-### 1. Check Your Status
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** 20+ ([Download](https://nodejs.org/))
+- **Python** 3.11+ ([Download](https://www.python.org/downloads/))
+- **Docker** & **Docker Compose** ([Download](https://www.docker.com/products/docker-desktop))
+- **Git** ([Download](https://git-scm.com/downloads))
+
+### Setup (5 Steps to Running)
+
+#### 1. Clone the repository
 
 ```bash
-/cascade-status
+git clone https://github.com/your-org/qteria.git
+cd qteria
 ```
 
-See where you are in the cascade and what to do next.
-
-### 2. Start the Cascade
-
-**Option A: Automated Execution** (Recommended for continuous flow)
+#### 2. Set up environment variables
 
 ```bash
-/run-cascade
+# Copy environment template
+cp .env.template .env
+
+# Edit .env with your local values
+# Required:
+# - NEXTAUTH_SECRET (generate with: openssl rand -base64 32)
+# - JWT_SECRET (generate with: openssl rand -base64 32)
+# - ANTHROPIC_API_KEY (get from https://console.anthropic.com/)
 ```
 
-I'll automatically execute sessions sequentially from your current progress point, pausing at major milestones for your review. Perfect for making rapid progress through the framework.
-
-**Option B: Manual Step-by-Step** (Recommended for learning)
+#### 3. Start local services (PostgreSQL + Redis)
 
 ```bash
-/refine-journey
+# Start database and cache
+npm run docker:up
+
+# Verify services are running
+docker ps
+# You should see: qteria-postgres, qteria-redis, qteria-pgadmin
 ```
 
-I'll ask questions about your users, their problems, and their journey. Through progressive interrogation, we'll map your complete user flow. After each session, you manually run the next command.
-
-### 3. Follow the Flow
-
-After each session, I'll tell you exactly what to run next:
-- `/create-product-strategy` - Validates journey with market analysis and competitive positioning
-- `/choose-tech-stack` - Analyzes your journey and strategy, recommends optimal tech
-- `/generate-strategy` - Derives mission, metrics, monetization, architecture
-- `/design-database-schema` - Designs complete database schema with ERD and migrations
-- `/generate-api-contracts` - Generates OpenAPI specs and endpoint definitions
-- `/create-test-strategy` - Defines comprehensive testing strategy (unit, integration, E2E)
-- `/generate-backlog` - Generates 30-50 prioritized user stories informed by technical specs
-- `/create-gh-issues` - Pushes backlog to GitHub
-- `/scaffold-project` - Generates working development environment with actual code files
-- `/plan-deployment` - Creates deployment strategy with CI/CD and environments
-- `/design-observability` - Designs monitoring, alerting, and SLO strategy
-
-### 4. Build
-
-Your production-ready system is ready with database schema, API contracts, testing strategy, package configs, Docker Compose, CI/CD pipeline, deployment strategy, observability setup, and documentation. Copy the scaffold files and start implementing your prioritized backlog.
-
-**Total time**: 8-10 hours to go from idea to production-ready system with complete technical specifications.
-
----
-
-## Repository Structure
-
-### `/product-guidelines/` - YOUR Generated Strategy
-
-**This is gitignored** - each user generates their own cascade:
-```
-product-guidelines/
-├── 00-user-journey.md (Session 1)
-├── 01-product-strategy.md (Session 2)
-├── 11-product-strategy-essentials.md (Session 2)
-├── 02-tech-stack.md (Session 3)
-├── 03-mission.md (Session 4)
-├── 04-metrics.md (Session 4)
-├── 04-monetization.md (Session 4)
-├── 04-architecture.md (Session 4)
-├── 05-brand-strategy.md (Session 5)
-├── 06-design-system.md (Session 6)
-├── 07-database-schema.md (Session 7)
-├── 08-api-contracts.md (Session 8)
-├── 09-test-strategy.md (Session 9)
-├── 10-backlog/ (Session 10)
-├── 12-project-scaffold/ (Session 12 - actual code files)
-│   ├── 12-project-scaffold.md (decisions documentation)
-│   ├── package.json (or pyproject.toml)
-│   ├── docker-compose.yml
-│   ├── .env.template
-│   ├── .github/workflows/ci.yml
-│   └── README.md (setup instructions)
-├── 13-deployment-plan.md (Session 13)
-└── 14-observability-strategy.md (Session 14)
-```
-
-### `/examples/` - Reference Implementations
-
-**Don't copy these** - they show the cascade in action with DIFFERENT journeys leading to DIFFERENT stacks.
-
-```
-examples/
-├── README.md (explains examples)
-├── compliance-saas/ (Next.js, FastAPI, PostgreSQL)
-│   ├── foundation/ (journey, mission, metrics, monetization)
-│   ├── stack/ (tech decisions, architecture)
-│   ├── design/ (design system)
-│   └── backlog/ (generated issues)
-└── [future: real-time-collaboration, etc.]
-```
-
-**Use them to**: See how journey requirements drove specific tech choices.
-
-### `/.claude/commands/` - The Cascade Commands
-
-The slash commands that power the cascade. These prompt AI to read previous outputs and generate next steps.
-
-### `/templates/` - Blank Starting Points
-
-Used by slash commands to generate your outputs. You don't edit these directly.
-
-### `/foundation/` & `/stack/` - Framework Guides
-
-High-level frameworks explaining concepts. NOT prescriptive. Use as reference.
-
----
-
-## Key Principles
-
-### 1. User Journey First
-
-Everything flows from understanding users:
-- Not "I want to build X technology"
-- But "Users struggle with Y problem, here's their journey..."
-
-### 2. Cascading Decisions
-
-Each session builds on previous outputs:
-- Journey → Tech Stack (requirements drive choices)
-- Journey + Tech → Strategy (mission, metrics, monetization)
-- Journey + Strategy → Design (components for specific flows)
-- Everything → Backlog (stories that deliver journey value)
-
-### 3. Generative, Not Prescriptive
-
-We don't prescribe Next.js. We:
-1. Analyze your journey requirements
-2. Evaluate technology options
-3. Recommend best fit with reasoning
-4. Explain trade-offs
-
-### 4. Traced to Value
-
-Every decision references user value:
-- Tech choice? Serves journey step X
-- Feature priority? Improves metric Y
-- Design decision? Reduces friction at step Z
-
-### 5. Self-Documenting
-
-At any point, run `/cascade-status` to see:
-- What you've completed
-- What comes next
-- How sessions connect
-
----
-
-## The Flow
-
-```
-1. USER JOURNEY (/refine-journey)
-   ↓
-   What problem are we solving for whom?
-
-2. PRODUCT STRATEGY (/create-product-strategy)
-   ↓
-   Market validation: TAM/SAM/SOM, competitive analysis
-   Strategic positioning: Vision, goals, roadmap
-
-3. TECH STACK (/choose-tech-stack)
-   ↓
-   What technologies best serve the journey and strategy?
-
-4. TACTICS (/generate-strategy)
-   ↓
-   Mission: What outcome do we promise?
-   Metrics: How do we measure success?
-   Monetization: How do we charge for value?
-   Architecture: What patterns enable scale?
-
-5. BRAND (/create-brand-strategy)
-   ↓
-   How do we express journey value?
-
-6. DESIGN (/create-design)
-   ↓
-   What components serve specific user flows?
-
-7. BACKLOG (/generate-backlog)
-   ↓
-   What do we build first?
-
-8. GITHUB (/create-gh-issues)
-   ↓
-   Ship features aligned with strategy
-
-9. SCAFFOLD (/scaffold-project)
-   ↓
-   Generate working development environment
-
-10. DEPLOYMENT (/plan-deployment)
-    ↓
-    How do we ship reliably?
-
-11. OBSERVABILITY (/design-observability)
-    ↓
-    How do we monitor and maintain?
-```
-
----
-
-## Use Cases
-
-### Startup Founders
-Get a complete product development framework without hiring a CPO, CTO, and Head of Design. In 3-5 hours.
-
-### Product Teams
-Align on strategy before building. Use as shared decision-making framework.
-
-### Solo Developers
-Ship products that feel like they were built by a full team.
-
-### AI Coding Agents
-Reference generated strategy files to make decisions aligned with your product vision.
-
-### Engineering Teams
-Understand the "why" behind architectural decisions. Maintain coherence as you scale.
-
----
-
-## Example: How Cascade Adapts
-
-### Scenario 1: Compliance Document SaaS
-
-**Journey**:
-- Step 1: Upload 100-page PDF
-- Step 2: Select compliance frameworks
-- Step 3: AI assesses in 60 seconds
-- Step 4: Review shareable report (SEO matters)
-
-**Tech Stack Derived**:
-- Frontend: Next.js (SSR for shareable reports)
-- Backend: FastAPI (Python for document processing + AI)
-- Database: PostgreSQL (JSONB for flexible assessment results)
-- AI: Claude Sonnet (deep reasoning for compliance)
-
-**Why This Stack**: Journey requires document processing + AI reasoning + shareable reports → Python ecosystem + SSR
-
-### Scenario 2: Real-Time Multiplayer Game
-
-**Journey**:
-- Step 1: Join room on mobile
-- Step 2: 10 players draw simultaneously
-- Step 3: See changes <100ms
-- Step 4: Save game replay
-
-**Tech Stack Derived**:
-- Frontend: React Native (mobile-first requirement)
-- Backend: Node.js + Socket.io (real-time WebSockets)
-- Database: Redis (fast state) + PostgreSQL (history)
-- Hosting: Railway (WebSocket support)
-
-**Why This Stack**: Journey requires mobile + real-time <100ms → React Native + Node.js + WebSockets
-
-**Same framework. Different journeys. Different stacks.**
-
----
-
-## Philosophy
-
-### We Believe:
-
-**✓ User experience is the foundation** (not technology)
-**✓ Journey dictates stack** (not generic "best practices")
-**✓ Every decision traces to value** (no arbitrary choices)
-**✓ Boring is beautiful** (proven tech > exotic tech)
-**✓ Generative > Prescriptive** (analyze → recommend, don't dictate)
-**✓ Simple execution** (5-6 clear sessions, not 50 fragmented tasks)
-**✓ Focus is the ultimate advantage** (say no often)
-
-### We Reject:
-
-**✗ One-size-fits-all stacks** (Next.js isn't always the answer)
-**✗ Feature-first thinking** (builds what's interesting, not valuable)
-**✗ Resume-driven development** (Kubernetes because it's trendy)
-**✗ Technology-first thinking** (choosing tech before understanding users)
-**✗ Build-it-all syndrome** (can't say no to features)
-
----
-
-## Real-World Results
-
-**After completing the cascade, you have**:
-
-📋 **Strategic Foundation**:
-- Mission statement (derived from journey aha moment)
-- North Star metric (measures mission fulfillment)
-- Pricing strategy (aligned with value delivery)
-
-🛠️ **Technical Decisions**:
-- Tech stack (optimized for YOUR requirements)
-- Architecture principles (journey-optimized)
-- Design system (components for your specific flows)
-
-🎯 **Execution Backlog**:
-- 30-50 user stories (prioritized with RICE)
-- Every story traced to journey step
-- Dependencies mapped
-- Ready for GitHub
-
-💻 **Development Environment**:
-- Complete project scaffold (monorepo or single-repo)
-- Package manager configs (package.json / pyproject.toml)
-- Docker Compose for local development
-- CI/CD pipeline (GitHub Actions)
-- Environment configuration templates
-- Setup documentation
-
-🚀 **Production Readiness**:
-- Deployment strategy (environments, CI/CD, rollout)
-- Observability strategy (metrics, logs, traces, SLOs)
-- Incident response procedures
-- Rollback and recovery plans
-
-**Time investment**: 6-8 hours
-**Output**: Production-ready system from idea to deployment + monitoring
-**Approach**: Generative (analyzed), not templated (copy-pasted)
-
----
-
-## Frequently Asked Questions
-
-### "Is this just templates?"
-
-No. Templates are static. The cascade is **generative**:
-- I ask questions about YOUR users
-- I analyze YOUR journey requirements
-- I recommend optimal tech for YOUR needs
-- I derive strategy from YOUR journey
-
-Same cascade, different journeys → different outputs.
-
-### "What if I disagree with a recommendation?"
-
-The cascade shows reasoning for every decision:
-- "I chose X because your journey requires Y"
-- You can override any choice
-- Run sessions again to regenerate with new constraints
-
-### "Can I use my own tech stack?"
-
-Yes! In Session 2 (/choose-tech-stack), you can:
-- Specify team expertise ("we know Python")
-- Note constraints ("must use AWS")
-- I'll adapt recommendations to your context
-
-### "Do I have to do all 11 sessions?"
-
-Sessions 1-4 are critical (journey → strategy → stack → tactics).
-Sessions 5-7 are highly valuable (brand → design → backlog).
-Session 8 is convenience (push to GitHub).
-Session 9 bridges strategy to code (scaffold dev environment).
-Sessions 10-11 are essential for production (deployment + observability).
-
-Minimum viable cascade: Sessions 1-4 (2-3 hours).
-Complete core cascade: Sessions 1-11 (6-8 hours).
-
----
-
-## Getting Started
+#### 4. Install dependencies
 
 ```bash
-# 1. Check your cascade status
-/cascade-status
+# Install frontend dependencies
+npm install
 
-# 2. Start Session 1 (define your user journey)
-/refine-journey
-
-# 3. Follow the cascade (each session tells you what's next)
-# /create-product-strategy
-# /choose-tech-stack
-# /generate-strategy
-# /create-brand-strategy
-# /create-design
-# /generate-backlog
-# /create-gh-issues
-# /scaffold-project
-# /plan-deployment
-# /design-observability
-
-# 4. Copy scaffold files, set up CI/CD, implement monitoring, and start building!
+# Install backend dependencies
+cd apps/api
+pip install -r requirements-dev.txt
+cd ../..
 ```
 
-**Ready?** → Run `/cascade-status` to check your progress, or `/run-cascade` to execute the framework automatically.
+#### 5. Run database migrations
+
+```bash
+# Apply database schema
+npm run db:migrate
+```
+
+#### 6. Start development servers
+
+```bash
+# Terminal 1: Start frontend (Next.js)
+npm run dev
+
+# Terminal 2: Start backend (FastAPI)
+npm run dev:api
+```
+
+#### 7. Open your browser
+
+- **Frontend**: http://localhost:3000
+- **API Docs**: http://localhost:8000/docs (FastAPI Swagger UI)
+- **Database UI**: http://localhost:5050 (PgAdmin)
+  - Email: `admin@qteria.local`
+  - Password: `admin`
+
+---
+
+## Project Structure
+
+```
+qteria/
+├── apps/
+│   ├── web/                 # Next.js frontend (TypeScript)
+│   │   ├── src/
+│   │   │   ├── app/         # Next.js App Router pages
+│   │   │   ├── components/  # React components
+│   │   │   ├── lib/         # Utilities, API client
+│   │   │   └── types/       # TypeScript types
+│   │   ├── public/          # Static assets
+│   │   └── package.json
+│   │
+│   └── api/                 # FastAPI backend (Python)
+│       ├── app/
+│       │   ├── main.py      # FastAPI app entry
+│       │   ├── api/         # API endpoints (routers)
+│       │   ├── models/      # SQLAlchemy models
+│       │   ├── schemas/     # Pydantic schemas
+│       │   ├── services/    # Business logic
+│       │   ├── core/        # Config, security, dependencies
+│       │   └── workers/     # Celery tasks
+│       ├── alembic/         # Database migrations
+│       ├── tests/           # Pytest tests
+│       └── requirements.txt
+│
+├── packages/
+│   └── types/               # Shared TypeScript types
+│
+├── docker-compose.yml       # Local dev services (PostgreSQL, Redis)
+├── .env.template            # Environment variables template
+├── .gitignore
+├── package.json             # Root npm workspace config
+└── README.md                # This file
+```
+
+---
+
+## Available Scripts
+
+### Root Level (Workspace)
+
+```bash
+# Development
+npm run dev              # Start Next.js frontend dev server
+npm run dev:api          # Start FastAPI backend dev server
+npm run docker:up        # Start Docker services (PostgreSQL + Redis)
+npm run docker:down      # Stop Docker services
+npm run docker:logs      # View Docker logs
+
+# Building
+npm run build            # Build Next.js for production
+
+# Testing
+npm run test             # Run all tests (frontend + backend)
+npm run lint             # Lint all code
+npm run type-check       # TypeScript type checking
+npm run format           # Format code with Prettier
+npm run format:check     # Check code formatting
+
+# Database
+npm run db:migrate       # Run database migrations
+npm run db:migrate:create "migration name"  # Create new migration
+npm run db:reset         # Reset database (⚠️ destroys data)
+```
+
+### Frontend (apps/web/)
+
+```bash
+cd apps/web
+npm run dev              # Start dev server (localhost:3000)
+npm run build            # Build for production
+npm run start            # Start production server
+npm run test             # Run Vitest unit tests
+npm run test:watch       # Run tests in watch mode
+npm run lint             # ESLint
+npm run type-check       # TypeScript
+```
+
+### Backend (apps/api/)
+
+```bash
+cd apps/api
+
+# Development
+uvicorn app.main:app --reload --port 8000  # Start dev server
+celery -A app.workers worker --loglevel=info  # Start Celery worker
+
+# Testing
+pytest                   # Run all tests
+pytest --cov             # Run tests with coverage
+pytest -v tests/unit     # Run unit tests only
+pytest -v tests/integration  # Run integration tests only
+pytest -m "not slow"     # Skip slow tests
+
+# Code Quality
+black .                  # Format code
+ruff check .             # Lint code
+mypy app                 # Type checking
+
+# Database
+alembic upgrade head     # Run migrations
+alembic revision --autogenerate -m "description"  # Create migration
+alembic downgrade -1     # Rollback one migration
+```
+
+---
+
+## Tech Stack
+
+### Frontend
+- **Next.js 14+** (React 18, App Router)
+- **TypeScript** (strict mode)
+- **Tailwind CSS** (styling)
+- **shadcn/ui** (component library)
+- **Auth.js** (authentication)
+- **React Query** (data fetching)
+- **Zustand** (state management)
+
+### Backend
+- **FastAPI** (Python web framework)
+- **SQLAlchemy 2.0** (ORM)
+- **Alembic** (database migrations)
+- **Pydantic v2** (data validation)
+- **Celery** (background jobs)
+- **Redis** (job queue + cache)
+- **PyPDF2** + **pdfplumber** (PDF parsing)
+- **Claude 3.5 Sonnet** (AI validation)
+
+### Infrastructure
+- **PostgreSQL 15** (database)
+- **Redis 7** (cache + queue)
+- **Vercel** (frontend hosting)
+- **Railway** / **Render** (backend hosting)
+- **Vercel Blob** (file storage)
+- **GitHub Actions** (CI/CD)
+
+---
+
+## Development Workflow
+
+### 1. Create a New Feature
+
+```bash
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Make changes, write tests
+# ...
+
+# Run tests locally
+npm run test
+npm run lint
+
+# Commit changes
+git add .
+git commit -m "feat: add your feature description"
+
+# Push to GitHub
+git push origin feature/your-feature-name
+
+# Open Pull Request on GitHub
+```
+
+### 2. Database Changes
+
+```bash
+# Edit SQLAlchemy models in apps/api/app/models/
+
+# Generate migration
+cd apps/api
+alembic revision --autogenerate -m "add new table"
+
+# Review generated migration in alembic/versions/
+
+# Apply migration
+alembic upgrade head
+
+# Or use npm script from root:
+npm run db:migrate:create "add new table"
+npm run db:migrate
+```
+
+### 3. API Development
+
+1. **Create Pydantic schema** in `apps/api/app/schemas/`
+2. **Create SQLAlchemy model** in `apps/api/app/models/`
+3. **Create service** in `apps/api/app/services/`
+4. **Create API router** in `apps/api/app/api/v1/endpoints/`
+5. **Write tests** in `apps/api/tests/`
+6. **Run tests**: `pytest`
+
+### 4. Frontend Development
+
+1. **Create component** in `apps/web/src/components/`
+2. **Create API client** in `apps/web/src/lib/api.ts`
+3. **Create page** in `apps/web/src/app/`
+4. **Write tests** in `apps/web/src/__tests__/`
+5. **Run tests**: `npm run test`
+
+---
+
+## Testing
+
+### Backend Testing
+
+```bash
+cd apps/api
+
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=app --cov-report=html
+# Open htmlcov/index.html to view coverage
+
+# Run specific test file
+pytest tests/unit/test_workflows.py
+
+# Run specific test function
+pytest tests/unit/test_workflows.py::test_create_workflow
+
+# Run tests matching pattern
+pytest -k "workflow"
+
+# Run tests with markers
+pytest -m unit           # Unit tests only
+pytest -m integration    # Integration tests only
+pytest -m "not slow"     # Skip slow tests
+```
+
+### Frontend Testing
+
+```bash
+cd apps/web
+
+# Run all tests
+npm run test
+
+# Run in watch mode
+npm run test:watch
+
+# Run with coverage
+npm run test -- --coverage
+
+# Run E2E tests (Playwright)
+npx playwright test
+
+# Run E2E in UI mode
+npx playwright test --ui
+```
+
+### CI/CD Testing
+
+Tests run automatically on:
+- **Every PR**: Lint, type-check, unit tests, integration tests, E2E smoke tests
+- **Every merge to main**: Full test suite + security scans
+
+Quality gates (must pass to merge):
+- ✅ All tests passing
+- ✅ Code coverage >= 70%
+- ✅ No ESLint/Ruff errors
+- ✅ TypeScript/MyPy type checking passes
+- ✅ No high/critical security vulnerabilities
+
+---
+
+## Environment Variables
+
+See `.env.template` for all available environment variables.
+
+### Required Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/qteria_dev` |
+| `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
+| `NEXTAUTH_SECRET` | NextAuth.js secret (32+ chars) | Generate: `openssl rand -base64 32` |
+| `JWT_SECRET` | JWT signing secret (32+ chars) | Generate: `openssl rand -base64 32` |
+| `ANTHROPIC_API_KEY` | Claude API key | `sk-ant-...` from https://console.anthropic.com/ |
+
+### Optional Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_URL` | API base URL for frontend | `http://localhost:8000/v1` |
+| `LOG_LEVEL` | Logging level | `INFO` |
+| `SENTRY_DSN` | Sentry error tracking | (none) |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token | (none - required for production) |
+
+---
+
+## Deployment
+
+### Frontend (Vercel)
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Login
+vercel login
+
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+Environment variables to set in Vercel dashboard:
+- `NEXT_PUBLIC_API_URL`
+- `NEXTAUTH_SECRET`
+- `DATABASE_URL` (Vercel Postgres)
+- `BLOB_READ_WRITE_TOKEN` (auto-set by Vercel)
+
+### Backend (Railway)
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login
+railway login
+
+# Link to project
+railway link
+
+# Deploy
+railway up
+```
+
+Environment variables to set in Railway dashboard:
+- `DATABASE_URL`
+- `REDIS_URL`
+- `JWT_SECRET`
+- `ANTHROPIC_API_KEY`
+- All variables from `.env.template`
+
+---
+
+## Troubleshooting
+
+### Docker services won't start
+
+```bash
+# Check if ports are in use
+lsof -i :5432  # PostgreSQL
+lsof -i :6379  # Redis
+lsof -i :5050  # PgAdmin
+
+# Stop conflicting services
+# Kill process: kill -9 <PID>
+
+# Or change ports in docker-compose.yml
+```
+
+### Database connection errors
+
+```bash
+# Check PostgreSQL is running
+docker ps | grep postgres
+
+# Check connection
+docker exec -it qteria-postgres psql -U postgres -d qteria_dev
+
+# Reset database
+npm run docker:down
+npm run docker:up
+npm run db:migrate
+```
+
+### Frontend won't connect to API
+
+```bash
+# Check API is running
+curl http://localhost:8000/health
+
+# Check NEXT_PUBLIC_API_URL in .env
+# Should be: http://localhost:8000/v1
+
+# Check CORS settings in apps/api/app/main.py
+```
+
+### Celery worker not processing jobs
+
+```bash
+# Check Redis is running
+redis-cli ping
+# Should return: PONG
+
+# Check Celery worker logs
+cd apps/api
+celery -A app.workers worker --loglevel=debug
+
+# Flush Redis queue (⚠️ deletes all jobs)
+redis-cli FLUSHDB
+```
+
+### Python dependencies issues
+
+```bash
+# Clear pip cache
+pip cache purge
+
+# Reinstall dependencies
+cd apps/api
+rm -rf venv
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements-dev.txt
+```
+
+### Node modules issues
+
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Delete node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+---
+
+## Architecture Principles
+
+1. **Monolith First**: Frontend (Next.js) + Backend (FastAPI) as separate apps, but deployed as monolith
+2. **Background Jobs**: Long AI validation (5-10 min) runs async via Celery + Redis
+3. **API-First**: FastAPI exposes REST API, Next.js consumes it
+4. **Data Privacy by Design**: PDFs encrypted in Blob, AI with zero-retention, audit logs in PostgreSQL
+5. **Boring Technology**: Proven stack (Next.js, FastAPI, PostgreSQL, Redis) - no bleeding edge
 
 ---
 
 ## Contributing
 
-We welcome contributions that:
-- Add new example implementations (different journeys)
-- Improve cascade prompts and decision frameworks
-- Enhance documentation
-- Share real-world case studies
-
-**Guidelines:**
-1. Maintain the user-first philosophy
-2. Keep the generative (not prescriptive) approach
-3. Always trace decisions to user journey
-4. Provide clear reasoning for recommendations
-5. Test with diverse journey types
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines.
 
 ---
 
-## Community & Support
+## License
 
-- **Documentation**: You're reading it! Start with `/cascade-status`
-- **Issues**: Found a bug or unclear prompt? Open an issue
-- **Discussions**: Share your cascade results
-- **Examples**: Completed a cascade? Consider contributing as example
+Proprietary - All rights reserved
 
 ---
 
-## Why This Exists
+## Support
 
-Most product teams struggle with:
-- Starting with technology instead of user needs
-- Losing strategic clarity as they build
-- Inconsistent decision-making
-- Generic advice that doesn't fit their specific context
-
-**Stack-Driven solves this** by providing:
-- Clear starting point (user journey)
-- AI-guided analysis (generative cascade)
-- Opinionated recommendations (with reasoning)
-- Complete strategy (in 3-5 hours)
-- Execution backlog (ready for development)
-
-**Result**: Products that feel intentional, not accidental.
+For issues or questions:
+- **Documentation**: `/docs` folder
+- **GitHub Issues**: https://github.com/your-org/qteria/issues
+- **Email**: support@qteria.com
 
 ---
 
-**Last Updated**: 2025-11-10
-**Version**: 2.0.0
-**License**: Apache 2.0
-
----
-
-**Remember**: The best products start with understanding users, not choosing frameworks.
-
-**Start your cascade** → Run `/cascade-status`
+**Built with simplicity, reliability, and evidence-based validation in mind.**
