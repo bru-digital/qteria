@@ -1,2 +1,0 @@
-# Next.js frontend application
-# Run: npx create-next-app@latest . --typescript --tailwind --app --src-dir --import-alias "@/*"
