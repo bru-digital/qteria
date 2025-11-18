@@ -1,8 +1,8 @@
 "use client"
 
-import { signIn } from "next-auth/react"
 import { useState, FormEvent } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { loginWithAudit } from "@/app/actions/auth"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -17,17 +18,22 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false
-      })
+      // Get callback URL from query params or default to dashboard
+      const callbackUrl = searchParams.get("callbackUrl") || undefined
 
-      if (result?.error) {
-        setError("Invalid email or password")
-      } else if (result?.ok) {
-        router.push("/dashboard")
+      // Use server action with audit logging
+      const result = await loginWithAudit(
+        email.trim().toLowerCase(), // Sanitize email input
+        password,
+        callbackUrl
+      )
+
+      if (result.success) {
+        // Redirect to callback URL or dashboard
+        router.push(result.redirectTo || "/dashboard")
         router.refresh()
+      } else {
+        setError(result.error || "Invalid email or password")
       }
     } catch (err) {
       setError("An error occurred during login")

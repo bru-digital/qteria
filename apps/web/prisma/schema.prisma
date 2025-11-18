@@ -1,5 +1,5 @@
-// This is your Prisma schema file for Auth.js integration
-// It maps to the existing PostgreSQL database
+// This is your Prisma schema file
+// Maps to the existing PostgreSQL database created by Alembic migrations
 
 generator client {
   provider = "prisma-client-js"
@@ -10,45 +10,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Auth.js required models (modified to work with UUID users)
-model Account {
-  id                String  @id @default(cuid())
-  userId            String  @map("user_id") @db.Uuid
-  type              String
-  provider          String
-  providerAccountId String  @map("provider_account_id")
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique @map("session_token")
-  userId       String   @map("user_id") @db.Uuid
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-}
+// Note: Auth.js tables (Account, Session, VerificationToken) are NOT included
+// because we use JWT-only session strategy. These tables do not exist in the database.
 
 // Existing application models (mapped to match SQLAlchemy schema)
 model Organization {
@@ -78,8 +41,6 @@ model User {
   organization        Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdWorkflows    Workflow[]     @relation("WorkflowCreator")
   createdAssessments  Assessment[]   @relation("AssessmentCreator")
-  accounts            Account[]
-  sessions            Session[]
 
   @@index([organizationId], map: "idx_user_organization")
   @@map("users")

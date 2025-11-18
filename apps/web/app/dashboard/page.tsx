@@ -1,28 +1,29 @@
-"use client"
+import { auth } from "@/lib/auth-middleware"
+import { redirect } from "next/navigation"
+import { LogoutButton } from "@/app/dashboard/logout-button"
 
-import { useSession, signOut } from "next-auth/react"
-import { useRouter } from "next/navigation"
+/**
+ * Dashboard page (Server Component).
+ *
+ * Uses server-side authentication check via auth() from Auth.js.
+ * This provides true server-side protection without client-side flash.
+ */
+export default async function DashboardPage() {
+  // Server-side authentication check
+  const session = await auth()
 
-export default function DashboardPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    )
+  // Redirect to login if not authenticated
+  if (!session?.user) {
+    redirect("/login")
   }
 
-  if (status === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
-
-  const handleSignOut = async () => {
-    await signOut({ redirect: false })
-    router.push("/login")
+  // TypeScript type guard for session.user
+  const user = session.user as {
+    id: string
+    email: string
+    name?: string | null
+    role: string
+    organizationId: string
   }
 
   return (
@@ -35,14 +36,13 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">
-                {session?.user?.email}
+                {user.email}
               </span>
-              <button
-                onClick={handleSignOut}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
-              >
-                Sign out
-              </button>
+              <LogoutButton
+                userId={user.id}
+                organizationId={user.organizationId}
+                email={user.email}
+              />
             </div>
           </div>
         </div>
@@ -59,16 +59,16 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-gray-500">User Information</p>
                 <div className="mt-2 space-y-2">
                   <p className="text-sm text-gray-700">
-                    <span className="font-medium">Email:</span> {session?.user?.email}
+                    <span className="font-medium">Email:</span> {user.email}
                   </p>
                   <p className="text-sm text-gray-700">
-                    <span className="font-medium">Name:</span> {session?.user?.name || "Not set"}
+                    <span className="font-medium">Name:</span> {user.name || "Not set"}
                   </p>
                   <p className="text-sm text-gray-700">
-                    <span className="font-medium">Role:</span> {session?.user?.role}
+                    <span className="font-medium">Role:</span> {user.role}
                   </p>
                   <p className="text-sm text-gray-700">
-                    <span className="font-medium">Organization ID:</span> {session?.user?.organizationId}
+                    <span className="font-medium">Organization ID:</span> {user.organizationId}
                   </p>
                 </div>
               </div>

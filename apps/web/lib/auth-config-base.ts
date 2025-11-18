@@ -1,4 +1,31 @@
 import type { NextAuthConfig } from "next-auth"
+import type { JWT } from "next-auth/jwt"
+import type { Session, User } from "next-auth"
+import { getEnv } from "@/lib/env"
+
+// Validate NEXTAUTH_SECRET is set
+const NEXTAUTH_SECRET = getEnv("NEXTAUTH_SECRET")
+
+/**
+ * Extended JWT type with custom fields
+ */
+interface ExtendedJWT extends JWT {
+  role?: string
+  organizationId?: string
+}
+
+/**
+ * Extended Session type with custom user fields
+ */
+interface ExtendedSession extends Session {
+  user: {
+    id: string
+    email: string
+    name: string | null
+    role: string
+    organizationId: string
+  }
+}
 
 /**
  * Base Auth.js configuration for Edge Runtime (middleware).
@@ -16,20 +43,24 @@ export const baseAuthConfig = {
     maxAge: 7 * 24 * 60 * 60 // 7 days
   },
   callbacks: {
-    async jwt({ token, user }: { token: any; user: any }) {
+    async jwt({ token, user }: { token: JWT; user?: User }): Promise<JWT> {
       // Add custom fields to JWT on sign in
       if (user) {
-        token.role = user.role
-        token.organizationId = user.organizationId
+        const extendedToken = token as ExtendedJWT
+        extendedToken.role = (user as any).role
+        extendedToken.organizationId = (user as any).organizationId
+        return extendedToken
       }
       return token
     },
-    async session({ session, token }: { session: any; token: any }) {
+    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
+      const extendedToken = token as ExtendedJWT
+
       // Add custom fields to session
       if (session.user) {
-        session.user.id = token.sub as string
-        session.user.role = token.role as string
-        session.user.organizationId = token.organizationId as string
+        (session.user as any).id = token.sub as string
+        ;(session.user as any).role = extendedToken.role as string
+        ;(session.user as any).organizationId = extendedToken.organizationId as string
       }
       return session
     }
@@ -38,5 +69,5 @@ export const baseAuthConfig = {
     signIn: "/login",
     error: "/login"
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: NEXTAUTH_SECRET,
 } satisfies NextAuthConfig
