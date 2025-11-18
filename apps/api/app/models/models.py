@@ -85,6 +85,7 @@ class User(Base):
     )
     email = Column(String(255), unique=True, nullable=False)
     name = Column(String(255))
+    password_hash = Column(String(255))  # bcrypt hashed password
     role = Column(
         String(50),
         CheckConstraint(

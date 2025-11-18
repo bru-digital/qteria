@@ -34,9 +34,309 @@
 
 ### Authentication (Pre-Journey)
 
-- `POST /v1/auth/login` - User login, receive JWT
-- `POST /v1/auth/refresh` - Refresh expired access token
-- `GET /v1/auth/me` - Get current user details
+**Implementation**: Auth.js (NextAuth v5) with JWT-only session strategy
+
+**Frontend Endpoints**:
+- `POST /api/auth/signin` - User login with credentials
+- `POST /api/auth/signout` - User logout
+- `GET /api/auth/session` - Get current session (includes user + JWT)
+- `GET /api/auth/csrf` - Get CSRF token (for form submissions)
+
+**Server Actions** (recommended over direct API calls):
+- `loginWithAudit(email, password, callbackUrl?)` - Login with audit logging + rate limiting
+- `logoutWithAudit(userId, organizationId, email)` - Logout with audit logging
+
+#### POST /api/auth/signin
+
+**Request**:
+```json
+{
+  "email": "test@qteria.com",
+  "password": "password123",
+  "redirect": false  // Don't auto-redirect (for client-side handling)
+}
+```
+
+**Response (Success - 200)**:
+```json
+{
+  "ok": true,
+  "url": null  // No redirect when redirect: false
+}
+```
+
+**Response (Failure - 401)**:
+```json
+{
+  "ok": false,
+  "error": "CredentialsSignin"
+}
+```
+
+**Security Features**:
+- Rate limiting: 5 failed attempts per email per 15 min, 20 attempts per IP per hour
+- Timing attack protection (constant-time responses)
+- Audit logging (success + failure)
+- Password hashing with bcrypt (salt rounds = 12)
+- Role validation before JWT creation
+
+**Rate Limit Response (429)**:
+```json
+{
+  "success": false,
+  "error": "Too many failed login attempts. Please try again in 12 minutes.",
+  "rateLimitExceeded": true,
+  "retryAfterSeconds": 720
+}
+```
+
+---
+
+#### POST /api/auth/signout
+
+**Request**: No body required
+
+**Response (200)**: Clears session cookie and redirects to `/login`
+
+**Security Features**:
+- Audit logging (records logout event)
+- Session invalidation (JWT removed from httpOnly cookie)
+
+---
+
+#### GET /api/auth/session
+
+**Response (Authenticated - 200)**:
+```json
+{
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "test@qteria.com",
+    "name": "Test User",
+    "role": "admin",
+    "organizationId": "123e4567-e89b-12d3-a456-426614174001"
+  },
+  "expires": "2025-11-25T12:00:00.000Z"
+}
+```
+
+**Response (Unauthenticated - 200)**:
+```json
+{
+  "user": null
+}
+```
+
+**Note**: Returns 200 even when unauthenticated (not 401). Check `user` field to determine auth state.
+
+---
+
+#### Session Configuration
+
+**JWT Payload**:
+```json
+{
+  "sub": "123e4567-e89b-12d3-a456-426614174000",  // User ID
+  "email": "test@qteria.com",
+  "name": "Test User",
+  "role": "admin",                                 // process_manager, project_handler, admin
+  "organizationId": "123e4567-e89b-12d3-a456-426614174001",
+  "iat": 1732176000,                              // Issued at
+  "exp": 1732780800                               // Expires (7 days from iat)
+}
+```
+
+**Session Storage**: JWT-only (no database sessions)
+**Token Location**: httpOnly cookie (name: `authjs.session-token`)
+**Token Expiry**: 7 days
+**CSRF Protection**: Enabled by default (Auth.js built-in)
+
+---
+
+#### Authentication Flow
+
+**Login Flow**:
+```
+1. User submits email + password to login page
+2. Frontend calls loginWithAudit() server action
+3. Rate limit check (email + IP)
+4. Credentials validated via Auth.js
+5. Timing-safe password comparison with bcrypt
+6. Role validation (must be: process_manager, project_handler, or admin)
+7. JWT token created and stored in httpOnly cookie
+8. Audit log created (login_success or login_failed)
+9. Redirect to callback URL or /dashboard
+```
+
+**Session Validation Flow** (on each protected route):
+```
+1. Middleware checks for authjs.session-token cookie
+2. JWT signature validated with NEXTAUTH_SECRET
+3. Expiry checked (must be within 7 days)
+4. User data extracted from JWT (no database query)
+5. Request allowed if valid, redirected to /login if invalid
+```
+
+**Logout Flow**:
+```
+1. User clicks "Sign out" button
+2. Frontend calls logoutWithAudit() server action
+3. Audit log created (logout event)
+4. Auth.js signOut() clears session cookie
+5. Redirect to /login page
+```
+
+---
+
+#### Error Codes
+
+**Authentication Errors**:
+- `CredentialsSignin` - Invalid email or password
+- `CallbackRouteError` - Error during authentication callback
+- `SessionRequired` - Protected route accessed without valid session
+
+**Custom Error Responses** (from server actions):
+```json
+{
+  "success": false,
+  "error": "Invalid email or password"
+}
+```
+
+```json
+{
+  "success": false,
+  "error": "Too many login attempts from your network. Please try again in 45 minutes.",
+  "rateLimitExceeded": true,
+  "retryAfterSeconds": 2700
+}
+```
+
+---
+
+#### Audit Logging
+
+All authentication events are logged to `audit_logs` table:
+
+**Login Success**:
+```json
+{
+  "organizationId": "123e4567-e89b-12d3-a456-426614174001",
+  "userId": "123e4567-e89b-12d3-a456-426614174000",
+  "action": "login_success",
+  "actionMetadata": {
+    "email": "test@qteria.com",
+    "name": "Test User"
+  },
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0...",
+  "createdAt": "2025-11-18T12:00:00.000Z"
+}
+```
+
+**Login Failed**:
+```json
+{
+  "organizationId": "123e4567-e89b-12d3-a456-426614174001",
+  "userId": "123e4567-e89b-12d3-a456-426614174000",
+  "action": "login_failed",
+  "actionMetadata": {
+    "email": "test@qteria.com",
+    "reason": "invalid_credentials"
+  },
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0...",
+  "createdAt": "2025-11-18T12:00:00.000Z"
+}
+```
+
+**Logout**:
+```json
+{
+  "organizationId": "123e4567-e89b-12d3-a456-426614174001",
+  "userId": "123e4567-e89b-12d3-a456-426614174000",
+  "action": "logout",
+  "actionMetadata": {
+    "email": "test@qteria.com"
+  },
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0...",
+  "createdAt": "2025-11-18T12:00:00.000Z"
+}
+```
+
+---
+
+#### Protected Routes
+
+**Middleware Configuration** (`middleware.ts`):
+```typescript
+export const config = {
+  matcher: [
+    "/dashboard/:path*",
+    "/workflows/:path*",
+    "/assessments/:path*"
+  ]
+}
+```
+
+**Behavior**:
+- Unauthenticated requests to protected routes → Redirect to `/login?callbackUrl={original_path}`
+- After login, redirect back to original path via callback URL
+- Server components can check auth with `await auth()`
+- Client components can check auth with `useSession()` (from `next-auth/react`)
+
+---
+
+#### Frontend Usage
+
+**Server Component** (recommended):
+```typescript
+import { auth } from "@/lib/auth-middleware"
+import { redirect } from "next/navigation"
+
+export default async function ProtectedPage() {
+  const session = await auth()
+
+  if (!session?.user) {
+    redirect("/login")
+  }
+
+  // session.user contains: id, email, name, role, organizationId
+  return <div>Hello {session.user.email}</div>
+}
+```
+
+**Client Component**:
+```typescript
+"use client"
+import { useSession } from "next-auth/react"
+
+export default function ClientComponent() {
+  const { data: session, status } = useSession()
+
+  if (status === "loading") return <div>Loading...</div>
+  if (status === "unauthenticated") return <div>Not logged in</div>
+
+  return <div>Hello {session.user.email}</div>
+}
+```
+
+**Login Form**:
+```typescript
+"use client"
+import { loginWithAudit } from "@/app/actions/auth"
+
+async function handleSubmit(email: string, password: string) {
+  const result = await loginWithAudit(email, password)
+
+  if (result.success) {
+    router.push(result.redirectTo)
+  } else {
+    setError(result.error)
+  }
+}
+```
 
 ---
 
@@ -176,7 +476,7 @@ All errors return consistent structure:
 **When creating stories, reference**:
 
 ### Frontend Stories
-- Authentication: `POST /auth/login`, `GET /auth/me`
+- Authentication: Auth.js setup, `loginWithAudit()` server action, login/dashboard pages
 - Workflow builder: `POST /workflows` (with nested buckets + criteria)
 - Document upload: `POST /documents` (multipart/form-data)
 - Assessment start: `POST /assessments` → polling `GET /assessments/:id`
@@ -184,12 +484,15 @@ All errors return consistent structure:
 - Report export: `POST /assessments/:id/reports` → `GET /reports/:id/download`
 
 ### Backend Stories
-- Implement endpoints per resource
-- JWT middleware for auth + multi-tenancy
+- Implement endpoints per resource (Workflows, Documents, Assessments, Reports)
+- JWT validation middleware for `/v1/*` endpoints (validate Auth.js JWT from cookie)
+- Multi-tenancy enforcement (filter by `organizationId` from JWT)
 - Celery background job for `POST /assessments` (enqueue AI validation task)
 - PDF parsing + Claude API integration in Celery worker
 - Evidence extraction (page/section detection)
 - Report generation (PDF using ReportLab/WeasyPrint)
+
+**Note**: Authentication (login/logout/session) handled by Auth.js on frontend. Backend only validates JWT tokens.
 
 ### Integration Stories
 - Generate TypeScript client from OpenAPI spec
@@ -201,7 +504,7 @@ All errors return consistent structure:
 
 ## Endpoint Count Summary
 
-- **Authentication**: 3 endpoints
+- **Authentication**: 4 endpoints (Auth.js frontend routes)
 - **Workflows**: 5 endpoints
 - **Documents**: 3 endpoints
 - **Assessments**: 6 endpoints
@@ -209,7 +512,9 @@ All errors return consistent structure:
 - **Organizations/Users**: 3 endpoints
 - **Public**: 1 endpoint
 
-**Total**: 28 endpoints across 6 core resources
+**Total**: 27 endpoints across 6 core resources
+
+**Note**: Authentication is handled by Auth.js (NextAuth) on the frontend (`/api/auth/*`) rather than backend `/v1/auth/*` endpoints.
 
 ---
 
