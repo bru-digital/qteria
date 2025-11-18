@@ -1,10 +1,22 @@
 import type { NextAuthConfig } from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import type { Session, User } from "next-auth"
-import { getEnv } from "@/lib/env"
 
-// Validate NEXTAUTH_SECRET is set
-const NEXTAUTH_SECRET = getEnv("NEXTAUTH_SECRET")
+// Get NEXTAUTH_SECRET from environment
+// During build, this might be empty - it will be validated at runtime
+const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || ''
+
+// Validate at runtime (not during build)
+if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-production-build') {
+  if (!NEXTAUTH_SECRET) {
+    throw new Error(
+      'NEXTAUTH_SECRET environment variable is required. Generate one with: openssl rand -base64 32'
+    )
+  }
+  if (NEXTAUTH_SECRET.length < 32) {
+    console.warn('[AUTH] NEXTAUTH_SECRET should be at least 32 characters for security')
+  }
+}
 
 /**
  * Extended JWT type with custom fields

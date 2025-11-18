@@ -1,8 +1,7 @@
 import { PrismaClient } from '@prisma/client'
-import { getEnv } from '@/lib/env'
 
-// Validate DATABASE_URL is set at module load time
-const DATABASE_URL = getEnv('DATABASE_URL')
+// DATABASE_URL is validated at runtime when Prisma connects
+// During build, it might not be set yet
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined

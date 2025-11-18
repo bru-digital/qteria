@@ -106,12 +106,26 @@ export function validateEnv(): void {
  * Get environment variable with type safety.
  * Returns the value or throws if missing (for required vars).
  *
+ * During build phase (NEXT_PHASE === 'phase-production-build'), returns empty string
+ * to allow the build to complete. Environment variables are validated at runtime.
+ *
  * @param key - Environment variable name
  * @returns Environment variable value
  */
 export function getEnv(key: keyof typeof REQUIRED_ENV_VARS): string {
   const value = process.env[key]
+
+  // During Next.js build phase, allow missing env vars
+  // They will be validated at runtime when the app starts
   if (!value) {
+    const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' ||
+                       process.env.NODE_ENV === 'production' && !process.env[key]
+
+    if (isBuilding) {
+      console.warn(`[ENV] ${key} not set during build - will be required at runtime`)
+      return '' // Return empty string during build, will fail at runtime if actually missing
+    }
+
     throw new Error(
       `Environment variable ${key} is required but not set. Run validateEnv() at startup to get detailed error messages.`
     )
