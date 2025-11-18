@@ -69,7 +69,31 @@ cd ../..
 npm run db:migrate
 ```
 
-#### 6. Start development servers
+#### 6. Seed development data (Optional)
+
+```bash
+# Populate database with sample data (recommended for development)
+cd apps/api
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+python scripts/seed_data.py
+```
+
+**What gets created:**
+- 1 demo organization: "TÜV SÜD Demo"
+- 2 users with different roles:
+  - Process Manager: `process.manager@tuvsud-demo.com`
+  - Project Handler: `project.handler@tuvsud-demo.com`
+- 2 realistic workflows based on EU certification standards:
+  - Machinery Directive 2006/42/EC (2 buckets, 6 criteria)
+  - Medical Device Regulation (EU) 2017/745 (2 buckets, 4 criteria)
+
+**Script options:**
+```bash
+python scripts/seed_data.py           # Idempotent - skips if data exists
+python scripts/seed_data.py --reset   # Reset database and reseed
+```
+
+#### 7. Start development servers
 
 ```bash
 # Terminal 1: Start frontend (Next.js)
@@ -79,7 +103,7 @@ npm run dev
 npm run dev:api
 ```
 
-#### 7. Open your browser
+#### 8. Open your browser
 
 - **Frontend**: http://localhost:3000
 - **API Docs**: http://localhost:8000/docs (FastAPI Swagger UI)
@@ -194,6 +218,10 @@ mypy app                 # Type checking
 alembic upgrade head     # Run migrations
 alembic revision --autogenerate -m "description"  # Create migration
 alembic downgrade -1     # Rollback one migration
+
+# Seed Data
+python scripts/seed_data.py        # Seed development data
+python scripts/seed_data.py --reset  # Reset and reseed
 ```
 
 ---
