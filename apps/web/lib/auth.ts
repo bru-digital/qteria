@@ -2,8 +2,18 @@ import type { NextAuthConfig } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
+import { baseAuthConfig } from "./auth-config-base"
 
+/**
+ * Full Auth.js configuration for API routes (Node.js runtime).
+ * Extends baseAuthConfig with credential provider that requires:
+ * - bcrypt (for password hashing)
+ * - Prisma (for database access)
+ *
+ * This config is ONLY used by API routes, NOT by middleware.
+ */
 export const authOptions = {
+  ...baseAuthConfig,
   providers: [
     Credentials({
       name: "Email",
@@ -46,32 +56,4 @@ export const authOptions = {
       }
     })
   ],
-  session: {
-    strategy: "jwt" as const,
-    maxAge: 7 * 24 * 60 * 60 // 7 days
-  },
-  callbacks: {
-    async jwt({ token, user }: { token: any; user: any }) {
-      // Add custom fields to JWT on sign in
-      if (user) {
-        token.role = user.role
-        token.organizationId = user.organizationId
-      }
-      return token
-    },
-    async session({ session, token }: { session: any; token: any }) {
-      // Add custom fields to session
-      if (session.user) {
-        session.user.id = token.sub as string
-        session.user.role = token.role as string
-        session.user.organizationId = token.organizationId as string
-      }
-      return session
-    }
-  },
-  pages: {
-    signIn: "/login",
-    error: "/login"
-  },
-  secret: process.env.NEXTAUTH_SECRET,
 } satisfies NextAuthConfig
