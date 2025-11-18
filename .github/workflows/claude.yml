@@ -9,7 +9,6 @@ on:
     types: [opened, assigned]
   pull_request_review:
     types: [submitted]
-  workflow_dispatch:
 
 jobs:
   claude:
@@ -19,61 +18,33 @@ jobs:
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
-    # ✅ Allow Claude to write branches, PRs, issues
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
+      contents: read
+      pull-requests: read
+      issues: read
       id-token: write
-      actions: read
-
+      actions: read # Required for Claude to read CI results on PRs
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # full history for rebase/branch ops
-          persist-credentials: true
+          fetch-depth: 1
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # ✅ Give Claude the ability to run branch/PR commands
-          allowed_tools: >
-            Bash(git config user.name "claude-bot"),
-            Bash(git config user.email "bot@example.com"),
-            Bash(git fetch origin),
-            Bash(git checkout -B issue-${{ github.event.issue.number || 0 }}-auto),
-            Bash(git pull --rebase origin $(git rev-parse --abbrev-ref HEAD)),
-            Bash(git add -A),
-            Bash(git commit -m "chore: initial commit for issue ${{ github.event.issue.number || 0 }}" || true),
-            Bash(git push -u origin $(git rev-parse --abbrev-ref HEAD)),
-            Bash(gh pr create --fill --base $(git symbolic-ref --short refs/remotes/origin/HEAD | cut -d'/' -f2) --head $(git rev-parse --abbrev-ref HEAD) || true),
-            Bash(npm ci),
-            Bash(npm run build),
-            Bash(npm test --if-present)
+          # This is an optional setting that allows Claude to read CI results on PRs
+          additional_permissions: |
+            actions: read
 
-          # ✅ Custom instructions to guide Claude
-          custom_instructions: |
-            # Branch & PR rules
-            - Always work on a branch named: issue-<number>-<slug>
-            - If no PR exists for the issue branch, create one with "Fixes #<number>" in the body
-            - Use the issue title as the PR title, prefixed with "feat:" or "fix:" depending on context
+          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
+          # prompt: 'Update the pull request description to include a summary of changes.'
 
-            # Acceptance Criteria
-            - After implementing code changes, mark the matching Acceptance Criteria checklist items as done in the issue body
-            - Only check off items that are clearly addressed by the commits in the branch
+          # Optional: Add claude_args to customize behavior and configuration
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+          # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
+          # claude_args: '--allowed-tools Bash(gh pr:*)'
 
-            # Coding standards
-            - All new code must be written in TypeScript (not plain JavaScript)
-            - Follow project coding standards and ESLint rules
-            - Use consistent formatting (Prettier defaults if unspecified)
-            - Add Vitest unit tests for all new functions, components, or utilities
-            - For React components, include at least one render test
-
-            # Commit & PR hygiene
-            - Write conventional commit messages (e.g., "feat(auth): add login page")
-            - Keep commits atomic and logically grouped
-            - Ensure the PR description clearly summarizes the changes
