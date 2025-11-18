@@ -24,7 +24,8 @@ from app.models import models  # Import all models to register them
 config = context.config
 
 # Override sqlalchemy.url with DATABASE_URL from environment
-database_url = os.getenv("DATABASE_URL")
+# Use unpooled connection for migrations (required by Alembic)
+database_url = os.getenv("DATABASE_URL_UNPOOLED") or os.getenv("DATABASE_URL")
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
 
