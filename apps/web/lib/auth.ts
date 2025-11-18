@@ -1,5 +1,7 @@
 import type { NextAuthConfig } from "next-auth"
-import Credentials from "next-auth/providers/credentials"
+import Credentials from "@auth/core/providers/credentials"
+import MicrosoftEntraID from "@auth/core/providers/microsoft-entra-id"
+import Google from "@auth/core/providers/google"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
 import { baseAuthConfig } from "./auth-config-base"
@@ -14,7 +16,79 @@ import { baseAuthConfig } from "./auth-config-base"
  */
 export const authOptions = {
   ...baseAuthConfig,
+  callbacks: {
+    ...baseAuthConfig.callbacks,
+    async signIn({ user, account, profile }) {
+      // OAuth providers (Microsoft Entra ID or Google)
+      if (account?.provider === "microsoft-entra-id" || account?.provider === "google") {
+        const email = user.email || (profile as any)?.email
+
+        if (!email) {
+          console.error('[AUTH] OAuth login failed: no email provided')
+          return false
+        }
+
+        try {
+          // Check if user exists
+          const existingUser = await prisma.user.findUnique({
+            where: { email }
+          })
+
+          if (!existingUser) {
+            // For MVP: OAuth users need to be invited first
+            // Future: implement organization assignment logic
+            console.log(`[AUTH] OAuth login attempt for non-existent user: ${email}`)
+            return "/login?error=oauth_user_not_found"
+          }
+
+          // Update user with OAuth provider info
+          await prisma.user.update({
+            where: { email },
+            data: {
+              name: user.name || existingUser.name,
+              // Store OAuth avatar URL if available
+              // Note: This assumes we add an avatarUrl field to the User model
+            }
+          })
+
+          return true
+        } catch (error) {
+          console.error('[AUTH] OAuth signIn callback error:', error)
+          return false
+        }
+      }
+
+      // Credentials provider - no additional checks needed
+      return true
+    }
+  },
   providers: [
+    // Primary: Microsoft OAuth (TÜV SÜD and most TIC notified bodies use Microsoft 365)
+    MicrosoftEntraID({
+      clientId: process.env.MICROSOFT_CLIENT_ID!,
+      clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "select_account",
+          scope: "openid profile email"
+        }
+      }
+    }) as any,
+
+    // Secondary: Google OAuth (some organizations use Google Workspace)
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "select_account",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
+    }) as any,
+
+    // Email/Password authentication (backwards compatibility)
     Credentials({
       name: "Email",
       credentials: {
