@@ -23,6 +23,12 @@ const REQUIRED_ENV_VARS = {
 const OPTIONAL_ENV_VARS = {
   NODE_ENV: "development",
   NEXT_PUBLIC_API_URL: "http://localhost:8000/v1",
+
+  // OAuth providers (optional - only needed if OAuth is enabled)
+  MICROSOFT_CLIENT_ID: "",
+  MICROSOFT_CLIENT_SECRET: "",
+  GOOGLE_CLIENT_ID: "",
+  GOOGLE_CLIENT_SECRET: "",
 } as const
 
 /**
@@ -60,6 +66,33 @@ export function validateEnv(): void {
         `  ⚠️  DATABASE_URL doesn't look like a PostgreSQL connection string\n     Expected format: postgresql://user:password@host:port/database`
       )
     }
+  }
+
+  // OAuth validation: if one OAuth var is set, all related vars should be set
+  const hasMicrosoftClientId = process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_ID.trim() !== ""
+  const hasMicrosoftSecret = process.env.MICROSOFT_CLIENT_SECRET && process.env.MICROSOFT_CLIENT_SECRET.trim() !== ""
+
+  if (hasMicrosoftClientId && !hasMicrosoftSecret) {
+    errorMessages.push(
+      `  ⚠️  MICROSOFT_CLIENT_ID is set but MICROSOFT_CLIENT_SECRET is missing\n     Both are required for Microsoft OAuth. See docs/OAUTH_SETUP.md`
+    )
+  } else if (!hasMicrosoftClientId && hasMicrosoftSecret) {
+    errorMessages.push(
+      `  ⚠️  MICROSOFT_CLIENT_SECRET is set but MICROSOFT_CLIENT_ID is missing\n     Both are required for Microsoft OAuth. See docs/OAUTH_SETUP.md`
+    )
+  }
+
+  const hasGoogleClientId = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID.trim() !== ""
+  const hasGoogleSecret = process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CLIENT_SECRET.trim() !== ""
+
+  if (hasGoogleClientId && !hasGoogleSecret) {
+    errorMessages.push(
+      `  ⚠️  GOOGLE_CLIENT_ID is set but GOOGLE_CLIENT_SECRET is missing\n     Both are required for Google OAuth. See docs/OAUTH_SETUP.md`
+    )
+  } else if (!hasGoogleClientId && hasGoogleSecret) {
+    errorMessages.push(
+      `  ⚠️  GOOGLE_CLIENT_SECRET is set but GOOGLE_CLIENT_ID is missing\n     Both are required for Google OAuth. See docs/OAUTH_SETUP.md`
+    )
   }
 
   // If there are any errors, throw with helpful message
@@ -150,3 +183,29 @@ export function getOptionalEnv(
 // Export type for environment variables
 export type RequiredEnvVar = keyof typeof REQUIRED_ENV_VARS
 export type OptionalEnvVar = keyof typeof OPTIONAL_ENV_VARS
+
+/**
+ * Check if Microsoft OAuth is configured.
+ * Returns true only if both client ID and secret are present.
+ */
+export function isMicrosoftOAuthConfigured(): boolean {
+  return !!(
+    process.env.MICROSOFT_CLIENT_ID &&
+    process.env.MICROSOFT_CLIENT_ID.trim() !== "" &&
+    process.env.MICROSOFT_CLIENT_SECRET &&
+    process.env.MICROSOFT_CLIENT_SECRET.trim() !== ""
+  )
+}
+
+/**
+ * Check if Google OAuth is configured.
+ * Returns true only if both client ID and secret are present.
+ */
+export function isGoogleOAuthConfigured(): boolean {
+  return !!(
+    process.env.GOOGLE_CLIENT_ID &&
+    process.env.GOOGLE_CLIENT_ID.trim() !== "" &&
+    process.env.GOOGLE_CLIENT_SECRET &&
+    process.env.GOOGLE_CLIENT_SECRET.trim() !== ""
+  )
+}

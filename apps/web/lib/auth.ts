@@ -5,6 +5,32 @@ import Google from "@auth/core/providers/google"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
 import { baseAuthConfig } from "./auth-config-base"
+import { createAuditLog, AuditAction } from "@/lib/audit"
+import { isMicrosoftOAuthConfigured, isGoogleOAuthConfigured } from "@/lib/env"
+
+/**
+ * Type definitions for OAuth profiles and providers
+ *
+ * Note: These type assertions are needed due to version compatibility between
+ * next-auth v5 (beta.30) and @auth/core (0.41.0). When next-auth v5 stable
+ * releases, these can be replaced with official types.
+ */
+interface OAuthProfile {
+  email?: string
+  name?: string
+  picture?: string
+  sub?: string
+}
+
+/**
+ * Type compatibility note:
+ *
+ * Using 'as any' for OAuth providers due to version mismatch between
+ * next-auth v5 (beta.30) and @auth/core (0.41.0). The providers work
+ * correctly at runtime, but TypeScript cannot reconcile the type differences.
+ *
+ * Tech debt: Remove type assertions when next-auth v5 stable releases.
+ */
 
 /**
  * Full Auth.js configuration for API routes (Node.js runtime).
@@ -21,40 +47,121 @@ export const authOptions = {
     async signIn({ user, account, profile }) {
       // OAuth providers (Microsoft Entra ID or Google)
       if (account?.provider === "microsoft-entra-id" || account?.provider === "google") {
-        const email = user.email || (profile as any)?.email
+        const oauthProfile = profile as OAuthProfile
+        const email = user.email || oauthProfile?.email
 
         if (!email) {
-          console.error('[AUTH] OAuth login failed: no email provided')
-          return false
+          console.error('[AUTH] OAuth login failed: no email provided', {
+            provider: account.provider,
+            hasUser: !!user,
+            hasProfile: !!profile
+          })
+          return "/login?error=oauth_no_email"
         }
 
         try {
           // Check if user exists
           const existingUser = await prisma.user.findUnique({
-            where: { email }
+            where: { email },
+            include: { organization: true }
           })
 
           if (!existingUser) {
             // For MVP: OAuth users need to be invited first
             // Future: implement organization assignment logic
             console.log(`[AUTH] OAuth login attempt for non-existent user: ${email}`)
+
+            // Audit log: OAuth login failed (user not found)
+            // Note: We don't have organizationId since user doesn't exist
+            // Log to system organization for security monitoring
+            try {
+              const systemOrg = await prisma.organization.findFirst({
+                where: { name: "System" }
+              })
+
+              if (systemOrg) {
+                await createAuditLog({
+                  organizationId: systemOrg.id,
+                  userId: null,
+                  action: AuditAction.LOGIN_FAILED,
+                  actionMetadata: {
+                    email,
+                    provider: account.provider,
+                    reason: "oauth_user_not_found"
+                  },
+                  // Note: IP/userAgent not available in signIn callback
+                  // This is a limitation of Auth.js callback architecture
+                  ipAddress: null,
+                  userAgent: null,
+                })
+              }
+            } catch (auditError) {
+              console.error('[AUTH] Failed to create audit log for OAuth failure:', auditError)
+            }
+
             return "/login?error=oauth_user_not_found"
           }
 
-          // Update user with OAuth provider info
-          await prisma.user.update({
-            where: { email },
-            data: {
-              name: user.name || existingUser.name,
-              // Store OAuth avatar URL if available
-              // Note: This assumes we add an avatarUrl field to the User model
-            }
+          // Update user with OAuth provider info only if data has changed
+          const oauthName = user.name || oauthProfile?.name
+          const nameChanged = oauthName && oauthName !== existingUser.name
+          const profileChanges: Record<string, any> = {}
+
+          if (nameChanged) {
+            await prisma.user.update({
+              where: { email },
+              data: {
+                name: oauthName,
+              }
+            })
+
+            profileChanges.name = { from: existingUser.name, to: oauthName }
+          }
+
+          // Audit log: OAuth login successful (with optional profile update info)
+          await createAuditLog({
+            organizationId: existingUser.organizationId,
+            userId: existingUser.id,
+            action: AuditAction.LOGIN_SUCCESS,
+            actionMetadata: {
+              email: existingUser.email,
+              name: existingUser.name,
+              provider: account.provider,
+              authMethod: "oauth",
+              ...(nameChanged && {
+                profileUpdated: true,
+                changes: profileChanges
+              })
+            },
+            // Note: IP/userAgent not available in signIn callback
+            // This is a limitation of Auth.js callback architecture
+            ipAddress: null,
+            userAgent: null,
           })
 
           return true
         } catch (error) {
-          console.error('[AUTH] OAuth signIn callback error:', error)
-          return false
+          console.error('[AUTH] OAuth signIn callback error:', {
+            error,
+            provider: account.provider,
+            email,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error'
+          })
+
+          // Return specific error based on error type
+          if (error instanceof Error) {
+            // Database connection errors
+            if (error.message.includes('connect') || error.message.includes('ECONNREFUSED')) {
+              return "/login?error=oauth_database_error"
+            }
+            // Generic database errors
+            if (error.message.includes('Prisma') || error.message.includes('database')) {
+              return "/login?error=oauth_database_error"
+            }
+          }
+
+          // Generic OAuth error for other cases
+          return "/login?error=oauth_error"
         }
       }
 
@@ -63,32 +170,43 @@ export const authOptions = {
     }
   },
   providers: [
-    // Primary: Microsoft OAuth (TÜV SÜD and most TIC notified bodies use Microsoft 365)
-    MicrosoftEntraID({
-      clientId: process.env.MICROSOFT_CLIENT_ID!,
-      clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: "select_account",
-          scope: "openid profile email"
-        }
-      }
-    }) as any,
+    // Conditionally add OAuth providers only if configured
+    ...(isMicrosoftOAuthConfigured()
+      ? [
+          // Primary: Microsoft OAuth (TÜV SÜD and most TIC notified bodies use Microsoft 365)
+          // Type assertion needed for next-auth v5 beta compatibility (tech debt: remove when v5 stable releases)
+          MicrosoftEntraID({
+            clientId: process.env.MICROSOFT_CLIENT_ID!,
+            clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
+            authorization: {
+              params: {
+                prompt: "select_account",
+                scope: "openid profile email"
+              }
+            }
+          }) as any,
+        ]
+      : []),
 
-    // Secondary: Google OAuth (some organizations use Google Workspace)
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: "select_account",
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
-    }) as any,
+    ...(isGoogleOAuthConfigured()
+      ? [
+          // Secondary: Google OAuth (some organizations use Google Workspace)
+          // Type assertion needed for next-auth v5 beta compatibility (tech debt: remove when v5 stable releases)
+          Google({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            authorization: {
+              params: {
+                prompt: "select_account",
+                access_type: "offline",
+                response_type: "code"
+              }
+            }
+          }) as any,
+        ]
+      : []),
 
-    // Email/Password authentication (backwards compatibility)
+    // Email/Password authentication (always available)
     Credentials({
       name: "Email",
       credentials: {

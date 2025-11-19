@@ -171,10 +171,32 @@ function LoginForm() {
         </div>
 
         {/* OAuth Error Display */}
-        {searchParams.get("error") === "oauth_user_not_found" && (
-          <div className="rounded-md bg-yellow-50 p-4">
-            <div className="text-sm text-yellow-800">
-              No account found with this email. Please contact your administrator to get invited.
+        {searchParams.get("error") && (
+          <div className={`rounded-md p-4 ${
+            searchParams.get("error") === "oauth_user_not_found"
+              ? "bg-yellow-50"
+              : "bg-red-50"
+          }`}>
+            <div className={`text-sm ${
+              searchParams.get("error") === "oauth_user_not_found"
+                ? "text-yellow-800"
+                : "text-red-800"
+            }`}>
+              {searchParams.get("error") === "oauth_user_not_found" && (
+                <>No account found with this email. Please contact your administrator to get invited.</>
+              )}
+              {searchParams.get("error") === "oauth_no_email" && (
+                <>OAuth login failed: no email address provided by the authentication provider. Please try again or contact support.</>
+              )}
+              {searchParams.get("error") === "oauth_database_error" && (
+                <>Database connection error during login. Please try again in a few moments or contact support if the issue persists.</>
+              )}
+              {searchParams.get("error") === "oauth_error" && (
+                <>An error occurred during OAuth authentication. Please try again or contact support if the issue persists.</>
+              )}
+              {!["oauth_user_not_found", "oauth_no_email", "oauth_database_error", "oauth_error"].includes(searchParams.get("error") || "") && (
+                <>Authentication error. Please try again or contact support.</>
+              )}
             </div>
           </div>
         )}
