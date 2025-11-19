@@ -3,6 +3,7 @@
 Seed data script for Qteria development environment.
 
 Creates realistic sample data for testing and development:
+- 1 System organization (for security audit logs - SOC2/ISO 27001 compliance)
 - 1 organization (TÜV SÜD Demo)
 - 2 users (Process Manager and Project Handler)
 - 2 workflows based on real certification standards
@@ -40,6 +41,7 @@ from app.models import (
 
 
 # Fixed UUIDs for consistent seed data across environments
+SYSTEM_ORG_ID = UUID("00000000-0000-0000-0000-000000000000")  # System org for audit logs
 ORG_ID = UUID("00000000-0000-0000-0000-000000000001")
 USER_PM_ID = UUID("00000000-0000-0000-0000-000000000002")
 USER_PH_ID = UUID("00000000-0000-0000-0000-000000000003")
@@ -109,6 +111,35 @@ def check_data_exists(session):
     """
     org = session.query(Organization).filter_by(id=ORG_ID).first()
     return org is not None
+
+
+def seed_system_organization(session):
+    """
+    Create System organization for security audit logs.
+
+    This organization is used for audit logging security events where
+    a user's organization is unknown (e.g., failed OAuth login attempts
+    for non-existent users).
+
+    Required for SOC2/ISO 27001 compliance - ensures all security events
+    are audited even when user context is unavailable.
+
+    Returns the created System organization.
+    """
+    print("🔒 Creating System organization...")
+
+    system_org = Organization(
+        id=SYSTEM_ORG_ID,
+        name="System",
+        subscription_tier="internal",
+        subscription_status="active",
+    )
+
+    session.add(system_org)
+    session.flush()  # Flush to get the ID for audit logs
+
+    print(f"   ✓ System Organization: {system_org.name} (for security audit logs)")
+    return system_org
 
 
 def seed_organization(session):
@@ -401,6 +432,9 @@ def main():
         # Seed data in transaction
         print("\n🚀 Seeding database...")
 
+        # Create System organization (for security audit logs)
+        system_org = seed_system_organization(session)
+
         # Create organization
         org = seed_organization(session)
 
@@ -422,6 +456,7 @@ def main():
         print("✅ Seed data created successfully!")
         print(f"⏱️  Execution time: {elapsed_time:.2f}s")
         print("\n📊 Summary:")
+        print(f"   • System organization: {system_org.name} (for security audit logs)")
         print(f"   • 1 organization: {org.name}")
         print(f"   • 2 users: Process Manager, Project Handler")
         print(f"   • 2 workflows:")

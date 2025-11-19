@@ -9,7 +9,7 @@ import { baseAuthConfig } from "./auth-config-base"
 import { createAuditLog, AuditAction } from "@/lib/audit"
 import { isMicrosoftOAuthConfigured, isGoogleOAuthConfigured } from "@/lib/env"
 import { getRequestContext } from "@/lib/request-context"
-import { normalizeEmail } from "@/lib/email-utils"
+import { normalizeAndValidateEmail } from "@/lib/email-utils"
 
 /**
  * Type definitions for OAuth profiles and providers
@@ -52,16 +52,25 @@ export const authOptions = {
       if (account?.provider === "microsoft-entra-id" || account?.provider === "google") {
         const oauthProfile = profile as OAuthProfile
         const rawEmail = user.email || oauthProfile?.email
-        const email = normalizeEmail(rawEmail)
 
-        if (!email) {
+        // Check if email was provided
+        if (!rawEmail) {
           console.error('[AUTH] OAuth login failed: no email provided', {
             provider: account.provider,
             hasUser: !!user,
             hasProfile: !!profile,
-            rawEmail
           })
           return "/login?error=oauth_no_email"
+        }
+
+        // Normalize and validate email format
+        const email = normalizeAndValidateEmail(rawEmail)
+        if (!email) {
+          console.error('[AUTH] OAuth login failed: invalid email format', {
+            provider: account.provider,
+            rawEmail,
+          })
+          return "/login?error=oauth_invalid_email"
         }
 
         try {
@@ -248,8 +257,8 @@ export const authOptions = {
           return null
         }
 
-        // Normalize email for consistent lookup
-        const email = normalizeEmail(credentials.email as string)
+        // Normalize and validate email for consistent lookup
+        const email = normalizeAndValidateEmail(credentials.email as string)
 
         if (!email) {
           return null
