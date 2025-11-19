@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { authOptions } from './auth'
+import { PrismaClientInitializationError } from '@prisma/client/runtime/library'
 
 // Mock dependencies
 vi.mock('@/lib/prisma', () => ({
@@ -271,10 +272,13 @@ describe('OAuth Authentication', () => {
     })
 
     it('should handle database errors gracefully', async () => {
-      // Mock database error
-      vi.mocked(prisma.user.findUnique).mockRejectedValue(
-        new Error('Prisma connection error')
-      )
+      // Mock Prisma initialization error (database connection failure)
+      // Create an instance that will pass instanceof check
+      const prismaError = Object.create(PrismaClientInitializationError.prototype)
+      prismaError.message = 'Could not connect to database'
+      prismaError.clientVersion = '5.0.0'
+
+      vi.mocked(prisma.user.findUnique).mockRejectedValue(prismaError)
 
       const signInCallback = authOptions.callbacks?.signIn
       if (!signInCallback) return
