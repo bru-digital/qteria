@@ -75,15 +75,6 @@ describe('OAuth Authentication', () => {
     },
   }
 
-  const mockSystemOrg = {
-    id: 'system-org-123',
-    name: 'System',
-    subscriptionTier: 'enterprise' as const,
-    subscriptionStatus: 'active' as const,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -219,7 +210,7 @@ describe('OAuth Authentication', () => {
     it('should reject OAuth login for non-existent user', async () => {
       // Mock database to return null (user not found)
       vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
-      vi.mocked(prisma.organization.findFirst).mockResolvedValue(mockSystemOrg)
+      // Note: No need to mock System org lookup anymore - using fixed UUID
 
       const signInCallback = authOptions.callbacks?.signIn
       if (!signInCallback) return
@@ -233,10 +224,10 @@ describe('OAuth Authentication', () => {
       // Should return error URL
       expect(result).toBe('/login?error=oauth_user_not_found')
 
-      // Should log failed login to system organization
+      // Should log failed login to system organization (using fixed UUID)
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
-          organizationId: 'system-org-123',
+          organizationId: '00000000-0000-0000-0000-000000000000', // System org UUID
           userId: null,
           action: 'login_failed',
           actionMetadata: expect.objectContaining({

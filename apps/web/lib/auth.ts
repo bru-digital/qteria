@@ -12,6 +12,15 @@ import { getRequestContext } from "@/lib/request-context"
 import { normalizeAndValidateEmail } from "@/lib/email-utils"
 
 /**
+ * System organization UUID for audit logging security events.
+ * Used when user's organization is unknown (e.g., failed OAuth login for non-existent users).
+ *
+ * This UUID matches the System organization created in seed data (apps/api/scripts/seed_data.py).
+ * Required for SOC2/ISO 27001 compliance - ensures all security events are audited.
+ */
+const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000000'
+
+/**
  * Type definitions for OAuth profiles and providers
  *
  * Note: These type assertions are needed due to version compatibility between
@@ -87,35 +96,21 @@ export const authOptions = {
 
             // Audit log: OAuth login failed (user not found)
             // Note: We don't have organizationId since user doesn't exist
-            // Log to system organization for security monitoring
+            // Log to System organization for security monitoring
             try {
-              const systemOrg = await prisma.organization.findFirst({
-                where: { name: "System" }
-              })
-
-              if (systemOrg) {
-                const { ipAddress, userAgent } = getRequestContext()
-                await createAuditLog({
-                  organizationId: systemOrg.id,
-                  userId: null,
-                  action: AuditAction.LOGIN_FAILED,
-                  actionMetadata: {
-                    email,
-                    provider: account.provider,
-                    reason: "oauth_user_not_found"
-                  },
-                  ipAddress,
-                  userAgent,
-                })
-              } else {
-                // CRITICAL: System organization not found - failed login not audited
-                // This should be created in database seed data
-                console.error('[AUTH] CRITICAL: System organization not found. Failed OAuth login not audited.', {
+              const { ipAddress, userAgent } = getRequestContext()
+              await createAuditLog({
+                organizationId: SYSTEM_ORG_ID,
+                userId: null,
+                action: AuditAction.LOGIN_FAILED,
+                actionMetadata: {
                   email,
                   provider: account.provider,
-                  reason: 'System org missing - ensure database seed creates System organization'
-                })
-              }
+                  reason: "oauth_user_not_found"
+                },
+                ipAddress,
+                userAgent,
+              })
             } catch (auditError) {
               console.error('[AUTH] Failed to create audit log for OAuth failure:', auditError)
             }
@@ -137,6 +132,8 @@ export const authOptions = {
                 }
               })
 
+              // Only set profileChanges if update succeeded
+              // This ensures audit log accuracy (profileUpdated will only be true if update actually worked)
               profileChanges.name = { from: existingUser.name, to: oauthName }
             } catch (updateError) {
               // Log error but don't fail login due to profile update issues
@@ -146,7 +143,7 @@ export const authOptions = {
                 email,
                 attemptedName: oauthName
               })
-              // Clear profileChanges since update failed
+              // profileChanges remains empty, so audit log won't claim profile was updated
               // Login will still succeed with existing user data
             }
           }
