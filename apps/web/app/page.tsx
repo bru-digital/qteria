@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
@@ -11,6 +13,14 @@ export default function Home() {
         <p className="text-lg text-gray-500 mb-8">
           Transform manual compliance checks into AI-powered assessments with evidence-based results in &lt;10 minutes.
         </p>
+        <div className="mb-8">
+          <Link
+            href="/login"
+            className="inline-block px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          >
+            Sign In
+          </Link>
+        </div>
         <div className="bg-white rounded-lg shadow-lg p-8 text-left">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">
             Key Features

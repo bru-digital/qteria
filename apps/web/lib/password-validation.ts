@@ -5,6 +5,9 @@
  * - Minimum 12 characters
  * - Mix of uppercase, lowercase, numbers, and special characters
  * - Not in common passwords list
+ *
+ * @note Currently unused - will be integrated in user registration flow (Story 006)
+ * and password reset functionality. Created now to establish security requirements.
  */
 
 /**
