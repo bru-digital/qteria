@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, FormEvent, Suspense } from "react"
+import { useState, FormEvent, Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { loginWithAudit } from "@/app/actions/auth"
@@ -14,6 +14,13 @@ function LoginForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Reset loading states on mount (handles OAuth redirect failures)
+  useEffect(() => {
+    setIsLoading(false)
+    setIsMicrosoftLoading(false)
+    setIsGoogleLoading(false)
+  }, [])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -39,7 +46,9 @@ function LoginForm() {
         setError(result.error || "Invalid email or password")
       }
     } catch (err) {
-      setError("An error occurred during login")
+      console.error("[LOGIN] Error during login:", err)
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during login"
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -82,7 +91,7 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="you@example.com"
                 disabled={isLoading}
               />
@@ -99,7 +108,7 @@ function LoginForm() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="••••••••"
                 disabled={isLoading}
               />
