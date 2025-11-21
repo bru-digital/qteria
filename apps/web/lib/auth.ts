@@ -44,6 +44,8 @@ interface OAuthProfile {
  * Tech debt: Remove type assertions when next-auth v5 stable releases.
  */
 
+import NextAuth from "next-auth"
+
 /**
  * Full Auth.js configuration for API routes (Node.js runtime).
  * Extends baseAuthConfig with credential provider that requires:
@@ -306,3 +308,13 @@ export const authOptions = {
     })
   ],
 } satisfies NextAuthConfig
+
+/**
+ * Export Auth.js handlers and helpers with full configuration.
+ * These should be used by:
+ * - Server actions (signIn, signOut)
+ * - Server components (auth)
+ *
+ * The API route at app/api/auth/[...nextauth]/route.ts handles HTTP requests.
+ */
+export const { handlers, signIn, signOut, auth } = NextAuth(authOptions)

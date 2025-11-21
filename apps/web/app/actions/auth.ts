@@ -7,7 +7,7 @@
  * to ensure SOC2/ISO 27001 compliance.
  */
 
-import { signIn, signOut } from "@/lib/auth-middleware"
+import { signIn, signOut } from "@/lib/auth"
 import { createAuditLog, AuditAction, extractRequestMetadata } from "@/lib/audit"
 import { prisma } from "@/lib/prisma"
 import { headers } from "next/headers"

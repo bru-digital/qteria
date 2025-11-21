@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth-middleware"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { LogoutButton } from "@/app/dashboard/logout-button"
 
