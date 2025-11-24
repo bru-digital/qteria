@@ -257,6 +257,7 @@ class OrganizationScopedMixin(Generic[T]):
         db: Session,
         org_id: UUID,
         record_id: UUID,
+        commit: bool = True,
     ) -> bool:
         """
         Delete a record by ID within an organization.
@@ -268,6 +269,9 @@ class OrganizationScopedMixin(Generic[T]):
             db: SQLAlchemy database session
             org_id: Organization ID to filter by
             record_id: Primary key ID of the record to delete
+            commit: Whether to commit the transaction (default True).
+                    Set to False when deleting multiple related resources
+                    atomically within a larger transaction.
 
         Returns:
             bool: True if record was deleted, False if not found
@@ -286,7 +290,8 @@ class OrganizationScopedMixin(Generic[T]):
             )
             .delete()
         )
-        db.commit()
+        if commit:
+            db.commit()
         return deleted > 0
 
 
@@ -298,6 +303,7 @@ def get_scoped_or_404(
     resource_name: str,
     user_id: Optional[UUID] = None,
     request: Optional[Request] = None,
+    audit_on_not_found: bool = True,
 ) -> T:
     """
     Get a record by ID with organization scoping, or raise 404.
@@ -313,6 +319,11 @@ def get_scoped_or_404(
         resource_name: Human-readable name for error message
         user_id: User ID for audit logging (optional)
         request: FastAPI request for audit logging (optional)
+        audit_on_not_found: Whether to perform an extra query to check if
+                           the record exists in another organization for
+                           audit logging purposes. Set to False to skip
+                           this check and reduce 404 response latency.
+                           Default is True for SOC2 compliance.
 
     Returns:
         T: The record if found
@@ -345,24 +356,26 @@ def get_scoped_or_404(
     )
 
     if record is None:
-        # Check if record exists in different org (for audit logging)
-        exists_elsewhere = (
-            db.query(model_class)
-            .filter(model_class.id == record_id)
-            .first()
-        )
-
-        if exists_elsewhere and user_id:
-            # Log multi-tenancy violation attempt
-            AuditService.log_multi_tenancy_violation(
-                db=db,
-                user_id=user_id,
-                user_organization_id=org_id,
-                attempted_organization_id=exists_elsewhere.organization_id,
-                resource_type=resource_name.lower(),
-                resource_id=record_id,
-                request=request,
+        # Optionally check if record exists in different org (for audit logging)
+        # This adds latency to 404 responses but is useful for SOC2 compliance
+        if audit_on_not_found and user_id:
+            exists_elsewhere = (
+                db.query(model_class)
+                .filter(model_class.id == record_id)
+                .first()
             )
+
+            if exists_elsewhere:
+                # Log multi-tenancy violation attempt
+                AuditService.log_multi_tenancy_violation(
+                    db=db,
+                    user_id=user_id,
+                    user_organization_id=org_id,
+                    attempted_organization_id=exists_elsewhere.organization_id,
+                    resource_type=resource_name.lower(),
+                    resource_id=record_id,
+                    request=request,
+                )
 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

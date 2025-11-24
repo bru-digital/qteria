@@ -31,12 +31,6 @@ from app.schemas.organization import (
     OrganizationResponse,
 )
 from app.services.audit import AuditService
-from app.middleware.multi_tenant import (
-    OrganizationContext,
-    get_organization_context,
-    validate_organization_access,
-    OrganizationScoped,
-)
 
 router = APIRouter()
 
@@ -96,12 +90,10 @@ def create_organization(
 )
 def list_organizations(
     current_user: AuthenticatedUser,
-    skip: int = 0,
-    limit: int = 100,
     db: Session = Depends(get_db),
 ):
     """
-    List organizations with pagination.
+    List organizations.
 
     **Required Role**: Any authenticated user
 
@@ -111,8 +103,6 @@ def list_organizations(
 
     Args:
         current_user: Authenticated user
-        skip: Number of records to skip (offset)
-        limit: Maximum number of records to return
         db: Database session
 
     Returns:
