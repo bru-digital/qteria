@@ -9,6 +9,9 @@ This module tests:
 - Authentication failure scenarios
 - Authorization failure scenarios
 
+These are UNIT tests that mock the AuditService to avoid database dependencies.
+For integration tests with real database, see test_rbac_integration.py.
+
 Coverage target: 100% for security-critical code
 """
 import pytest
@@ -34,6 +37,10 @@ from app.core.auth import (
 )
 from app.core.config import settings
 from tests.conftest import create_test_token, TEST_ORG_A_ID, TEST_ORG_B_ID
+
+
+# Apply mock_audit_service fixture to all tests in this module
+pytestmark = pytest.mark.usefixtures("mock_audit_service")
 
 
 class TestUserRoleEnum:

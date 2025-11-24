@@ -3,10 +3,11 @@ Organization CRUD endpoints.
 
 All organization management endpoints require admin role.
 Multi-tenancy is enforced: users can only access their own organization.
+Audit logging enabled for SOC2/ISO 27001 compliance.
 """
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
@@ -24,6 +25,7 @@ from app.schemas.organization import (
     OrganizationUpdate,
     OrganizationResponse,
 )
+from app.services.audit import AuditService
 
 router = APIRouter()
 
@@ -125,6 +127,7 @@ def list_organizations(
 def get_organization(
     organization_id: UUID,
     current_user: AuthenticatedUser,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -137,6 +140,7 @@ def get_organization(
     Args:
         organization_id: Organization UUID
         current_user: Authenticated user
+        request: FastAPI request for audit logging
         db: Database session
 
     Returns:
@@ -149,6 +153,16 @@ def get_organization(
     """
     # Multi-tenancy: non-admins can only access their own organization
     if current_user.role != UserRole.ADMIN and organization_id != current_user.organization_id:
+        # Log multi-tenancy violation attempt
+        AuditService.log_multi_tenancy_violation(
+            db=db,
+            user_id=current_user.id,
+            user_organization_id=current_user.organization_id,
+            attempted_organization_id=organization_id,
+            resource_type="organization",
+            resource_id=organization_id,
+            request=request,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
@@ -178,6 +192,7 @@ def update_organization(
     organization_id: UUID,
     organization_update: OrganizationUpdate,
     current_user: AdminOnly,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -191,6 +206,7 @@ def update_organization(
         organization_id: Organization UUID
         organization_update: Fields to update
         current_user: Authenticated admin user
+        request: FastAPI request for audit logging
         db: Database session
 
     Returns:
@@ -203,6 +219,16 @@ def update_organization(
     """
     # Multi-tenancy: admins can only update their own organization
     if organization_id != current_user.organization_id:
+        # Log multi-tenancy violation attempt
+        AuditService.log_multi_tenancy_violation(
+            db=db,
+            user_id=current_user.id,
+            user_organization_id=current_user.organization_id,
+            attempted_organization_id=organization_id,
+            resource_type="organization",
+            resource_id=organization_id,
+            request=request,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
@@ -227,6 +253,17 @@ def update_organization(
     db.commit()
     db.refresh(organization)
 
+    # Log successful organization update (sensitive operation)
+    AuditService.log_access_granted(
+        db=db,
+        user_id=current_user.id,
+        organization_id=current_user.organization_id,
+        endpoint=str(request.url.path),
+        resource_type="organization",
+        resource_id=organization_id,
+        request=request,
+    )
+
     return organization
 
 
@@ -239,6 +276,7 @@ def update_organization(
 def delete_organization(
     organization_id: UUID,
     current_user: AdminOnly,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -254,6 +292,7 @@ def delete_organization(
     Args:
         organization_id: Organization UUID
         current_user: Authenticated admin user
+        request: FastAPI request for audit logging
         db: Database session
 
     Raises:
@@ -263,6 +302,16 @@ def delete_organization(
     """
     # Multi-tenancy: admins can only delete their own organization
     if organization_id != current_user.organization_id:
+        # Log multi-tenancy violation attempt
+        AuditService.log_multi_tenancy_violation(
+            db=db,
+            user_id=current_user.id,
+            user_organization_id=current_user.organization_id,
+            attempted_organization_id=organization_id,
+            resource_type="organization",
+            resource_id=organization_id,
+            request=request,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
@@ -278,6 +327,21 @@ def delete_organization(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Organization with ID {organization_id} not found",
         )
+
+    # Log organization deletion (critical operation - log before delete)
+    AuditService.log_event(
+        db=db,
+        action="organization.deleted",
+        organization_id=current_user.organization_id,
+        user_id=current_user.id,
+        resource_type="organization",
+        resource_id=organization_id,
+        metadata={
+            "organization_name": organization.name,
+            "deleted_by_email": current_user.email,
+        },
+        request=request,
+    )
 
     db.delete(organization)
     db.commit()

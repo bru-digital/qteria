@@ -5,6 +5,7 @@ This module provides:
 - JWT token validation
 - User extraction from tokens
 - Role-based access control (RBAC) dependencies
+- Audit logging for auth/authz events (SOC2 compliance)
 
 Usage:
     from app.core.auth import get_current_user, require_role
@@ -25,14 +26,20 @@ Usage:
 from datetime import datetime, timezone
 from typing import Annotated, Callable, Optional
 from uuid import UUID
+import logging
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.dependencies import get_db
 from app.models.enums import UserRole, Permission, has_permission
+from app.services.audit import AuditService, AuditEventType
+
+logger = logging.getLogger(__name__)
 
 
 # HTTP Bearer security scheme
@@ -94,6 +101,8 @@ class TokenPayload(BaseModel):
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    request: Request,
+    db: Session = Depends(get_db),
 ) -> CurrentUser:
     """
     Extract and validate current user from JWT token.
@@ -104,9 +113,12 @@ async def get_current_user(
     3. Checks token expiration
     4. Extracts user information
     5. Validates the user role
+    6. Logs authentication events for audit trail (SOC2)
 
     Args:
         credentials: HTTP Bearer credentials containing JWT token
+        request: FastAPI request for audit logging
+        db: Database session for audit logging
 
     Returns:
         CurrentUser: Validated user information
@@ -115,6 +127,9 @@ async def get_current_user(
         HTTPException: 401 if token is invalid, expired, or malformed
     """
     token = credentials.credentials
+
+    # Get token snippet for audit logging (first 8 + last 8 chars)
+    token_snippet = f"{token[:8]}...{token[-8:]}" if len(token) > 16 else "***"
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -142,12 +157,24 @@ async def get_current_user(
 
         # Validate required fields
         if not all([user_id, email, role, organization_id]):
+            AuditService.log_token_invalid(
+                db=db,
+                reason="missing_required_fields",
+                request=request,
+                token_snippet=token_snippet,
+            )
             raise credentials_exception
 
         # Validate role
         try:
             validated_role = UserRole(role)
         except ValueError:
+            AuditService.log_token_invalid(
+                db=db,
+                reason=f"invalid_role:{role}",
+                request=request,
+                token_snippet=token_snippet,
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={
@@ -162,6 +189,12 @@ async def get_current_user(
         if exp is not None:
             expiration = datetime.fromtimestamp(exp, tz=timezone.utc)
             if datetime.now(timezone.utc) > expiration:
+                AuditService.log_token_expired(
+                    db=db,
+                    user_id=UUID(user_id) if user_id else None,
+                    organization_id=UUID(organization_id) if organization_id else None,
+                    request=request,
+                )
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail={
@@ -172,7 +205,7 @@ async def get_current_user(
                 )
 
         # Create current user
-        return CurrentUser(
+        current_user = CurrentUser(
             id=UUID(user_id),
             email=email,
             role=validated_role,
@@ -180,7 +213,26 @@ async def get_current_user(
             name=name,
         )
 
+        # Log successful authentication (only on first request in session)
+        # Note: We log sparingly to avoid bloat - consider caching recent auth
+        logger.debug(
+            "auth_success",
+            extra={
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "role": role,
+            }
+        )
+
+        return current_user
+
     except JWTError as e:
+        AuditService.log_token_invalid(
+            db=db,
+            reason=f"jwt_error:{str(e)}",
+            request=request,
+            token_snippet=token_snippet,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
@@ -191,6 +243,12 @@ async def get_current_user(
         )
     except ValueError as e:
         # UUID parsing errors
+        AuditService.log_token_invalid(
+            db=db,
+            reason=f"invalid_format:{str(e)}",
+            request=request,
+            token_snippet=token_snippet,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
@@ -207,6 +265,7 @@ def require_role(*allowed_roles: UserRole) -> Callable:
 
     This is a factory function that returns a FastAPI dependency.
     Use it to protect endpoints that require specific roles.
+    Logs authorization failures to audit trail for SOC2 compliance.
 
     Args:
         *allowed_roles: One or more UserRole values that are allowed
@@ -232,6 +291,8 @@ def require_role(*allowed_roles: UserRole) -> Callable:
 
     async def role_checker(
         current_user: Annotated[CurrentUser, Depends(get_current_user)],
+        request: Request,
+        db: Session = Depends(get_db),
     ) -> CurrentUser:
         """
         Validate that current user has one of the required roles.
@@ -245,6 +306,18 @@ def require_role(*allowed_roles: UserRole) -> Callable:
         # Check if user's role is in allowed roles
         if current_user.role not in allowed_roles:
             allowed_role_names = [role.value for role in allowed_roles]
+
+            # Log authorization failure
+            AuditService.log_authz_denied(
+                db=db,
+                user_id=current_user.id,
+                organization_id=current_user.organization_id,
+                required_roles=allowed_role_names,
+                actual_role=current_user.role.value,
+                endpoint=str(request.url.path),
+                request=request,
+            )
+
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
@@ -265,6 +338,7 @@ def require_permission(*required_permissions: Permission) -> Callable:
     Create a dependency that requires specific permission(s) for access.
 
     This provides more granular access control than role-based checks.
+    Logs authorization failures to audit trail for SOC2 compliance.
 
     Args:
         *required_permissions: One or more Permission values required
@@ -290,6 +364,8 @@ def require_permission(*required_permissions: Permission) -> Callable:
 
     async def permission_checker(
         current_user: Annotated[CurrentUser, Depends(get_current_user)],
+        request: Request,
+        db: Session = Depends(get_db),
     ) -> CurrentUser:
         """Validate that current user has all required permissions."""
         missing_permissions = []
@@ -299,6 +375,17 @@ def require_permission(*required_permissions: Permission) -> Callable:
                 missing_permissions.append(permission.value)
 
         if missing_permissions:
+            # Log permission denial
+            AuditService.log_permission_denied(
+                db=db,
+                user_id=current_user.id,
+                organization_id=current_user.organization_id,
+                required_permissions=missing_permissions,
+                actual_role=current_user.role.value,
+                endpoint=str(request.url.path),
+                request=request,
+            )
+
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={

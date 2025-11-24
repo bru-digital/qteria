@@ -4,12 +4,69 @@
  * This module provides TypeScript types and utilities for role-based
  * UI rendering and permission checks.
  *
+ * ============================================================================
  * IMPORTANT: Frontend RBAC is for UX only - always enforce on backend!
+ * ============================================================================
+ *
+ * ## Frontend/Backend Permission Sync
+ *
+ * The frontend RBAC system mirrors the backend permissions defined in:
+ * - **Backend source of truth**: `apps/api/app/models/enums.py`
+ * - **Frontend mirror**: This file (`apps/web/lib/rbac.ts`)
+ *
+ * ### Why Two Files?
+ *
+ * 1. **Backend (Python)**: Enforces security - the actual gate that blocks
+ *    unauthorized requests. If backend denies, the request fails.
+ *
+ * 2. **Frontend (TypeScript)**: Provides UX hints - hides buttons/forms that
+ *    the user can't use anyway. This is optional optimization.
+ *
+ * ### Keeping Them in Sync
+ *
+ * When modifying roles or permissions:
+ *
+ * 1. **Always update backend first** (`apps/api/app/models/enums.py`)
+ * 2. **Then update this file** to match
+ * 3. **Run tests** to verify sync:
+ *    - `npm run test` (frontend rbac.test.ts)
+ *    - `cd apps/api && pytest tests/test_rbac.py` (backend)
+ *
+ * ### What to Sync
+ *
+ * Keep these in sync between backend and frontend:
+ * - `UserRole` enum values
+ * - `Permission` enum values
+ * - `ROLE_PERMISSIONS` mapping (which roles have which permissions)
+ *
+ * ### What NOT to Sync
+ *
+ * These are frontend-only concerns:
+ * - `ROLE_DISPLAY` (UI labels, colors)
+ * - Helper functions like `getRoleTitle`, `getRoleColor`
+ * - React hooks and components
+ *
+ * ### Alternative Approaches (Future Consideration)
+ *
+ * If sync becomes burdensome, consider:
+ * - Code generation: Generate TS from Python at build time
+ * - API endpoint: Fetch permissions from `/v1/permissions` at app startup
+ * - Shared schema: Use JSON Schema or similar to define once
+ *
+ * For now, manual sync is acceptable because:
+ * - Permissions change rarely (quarterly at most)
+ * - Frontend is UX-only (backend enforces actual security)
+ * - Test coverage catches drift
+ *
+ * @see apps/api/app/models/enums.py - Backend source of truth
+ * @see apps/api/app/core/auth.py - Backend enforcement
+ * @see docs/rbac-architecture.md - Full RBAC documentation (if exists)
  */
 
 /**
  * User roles matching backend UserRole enum.
- * These values must match apps/api/app/models/enums.py
+ *
+ * @sync apps/api/app/models/enums.py:UserRole
  */
 export const UserRole = {
   PROCESS_MANAGER: 'process_manager',
@@ -22,6 +79,8 @@ export type UserRoleType = (typeof UserRole)[keyof typeof UserRole]
 /**
  * Permission types for fine-grained access control.
  * Format: resource:action
+ *
+ * @sync apps/api/app/models/enums.py:Permission
  */
 export const Permission = {
   // Workflow permissions
@@ -59,7 +118,12 @@ export type PermissionType = (typeof Permission)[keyof typeof Permission]
 
 /**
  * Role-to-Permission mapping.
- * Must stay in sync with backend ROLE_PERMISSIONS.
+ *
+ * @sync apps/api/app/models/enums.py:ROLE_PERMISSIONS
+ * @description Must stay in sync with backend. When updating:
+ *   1. Update backend first (enums.py)
+ *   2. Copy changes here
+ *   3. Run both test suites to verify
  */
 export const ROLE_PERMISSIONS: Record<UserRoleType, Set<PermissionType>> = {
   [UserRole.PROCESS_MANAGER]: new Set([

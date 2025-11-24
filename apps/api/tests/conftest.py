@@ -5,7 +5,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from typing import Generator
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from fastapi.testclient import TestClient
 from jose import jwt
@@ -13,6 +13,41 @@ from jose import jwt
 from app.main import app
 from app.core.config import settings
 from app.models.enums import UserRole
+from app.services.audit import AuditService
+
+
+@pytest.fixture
+def mock_audit_service():
+    """
+    Mock AuditService for unit tests to avoid database dependencies.
+
+    This allows unit tests to run without requiring seeded database data
+    while still testing the core RBAC logic.
+
+    NOTE: This fixture is NOT autouse. Tests that need mocked audit service
+    should explicitly request it, or use the unit_test_mocks fixture.
+    Integration tests should NOT use this fixture.
+    """
+    with patch.object(AuditService, 'log_event', return_value=MagicMock()) as mock_event, \
+         patch.object(AuditService, 'log_auth_success', return_value=MagicMock()) as mock_auth_success, \
+         patch.object(AuditService, 'log_auth_failure', return_value=MagicMock()) as mock_auth_failure, \
+         patch.object(AuditService, 'log_token_invalid', return_value=MagicMock()) as mock_token_invalid, \
+         patch.object(AuditService, 'log_token_expired', return_value=MagicMock()) as mock_token_expired, \
+         patch.object(AuditService, 'log_authz_denied', return_value=MagicMock()) as mock_authz_denied, \
+         patch.object(AuditService, 'log_multi_tenancy_violation', return_value=MagicMock()) as mock_mt_violation, \
+         patch.object(AuditService, 'log_permission_denied', return_value=MagicMock()) as mock_perm_denied, \
+         patch.object(AuditService, 'log_access_granted', return_value=MagicMock()) as mock_access_granted:
+        yield {
+            'log_event': mock_event,
+            'log_auth_success': mock_auth_success,
+            'log_auth_failure': mock_auth_failure,
+            'log_token_invalid': mock_token_invalid,
+            'log_token_expired': mock_token_expired,
+            'log_authz_denied': mock_authz_denied,
+            'log_multi_tenancy_violation': mock_mt_violation,
+            'log_permission_denied': mock_perm_denied,
+            'log_access_granted': mock_access_granted,
+        }
 
 
 @pytest.fixture

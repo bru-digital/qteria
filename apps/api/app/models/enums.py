@@ -2,9 +2,43 @@
 Enumeration types for Qteria application.
 
 This module defines role-based access control (RBAC) enums and permission mappings.
+
+============================================================================
+THIS IS THE SOURCE OF TRUTH FOR RBAC DEFINITIONS
+============================================================================
+
+Frontend/Backend Permission Sync
+--------------------------------
+
+The frontend mirrors these definitions for UX purposes. When modifying:
+
+1. Update this file FIRST (it's the authoritative source)
+2. Update frontend mirror: apps/web/lib/rbac.ts
+3. Run tests to verify sync:
+   - Backend: pytest tests/test_rbac.py
+   - Frontend: npm run test (runs rbac.test.ts)
+
+What frontend mirrors:
+- UserRole enum values
+- Permission enum values
+- ROLE_PERMISSIONS mapping
+
+What frontend does NOT mirror:
+- ROLE_DESCRIPTIONS (backend-only documentation)
+- has_permission() implementation (frontend has its own)
+- get_role_permissions() implementation (frontend has its own)
+
+Security Note
+-------------
+Frontend RBAC is UX-only (hiding buttons users can't use).
+Backend RBAC in auth.py is the actual security enforcement.
+Never trust frontend-only checks for authorization.
+
+@see apps/web/lib/rbac.ts - Frontend mirror (TypeScript)
+@see apps/api/app/core/auth.py - Backend enforcement
 """
 from enum import Enum
-from typing import List, Set
+from typing import Set
 
 
 class UserRole(str, Enum):
@@ -15,6 +49,8 @@ class UserRole(str, Enum):
         - PROCESS_MANAGER: Can create/edit workflows, view assessments
         - PROJECT_HANDLER: Can run assessments, upload documents
         - ADMIN: Full access to all features within their organization
+
+    @sync apps/web/lib/rbac.ts:UserRole
     """
     PROCESS_MANAGER = "process_manager"
     PROJECT_HANDLER = "project_handler"
@@ -26,6 +62,8 @@ class Permission(str, Enum):
     Fine-grained permissions for RBAC.
 
     Format: resource:action
+
+    @sync apps/web/lib/rbac.ts:Permission
     """
     # Workflow permissions
     WORKFLOWS_CREATE = "workflows:create"
@@ -60,6 +98,7 @@ class Permission(str, Enum):
 
 # Role-to-Permission mapping
 # Defines what each role can do in the system
+# @sync apps/web/lib/rbac.ts:ROLE_PERMISSIONS
 ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
     UserRole.PROCESS_MANAGER: {
         # Workflow management (full CRUD)
