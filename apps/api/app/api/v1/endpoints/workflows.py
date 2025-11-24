@@ -17,6 +17,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 
 from app.core.auth import ProcessManagerOrAdmin, AuthenticatedUser, CurrentUser
 from app.core.dependencies import get_db
@@ -153,13 +154,7 @@ async def create_workflow(
 
         db.flush()
 
-        # 4. Commit transaction
-        db.commit()
-
-        # 5. Refresh to get all relationships
-        db.refresh(workflow)
-
-        # 6. Log workflow creation (audit trail)
+        # 4. Log workflow creation (audit trail) - BEFORE commit for atomicity
         AuditService.log_workflow_created(
             db=db,
             user_id=current_user.id,
@@ -168,6 +163,13 @@ async def create_workflow(
             workflow_name=workflow.name,
         )
 
+        # 5. Commit transaction (includes audit log)
+        db.commit()
+
+        # 6. Refresh to get all relationships
+        db.refresh(workflow)
+
+        # 7. Log success
         logger.info(
             "workflow_created",
             extra={
@@ -179,7 +181,7 @@ async def create_workflow(
             },
         )
 
-        # 7. Return workflow response
+        # 8. Return workflow response
         return WorkflowResponse(
             id=workflow.id,
             name=workflow.name,
@@ -276,11 +278,24 @@ async def list_workflows(
     Returns:
         List[WorkflowListItem]: List of workflows with counts
     """
+    # Use subqueries for efficient counting without loading all relationships
+    buckets_count_subquery = (
+        db.query(func.count(Bucket.id))
+        .filter(Bucket.workflow_id == Workflow.id)
+        .scalar_subquery()
+    )
+
+    criteria_count_subquery = (
+        db.query(func.count(Criteria.id))
+        .filter(Criteria.workflow_id == Workflow.id)
+        .scalar_subquery()
+    )
+
     workflows = (
-        db.query(Workflow)
-        .options(
-            selectinload(Workflow.buckets),
-            selectinload(Workflow.criteria),
+        db.query(
+            Workflow,
+            buckets_count_subquery.label('buckets_count'),
+            criteria_count_subquery.label('criteria_count'),
         )
         .filter(
             Workflow.organization_id == current_user.organization_id,
@@ -292,13 +307,13 @@ async def list_workflows(
 
     return [
         WorkflowListItem(
-            id=wf.id,
-            name=wf.name,
-            description=wf.description,
-            is_active=wf.is_active,
-            created_at=wf.created_at,
-            buckets_count=len(wf.buckets),
-            criteria_count=len(wf.criteria),
+            id=wf.Workflow.id,
+            name=wf.Workflow.name,
+            description=wf.Workflow.description,
+            is_active=wf.Workflow.is_active,
+            created_at=wf.Workflow.created_at,
+            buckets_count=wf.buckets_count,
+            criteria_count=wf.criteria_count,
         )
         for wf in workflows
     ]
@@ -337,6 +352,10 @@ async def get_workflow(
     """
     workflow = (
         db.query(Workflow)
+        .options(
+            selectinload(Workflow.buckets),
+            selectinload(Workflow.criteria),
+        )
         .filter(
             Workflow.id == workflow_id,
             Workflow.organization_id == current_user.organization_id,

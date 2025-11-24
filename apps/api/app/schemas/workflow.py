@@ -11,7 +11,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class BucketCreate(BaseModel):
@@ -125,6 +125,32 @@ class WorkflowCreate(BaseModel):
         if not v.strip():
             raise ValueError("Workflow name cannot be empty or whitespace")
         return v.strip()
+
+    @model_validator(mode='after')
+    def validate_unique_bucket_names(self) -> 'WorkflowCreate':
+        """
+        Validate that bucket names are unique within the workflow (case-insensitive).
+
+        This prevents UX confusion where multiple buckets have the same name.
+        """
+        bucket_names_lower = [bucket.name.lower() for bucket in self.buckets]
+        unique_names = set(bucket_names_lower)
+
+        if len(bucket_names_lower) != len(unique_names):
+            # Find duplicates for better error message
+            seen = set()
+            duplicates = []
+            for name in bucket_names_lower:
+                if name in seen and name not in duplicates:
+                    duplicates.append(name)
+                seen.add(name)
+
+            raise ValueError(
+                f"Bucket names must be unique (case-insensitive). "
+                f"Duplicate names found: {', '.join(duplicates)}"
+            )
+
+        return self
 
     @field_validator("criteria")
     @classmethod

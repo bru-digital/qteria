@@ -323,6 +323,34 @@ class TestCreateWorkflow:
         # Empty list gets converted to None (applies to all buckets)
         assert data["criteria"][0]["applies_to_bucket_ids"] == []
 
+    def test_create_workflow_duplicate_bucket_names(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+    ):
+        """Workflow creation fails when bucket names are not unique (case-insensitive)."""
+        payload = {
+            "name": "Test Workflow",
+            "buckets": [
+                {"name": "Technical Documentation", "required": True, "order_index": 0},
+                {"name": "Test Reports", "required": True, "order_index": 1},
+                {"name": "technical documentation", "required": False, "order_index": 2},  # Duplicate (case-insensitive)
+            ],
+            "criteria": [
+                {"name": "Test Criteria", "applies_to_bucket_ids": [0]}
+            ],
+        }
+
+        response = client.post(
+            "/v1/workflows",
+            json=payload,
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 422
+        error_detail = response.json()["detail"]
+        assert any("unique" in str(err).lower() and "technical documentation" in str(err).lower() for err in error_detail)
+
 
 class TestListWorkflows:
     """Tests for GET /v1/workflows endpoint."""
