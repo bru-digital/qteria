@@ -345,13 +345,17 @@ class AuditLog(Base):
     """
     Immutable audit trail for SOC2/ISO 27001 compliance.
     Tracks all critical actions in the system.
+
+    Note: organization_id is nullable to allow logging of security events
+    (e.g., invalid token attempts) before organization context is known.
     """
 
     __tablename__ = "audit_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Nullable to support logging auth failures before org context is known
     organization_id = Column(
-        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True
     )
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     action = Column(String(100), nullable=False)

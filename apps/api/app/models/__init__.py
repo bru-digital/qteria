@@ -14,12 +14,22 @@ from .models import (
     AssessmentResult,
     AuditLog,
 )
+from .enums import (
+    UserRole,
+    Permission,
+    ROLE_PERMISSIONS,
+    ROLE_DESCRIPTIONS,
+    has_permission,
+    get_role_permissions,
+)
 
 __all__ = [
+    # Base and session
     "Base",
     "engine",
     "SessionLocal",
     "get_db",
+    # Models
     "Organization",
     "User",
     "Workflow",
@@ -29,4 +39,11 @@ __all__ = [
     "AssessmentDocument",
     "AssessmentResult",
     "AuditLog",
+    # Enums and RBAC
+    "UserRole",
+    "Permission",
+    "ROLE_PERMISSIONS",
+    "ROLE_DESCRIPTIONS",
+    "has_permission",
+    "get_role_permissions",
 ]
