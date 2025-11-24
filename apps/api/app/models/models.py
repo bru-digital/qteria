@@ -196,11 +196,12 @@ class Criteria(Base):
         nullable=False,
     )
     name = Column(String(255), nullable=False)
-    description = Column(Text, nullable=False)
+    description = Column(Text)  # Made nullable to match API schema
     applies_to_bucket_ids = Column(
         ARRAY(UUID(as_uuid=True))
     )  # Array of bucket UUIDs
     example_text = Column(Text)
+    order_index = Column(Integer, default=0)  # Added for UI sorting
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
