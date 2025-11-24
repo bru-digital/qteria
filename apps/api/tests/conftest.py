@@ -112,19 +112,29 @@ def create_test_token(
 
 @pytest.fixture
 def admin_token() -> str:
-    """Create a JWT token for an admin user."""
-    return create_test_token(role=UserRole.ADMIN.value)
+    """Create a JWT token for an admin user (uses seeded test data)."""
+    return create_test_token(
+        user_id=TEST_USER_A_ID,
+        organization_id=TEST_ORG_A_ID,
+        role=UserRole.ADMIN.value,
+        email="admin@test-org-a.com",
+    )
 
 
 @pytest.fixture
 def process_manager_token() -> str:
-    """Create a JWT token for a process manager user."""
-    return create_test_token(role=UserRole.PROCESS_MANAGER.value)
+    """Create a JWT token for a process manager user (uses seeded test data)."""
+    return create_test_token(
+        user_id=TEST_USER_A_PM_ID,
+        organization_id=TEST_ORG_A_ID,
+        role=UserRole.PROCESS_MANAGER.value,
+        email="pm@test-org-a.com",
+    )
 
 
 @pytest.fixture
 def project_handler_token() -> str:
-    """Create a JWT token for a project handler user."""
+    """Create a JWT token for a project handler user (random UUID - doesn't need DB record)."""
     return create_test_token(role=UserRole.PROJECT_HANDLER.value)
 
 
@@ -174,10 +184,14 @@ def token_invalid_role() -> str:
 
 
 # Test organization and user IDs for multi-tenancy tests
-TEST_ORG_A_ID = str(uuid4())
-TEST_ORG_B_ID = str(uuid4())
-TEST_USER_A_ID = str(uuid4())
-TEST_USER_B_ID = str(uuid4())
+# These are FIXED UUIDs that match the seed data in scripts/seed_test_data.py
+# DO NOT change these values - they must match the seeded database records
+TEST_ORG_A_ID = "f52414ec-67f4-43d5-b25c-1552828ff06d"
+TEST_ORG_B_ID = "f171ee72-38bd-4a10-9682-a0c483ae365e"
+TEST_USER_A_ID = "236c7750-e281-46d9-95b8-209ae5106221"  # Admin User A
+TEST_USER_A_PM_ID = "bebffc00-a259-4fce-a873-371e6765811b"  # Process Manager A
+TEST_USER_B_ID = "cf1a6da7-32bf-4f00-8893-0ec2e0bbbb22"  # Admin User B
+TEST_USER_B_PM_ID = "11df2007-978f-4503-b89c-7b8eaa228859"  # Process Manager B
 
 
 @pytest.fixture
@@ -206,7 +220,8 @@ def org_b_admin_token() -> str:
 def org_a_process_manager_token() -> str:
     """Process manager token for organization A."""
     return create_test_token(
-        email="pm@org-a.com",
+        user_id=TEST_USER_A_PM_ID,
+        email="pm@test-org-a.com",
         role=UserRole.PROCESS_MANAGER.value,
         organization_id=TEST_ORG_A_ID,
     )
