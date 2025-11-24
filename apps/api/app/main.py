@@ -26,7 +26,14 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
+# Multi-tenant isolation middleware
+# Ensures organization context is properly reset after each request
+# to prevent context leakage between requests (safety net for contextvars)
+# NOTE: Added BEFORE CORS so it executes AFTER CORS validation (middleware runs in reverse)
+app.add_middleware(MultiTenantMiddleware)
+
 # Configure CORS
+# Runs first on request path to validate origins before other middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -34,11 +41,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Multi-tenant isolation middleware
-# Ensures organization context is properly reset after each request
-# to prevent context leakage between requests (safety net for contextvars)
-app.add_middleware(MultiTenantMiddleware)
 
 
 # Root endpoint
