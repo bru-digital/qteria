@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 import logging
 
 from app.core.config import settings
+from app.middleware.multi_tenant import MultiTenantMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -33,6 +34,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Multi-tenant isolation middleware
+# Ensures organization context is properly reset after each request
+# to prevent context leakage between requests (safety net for contextvars)
+app.add_middleware(MultiTenantMiddleware)
 
 
 # Root endpoint

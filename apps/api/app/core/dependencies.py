@@ -4,9 +4,13 @@ FastAPI dependencies for database sessions, authentication, and multi-tenancy.
 This module provides:
 - Database session dependency with automatic cleanup
 - Organization-scoped database queries for multi-tenant isolation
+- Type aliases for common dependency patterns
+
+Exports:
+- get_db: Database session dependency
+- DbSession: Type alias for database session dependency (Annotated[Session, Depends(get_db)])
 """
 from typing import Annotated, Generator
-from uuid import UUID
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
