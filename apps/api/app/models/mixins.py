@@ -32,13 +32,39 @@ from typing import Generic, List, Optional, Type, TypeVar
 from uuid import UUID
 
 from fastapi import HTTPException, Request, status
-from sqlalchemy import and_
+from sqlalchemy import and_, exists, select
 from sqlalchemy.orm import Session
 
 from app.services.audit import AuditService
 
 # Generic type variable for model classes
 T = TypeVar("T")
+
+
+def not_found_error(resource_name: str) -> HTTPException:
+    """
+    Create a standardized 404 Not Found HTTPException.
+
+    Centralizes the 404 response structure to ensure consistency across
+    all endpoints and reduce code duplication.
+
+    Args:
+        resource_name: Human-readable name of the resource (e.g., "Workflow", "Assessment")
+
+    Returns:
+        HTTPException: 404 error with standardized response structure
+
+    Example:
+        raise not_found_error("Workflow")
+        # Returns: {"code": "RESOURCE_NOT_FOUND", "message": "Workflow not found"}
+    """
+    return HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail={
+            "code": "RESOURCE_NOT_FOUND",
+            "message": f"{resource_name} not found",
+        },
+    )
 
 
 class OrganizationScopedMixin(Generic[T]):
@@ -180,6 +206,7 @@ class OrganizationScopedMixin(Generic[T]):
         Check if a record exists within an organization.
 
         More efficient than get_by_id_scoped when you only need to check existence.
+        Uses SQLAlchemy's exists() for optimal query performance.
 
         Args:
             db: SQLAlchemy database session
@@ -189,17 +216,13 @@ class OrganizationScopedMixin(Generic[T]):
         Returns:
             bool: True if record exists and belongs to organization
         """
-        return (
-            db.query(cls)
-            .filter(
-                and_(
-                    cls.organization_id == org_id,
-                    cls.id == record_id,
-                )
+        stmt = select(cls).where(
+            and_(
+                cls.organization_id == org_id,
+                cls.id == record_id,
             )
-            .count()
-            > 0
         )
+        return db.query(exists(stmt)).scalar() or False
 
     @classmethod
     def get_by_id_scoped_or_404(
@@ -241,13 +264,7 @@ class OrganizationScopedMixin(Generic[T]):
         record = cls.get_by_id_scoped(db, org_id, record_id)
 
         if record is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={
-                    "code": "RESOURCE_NOT_FOUND",
-                    "message": f"{resource} not found",
-                },
-            )
+            raise not_found_error(resource)
 
         return record
 
@@ -359,8 +376,9 @@ def get_scoped_or_404(
         # Optionally check if record exists in different org (for audit logging)
         # This adds latency to 404 responses but is useful for SOC2 compliance
         if audit_on_not_found and user_id:
+            # Only fetch organization_id column to minimize data transfer
             exists_elsewhere = (
-                db.query(model_class)
+                db.query(model_class.organization_id)
                 .filter(model_class.id == record_id)
                 .first()
             )
@@ -371,19 +389,13 @@ def get_scoped_or_404(
                     db=db,
                     user_id=user_id,
                     user_organization_id=org_id,
-                    attempted_organization_id=exists_elsewhere.organization_id,
+                    attempted_organization_id=exists_elsewhere[0],  # Tuple result
                     resource_type=resource_name.lower(),
                     resource_id=record_id,
                     request=request,
                 )
 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "RESOURCE_NOT_FOUND",
-                "message": f"{resource_name} not found",
-            },
-        )
+        raise not_found_error(resource_name)
 
     return record
 
