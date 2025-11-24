@@ -14,7 +14,7 @@ from typing import List
 from uuid import UUID
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
@@ -26,6 +26,8 @@ from app.schemas.workflow import (
     WorkflowCreate,
     WorkflowResponse,
     WorkflowListItem,
+    WorkflowListResponse,
+    PaginationMeta,
 )
 from app.services.audit import AuditService, AuditEventType
 
@@ -250,14 +252,18 @@ async def create_workflow(
 
 @router.get(
     "",
-    response_model=List[WorkflowListItem],
+    response_model=WorkflowListResponse,
     summary="List workflows",
     description="""
-List all workflows for the current user's organization.
+List all workflows for the current user's organization with pagination.
 
 **Authorization**: Requires authentication (all roles).
 
 **Multi-Tenancy**: Only shows workflows from user's organization.
+
+**Pagination**: Supports page and per_page parameters (default 20 per page, max 100).
+
+**Sorting**: Supports sort_by (created_at, name) and order (asc, desc) parameters.
 
 **Filtering**: Returns only active workflows by default.
     """,
@@ -266,18 +272,40 @@ async def list_workflows(
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
     is_active: bool = True,
-) -> List[WorkflowListItem]:
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+    sort_by: str = Query("created_at", pattern="^(created_at|name)$", description="Sort field"),
+    order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
+) -> WorkflowListResponse:
     """
-    List workflows for current user's organization.
+    List workflows for current user's organization with pagination.
 
     Args:
         current_user: Authenticated user
         db: Database session
         is_active: Filter by active status (default: True)
+        page: Page number (1-indexed)
+        per_page: Items per page (max 100)
+        sort_by: Sort field (created_at or name)
+        order: Sort order (asc or desc)
 
     Returns:
-        List[WorkflowListItem]: List of workflows with counts
+        WorkflowListResponse: Paginated list of workflows with metadata
     """
+    # Count total workflows for pagination metadata
+    total_count = (
+        db.query(func.count(Workflow.id))
+        .filter(
+            Workflow.organization_id == current_user.organization_id,
+            Workflow.is_active == is_active,
+        )
+        .scalar()
+    )
+
+    # Calculate pagination values
+    total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
+    offset = (page - 1) * per_page
+
     # Use subqueries for efficient counting without loading all relationships
     buckets_count_subquery = (
         db.query(func.count(Bucket.id))
@@ -291,7 +319,8 @@ async def list_workflows(
         .scalar_subquery()
     )
 
-    workflows = (
+    # Build query with sorting
+    query = (
         db.query(
             Workflow,
             buckets_count_subquery.label('buckets_count'),
@@ -301,11 +330,20 @@ async def list_workflows(
             Workflow.organization_id == current_user.organization_id,
             Workflow.is_active == is_active,
         )
-        .order_by(Workflow.created_at.desc())
-        .all()
     )
 
-    return [
+    # Apply sorting
+    sort_column = getattr(Workflow, sort_by)
+    if order == "desc":
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+
+    # Apply pagination
+    workflows = query.offset(offset).limit(per_page).all()
+
+    # Build response
+    workflow_items = [
         WorkflowListItem(
             id=wf.Workflow.id,
             name=wf.Workflow.name,
@@ -317,6 +355,16 @@ async def list_workflows(
         )
         for wf in workflows
     ]
+
+    return WorkflowListResponse(
+        workflows=workflow_items,
+        pagination=PaginationMeta(
+            total_count=total_count,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+        )
+    )
 
 
 @router.get(

@@ -241,3 +241,50 @@ class WorkflowListItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PaginationMeta(BaseModel):
+    """
+    Schema for pagination metadata in list responses.
+
+    Provides information about the current page, total items, and total pages.
+    """
+
+    total_count: int = Field(
+        ...,
+        ge=0,
+        description="Total number of items across all pages"
+    )
+    page: int = Field(
+        ...,
+        ge=1,
+        description="Current page number (1-indexed)"
+    )
+    per_page: int = Field(
+        ...,
+        ge=1,
+        le=100,
+        description="Number of items per page (max 100)"
+    )
+    total_pages: int = Field(
+        ...,
+        ge=0,
+        description="Total number of pages"
+    )
+
+
+class WorkflowListResponse(BaseModel):
+    """
+    Schema for paginated workflow list responses.
+
+    Includes both workflow data and pagination metadata for client-side pagination UI.
+    """
+
+    workflows: List[WorkflowListItem] = Field(
+        ...,
+        description="List of workflows for the current page"
+    )
+    pagination: PaginationMeta = Field(
+        ...,
+        description="Pagination metadata"
+    )
