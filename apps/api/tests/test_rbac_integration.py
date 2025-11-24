@@ -205,8 +205,12 @@ class TestRBACIntegration:
         assert len(data) == 1
         assert data[0]["id"] == str(org_a.id)
 
-    def test_admin_can_view_other_organization(self, client, test_orgs, test_users):
-        """Admin CAN view other organizations (read access for system overview)."""
+    def test_admin_cannot_view_other_organization(self, client, test_orgs, test_users):
+        """Admin CANNOT view other organizations (org-scoped in MVP).
+
+        Security Note: Returns 404 (not 403) to prevent info leakage.
+        Admins are organization-scoped - no super-admin access in MVP.
+        """
         org_a, org_b = test_orgs
         admin = test_users["org_a_admin"]
 
@@ -217,20 +221,22 @@ class TestRBACIntegration:
             organization_id=org_a.id,
         )
 
-        # Admin can read other orgs (for system overview purposes)
+        # Admin cannot read other orgs (org-scoped in MVP)
         response = client.get(
             f"/v1/organizations/{org_b.id}",
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        # Admins have read access to all organizations
-        assert response.status_code == 200
+        # Security: 404 (not 403) to prevent info leakage
+        assert response.status_code == 404
         data = response.json()
-        assert data["id"] == str(org_b.id)
-        assert data["name"] == TEST_ORG_B_NAME
+        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
 
     def test_non_admin_cannot_access_other_organization(self, client, test_orgs, test_users, db_session):
-        """Non-admin users cannot access another organization's details."""
+        """Non-admin users cannot access another organization's details.
+
+        Security Note: Returns 404 (not 403) to prevent info leakage.
+        """
         org_a, org_b = test_orgs
         pm = test_users["org_a_process_manager"]
 
@@ -247,9 +253,10 @@ class TestRBACIntegration:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        assert response.status_code == 403
+        # Security: 404 (not 403) to prevent info leakage
+        assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "ACCESS_DENIED"
+        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
 
         # Verify audit log was created for multi-tenancy violation
         audit_logs = (
@@ -268,7 +275,10 @@ class TestRBACIntegration:
         assert latest_log.resource_id == org_b.id
 
     def test_admin_cannot_update_other_organization(self, client, test_orgs, test_users, db_session):
-        """Admin cannot update another organization (multi-tenancy)."""
+        """Admin cannot update another organization (multi-tenancy).
+
+        Security Note: Returns 404 (not 403) to prevent info leakage.
+        """
         org_a, org_b = test_orgs
         admin = test_users["org_a_admin"]
 
@@ -285,7 +295,8 @@ class TestRBACIntegration:
             json={"name": "Hacked Org"},
         )
 
-        assert response.status_code == 403
+        # Security: 404 (not 403) to prevent info leakage
+        assert response.status_code == 404
 
         # Verify org B was not modified
         db_session.refresh(org_b)
@@ -533,7 +544,8 @@ class TestMultiTenancyIsolation:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        assert response.status_code == 403
+        # Security: 404 (not 403) to prevent info leakage
+        assert response.status_code == 404
 
         # Verify violation was logged
         violation_log = (

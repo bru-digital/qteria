@@ -4,6 +4,11 @@ Organization CRUD endpoints.
 All organization management endpoints require admin role.
 Multi-tenancy is enforced: users can only access their own organization.
 Audit logging enabled for SOC2/ISO 27001 compliance.
+
+Security Notes:
+- Non-admin users can only see/access their own organization
+- Admin users are also organization-scoped (no super-admin in MVP)
+- Returns 404 (not 403) when accessing other org's data to prevent info leakage
 """
 from typing import List
 from uuid import UUID
@@ -26,6 +31,12 @@ from app.schemas.organization import (
     OrganizationResponse,
 )
 from app.services.audit import AuditService
+from app.middleware.multi_tenant import (
+    OrganizationContext,
+    get_organization_context,
+    validate_organization_access,
+    OrganizationScoped,
+)
 
 router = APIRouter()
 
@@ -81,7 +92,7 @@ def create_organization(
     "/organizations",
     response_model=List[OrganizationResponse],
     tags=["Organizations"],
-    summary="List organizations (Admin: all, Others: own only)",
+    summary="List organizations (own organization only)",
 )
 def list_organizations(
     current_user: AuthenticatedUser,
@@ -94,8 +105,9 @@ def list_organizations(
 
     **Required Role**: Any authenticated user
 
-    - **Admin**: Can see all organizations
-    - **Other roles**: Can only see their own organization
+    Multi-tenancy enforced: ALL users (including admins) can only see
+    their own organization. This follows the principle that admins are
+    organization-scoped in MVP (no super-admin access to all orgs).
 
     Args:
         current_user: Authenticated user
@@ -104,17 +116,16 @@ def list_organizations(
         db: Database session
 
     Returns:
-        List[OrganizationResponse]: List of organizations
+        List[OrganizationResponse]: List containing user's organization
     """
-    # Multi-tenancy: non-admins can only see their own organization
-    if current_user.role == UserRole.ADMIN:
-        organizations = db.query(Organization).offset(skip).limit(limit).all()
-    else:
-        organizations = (
-            db.query(Organization)
-            .filter(Organization.id == current_user.organization_id)
-            .all()
-        )
+    # Multi-tenancy: ALL users (including admins) can only see their own organization
+    # Note: Changed from previous behavior where admins could see all orgs
+    # This follows the plan: "Admin from org A cannot see org B's data"
+    organizations = (
+        db.query(Organization)
+        .filter(Organization.id == current_user.organization_id)
+        .all()
+    )
     return organizations
 
 
@@ -135,7 +146,8 @@ def get_organization(
 
     **Required Role**: Any authenticated user
 
-    Multi-tenancy enforced: Non-admin users can only access their own organization.
+    Multi-tenancy enforced: All users (including admins) can only access
+    their own organization. Returns 404 for other orgs to prevent info leakage.
 
     Args:
         organization_id: Organization UUID
@@ -148,11 +160,12 @@ def get_organization(
 
     Raises:
         HTTPException: 401 if not authenticated
-        HTTPException: 403 if trying to access another organization (non-admin)
-        HTTPException: 404 if organization not found
+        HTTPException: 404 if organization not found or belongs to other org
     """
-    # Multi-tenancy: non-admins can only access their own organization
-    if current_user.role != UserRole.ADMIN and organization_id != current_user.organization_id:
+    # Multi-tenancy: ALL users (including admins) can only access their own organization
+    # Note: Changed from previous behavior where admins could see all orgs
+    # This follows the plan: "Admin users can only see their own organization's data"
+    if organization_id != current_user.organization_id:
         # Log multi-tenancy violation attempt
         AuditService.log_multi_tenancy_violation(
             db=db,
@@ -163,11 +176,12 @@ def get_organization(
             resource_id=organization_id,
             request=request,
         )
+        # Return 404 to prevent information leakage (don't reveal org exists)
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail={
-                "code": "ACCESS_DENIED",
-                "message": "You can only access your own organization",
+                "code": "RESOURCE_NOT_FOUND",
+                "message": "Organization not found",
             },
         )
 
@@ -176,7 +190,10 @@ def get_organization(
     if not organization:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organization with ID {organization_id} not found",
+            detail={
+                "code": "RESOURCE_NOT_FOUND",
+                "message": "Organization not found",
+            },
         )
 
     return organization
@@ -201,6 +218,7 @@ def update_organization(
     **Required Role**: Admin
 
     Admins can only update their own organization (multi-tenancy enforced).
+    Returns 404 for other orgs to prevent info leakage.
 
     Args:
         organization_id: Organization UUID
@@ -214,8 +232,8 @@ def update_organization(
 
     Raises:
         HTTPException: 401 if not authenticated
-        HTTPException: 403 if not an admin or accessing another org
-        HTTPException: 404 if organization not found
+        HTTPException: 403 if not an admin
+        HTTPException: 404 if organization not found or belongs to other org
     """
     # Multi-tenancy: admins can only update their own organization
     if organization_id != current_user.organization_id:
@@ -229,11 +247,12 @@ def update_organization(
             resource_id=organization_id,
             request=request,
         )
+        # Return 404 to prevent information leakage (don't reveal org exists)
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail={
-                "code": "ACCESS_DENIED",
-                "message": "You can only update your own organization",
+                "code": "RESOURCE_NOT_FOUND",
+                "message": "Organization not found",
             },
         )
 
@@ -242,7 +261,10 @@ def update_organization(
     if not organization:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organization with ID {organization_id} not found",
+            detail={
+                "code": "RESOURCE_NOT_FOUND",
+                "message": "Organization not found",
+            },
         )
 
     # Update only provided fields
@@ -288,6 +310,7 @@ def delete_organization(
     workflows, assessments, and documents (CASCADE).
 
     Admins can only delete their own organization (multi-tenancy enforced).
+    Returns 404 for other orgs to prevent info leakage.
 
     Args:
         organization_id: Organization UUID
@@ -297,8 +320,8 @@ def delete_organization(
 
     Raises:
         HTTPException: 401 if not authenticated
-        HTTPException: 403 if not an admin or accessing another org
-        HTTPException: 404 if organization not found
+        HTTPException: 403 if not an admin
+        HTTPException: 404 if organization not found or belongs to other org
     """
     # Multi-tenancy: admins can only delete their own organization
     if organization_id != current_user.organization_id:
@@ -312,11 +335,12 @@ def delete_organization(
             resource_id=organization_id,
             request=request,
         )
+        # Return 404 to prevent information leakage (don't reveal org exists)
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail={
-                "code": "ACCESS_DENIED",
-                "message": "You can only delete your own organization",
+                "code": "RESOURCE_NOT_FOUND",
+                "message": "Organization not found",
             },
         )
 
@@ -325,7 +349,10 @@ def delete_organization(
     if not organization:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organization with ID {organization_id} not found",
+            detail={
+                "code": "RESOURCE_NOT_FOUND",
+                "message": "Organization not found",
+            },
         )
 
     # Log organization deletion (critical operation - log before delete)

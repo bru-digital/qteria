@@ -22,6 +22,11 @@ from .enums import (
     has_permission,
     get_role_permissions,
 )
+from .mixins import (
+    OrganizationScopedMixin,
+    get_scoped_or_404,
+    filter_by_organization,
+)
 
 __all__ = [
     # Base and session
@@ -46,4 +51,8 @@ __all__ = [
     "ROLE_DESCRIPTIONS",
     "has_permission",
     "get_role_permissions",
+    # Multi-tenancy mixins
+    "OrganizationScopedMixin",
+    "get_scoped_or_404",
+    "filter_by_organization",
 ]

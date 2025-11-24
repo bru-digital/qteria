@@ -299,44 +299,60 @@ class TestRoleEnforcement:
 
 
 class TestMultiTenancy:
-    """Tests for multi-tenancy enforcement."""
+    """Tests for multi-tenancy enforcement.
+
+    Security Note: Multi-tenancy violations return 404 (not 403) to prevent
+    information leakage about which organizations exist.
+    """
 
     def test_user_cannot_access_other_org_organization(
         self, client: TestClient, org_a_project_handler_token: str
     ):
-        """User cannot access another organization's data."""
+        """User cannot access another organization's data.
+
+        Returns 404 to prevent info leakage (don't reveal org exists).
+        """
         response = client.get(
             f"/v1/organizations/{TEST_ORG_B_ID}",
             headers={"Authorization": f"Bearer {org_a_project_handler_token}"},
         )
-        assert response.status_code == 403
+        # Security: 404 (not 403) to prevent info leakage
+        assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "ACCESS_DENIED"
+        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
 
     def test_admin_cannot_update_other_org(
         self, client: TestClient, org_a_admin_token: str
     ):
-        """Admin cannot update another organization."""
+        """Admin cannot update another organization.
+
+        Returns 404 to prevent info leakage (don't reveal org exists).
+        """
         response = client.patch(
             f"/v1/organizations/{TEST_ORG_B_ID}",
             headers={"Authorization": f"Bearer {org_a_admin_token}"},
             json={"name": "Hacked Org Name"},
         )
-        assert response.status_code == 403
+        # Security: 404 (not 403) to prevent info leakage
+        assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "ACCESS_DENIED"
+        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
 
     def test_admin_cannot_delete_other_org(
         self, client: TestClient, org_a_admin_token: str
     ):
-        """Admin cannot delete another organization."""
+        """Admin cannot delete another organization.
+
+        Returns 404 to prevent info leakage (don't reveal org exists).
+        """
         response = client.delete(
             f"/v1/organizations/{TEST_ORG_B_ID}",
             headers={"Authorization": f"Bearer {org_a_admin_token}"},
         )
-        assert response.status_code == 403
+        # Security: 404 (not 403) to prevent info leakage
+        assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "ACCESS_DENIED"
+        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
 
 
 class TestRequireRoleDecorator:
