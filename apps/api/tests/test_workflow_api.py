@@ -378,3 +378,143 @@ class TestGetWorkflow:
         response = client.get(f"/v1/workflows/{fake_id}")
 
         assert response.status_code == 403
+
+
+class TestMultiTenancyIsolation:
+    """Tests for multi-tenancy isolation across workflow endpoints."""
+
+    def test_create_workflow_scoped_to_organization(
+        self,
+        client: TestClient,
+        org_a_process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Created workflow is automatically scoped to user's organization."""
+        payload = {
+            "name": "Org A Workflow",
+            "description": "Test workflow for org A",
+            "buckets": [
+                {
+                    "name": "Test Bucket",
+                    "required": True,
+                    "order_index": 0,
+                }
+            ],
+            "criteria": [
+                {
+                    "name": "Test Criteria",
+                    "applies_to_bucket_ids": [0],
+                }
+            ],
+        }
+
+        response = client.post(
+            "/v1/workflows",
+            json=payload,
+            headers={"Authorization": f"Bearer {org_a_process_manager_token}"},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        # Verify workflow is scoped to organization A
+        from tests.conftest import TEST_ORG_A_ID
+        assert data["organization_id"] == TEST_ORG_A_ID
+
+    def test_list_workflows_only_shows_own_organization(
+        self,
+        client: TestClient,
+        org_a_process_manager_token: str,
+        org_b_admin_token: str,
+        mock_audit_service,
+    ):
+        """Users can only see workflows from their own organization."""
+        # Create workflow in org A
+        payload = {
+            "name": "Org A Workflow",
+            "description": "Workflow for organization A",
+            "buckets": [
+                {
+                    "name": "Test Bucket",
+                    "required": True,
+                    "order_index": 0,
+                }
+            ],
+            "criteria": [
+                {
+                    "name": "Test Criteria",
+                    "applies_to_bucket_ids": [0],
+                }
+            ],
+        }
+
+        org_a_response = client.post(
+            "/v1/workflows",
+            json=payload,
+            headers={"Authorization": f"Bearer {org_a_process_manager_token}"},
+        )
+        assert org_a_response.status_code == 201
+        org_a_workflow_id = org_a_response.json()["id"]
+
+        # List workflows from org A perspective
+        list_response_a = client.get(
+            "/v1/workflows",
+            headers={"Authorization": f"Bearer {org_a_process_manager_token}"},
+        )
+        assert list_response_a.status_code == 200
+        org_a_workflows = list_response_a.json()
+        assert len(org_a_workflows) > 0
+        assert any(wf["id"] == org_a_workflow_id for wf in org_a_workflows)
+
+        # List workflows from org B perspective - should NOT see org A's workflow
+        list_response_b = client.get(
+            "/v1/workflows",
+            headers={"Authorization": f"Bearer {org_b_admin_token}"},
+        )
+        assert list_response_b.status_code == 200
+        org_b_workflows = list_response_b.json()
+        # Org B should not see org A's workflow
+        assert not any(wf["id"] == org_a_workflow_id for wf in org_b_workflows)
+
+    def test_get_workflow_cross_org_returns_404(
+        self,
+        client: TestClient,
+        org_a_process_manager_token: str,
+        org_b_admin_token: str,
+        mock_audit_service,
+    ):
+        """Users cannot access workflows from other organizations (returns 404, not 403)."""
+        # Create workflow in org A
+        payload = {
+            "name": "Org A Confidential Workflow",
+            "description": "Should not be accessible to org B",
+            "buckets": [
+                {
+                    "name": "Confidential Bucket",
+                    "required": True,
+                    "order_index": 0,
+                }
+            ],
+            "criteria": [
+                {
+                    "name": "Confidential Criteria",
+                    "applies_to_bucket_ids": [0],
+                }
+            ],
+        }
+
+        create_response = client.post(
+            "/v1/workflows",
+            json=payload,
+            headers={"Authorization": f"Bearer {org_a_process_manager_token}"},
+        )
+        assert create_response.status_code == 201
+        org_a_workflow_id = create_response.json()["id"]
+
+        # Try to access org A's workflow from org B - should return 404 (not 403)
+        # This prevents information leakage about workflow existence
+        get_response = client.get(
+            f"/v1/workflows/{org_a_workflow_id}",
+            headers={"Authorization": f"Bearer {org_b_admin_token}"},
+        )
+        assert get_response.status_code == 404
+        assert get_response.json()["detail"]["code"] == "WORKFLOW_NOT_FOUND"

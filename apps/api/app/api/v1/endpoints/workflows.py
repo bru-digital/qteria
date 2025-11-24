@@ -15,7 +15,7 @@ from uuid import UUID
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import IntegrityError
 
 from app.core.auth import ProcessManagerOrAdmin, AuthenticatedUser, CurrentUser
@@ -134,10 +134,10 @@ async def create_workflow(
         # Map bucket indexes to actual bucket UUIDs
         bucket_index_to_id = {i: bucket.id for i, bucket in enumerate(buckets)}
 
-        for criteria_data in workflow_data.criteria:
+        for idx, criteria_data in enumerate(workflow_data.criteria):
             # Convert bucket indexes to UUIDs
             applies_to_bucket_ids = (
-                [bucket_index_to_id[idx] for idx in criteria_data.applies_to_bucket_ids]
+                [bucket_index_to_id[bucket_idx] for bucket_idx in criteria_data.applies_to_bucket_ids]
                 if criteria_data.applies_to_bucket_ids
                 else None  # None = applies to all buckets
             )
@@ -147,7 +147,7 @@ async def create_workflow(
                 name=criteria_data.name,
                 description=criteria_data.description,
                 applies_to_bucket_ids=applies_to_bucket_ids,
-                order_index=len(db.query(Criteria).filter_by(workflow_id=workflow.id).all()),
+                order_index=idx,
             )
             db.add(criteria)
 
@@ -278,6 +278,10 @@ async def list_workflows(
     """
     workflows = (
         db.query(Workflow)
+        .options(
+            selectinload(Workflow.buckets),
+            selectinload(Workflow.criteria),
+        )
         .filter(
             Workflow.organization_id == current_user.organization_id,
             Workflow.is_active == is_active,
