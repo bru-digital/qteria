@@ -14,7 +14,7 @@ from typing import List
 from uuid import UUID
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
@@ -84,7 +84,7 @@ Create a new validation workflow with nested buckets and criteria in a single tr
 ```
     """,
 )
-async def create_workflow(
+def create_workflow(
     workflow_data: WorkflowCreate,
     current_user: ProcessManagerOrAdmin,
     db: Session = Depends(get_db),
@@ -277,7 +277,7 @@ List all workflows for the current user's organization with pagination.
 **Filtering**: Returns only active workflows by default.
     """,
 )
-async def list_workflows(
+def list_workflows(
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
     is_active: bool = True,
@@ -404,9 +404,10 @@ Get detailed workflow information including all buckets and criteria.
 **Multi-Tenancy**: Returns 404 if workflow not in user's organization.
     """,
 )
-async def get_workflow(
+def get_workflow(
     workflow_id: UUID,
     current_user: AuthenticatedUser,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> WorkflowResponse:
     """
@@ -415,6 +416,7 @@ async def get_workflow(
     Args:
         workflow_id: Workflow UUID
         current_user: Authenticated user
+        request: FastAPI request for audit logging
         db: Database session
 
     Returns:
@@ -423,20 +425,40 @@ async def get_workflow(
     Raises:
         HTTPException 404: Workflow not found or not in user's organization
     """
+    # Query workflow with eager loading (first check if it exists at all)
     workflow = (
         db.query(Workflow)
         .options(
             selectinload(Workflow.buckets),
             selectinload(Workflow.criteria),
         )
-        .filter(
-            Workflow.id == workflow_id,
-            Workflow.organization_id == current_user.organization_id,
-        )
+        .filter(Workflow.id == workflow_id)
         .first()
     )
 
+    # Check if workflow exists
     if not workflow:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "WORKFLOW_NOT_FOUND",
+                "message": f"Workflow {workflow_id} not found",
+            },
+        )
+
+    # Multi-tenancy: Check if workflow belongs to user's organization
+    if workflow.organization_id != current_user.organization_id:
+        # Log multi-tenancy violation attempt
+        AuditService.log_multi_tenancy_violation(
+            db=db,
+            user_id=current_user.id,
+            user_organization_id=current_user.organization_id,
+            attempted_organization_id=workflow.organization_id,
+            resource_type="workflow",
+            resource_id=workflow_id,
+            request=request,
+        )
+        # Return 404 to prevent information leakage (don't reveal workflow exists)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
