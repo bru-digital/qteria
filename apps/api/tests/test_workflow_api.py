@@ -18,6 +18,33 @@ from app.models.enums import UserRole
 from tests.conftest import TEST_ORG_A_ID
 
 
+def create_test_workflow(client: TestClient, token: str, name: str = "Test Workflow"):
+    """
+    Helper function to create a test workflow with minimal required fields.
+
+    This reduces code duplication across tests that need to create workflows
+    for pagination, sorting, and other list endpoint tests.
+
+    Args:
+        client: FastAPI test client
+        token: Authentication token
+        name: Workflow name (default: "Test Workflow")
+
+    Returns:
+        Response from POST /v1/workflows
+    """
+    payload = {
+        "name": name,
+        "buckets": [{"name": "Test Bucket", "required": True, "order_index": 0}],
+        "criteria": [{"name": "Test Criteria", "applies_to_bucket_ids": [0]}],
+    }
+    return client.post(
+        "/v1/workflows",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+
 class TestCreateWorkflow:
     """Tests for POST /v1/workflows endpoint."""
 
@@ -390,7 +417,11 @@ class TestListWorkflows:
         client: TestClient,
         process_manager_token: str,
     ):
-        """Empty organization returns empty array with total_count=0."""
+        """Empty organization returns empty array with total_count=0.
+
+        This test specifically validates that the NULL handling in total_count
+        works correctly (scalar() returns None for COUNT(*) on empty result set).
+        """
         response = client.get(
             "/v1/workflows",
             headers={"Authorization": f"Bearer {process_manager_token}"},
@@ -398,9 +429,14 @@ class TestListWorkflows:
 
         assert response.status_code == 200
         data = response.json()
+        # If organization has no workflows, should handle gracefully
+        assert isinstance(data["pagination"]["total_count"], int)
         assert data["pagination"]["total_count"] >= 0
         assert data["pagination"]["total_pages"] >= 0
         assert len(data["workflows"]) <= data["pagination"]["per_page"]
+        # Verify has_next_page and has_prev_page are booleans
+        assert isinstance(data["pagination"]["has_next_page"], bool)
+        assert isinstance(data["pagination"]["has_prev_page"], bool)
 
     def test_list_workflows_pagination_defaults(
         self,
@@ -425,18 +461,9 @@ class TestListWorkflows:
         mock_audit_service,
     ):
         """Can customize per_page parameter."""
-        # Create 3 workflows
+        # Create 3 workflows using helper function
         for i in range(3):
-            payload = {
-                "name": f"Test Workflow {i}",
-                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
-                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
-            }
-            client.post(
-                "/v1/workflows",
-                json=payload,
-                headers={"Authorization": f"Bearer {process_manager_token}"},
-            )
+            create_test_workflow(client, process_manager_token, f"Test Workflow {i}")
 
         # Request with per_page=2
         response = client.get(
@@ -593,6 +620,32 @@ class TestListWorkflows:
         if len(workflows) >= 2:
             for i in range(len(workflows) - 1):
                 assert workflows[i]["name"].lower() <= workflows[i + 1]["name"].lower()
+
+    def test_list_workflows_sort_by_name_desc(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Can sort by name descending (reverse alphabetical)."""
+        # Create workflows with specific names using helper function
+        names = ["Alpha Workflow", "Beta Workflow", "Gamma Workflow"]
+        for name in names:
+            create_test_workflow(client, process_manager_token, name)
+
+        response = client.get(
+            "/v1/workflows?sort_by=name&order=desc",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        workflows = data["workflows"]
+
+        # Verify reverse alphabetical order
+        if len(workflows) >= 2:
+            for i in range(len(workflows) - 1):
+                assert workflows[i]["name"].lower() >= workflows[i + 1]["name"].lower()
 
     def test_list_workflows_invalid_page_zero(
         self,

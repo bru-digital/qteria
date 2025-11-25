@@ -268,6 +268,9 @@ List all workflows for the current user's organization with pagination.
 **Multi-Tenancy**: Only shows workflows from user's organization.
 
 **Pagination**: Supports page and per_page parameters (default 20 per page, max 100).
+- Requesting a page beyond total_pages returns 200 with empty workflows array
+- Check pagination.has_next_page and pagination.has_prev_page for navigation
+- Use pagination.total_pages to determine valid page range
 
 **Sorting**: Supports sort_by (created_at, name) and order (asc, desc) parameters.
 
@@ -299,6 +302,7 @@ async def list_workflows(
         WorkflowListResponse: Paginated list of workflows with metadata
     """
     # Count total workflows for pagination metadata
+    # Note: scalar() returns None if no rows match, so we default to 0
     total_count = (
         db.query(func.count(Workflow.id))
         .filter(
@@ -306,7 +310,7 @@ async def list_workflows(
             Workflow.is_active == is_active,
         )
         .scalar()
-    )
+    ) or 0
 
     # Calculate pagination values
     total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
