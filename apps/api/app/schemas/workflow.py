@@ -297,3 +297,170 @@ class WorkflowListResponse(BaseModel):
         ...,
         description="Pagination metadata"
     )
+
+
+class BucketUpdate(BaseModel):
+    """
+    Schema for updating a document bucket within a workflow.
+
+    Supports add/update/delete operations via optional ID:
+    - id=None: Create new bucket
+    - id=UUID: Update existing bucket
+    - Omit from request: Delete bucket
+    """
+
+    id: Optional[UUID] = Field(
+        default=None,
+        description="Bucket UUID (None for new buckets, UUID for existing buckets)",
+    )
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Bucket name (e.g., 'Technical Documentation')",
+        examples=["Technical Documentation", "Test Reports", "Risk Assessment"],
+    )
+    required: bool = Field(
+        default=True,
+        description="Whether documents in this bucket are required for assessment",
+    )
+    order_index: int = Field(
+        default=0, ge=0, description="Display order (0-indexed, for UI sorting)"
+    )
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        """Validate bucket name is not empty after stripping whitespace."""
+        if not v.strip():
+            raise ValueError("Bucket name cannot be empty or whitespace")
+        return v.strip()
+
+
+class CriteriaUpdate(BaseModel):
+    """
+    Schema for updating validation criteria within a workflow.
+
+    Supports add/update/delete operations via optional ID:
+    - id=None: Create new criteria
+    - id=UUID: Update existing criteria
+    - Omit from request: Delete criteria
+    """
+
+    id: Optional[UUID] = Field(
+        default=None,
+        description="Criteria UUID (None for new criteria, UUID for existing criteria)",
+    )
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="Criteria name (brief description of validation rule)",
+        examples=[
+            "All documents must be signed",
+            "Test report must include pass/fail summary",
+            "Risk matrix must be complete",
+        ],
+    )
+    description: Optional[str] = Field(
+        default=None,
+        max_length=2000,
+        description="Detailed description of validation rule for AI context",
+    )
+    applies_to_bucket_ids: List[UUID] = Field(
+        default_factory=list,
+        description="Bucket UUIDs this criteria applies to (empty = applies to all buckets)",
+        examples=[],
+    )
+    order_index: int = Field(
+        default=0, ge=0, description="Display order (0-indexed, for UI sorting)"
+    )
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        """Validate criteria name is not empty after stripping whitespace."""
+        if not v.strip():
+            raise ValueError("Criteria name cannot be empty or whitespace")
+        return v.strip()
+
+
+class WorkflowUpdate(BaseModel):
+    """
+    Schema for updating a workflow with nested buckets and criteria.
+
+    This schema supports differential updates:
+    - Update workflow metadata (name, description)
+    - Add new buckets (id=None)
+    - Update existing buckets (id=UUID)
+    - Delete buckets (omit from request)
+    - Add new criteria (id=None)
+    - Update existing criteria (id=UUID)
+    - Delete criteria (omit from request)
+
+    All changes occur in a single database transaction with rollback on error.
+
+    Journey Step 1: Process Manager refines validation workflow based on feedback.
+    """
+
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Workflow name (e.g., 'Medical Device - Class II')",
+        examples=["Medical Device - Class II", "Machinery Directive 2006/42/EC"],
+    )
+    description: Optional[str] = Field(
+        default=None,
+        max_length=2000,
+        description="Optional workflow description",
+    )
+    buckets: List[BucketUpdate] = Field(
+        ...,
+        min_length=1,
+        description="Document buckets (at least one required)",
+    )
+    criteria: List[CriteriaUpdate] = Field(
+        ...,
+        min_length=1,
+        description="Validation criteria (at least one required)",
+    )
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        """Validate workflow name is not empty after stripping whitespace."""
+        if not v.strip():
+            raise ValueError("Workflow name cannot be empty or whitespace")
+        return v.strip()
+
+    @model_validator(mode='after')
+    def validate_unique_bucket_names(self) -> 'WorkflowUpdate':
+        """
+        Validate that bucket names are unique within the workflow (case-insensitive).
+
+        This prevents UX confusion where multiple buckets have the same name.
+        """
+        bucket_names_lower = [bucket.name.lower() for bucket in self.buckets]
+        unique_names = set(bucket_names_lower)
+
+        if len(bucket_names_lower) != len(unique_names):
+            # Find duplicates for better error message
+            seen = set()
+            duplicates = []
+            for name in bucket_names_lower:
+                if name in seen and name not in duplicates:
+                    duplicates.append(name)
+                seen.add(name)
+
+            raise ValueError(
+                f"Bucket names must be unique (case-insensitive). "
+                f"Duplicate names found: {', '.join(duplicates)}"
+            )
+
+        return self
+
+    # Note: Bucket reference validation removed as per PR review #82
+    # The validator only checked references within the request payload, which incorrectly
+    # rejected valid scenarios where criteria reference existing buckets not being updated.
+    # Database-level validation (IntegrityError) handles truly invalid references.
