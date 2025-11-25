@@ -21,42 +21,49 @@ Analyze the issue to understand:
 Based on the issue content, intelligently determine which product-guidelines files are relevant. Use this mapping:
 
 **For Database/Schema Changes:**
-- `product-guidelines/07-database-schema-essentials.md`
-- `product-guidelines/07-database-schema.md`
+- `product-guidelines/07-database-schema-essentials.md` (multi-tenancy patterns, schema design)
+- `product-guidelines/07-database-schema.md` (detailed schema specifications)
 
 **For API/Backend Changes:**
-- `product-guidelines/08-api-contracts-essentials.md`
-- `product-guidelines/08-api-contracts.md`
-- `product-guidelines/04-architecture.md`
+- `product-guidelines/08-api-contracts-essentials.md` (API standards, error formats, authentication)
+- `product-guidelines/04-architecture.md` (API-first design, fail-safe patterns)
+- `product-guidelines/00-user-journey.md` (which journey step does this support?)
 
 **For Frontend/UI Changes:**
-- `product-guidelines/06-design-system.md`
-- `product-guidelines/00-user-journey.md`
+- `product-guidelines/06-design-system.md` (design tokens, components)
+- `product-guidelines/00-user-journey.md` (user journey context)
+- `product-guidelines/18-content-guidelines.md` (if copy/messaging involved)
 
 **For Testing Strategy:**
-- `product-guidelines/09-test-strategy-essentials.md`
-- `product-guidelines/09-test-strategy.md`
+- `product-guidelines/09-test-strategy-essentials.md` (coverage targets, required tests)
+- `product-guidelines/09-test-strategy.md` (detailed testing patterns)
 
 **For Authentication/Authorization/RBAC:**
-- `product-guidelines/07-database-schema-essentials.md`
-- `product-guidelines/08-api-contracts-essentials.md`
+- `product-guidelines/07-database-schema-essentials.md` (user model, roles)
+- `product-guidelines/08-api-contracts-essentials.md` (JWT structure, auth patterns)
 
 **For Deployment/Infrastructure:**
-- `product-guidelines/13-deployment-plan.md`
-- `product-guidelines/04-architecture.md`
+- `product-guidelines/13-deployment-plan.md` (deployment strategy)
+- `product-guidelines/04-architecture.md` (scaling triggers, infrastructure)
 
 **For Brand/Design:**
-- `product-guidelines/05-brand-strategy.md`
-- `product-guidelines/06-design-system.md`
+- `product-guidelines/05-brand-strategy.md` (brand positioning)
+- `product-guidelines/06-design-system.md` (visual design)
 
 **For Product Strategy/Features:**
-- `product-guidelines/00-user-journey.md`
-- `product-guidelines/01-product-strategy.md`
-- `product-guidelines/03-mission.md`
+- `product-guidelines/00-user-journey.md` (user journey steps, value delivered)
+- `product-guidelines/01-product-strategy.md` (product positioning)
+- `product-guidelines/03-mission.md` (mission alignment)
 
 **Always Read:**
+- `product-guidelines/00-user-journey.md` (to connect implementation to user value)
 - `product-guidelines/04-architecture.md` (for architectural principles)
 - `product-guidelines/09-test-strategy-essentials.md` (for test requirements)
+
+**Additional Context:**
+- If issue mentions "EPIC-03 (Workflow Management)" → Read journey Step 1
+- If issue mentions "Journey Step X" → Read that specific section
+- If issue involves data access → Read multi-tenancy patterns
 
 Read ONLY the relevant files. Do NOT read unnecessary guidelines.
 
@@ -99,10 +106,31 @@ Create a surgical, elegant implementation plan following these principles:
 
 Your plan MUST include:
 
-#### 1. Technical Approach (2-3 sentences)
+#### 1. Product Context & Guidelines (NEW - Always Include)
+Connect the implementation to the broader product vision:
+
+**User Journey Context:**
+- Which journey step(s) does this support? (e.g., Step 1: Process Manager Creates Workflow)
+- What user value does this deliver? (e.g., "Clear understanding of validation requirements")
+- Reference: `product-guidelines/00-user-journey.md` (specific lines if possible)
+
+**Relevant Product Guidelines:**
+List ONLY the guidelines you actually read and used:
+- `product-guidelines/08-api-contracts-essentials.md` - Multi-tenancy patterns (lines X-Y), Error format standards (lines A-B)
+- `product-guidelines/09-test-strategy-essentials.md` - Coverage targets (lines C-D)
+- `product-guidelines/04-architecture.md` - API-first design (lines E-F)
+
+**Key Standards to Follow:**
+Extract 2-4 specific standards from guidelines that apply to this issue:
+- Multi-tenancy: Return 404 (not 403) for other org's resources
+- Error format: Include `code`, `message`, `details`, `request_id`
+- Testing: 80% coverage for API routes, 100% for multi-tenancy
+- Performance: P95 <500ms, P99 <2s
+
+#### 2. Technical Approach (2-3 sentences)
 High-level strategy. What pattern are you using? Why is this the simplest approach?
 
-#### 2. Files to Modify (Exhaustive List)
+#### 3. Files to Modify (Exhaustive List)
 List EVERY file that will be touched with one-line reasoning:
 - `apps/api/app/models/user.py` - Add role field to User model
 - `apps/api/alembic/versions/xxx.py` - Migration for role field
@@ -119,6 +147,7 @@ List EVERY file that will be touched with one-line reasoning:
 - New/modified endpoints with method and path
 - Request/response schema changes
 - Breaking changes clearly marked
+- **Compliance:** Reference which API contract standards from guidelines this follows
 
 #### 5. Implementation Steps (Sequential)
 Numbered steps in execution order:
@@ -163,6 +192,25 @@ Numbered steps in execution order:
 
 ```markdown
 ## Implementation Plan for Issue #{issue-number}: {Title}
+
+### Product Context & Guidelines
+
+**User Journey Context:**
+- Supports Journey Step 1: Process Manager defines validation workflows
+- Value Delivered: Ensures only authorized users (Process Managers) can create/modify workflows, preventing accidental changes by Project Handlers
+- Reference: `product-guidelines/00-user-journey.md` (Step 1, lines 69-96)
+
+**Relevant Product Guidelines:**
+- `product-guidelines/08-api-contracts-essentials.md` - JWT structure (lines 422-432), Role-based access (lines 434-438)
+- `product-guidelines/09-test-strategy-essentials.md` - Multi-tenancy security requires 100% coverage (line 26)
+- `product-guidelines/04-architecture.md` - API-first design (lines 135-178)
+- `product-guidelines/07-database-schema-essentials.md` - Users table has role field
+
+**Key Standards to Follow:**
+- Authentication: JWT Bearer tokens with `{sub, org_id, email, role}` payload
+- Multi-tenancy: All queries filter by `organization_id`, 100% test coverage required
+- Error responses: Return 403 Forbidden for insufficient permissions (not 401)
+- RBAC roles: `process_manager`, `project_handler`, `admin`
 
 ### Technical Approach
 We'll add RBAC by extending the User model with a `role` enum field, updating the JWT payload to include role, and adding middleware to check permissions. This leverages SQLAlchemy enums and FastAPI dependencies—no custom framework needed.
@@ -241,5 +289,11 @@ We'll add RBAC by extending the User model with a `role` enum field, updating th
 ## Step 5: Output the Plan
 
 Provide the complete implementation plan following the structure above. Be specific, surgical, and elegant. NO backwards compatibility.
+
+**CRITICAL:** Always start with the "Product Context & Guidelines" section to connect the technical implementation to the broader product vision. This helps ensure:
+- Implementation aligns with user journey and product strategy
+- Standards from product guidelines are followed
+- Testing coverage meets requirements
+- Multi-tenancy and security patterns are applied correctly
 
 The plan should be ready to hand off to another developer (or yourself) for implementation without further clarification needed.
