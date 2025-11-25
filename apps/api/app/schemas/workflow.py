@@ -1,104 +1,298 @@
 """
 Pydantic schemas for Workflow API endpoints.
 
-These schemas define the request and response models for workflow-related operations.
-Following the API contracts defined in product-guidelines/08-api-contracts.md.
+This module defines request/response schemas for workflow creation and management.
+Supports nested bucket and criteria creation in a single transaction.
+
+Journey Step 1: Process Manager creates validation workflows with document buckets
+and validation criteria.
 """
-from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
+from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-class BucketDetail(BaseModel):
+class BucketCreate(BaseModel):
     """
-    Bucket details in workflow response.
+    Schema for creating a document bucket within a workflow.
 
-    Buckets represent document categories (e.g., "Test Reports", "Risk Assessment").
-    """
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID = Field(..., description="Unique bucket identifier")
-    name: str = Field(..., description="Bucket name (e.g., 'Technical Documentation')")
-    required: bool = Field(..., description="Whether documents in this bucket are required")
-    order_index: int = Field(..., description="Display order (0-based)")
-
-
-class CriteriaDetail(BaseModel):
-    """
-    Criteria details in workflow response.
-
-    Criteria represent validation rules that AI checks during assessment.
+    Buckets categorize documents (e.g., "Technical Documentation", "Test Reports").
     """
 
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID = Field(..., description="Unique criteria identifier")
-    name: str = Field(..., description="Criteria name (e.g., 'All documents must be signed')")
-    description: str = Field(..., description="Detailed criteria description for AI validation")
-    applies_to_bucket_ids: List[UUID] = Field(
+    name: str = Field(
         ...,
-        description="List of bucket IDs this criteria applies to"
+        min_length=1,
+        max_length=255,
+        description="Bucket name (e.g., 'Technical Documentation')",
+        examples=["Technical Documentation", "Test Reports", "Risk Assessment"],
+    )
+    required: bool = Field(
+        default=True,
+        description="Whether documents in this bucket are required for assessment",
+    )
+    order_index: int = Field(
+        default=0, ge=0, description="Display order (0-indexed, for UI sorting)"
     )
 
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        """Validate bucket name is not empty after stripping whitespace."""
+        if not v.strip():
+            raise ValueError("Bucket name cannot be empty or whitespace")
+        return v.strip()
 
-class WorkflowStats(BaseModel):
+
+class CriteriaCreate(BaseModel):
     """
-    Workflow statistics for quick overview.
-    """
+    Schema for creating validation criteria within a workflow.
 
-    bucket_count: int = Field(..., description="Number of buckets in workflow")
-    criteria_count: int = Field(..., description="Number of criteria in workflow")
-
-
-class WorkflowDetailResponse(BaseModel):
-    """
-    Complete workflow details with nested buckets and criteria.
-
-    This is the response for GET /v1/workflows/:id endpoint.
-    Journey Step 1: Users view complete workflow structure before assessment.
+    Criteria define validation rules that AI will check (e.g., "All documents must be signed").
     """
 
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID = Field(..., description="Unique workflow identifier")
-    name: str = Field(..., description="Workflow name (e.g., 'Medical Device - Class II')")
-    description: Optional[str] = Field(None, description="Workflow description")
-    organization_id: UUID = Field(..., description="Organization that owns this workflow")
-    created_by: Optional[UUID] = Field(None, description="User ID who created this workflow")
-    created_at: datetime = Field(..., description="Workflow creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
-    is_active: bool = Field(..., description="Whether workflow is active or archived")
-
-    buckets: List[BucketDetail] = Field(
+    name: str = Field(
         ...,
-        description="Document categories (sorted by order_index on client side)"
+        min_length=1,
+        max_length=500,
+        description="Criteria name (brief description of validation rule)",
+        examples=[
+            "All documents must be signed",
+            "Test report must include pass/fail summary",
+            "Risk matrix must be complete",
+        ],
     )
-    criteria: List[CriteriaDetail] = Field(
+    description: Optional[str] = Field(
+        default=None,
+        max_length=2000,
+        description="Detailed description of validation rule for AI context",
+    )
+    applies_to_bucket_ids: List[int] = Field(
+        default_factory=list,
+        description="Bucket indexes this criteria applies to (empty = applies to all buckets)",
+        examples=[[0, 1], [2], []],
+    )
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        """Validate criteria name is not empty after stripping whitespace."""
+        if not v.strip():
+            raise ValueError("Criteria name cannot be empty or whitespace")
+        return v.strip()
+
+
+class WorkflowCreate(BaseModel):
+    """
+    Schema for creating a workflow with nested buckets and criteria.
+
+    This schema supports creating the complete workflow structure in a single request:
+    - Workflow metadata (name, description)
+    - Document buckets (categories for uploaded documents)
+    - Validation criteria (rules AI will check)
+
+    Journey Step 1: Process Manager defines validation workflow in one atomic operation.
+    """
+
+    name: str = Field(
         ...,
-        description="Validation rules that AI checks"
+        min_length=1,
+        max_length=255,
+        description="Workflow name (e.g., 'Medical Device - Class II')",
+        examples=["Medical Device - Class II", "Machinery Directive 2006/42/EC"],
     )
-    stats: WorkflowStats = Field(
+    description: Optional[str] = Field(
+        default=None,
+        max_length=2000,
+        description="Optional workflow description",
+    )
+    buckets: List[BucketCreate] = Field(
         ...,
-        description="Workflow statistics"
+        min_length=1,
+        description="Document buckets (at least one required)",
     )
+    criteria: List[CriteriaCreate] = Field(
+        ...,
+        min_length=1,
+        description="Validation criteria (at least one required)",
+    )
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        """Validate workflow name is not empty after stripping whitespace."""
+        if not v.strip():
+            raise ValueError("Workflow name cannot be empty or whitespace")
+        return v.strip()
+
+    @model_validator(mode='after')
+    def validate_unique_bucket_names(self) -> 'WorkflowCreate':
+        """
+        Validate that bucket names are unique within the workflow (case-insensitive).
+
+        This prevents UX confusion where multiple buckets have the same name.
+        """
+        bucket_names_lower = [bucket.name.lower() for bucket in self.buckets]
+        unique_names = set(bucket_names_lower)
+
+        if len(bucket_names_lower) != len(unique_names):
+            # Find duplicates for better error message
+            seen = set()
+            duplicates = []
+            for name in bucket_names_lower:
+                if name in seen and name not in duplicates:
+                    duplicates.append(name)
+                seen.add(name)
+
+            raise ValueError(
+                f"Bucket names must be unique (case-insensitive). "
+                f"Duplicate names found: {', '.join(duplicates)}"
+            )
+
+        return self
+
+    @field_validator("criteria")
+    @classmethod
+    def validate_bucket_references(cls, v: List[CriteriaCreate], values) -> List[CriteriaCreate]:
+        """
+        Validate that criteria bucket references are valid indexes.
+
+        Criteria can reference buckets by index in the buckets array.
+        This validates that all referenced indexes exist.
+        """
+        # Get buckets from values (Pydantic v2 uses info.data)
+        buckets = values.data.get("buckets", [])
+        bucket_count = len(buckets) if buckets else 0
+
+        for criteria in v:
+            for bucket_index in criteria.applies_to_bucket_ids:
+                if bucket_index < 0 or bucket_index >= bucket_count:
+                    raise ValueError(
+                        f"Criteria '{criteria.name}' references invalid bucket index {bucket_index}. "
+                        f"Valid range: 0-{bucket_count - 1}"
+                    )
+
+        return v
+
+
+class BucketResponse(BaseModel):
+    """
+    Schema for bucket in API responses.
+    """
+
+    id: UUID
+    name: str
+    required: bool
+    order_index: int
+
+    class Config:
+        from_attributes = True  # Pydantic v2: enable ORM mode
+
+
+class CriteriaResponse(BaseModel):
+    """
+    Schema for criteria in API responses.
+    """
+
+    id: UUID
+    name: str
+    description: Optional[str]
+    applies_to_bucket_ids: List[UUID]  # Converted from indexes to actual UUIDs
+    order_index: int
+
+    class Config:
+        from_attributes = True
+
+
+class WorkflowResponse(BaseModel):
+    """
+    Schema for workflow in API responses.
+
+    Includes full workflow details with nested buckets and criteria.
+    """
+
+    id: UUID
+    name: str
+    description: Optional[str]
+    organization_id: UUID
+    created_by: UUID
+    is_active: bool
+    created_at: datetime
+    buckets: List[BucketResponse]
+    criteria: List[CriteriaResponse]
+
+    class Config:
+        from_attributes = True
 
 
 class WorkflowListItem(BaseModel):
     """
-    Workflow summary for list endpoint.
-
-    This is used for GET /v1/workflows endpoint (future story).
+    Schema for workflow in list responses (lighter than full response).
     """
 
-    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    name: str
+    description: Optional[str]
+    is_active: bool
+    created_at: datetime
+    buckets_count: int
+    criteria_count: int
 
-    id: UUID = Field(..., description="Unique workflow identifier")
-    name: str = Field(..., description="Workflow name")
-    description: Optional[str] = Field(None, description="Workflow description")
-    is_active: bool = Field(..., description="Whether workflow is active")
-    created_at: datetime = Field(..., description="Creation timestamp")
-    bucket_count: int = Field(0, description="Number of buckets")
-    criteria_count: int = Field(0, description="Number of criteria")
+    class Config:
+        from_attributes = True
+
+
+class PaginationMeta(BaseModel):
+    """
+    Schema for pagination metadata in list responses.
+
+    Provides information about the current page, total items, and total pages.
+    """
+
+    total_count: int = Field(
+        ...,
+        ge=0,
+        description="Total number of items across all pages"
+    )
+    page: int = Field(
+        ...,
+        ge=1,
+        description="Current page number (1-indexed)"
+    )
+    per_page: int = Field(
+        ...,
+        ge=1,
+        le=100,
+        description="Number of items per page (max 100)"
+    )
+    total_pages: int = Field(
+        ...,
+        ge=0,
+        description="Total number of pages"
+    )
+    has_next_page: bool = Field(
+        ...,
+        description="Whether there is a next page available"
+    )
+    has_prev_page: bool = Field(
+        ...,
+        description="Whether there is a previous page available"
+    )
+
+
+class WorkflowListResponse(BaseModel):
+    """
+    Schema for paginated workflow list responses.
+
+    Includes both workflow data and pagination metadata for client-side pagination UI.
+    """
+
+    workflows: List[WorkflowListItem] = Field(
+        ...,
+        description="List of workflows for the current page"
+    )
+    pagination: PaginationMeta = Field(
+        ...,
+        description="Pagination metadata"
+    )

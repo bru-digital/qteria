@@ -58,28 +58,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Prerequisites
 - Node.js 20+
 - Python 3.11+
-- Docker & Docker Compose
 - Git
+- Neon PostgreSQL account (free tier available)
+- Docker & Docker Compose (optional, only for local PostgreSQL)
+
+### Database Environment Separation
+
+**CRITICAL: Never seed test data in production database!**
+
+Create **3 separate Neon databases**:
+1. **`qteria_dev`** - Development environment (your local work)
+2. **`qteria_test`** - Test environment (for running pytest)
+3. **`qteria_prod`** - Production environment (Vercel deployment)
+
+Configure environment variables:
+```bash
+# .env (development)
+DATABASE_URL=postgresql://...neon.tech/qteria_dev
+
+# .env.test (testing)
+DATABASE_URL=postgresql://...neon.tech/qteria_test
+
+# Vercel environment variables (production)
+DATABASE_URL=postgresql://...neon.tech/qteria_prod
+```
 
 ### Quick Start
+
+**IMPORTANT: This project deploys to Vercel + Neon PostgreSQL (cloud), NOT Docker.**
+
+Docker is optional for local PostgreSQL/Redis development. In production, we use:
+- **Frontend**: Vercel (Next.js)
+- **Backend**: Railway/Render (FastAPI)
+- **Database**: Neon PostgreSQL (cloud)
+- **Redis**: Upstash Redis (cloud)
+
 ```bash
 # 1. Clone and setup environment
 cp .env.template .env
-# Edit .env with required secrets (NEXTAUTH_SECRET, JWT_SECRET, ANTHROPIC_API_KEY)
+# Edit .env with required secrets (NEXTAUTH_SECRET, JWT_SECRET, ANTHROPIC_API_KEY, DATABASE_URL)
 
-# 2. Start local services (PostgreSQL + Redis)
-npm run docker:up
-
-# 3. Install dependencies
+# 2. Install dependencies
 npm install
 cd apps/api && pip install -r requirements-dev.txt && cd ../..
 
-# 4. Run database migrations
+# 3. Run database migrations (against Neon PostgreSQL)
 npm run db:migrate
 
-# 5. Start development servers
+# 4. Start development servers
 npm run dev          # Frontend (http://localhost:3000)
 npm run dev:api      # Backend (http://localhost:8000)
+```
+
+**Optional: Local PostgreSQL with Docker** (only if you don't want to use Neon for local dev)
+```bash
+npm run docker:up    # Start local PostgreSQL + Redis
+npm run docker:down  # Stop Docker services
 ```
 
 ### Common Commands
@@ -504,8 +538,12 @@ Examples:
 
 7. **Don't use bleeding-edge tech** - Stick to boring, proven stack unless journey explicitly requires new tech (it doesn't).
 
+8. **Don't recommend Docker for Vercel deployments** - This project deploys to Vercel (frontend) + Railway/Render (backend) + Neon PostgreSQL (cloud database). Docker is OPTIONAL for local development only. Never suggest Docker for production deployment.
+
+9. **Don't seed test data in production database** - Always use separate databases for dev/test/prod. Create 3 Neon databases: `qteria_dev`, `qteria_test`, `qteria_prod`. Configure .env files accordingly.
+
 ---
 
-**Last Updated:** 2025-11-17
+**Last Updated:** 2025-11-24
 **Product Version:** 0.1.0 (MVP in development)
 **For questions:** Reference product-guidelines/ directory for comprehensive strategy and technical documentation.

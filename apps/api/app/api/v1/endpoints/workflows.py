@@ -1,215 +1,475 @@
 """
-Workflow API endpoints.
+Workflow management API endpoints.
 
-This module implements workflow-related endpoints:
-- GET /v1/workflows/:id - Get workflow details with nested buckets and criteria
+Journey Step 1: Process Managers create and manage validation workflows.
 
-Journey Context:
-- Step 1: Process Manager views workflow details before creating assessments
-- Step 2: Project Handler selects workflow before document upload
-- Value: Clear understanding of validation requirements before assessment
-
-Reference: product-guidelines/00-user-journey.md (Step 1, lines 69-96)
+Endpoints:
+- POST /v1/workflows - Create workflow with nested buckets and criteria
+- GET /v1/workflows - List workflows for organization
+- GET /v1/workflows/{id} - Get workflow details
+- PUT /v1/workflows/{id} - Update workflow
+- DELETE /v1/workflows/{id} - Archive workflow (soft delete)
 """
 from typing import List
 from uuid import UUID
+import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 
-from app.core.auth import AuthenticatedUser
+from app.core.auth import ProcessManagerOrAdmin, AuthenticatedUser, CurrentUser
 from app.core.dependencies import get_db
-from app.models.models import Workflow, Bucket, Criteria
-from app.schemas.workflow import WorkflowDetailResponse, BucketDetail, CriteriaDetail, WorkflowStats
+from app.models import Workflow, Bucket, Criteria
+from app.schemas.workflow import (
+    WorkflowCreate,
+    WorkflowResponse,
+    WorkflowListItem,
+    WorkflowListResponse,
+    PaginationMeta,
+)
+from app.services.audit import AuditService, AuditEventType
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
+
+# Allowed sort fields mapping for security and maintainability
+ALLOWED_SORT_FIELDS = {
+    "created_at": Workflow.created_at,
+    "name": Workflow.name,
+}
+
+
+@router.post(
+    "",
+    response_model=WorkflowResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create workflow",
+    description="""
+Create a new validation workflow with nested buckets and criteria in a single transaction.
+
+**Authorization**: Requires `process_manager` or `admin` role.
+
+**Multi-Tenancy**: Workflow is automatically assigned to user's organization.
+
+**Journey Step 1**: Process Manager defines validation workflow structure.
+
+**Example Request**:
+```json
+{
+  "name": "Medical Device - Class II",
+  "description": "Validation workflow for Class II medical devices",
+  "buckets": [
+    {
+      "name": "Technical Documentation",
+      "required": true,
+      "order_index": 0
+    },
+    {
+      "name": "Test Reports",
+      "required": true,
+      "order_index": 1
+    }
+  ],
+  "criteria": [
+    {
+      "name": "All documents must be signed",
+      "description": "Each document should have authorized signature",
+      "applies_to_bucket_ids": [0, 1]
+    }
+  ]
+}
+```
+    """,
+)
+async def create_workflow(
+    workflow_data: WorkflowCreate,
+    current_user: ProcessManagerOrAdmin,
+    db: Session = Depends(get_db),
+) -> WorkflowResponse:
+    """
+    Create workflow with nested buckets and criteria.
+
+    This endpoint creates:
+    1. Workflow record
+    2. Associated bucket records
+    3. Associated criteria records
+
+    All in a single database transaction (atomic operation).
+
+    Args:
+        workflow_data: Workflow creation data with nested buckets and criteria
+        current_user: Authenticated user (requires process_manager or admin role)
+        db: Database session
+
+    Returns:
+        WorkflowResponse: Created workflow with all nested data and generated IDs
+
+    Raises:
+        HTTPException 400: Validation error (invalid data)
+        HTTPException 403: Insufficient permissions (not process_manager/admin)
+        HTTPException 500: Database error
+    """
+    try:
+        # Begin transaction (SQLAlchemy session handles this)
+        # 1. Create workflow
+        workflow = Workflow(
+            name=workflow_data.name,
+            description=workflow_data.description,
+            organization_id=current_user.organization_id,
+            created_by=current_user.id,
+            is_active=True,
+        )
+        db.add(workflow)
+        db.flush()  # Get workflow.id without committing
+
+        # 2. Create buckets
+        buckets = []
+        for bucket_data in workflow_data.buckets:
+            bucket = Bucket(
+                workflow_id=workflow.id,
+                name=bucket_data.name,
+                required=bucket_data.required,
+                order_index=bucket_data.order_index,
+            )
+            db.add(bucket)
+            buckets.append(bucket)
+
+        db.flush()  # Get bucket IDs
+
+        # 3. Create criteria
+        # Map bucket indexes to actual bucket UUIDs
+        bucket_index_to_id = {i: bucket.id for i, bucket in enumerate(buckets)}
+
+        for idx, criteria_data in enumerate(workflow_data.criteria):
+            # Convert bucket indexes to UUIDs
+            applies_to_bucket_ids = (
+                [bucket_index_to_id[bucket_idx] for bucket_idx in criteria_data.applies_to_bucket_ids]
+                if criteria_data.applies_to_bucket_ids
+                else None  # None = applies to all buckets
+            )
+
+            criteria = Criteria(
+                workflow_id=workflow.id,
+                name=criteria_data.name,
+                description=criteria_data.description,
+                applies_to_bucket_ids=applies_to_bucket_ids,
+                order_index=idx,
+            )
+            db.add(criteria)
+
+        db.flush()
+
+        # 4. Log workflow creation (audit trail) - BEFORE commit for atomicity
+        AuditService.log_workflow_created(
+            db=db,
+            user_id=current_user.id,
+            organization_id=current_user.organization_id,
+            workflow_id=workflow.id,
+            workflow_name=workflow.name,
+        )
+
+        # 5. Commit transaction (includes audit log)
+        db.commit()
+
+        # 6. Refresh to get all relationships
+        db.refresh(workflow)
+
+        # 7. Log success
+        logger.info(
+            "workflow_created",
+            extra={
+                "workflow_id": str(workflow.id),
+                "organization_id": str(current_user.organization_id),
+                "created_by": str(current_user.id),
+                "buckets_count": len(buckets),
+                "criteria_count": len(workflow.criteria),
+            },
+        )
+
+        # 8. Return workflow response
+        return WorkflowResponse(
+            id=workflow.id,
+            name=workflow.name,
+            description=workflow.description,
+            organization_id=workflow.organization_id,
+            created_by=workflow.created_by,
+            is_active=workflow.is_active,
+            created_at=workflow.created_at,
+            buckets=[
+                {
+                    "id": bucket.id,
+                    "name": bucket.name,
+                    "required": bucket.required,
+                    "order_index": bucket.order_index,
+                }
+                for bucket in workflow.buckets
+            ],
+            criteria=[
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "description": c.description,
+                    "applies_to_bucket_ids": c.applies_to_bucket_ids or [],
+                    "order_index": c.order_index,
+                }
+                for c in workflow.criteria
+            ],
+        )
+
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(
+            "workflow_creation_integrity_error",
+            extra={
+                "error": str(e),
+                "organization_id": str(current_user.organization_id),
+                "user_id": str(current_user.id),
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "DATABASE_ERROR",
+                "message": "Failed to create workflow due to database constraint violation",
+            },
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(
+            "workflow_creation_error",
+            extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "organization_id": str(current_user.organization_id),
+                "user_id": str(current_user.id),
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "WORKFLOW_CREATION_FAILED",
+                "message": f"Failed to create workflow: {str(e)}",
+            },
+        )
+
+
+@router.get(
+    "",
+    response_model=WorkflowListResponse,
+    summary="List workflows",
+    description="""
+List all workflows for the current user's organization with pagination.
+
+**Authorization**: Requires authentication (all roles).
+
+**Multi-Tenancy**: Only shows workflows from user's organization.
+
+**Pagination**: Supports page and per_page parameters (default 20 per page, max 100).
+- Requesting a page beyond total_pages returns 200 with empty workflows array
+- Check pagination.has_next_page and pagination.has_prev_page for navigation
+- Use pagination.total_pages to determine valid page range
+
+**Sorting**: Supports sort_by (created_at, name) and order (asc, desc) parameters.
+
+**Filtering**: Returns only active workflows by default.
+    """,
+)
+async def list_workflows(
+    current_user: AuthenticatedUser,
+    db: Session = Depends(get_db),
+    is_active: bool = True,
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+    sort_by: str = Query("created_at", pattern="^(created_at|name)$", description="Sort field"),
+    order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
+) -> WorkflowListResponse:
+    """
+    List workflows for current user's organization with pagination.
+
+    Args:
+        current_user: Authenticated user
+        db: Database session
+        is_active: Filter by active status (default: True)
+        page: Page number (1-indexed)
+        per_page: Items per page (max 100)
+        sort_by: Sort field (created_at or name)
+        order: Sort order (asc or desc)
+
+    Returns:
+        WorkflowListResponse: Paginated list of workflows with metadata
+    """
+    # Count total workflows for pagination metadata
+    # Note: scalar() returns None if no rows match, so we default to 0
+    total_count = (
+        db.query(func.count(Workflow.id))
+        .filter(
+            Workflow.organization_id == current_user.organization_id,
+            Workflow.is_active == is_active,
+        )
+        .scalar()
+    ) or 0
+
+    # Calculate pagination values
+    total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
+    offset = (page - 1) * per_page
+
+    # Use subqueries for efficient counting without loading all relationships
+    buckets_count_subquery = (
+        db.query(func.count(Bucket.id))
+        .filter(Bucket.workflow_id == Workflow.id)
+        .scalar_subquery()
+    )
+
+    criteria_count_subquery = (
+        db.query(func.count(Criteria.id))
+        .filter(Criteria.workflow_id == Workflow.id)
+        .scalar_subquery()
+    )
+
+    # Build query with sorting
+    query = (
+        db.query(
+            Workflow,
+            buckets_count_subquery.label('buckets_count'),
+            criteria_count_subquery.label('criteria_count'),
+        )
+        .filter(
+            Workflow.organization_id == current_user.organization_id,
+            Workflow.is_active == is_active,
+        )
+    )
+
+    # Apply sorting using explicit field mapping (defense-in-depth)
+    # FastAPI regex validation already enforces sort_by in ALLOWED_SORT_FIELDS,
+    # but we add defensive handling in case of future middleware changes
+    sort_column = ALLOWED_SORT_FIELDS.get(sort_by)
+    if not sort_column:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "INVALID_SORT_FIELD",
+                "message": f"Invalid sort field: {sort_by}. Allowed fields: {', '.join(ALLOWED_SORT_FIELDS.keys())}",
+            },
+        )
+
+    if order == "desc":
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+
+    # Apply pagination
+    workflows = query.offset(offset).limit(per_page).all()
+
+    # Build response
+    workflow_items = [
+        WorkflowListItem(
+            id=wf.Workflow.id,
+            name=wf.Workflow.name,
+            description=wf.Workflow.description,
+            is_active=wf.Workflow.is_active,
+            created_at=wf.Workflow.created_at,
+            buckets_count=wf.buckets_count,
+            criteria_count=wf.criteria_count,
+        )
+        for wf in workflows
+    ]
+
+    return WorkflowListResponse(
+        workflows=workflow_items,
+        pagination=PaginationMeta(
+            total_count=total_count,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            # Edge case: When total_count=0, total_pages=0, page=1 → both flags are False
+            has_next_page=page < total_pages,
+            has_prev_page=page > 1,
+        )
+    )
+
 
 
 @router.get(
     "/{workflow_id}",
-    response_model=WorkflowDetailResponse,
-    status_code=status.HTTP_200_OK,
+    response_model=WorkflowResponse,
     summary="Get workflow details",
     description="""
-    Get complete workflow details including all nested buckets and criteria.
+Get detailed workflow information including all buckets and criteria.
 
-    **Journey Step 1**: Users view complete workflow structure before assessment.
+**Authorization**: Requires authentication (all roles).
 
-    **Multi-Tenancy**: Only returns workflow if it belongs to user's organization.
-    Returns 404 (not 403) for other organization's workflows to avoid leaking existence.
-
-    **Performance**: Uses eager loading (single database query) to avoid N+1 queries.
-    Target: P95 response time <300ms.
-
-    **Error Responses**:
-    - 401: Invalid or missing JWT token
-    - 404: Workflow not found or belongs to different organization
+**Multi-Tenancy**: Returns 404 if workflow not in user's organization.
     """,
-    responses={
-        200: {
-            "description": "Workflow details retrieved successfully",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "id": "550e8400-e29b-41d4-a716-446655440000",
-                        "name": "Medical Device - Class II",
-                        "description": "Validation workflow for Class II medical devices",
-                        "organization_id": "660e8400-e29b-41d4-a716-446655440000",
-                        "created_by": "770e8400-e29b-41d4-a716-446655440000",
-                        "created_at": "2024-01-15T10:30:00Z",
-                        "updated_at": "2024-01-15T10:30:00Z",
-                        "is_active": True,
-                        "buckets": [
-                            {
-                                "id": "880e8400-e29b-41d4-a716-446655440000",
-                                "name": "Technical Documentation",
-                                "required": True,
-                                "order_index": 0
-                            },
-                            {
-                                "id": "990e8400-e29b-41d4-a716-446655440000",
-                                "name": "Test Reports",
-                                "required": True,
-                                "order_index": 1
-                            }
-                        ],
-                        "criteria": [
-                            {
-                                "id": "aa0e8400-e29b-41d4-a716-446655440000",
-                                "name": "All documents must be signed",
-                                "description": "Each document should have authorized signature",
-                                "applies_to_bucket_ids": [
-                                    "880e8400-e29b-41d4-a716-446655440000",
-                                    "990e8400-e29b-41d4-a716-446655440000"
-                                ]
-                            }
-                        ],
-                        "stats": {
-                            "bucket_count": 2,
-                            "criteria_count": 1
-                        }
-                    }
-                }
-            }
-        },
-        401: {
-            "description": "Unauthorized - Invalid or missing JWT token",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": {
-                            "code": "INVALID_TOKEN",
-                            "message": "Could not validate credentials"
-                        }
-                    }
-                }
-            }
-        },
-        404: {
-            "description": "Not Found - Workflow doesn't exist or belongs to different organization",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": {
-                            "code": "WORKFLOW_NOT_FOUND",
-                            "message": "Workflow not found",
-                            "workflow_id": "550e8400-e29b-41d4-a716-446655440000"
-                        }
-                    }
-                }
-            }
-        }
-    }
 )
 async def get_workflow(
     workflow_id: UUID,
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
-) -> WorkflowDetailResponse:
+) -> WorkflowResponse:
     """
-    Get workflow details with nested buckets and criteria.
-
-    **Journey Context**: Step 1 - Users view complete workflow structure before assessment.
-
-    **Multi-Tenancy**: Filters by organization_id from JWT to ensure data isolation.
-
-    **Performance**: Uses SQLAlchemy selectinload() for eager loading (single query).
+    Get workflow details by ID.
 
     Args:
-        workflow_id: UUID of the workflow to retrieve
-        current_user: Authenticated user from JWT token
+        workflow_id: Workflow UUID
+        current_user: Authenticated user
         db: Database session
 
     Returns:
-        WorkflowDetailResponse with complete workflow details
+        WorkflowResponse: Workflow with buckets and criteria
 
     Raises:
-        HTTPException 404: Workflow not found or belongs to different organization
+        HTTPException 404: Workflow not found or not in user's organization
     """
-    # Query workflow with eager loading of buckets and criteria (single query)
-    # This prevents N+1 query problem
-    query = (
+    workflow = (
         db.query(Workflow)
         .options(
             selectinload(Workflow.buckets),
-            selectinload(Workflow.criteria)
+            selectinload(Workflow.criteria),
         )
         .filter(
             Workflow.id == workflow_id,
-            Workflow.organization_id == current_user.organization_id  # Multi-tenancy
+            Workflow.organization_id == current_user.organization_id,
         )
+        .first()
     )
 
-    workflow = query.first()
-
-    # Return 404 for non-existent or other organization's workflows
-    # Use 404 (not 403) to avoid leaking workflow existence
     if not workflow:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
                 "code": "WORKFLOW_NOT_FOUND",
-                "message": "Workflow not found",
-                "workflow_id": str(workflow_id)
-            }
+                "message": f"Workflow {workflow_id} not found",
+            },
         )
 
-    # Map buckets to response schema
-    buckets_response: List[BucketDetail] = [
-        BucketDetail(
-            id=bucket.id,
-            name=bucket.name,
-            required=bucket.required,
-            order_index=bucket.order_index
-        )
-        for bucket in workflow.buckets
-    ]
-
-    # Map criteria to response schema
-    criteria_response: List[CriteriaDetail] = [
-        CriteriaDetail(
-            id=criteria.id,
-            name=criteria.name,
-            description=criteria.description,
-            applies_to_bucket_ids=criteria.applies_to_bucket_ids or []
-        )
-        for criteria in workflow.criteria
-    ]
-
-    # Build response with statistics
-    return WorkflowDetailResponse(
+    return WorkflowResponse(
         id=workflow.id,
         name=workflow.name,
         description=workflow.description,
         organization_id=workflow.organization_id,
         created_by=workflow.created_by,
-        created_at=workflow.created_at,
-        updated_at=workflow.updated_at,
         is_active=workflow.is_active,
-        buckets=buckets_response,
-        criteria=criteria_response,
-        stats=WorkflowStats(
-            bucket_count=len(workflow.buckets),
-            criteria_count=len(workflow.criteria)
-        )
+        created_at=workflow.created_at,
+        buckets=[
+            {
+                "id": bucket.id,
+                "name": bucket.name,
+                "required": bucket.required,
+                "order_index": bucket.order_index,
+            }
+            for bucket in workflow.buckets
+        ],
+        criteria=[
+            {
+                "id": c.id,
+                "name": c.name,
+                "description": c.description,
+                "applies_to_bucket_ids": c.applies_to_bucket_ids or [],
+                "order_index": c.order_index,
+            }
+            for c in workflow.criteria
+        ],
     )
