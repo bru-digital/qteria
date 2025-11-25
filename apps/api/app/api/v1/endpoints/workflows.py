@@ -342,8 +342,19 @@ async def list_workflows(
         )
     )
 
-    # Apply sorting using explicit field mapping
-    sort_column = ALLOWED_SORT_FIELDS[sort_by]
+    # Apply sorting using explicit field mapping (defense-in-depth)
+    # FastAPI regex validation already enforces sort_by in ALLOWED_SORT_FIELDS,
+    # but we add defensive handling in case of future middleware changes
+    sort_column = ALLOWED_SORT_FIELDS.get(sort_by)
+    if not sort_column:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "INVALID_SORT_FIELD",
+                "message": f"Invalid sort field: {sort_by}. Allowed fields: {', '.join(ALLOWED_SORT_FIELDS.keys())}",
+            },
+        )
+
     if order == "desc":
         query = query.order_by(sort_column.desc())
     else:
@@ -373,6 +384,7 @@ async def list_workflows(
             page=page,
             per_page=per_page,
             total_pages=total_pages,
+            # Edge case: When total_count=0, total_pages=0, page=1 → both flags are False
             has_next_page=page < total_pages,
             has_prev_page=page > 1,
         )

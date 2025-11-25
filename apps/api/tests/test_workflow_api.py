@@ -708,20 +708,20 @@ class TestListWorkflows:
         """Requesting page beyond total_pages returns empty workflows array."""
         # Create 3 workflows
         for i in range(3):
-            payload = {
-                "name": f"Workflow {i}",
-                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
-                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
-            }
-            client.post(
-                "/v1/workflows",
-                json=payload,
-                headers={"Authorization": f"Bearer {process_manager_token}"},
-            )
+            create_test_workflow(client, process_manager_token, f"Workflow {i}")
 
-        # Request page 100 (way beyond total_pages)
+        # First get the current total_pages
         response = client.get(
-            "/v1/workflows?page=100&per_page=2",
+            "/v1/workflows?per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+        assert response.status_code == 200
+        total_pages = response.json()["pagination"]["total_pages"]
+
+        # Request a page way beyond total_pages (total_pages + 100)
+        beyond_page = total_pages + 100
+        response = client.get(
+            f"/v1/workflows?page={beyond_page}&per_page=2",
             headers={"Authorization": f"Bearer {process_manager_token}"},
         )
 
@@ -730,7 +730,7 @@ class TestListWorkflows:
         # Should return empty workflows array
         assert len(data["workflows"]) == 0
         # Pagination metadata should still be valid
-        assert data["pagination"]["page"] == 100
+        assert data["pagination"]["page"] == beyond_page
         assert data["pagination"]["per_page"] == 2
         assert data["pagination"]["total_pages"] >= 2
         assert data["pagination"]["has_next_page"] is False
