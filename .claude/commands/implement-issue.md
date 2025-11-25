@@ -6,6 +6,13 @@ You are tasked with implementing a GitHub issue that has an approved implementat
 
 The issue MUST have an approved implementation plan (either in issue description or comments). If no plan exists, STOP and run `/plan-issue {issue-number}` first.
 
+**CRITICAL - Context Already in Plan:**
+- DO NOT read product-guidelines files during implementation
+- DO NOT search for additional context beyond the plan
+- The `/plan-issue` command already collected ALL relevant guidelines and context
+- Everything you need is in the plan's "Product Context & Guidelines" section
+- Trust the plan - it contains the necessary standards, patterns, and references
+
 ## Step 1: Fetch Issue with Plan
 
 ```bash
@@ -28,6 +35,7 @@ Follow the plan's Implementation Steps EXACTLY. Do NOT deviate unless you discov
    - Don't skip steps
    - Don't add extra steps
    - If plan is wrong, STOP and ask user to update plan first
+   - DO NOT read product-guidelines - all context is already in the plan
 
 2. **Surgical Implementation**
    - Only touch files listed in plan
@@ -194,5 +202,6 @@ Never leave uncommitted changes or untested code.
 - ❌ Adding backwards compatibility not in plan
 - ❌ Creating PR with failing tests
 - ❌ Ignoring success criteria
+- ❌ Reading product-guidelines or searching for additional context (it's already in the plan!)
 
-Remember: You're executing an approved plan. Surgical precision, zero creativity.
+Remember: You're executing an approved plan. Surgical precision, zero creativity. The plan already contains all necessary context from product guidelines.

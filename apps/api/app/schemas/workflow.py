@@ -219,6 +219,7 @@ class WorkflowResponse(BaseModel):
     created_by: UUID
     is_active: bool
     created_at: datetime
+    updated_at: datetime
     buckets: List[BucketResponse]
     criteria: List[CriteriaResponse]
 
