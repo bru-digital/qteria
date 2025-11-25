@@ -434,3 +434,89 @@ class AuditService:
             },
             request=request,
         )
+
+    @staticmethod
+    def log_workflow_created(
+        db: Session,
+        user_id: UUID,
+        organization_id: UUID,
+        workflow_id: UUID,
+        workflow_name: str,
+        request: Optional[Request] = None,
+    ) -> AuditLog:
+        """
+        Log workflow creation event.
+
+        Args:
+            db: Database session
+            user_id: User who created the workflow
+            organization_id: Organization ID
+            workflow_id: Created workflow ID
+            workflow_name: Workflow name
+            request: FastAPI request
+        """
+        return AuditService.log_event(
+            db=db,
+            action="workflow.created",
+            organization_id=organization_id,
+            user_id=user_id,
+            resource_type="workflow",
+            resource_id=workflow_id,
+            metadata={
+                "workflow_name": workflow_name,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+            request=request,
+        )
+
+    @staticmethod
+    def log_workflow_updated(
+        db: Session,
+        user_id: UUID,
+        organization_id: UUID,
+        workflow_id: UUID,
+        workflow_name: str,
+        buckets_added: int = 0,
+        buckets_updated: int = 0,
+        buckets_deleted: int = 0,
+        criteria_added: int = 0,
+        criteria_updated: int = 0,
+        criteria_deleted: int = 0,
+        request: Optional[Request] = None,
+    ) -> AuditLog:
+        """
+        Log workflow update event.
+
+        Args:
+            db: Database session
+            user_id: User who updated the workflow
+            organization_id: Organization ID
+            workflow_id: Updated workflow ID
+            workflow_name: Updated workflow name
+            buckets_added: Number of buckets added
+            buckets_updated: Number of buckets updated
+            buckets_deleted: Number of buckets deleted
+            criteria_added: Number of criteria added
+            criteria_updated: Number of criteria updated
+            criteria_deleted: Number of criteria deleted
+            request: FastAPI request
+        """
+        return AuditService.log_event(
+            db=db,
+            action="workflow.updated",
+            organization_id=organization_id,
+            user_id=user_id,
+            resource_type="workflow",
+            resource_id=workflow_id,
+            metadata={
+                "workflow_name": workflow_name,
+                "buckets_added": buckets_added,
+                "buckets_updated": buckets_updated,
+                "buckets_deleted": buckets_deleted,
+                "criteria_added": criteria_added,
+                "criteria_updated": criteria_updated,
+                "criteria_deleted": criteria_deleted,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+            request=request,
+        )
