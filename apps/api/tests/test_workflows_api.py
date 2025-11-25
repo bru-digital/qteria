@@ -1006,3 +1006,416 @@ class TestUpdateWorkflow:
 
         # Verify rollback was called
         assert db_mock.rollback.called
+
+
+class TestArchiveWorkflow:
+    """Tests for DELETE /v1/workflows/{workflow_id} endpoint (soft delete/archive)."""
+
+    @pytest.fixture
+    def mock_db(self):
+        """Mock database session."""
+        db_mock = MagicMock()
+        query_mock = MagicMock()
+        db_mock.query.return_value = query_mock
+        query_mock.filter.return_value = query_mock
+        return db_mock, query_mock
+
+    def test_archive_workflow_success(
+        self,
+        client: TestClient,
+        mock_db,
+        mock_audit_service
+    ):
+        """
+        Test successful workflow archival (soft delete).
+
+        Success Test:
+        - Returns 204 No Content
+        - Sets archived=True and archived_at timestamp
+        - Audit log created
+        """
+        db_mock, query_mock = mock_db
+
+        # Mock workflow without assessments
+        workflow = create_mock_workflow(TEST_WORKFLOW_ID, TEST_ORG_A_ID)
+        workflow.archived = False
+        workflow.archived_at = None
+        query_mock.first.return_value = workflow
+
+        # Mock assessment count (0 assessments)
+        count_query_mock = MagicMock()
+        db_mock.query.return_value.filter.return_value = count_query_mock
+        count_query_mock.scalar.return_value = 0
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.delete(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 204
+        # Verify workflow was marked as archived
+        assert workflow.archived is True
+        assert workflow.archived_at is not None
+        # Verify database commit was called
+        assert db_mock.commit.called
+
+    def test_archive_workflow_unauthorized_no_token(
+        self,
+        client: TestClient
+    ):
+        """
+        Test archiving workflow without authentication token returns 401.
+
+        Security Test (Authentication):
+        - No Bearer token provided
+        - Returns 401 Unauthorized
+        """
+        response = client.delete(f"/v1/workflows/{TEST_WORKFLOW_ID}")
+        assert response.status_code == 401
+
+    def test_archive_workflow_forbidden_project_handler(
+        self,
+        client: TestClient,
+        mock_db
+    ):
+        """
+        Test project_handler role cannot archive workflow.
+
+        Security Test (RBAC enforcement):
+        - Only process_manager and admin can archive
+        - Returns 403 Forbidden for project_handler
+        """
+        db_mock, query_mock = mock_db
+
+        # User with project_handler role (insufficient permissions)
+        token = create_test_token(
+            organization_id=TEST_ORG_A_ID,
+            role="project_handler"
+        )
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.delete(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 403
+
+    def test_archive_workflow_not_found(
+        self,
+        client: TestClient,
+        mock_db
+    ):
+        """
+        Test archiving non-existent workflow returns 404.
+
+        Error Handling Test:
+        - Workflow doesn't exist
+        - Returns 404 Not Found
+        """
+        db_mock, query_mock = mock_db
+        query_mock.first.return_value = None  # Workflow not found
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.delete(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 404
+        error = response.json()
+        assert error["detail"]["code"] == "RESOURCE_NOT_FOUND"
+
+    def test_archive_workflow_wrong_organization(
+        self,
+        client: TestClient,
+        mock_db
+    ):
+        """
+        Test archiving workflow from different organization returns 404.
+
+        Security Test (Multi-tenancy enforcement):
+        - User from ORG_A tries to archive ORG_B's workflow
+        - Returns 404 (not 403) to prevent information leakage
+        """
+        db_mock, query_mock = mock_db
+        # Workflow belongs to ORG_B, but user is from ORG_A
+        query_mock.first.return_value = None  # Multi-tenancy filter blocks access
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.delete(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 404
+
+    def test_archive_workflow_with_assessments_conflict(
+        self,
+        client: TestClient,
+        mock_db
+    ):
+        """
+        Test cannot archive workflow with existing assessments (409 Conflict).
+
+        Data Integrity Test:
+        - Workflow has 5 assessments
+        - Returns 409 Conflict
+        - Error includes assessment count
+        """
+        db_mock, query_mock = mock_db
+
+        workflow = create_mock_workflow(TEST_WORKFLOW_ID, TEST_ORG_A_ID)
+        workflow.archived = False
+        query_mock.first.return_value = workflow
+
+        # Mock assessment count (5 assessments)
+        count_query_mock = MagicMock()
+        db_mock.query.return_value.filter.return_value = count_query_mock
+        count_query_mock.scalar.return_value = 5
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.delete(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 409
+        error = response.json()
+        assert error["detail"]["code"] == "RESOURCE_HAS_DEPENDENCIES"
+        assert error["detail"]["assessment_count"] == 5
+        assert "5 existing assessments" in error["detail"]["message"]
+
+    def test_archive_already_archived_workflow(
+        self,
+        client: TestClient,
+        mock_db
+    ):
+        """
+        Test cannot re-archive already archived workflow (400 Bad Request).
+
+        Data Integrity Test:
+        - Workflow is already archived
+        - Returns 400 Bad Request
+        - Error includes archived_at timestamp
+        """
+        from datetime import datetime, timezone
+
+        db_mock, query_mock = mock_db
+
+        workflow = create_mock_workflow(TEST_WORKFLOW_ID, TEST_ORG_A_ID)
+        workflow.archived = True
+        workflow.archived_at = datetime(2025, 11, 20, 10, 0, 0, tzinfo=timezone.utc)
+        query_mock.first.return_value = workflow
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.delete(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 400
+        error = response.json()
+        assert error["detail"]["code"] == "ALREADY_ARCHIVED"
+        assert "already archived" in error["detail"]["message"]
+        assert error["detail"]["archived_at"] == "2025-11-20T10:00:00+00:00"
+
+
+class TestListWorkflowsWithArchived:
+    """Tests for GET /v1/workflows with include_archived parameter."""
+
+    @pytest.fixture
+    def mock_db(self):
+        """Mock database session."""
+        db_mock = MagicMock()
+        query_mock = MagicMock()
+        db_mock.query.return_value = query_mock
+        query_mock.filter.return_value = query_mock
+        query_mock.order_by.return_value = query_mock
+        query_mock.offset.return_value = query_mock
+        query_mock.limit.return_value = query_mock
+        return db_mock, query_mock
+
+    def test_list_workflows_excludes_archived_by_default(
+        self,
+        client: TestClient,
+        mock_db
+    ):
+        """
+        Test list workflows excludes archived workflows by default.
+
+        Soft Delete Test:
+        - Default behavior: include_archived=False
+        - Archived workflows hidden from list
+        - Only non-archived workflows returned
+        """
+        from datetime import datetime
+
+        db_mock, query_mock = mock_db
+
+        # Mock count query (1 non-archived workflow)
+        count_query_mock = MagicMock()
+        db_mock.query.return_value.filter.return_value = count_query_mock
+        count_query_mock.scalar.return_value = 1
+
+        # Mock workflow query result (1 non-archived workflow)
+        non_archived_wf = MagicMock()
+        non_archived_wf.Workflow.id = TEST_WORKFLOW_ID
+        non_archived_wf.Workflow.name = "Active Workflow"
+        non_archived_wf.Workflow.description = "Test"
+        non_archived_wf.Workflow.is_active = True
+        non_archived_wf.Workflow.archived = False
+        non_archived_wf.Workflow.archived_at = None
+        non_archived_wf.Workflow.created_at = datetime.now()
+        non_archived_wf.buckets_count = 2
+        non_archived_wf.criteria_count = 3
+
+        query_mock.all.return_value = [non_archived_wf]
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.get(
+                "/v1/workflows",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["workflows"]) == 1
+        assert data["workflows"][0]["archived"] is False
+
+    def test_list_workflows_includes_archived_when_requested(
+        self,
+        client: TestClient,
+        mock_db
+    ):
+        """
+        Test list workflows includes archived workflows when include_archived=true.
+
+        Soft Delete Test:
+        - include_archived=true shows archived workflows
+        - Both archived and non-archived workflows returned
+        - archived and archived_at fields present in response
+        """
+        from datetime import datetime, timezone
+
+        db_mock, query_mock = mock_db
+
+        # Mock count query (2 workflows: 1 archived, 1 active)
+        count_query_mock = MagicMock()
+        db_mock.query.return_value.filter.return_value = count_query_mock
+        count_query_mock.scalar.return_value = 2
+
+        # Mock workflow query result
+        non_archived_wf = MagicMock()
+        non_archived_wf.Workflow.id = TEST_WORKFLOW_ID
+        non_archived_wf.Workflow.name = "Active Workflow"
+        non_archived_wf.Workflow.description = "Active"
+        non_archived_wf.Workflow.is_active = True
+        non_archived_wf.Workflow.archived = False
+        non_archived_wf.Workflow.archived_at = None
+        non_archived_wf.Workflow.created_at = datetime.now()
+        non_archived_wf.buckets_count = 2
+        non_archived_wf.criteria_count = 3
+
+        archived_wf = MagicMock()
+        archived_wf.Workflow.id = str(uuid4())
+        archived_wf.Workflow.name = "Archived Workflow"
+        archived_wf.Workflow.description = "Archived"
+        archived_wf.Workflow.is_active = True
+        archived_wf.Workflow.archived = True
+        archived_wf.Workflow.archived_at = datetime(2025, 11, 20, 10, 0, 0, tzinfo=timezone.utc)
+        archived_wf.Workflow.created_at = datetime.now()
+        archived_wf.buckets_count = 1
+        archived_wf.criteria_count = 2
+
+        query_mock.all.return_value = [non_archived_wf, archived_wf]
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.get(
+                "/v1/workflows?include_archived=true",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["workflows"]) == 2
+
+        # Find archived workflow in response
+        archived_workflow_data = next(
+            (wf for wf in data["workflows"] if wf["archived"] is True),
+            None
+        )
+        assert archived_workflow_data is not None
+        assert archived_workflow_data["name"] == "Archived Workflow"
+        assert archived_workflow_data["archived_at"] == "2025-11-20T10:00:00+00:00"
+
+
+class TestGetArchivedWorkflow:
+    """Tests for GET /v1/workflows/{id} with archived workflow."""
+
+    @pytest.fixture
+    def mock_db(self):
+        """Mock database session."""
+        db_mock = MagicMock()
+        query_mock = MagicMock()
+        db_mock.query.return_value = query_mock
+        query_mock.options.return_value = query_mock
+        query_mock.filter.return_value = query_mock
+        return db_mock, query_mock
+
+    def test_get_archived_workflow_by_id(
+        self,
+        client: TestClient,
+        mock_db
+    ):
+        """
+        Test archived workflow is still accessible via direct GET (audit trail).
+
+        Audit Trail Test:
+        - Archived workflows remain accessible via GET /{id}
+        - Response includes archived=True and archived_at timestamp
+        - Supports SOC2/ISO 27001 compliance requirements
+        """
+        from datetime import datetime, timezone
+
+        db_mock, query_mock = mock_db
+
+        # Mock archived workflow
+        archived_workflow = create_mock_workflow(
+            TEST_WORKFLOW_ID,
+            TEST_ORG_A_ID,
+            name="Archived Workflow"
+        )
+        archived_workflow.archived = True
+        archived_workflow.archived_at = datetime(2025, 11, 20, 10, 0, 0, tzinfo=timezone.utc)
+        query_mock.first.return_value = archived_workflow
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.get(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == TEST_WORKFLOW_ID
+        assert data["name"] == "Archived Workflow"
+        assert data["archived"] is True
+        assert data["archived_at"] == "2025-11-20T10:00:00+00:00"

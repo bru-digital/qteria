@@ -282,13 +282,14 @@ List all workflows for the current user's organization with pagination.
 
 **Sorting**: Supports sort_by (created_at, name) and order (asc, desc) parameters.
 
-**Filtering**: Returns only active workflows by default.
+**Filtering**: Returns only active workflows by default. Use `include_archived=true` to show archived workflows.
     """,
 )
 def list_workflows(
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
     is_active: bool = True,
+    include_archived: bool = Query(False, description="Include archived workflows"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
     sort_by: str = Query("created_at", pattern="^(created_at|name)$", description="Sort field"),
@@ -301,6 +302,7 @@ def list_workflows(
         current_user: Authenticated user
         db: Database session
         is_active: Filter by active status (default: True)
+        include_archived: Include archived workflows (default: False)
         page: Page number (1-indexed)
         per_page: Items per page (max 100)
         sort_by: Sort field (created_at or name)
@@ -309,14 +311,21 @@ def list_workflows(
     Returns:
         WorkflowListResponse: Paginated list of workflows with metadata
     """
+    # Build filters for total count query
+    filters = [
+        Workflow.organization_id == current_user.organization_id,
+        Workflow.is_active == is_active,
+    ]
+
+    # Exclude archived workflows by default (soft delete pattern)
+    if not include_archived:
+        filters.append(Workflow.archived == False)
+
     # Count total workflows for pagination metadata
     # Note: scalar() returns None if no rows match, so we default to 0
     total_count = (
         db.query(func.count(Workflow.id))
-        .filter(
-            Workflow.organization_id == current_user.organization_id,
-            Workflow.is_active == is_active,
-        )
+        .filter(*filters)
         .scalar()
     ) or 0
 
@@ -337,17 +346,14 @@ def list_workflows(
         .scalar_subquery()
     )
 
-    # Build query with sorting
+    # Build query with sorting - apply same filters as count query
     query = (
         db.query(
             Workflow,
             buckets_count_subquery.label('buckets_count'),
             criteria_count_subquery.label('criteria_count'),
         )
-        .filter(
-            Workflow.organization_id == current_user.organization_id,
-            Workflow.is_active == is_active,
-        )
+        .filter(*filters)
     )
 
     # Apply sorting using explicit field mapping (defense-in-depth)
@@ -378,6 +384,8 @@ def list_workflows(
             name=wf.Workflow.name,
             description=wf.Workflow.description,
             is_active=wf.Workflow.is_active,
+            archived=wf.Workflow.archived,
+            archived_at=wf.Workflow.archived_at,
             created_at=wf.Workflow.created_at,
             buckets_count=wf.buckets_count,
             criteria_count=wf.criteria_count,
@@ -410,6 +418,10 @@ Get detailed workflow information including all buckets and criteria.
 **Authorization**: Requires authentication (all roles).
 
 **Multi-Tenancy**: Returns 404 if workflow not in user's organization.
+
+**Archived Workflows**: Archived workflows are still accessible via this endpoint
+for audit trail purposes (SOC2/ISO 27001 compliance). Use the `archived` field
+in the response to check if a workflow has been archived.
     """,
 )
 def get_workflow(
@@ -843,6 +855,17 @@ def archive_workflow(
                 "code": "RESOURCE_NOT_FOUND",
                 "message": "Workflow not found",
                 "workflow_id": str(workflow_id),
+            },
+        )
+
+    # Check if workflow is already archived
+    if workflow.archived:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "ALREADY_ARCHIVED",
+                "message": "Workflow is already archived",
+                "archived_at": workflow.archived_at.isoformat() if workflow.archived_at else None,
             },
         )
 

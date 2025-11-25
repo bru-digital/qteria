@@ -152,6 +152,7 @@ class Workflow(Base):
         Index("idx_workflow_organization", "organization_id"),
         Index("idx_workflow_active", "is_active"),
         Index("idx_workflow_archived", "archived"),
+        Index("idx_workflow_org_archived", "organization_id", "archived"),  # Composite index for list queries
     )
 
 
