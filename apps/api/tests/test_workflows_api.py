@@ -589,8 +589,26 @@ class TestUpdateWorkflow:
             )
 
         assert response.status_code == 200
-        # Verify new bucket was added
+
+        # Verify new bucket was added with correct attributes
         assert db_mock.add.called
+        # Get the bucket that was added
+        add_calls = [call for call in db_mock.add.call_args_list]
+        assert len(add_calls) > 0
+
+        # Find the bucket object in the add calls
+        added_buckets = [
+            call[0][0] for call in add_calls
+            if hasattr(call[0][0], '__class__') and call[0][0].__class__.__name__ == 'Bucket'
+        ]
+        assert len(added_buckets) >= 1
+
+        # Verify the new bucket has correct attributes
+        new_bucket = added_buckets[0]
+        assert new_bucket.name == "Test Reports"
+        assert new_bucket.required is False
+        assert new_bucket.order_index == 1
+        assert new_bucket.workflow_id == workflow.id
 
     def test_update_workflow_delete_bucket(
         self,
@@ -907,3 +925,84 @@ class TestUpdateWorkflow:
         assert response.status_code == 400
         error = response.json()
         assert error["detail"]["code"] == "VALIDATION_ERROR"
+
+    def test_update_workflow_generic_exception(
+        self,
+        client: TestClient,
+        mock_db,
+        mock_audit_service
+    ):
+        """
+        Test generic exception handling returns 500.
+
+        Error Handling Test:
+        - Unexpected exceptions are caught and logged
+        - Returns 500 Internal Server Error
+        - Error response includes WORKFLOW_UPDATE_FAILED code
+        - Transaction is rolled back
+        """
+        db_mock, query_mock = mock_db
+
+        buckets = [
+            create_mock_bucket(TEST_BUCKET_1_ID, "Technical Documentation", 0, True),
+        ]
+        criteria = [
+            create_mock_criteria(
+                TEST_CRITERIA_1_ID,
+                "All documents must be signed",
+                "Description",
+                [TEST_BUCKET_1_ID]
+            )
+        ]
+
+        workflow = create_mock_workflow(
+            TEST_WORKFLOW_ID,
+            TEST_ORG_A_ID,
+            buckets=buckets,
+            criteria=criteria
+        )
+
+        query_mock.first.return_value = workflow
+
+        # Mock a generic exception (not IntegrityError) during commit
+        db_mock.commit.side_effect = RuntimeError("Unexpected database error")
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        update_data = {
+            "name": "Test Workflow",
+            "description": "Test Description",
+            "buckets": [
+                {
+                    "id": TEST_BUCKET_1_ID,
+                    "name": "Technical Documentation",
+                    "required": True,
+                    "order_index": 0
+                }
+            ],
+            "criteria": [
+                {
+                    "id": TEST_CRITERIA_1_ID,
+                    "name": "All documents must be signed",
+                    "description": "Description",
+                    "applies_to_bucket_ids": [TEST_BUCKET_1_ID],
+                    "order_index": 0
+                }
+            ]
+        }
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.put(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                json=update_data,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        # Generic exception is caught and returns 500
+        assert response.status_code == 500
+        error = response.json()
+        assert error["detail"]["code"] == "WORKFLOW_UPDATE_FAILED"
+        assert "Unexpected database error" in error["detail"]["message"]
+
+        # Verify rollback was called
+        assert db_mock.rollback.called

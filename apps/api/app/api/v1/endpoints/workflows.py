@@ -619,10 +619,13 @@ def update_workflow(
                     criteria.applies_to_bucket_ids = updated_ids if updated_ids else None
 
         # Create a mapping of existing buckets for quick lookup
-        existing_buckets_map = {bucket.id: bucket for bucket in workflow.buckets}
+        # Filter out deleted buckets to prevent race condition
+        existing_buckets_map = {
+            bucket.id: bucket for bucket in workflow.buckets
+            if bucket.id not in buckets_to_delete
+        }
 
         # Update/create buckets
-        new_buckets = []
         for bucket_data in workflow_data.buckets:
             if bucket_data.id and bucket_data.id in existing_buckets_map:
                 # Update existing bucket
@@ -640,7 +643,6 @@ def update_workflow(
                     order_index=bucket_data.order_index,
                 )
                 db.add(bucket)
-                new_buckets.append(bucket)
                 buckets_added += 1
 
         db.flush()  # Get new bucket IDs
