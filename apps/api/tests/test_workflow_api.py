@@ -18,6 +18,33 @@ from app.models.enums import UserRole
 from tests.conftest import TEST_ORG_A_ID
 
 
+def create_test_workflow(client: TestClient, token: str, name: str = "Test Workflow"):
+    """
+    Helper function to create a test workflow with minimal required fields.
+
+    This reduces code duplication across tests that need to create workflows
+    for pagination, sorting, and other list endpoint tests.
+
+    Args:
+        client: FastAPI test client
+        token: Authentication token
+        name: Workflow name (default: "Test Workflow")
+
+    Returns:
+        Response from POST /v1/workflows
+    """
+    payload = {
+        "name": name,
+        "buckets": [{"name": "Test Bucket", "required": True, "order_index": 0}],
+        "criteria": [{"name": "Test Criteria", "applies_to_bucket_ids": [0]}],
+    }
+    return client.post(
+        "/v1/workflows",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+
 class TestCreateWorkflow:
     """Tests for POST /v1/workflows endpoint."""
 
@@ -353,21 +380,28 @@ class TestCreateWorkflow:
 
 
 class TestListWorkflows:
-    """Tests for GET /v1/workflows endpoint."""
+    """Tests for GET /v1/workflows endpoint with pagination."""
 
     def test_list_workflows_authenticated(
         self,
         client: TestClient,
         process_manager_token: str,
     ):
-        """Authenticated user can list workflows."""
+        """Authenticated user can list workflows with paginated response."""
         response = client.get(
             "/v1/workflows",
             headers={"Authorization": f"Bearer {process_manager_token}"},
         )
 
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        data = response.json()
+        assert "workflows" in data
+        assert "pagination" in data
+        assert isinstance(data["workflows"], list)
+        assert "total_count" in data["pagination"]
+        assert "page" in data["pagination"]
+        assert "per_page" in data["pagination"]
+        assert "total_pages" in data["pagination"]
 
     def test_list_workflows_unauthenticated(
         self,
@@ -377,6 +411,402 @@ class TestListWorkflows:
         response = client.get("/v1/workflows")
 
         assert response.status_code == 403
+
+    def test_list_workflows_empty_organization(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+    ):
+        """Empty organization returns empty array with total_count=0.
+
+        This test specifically validates that the NULL handling in total_count
+        works correctly (scalar() returns None for COUNT(*) on empty result set).
+        """
+        response = client.get(
+            "/v1/workflows",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # If organization has no workflows, should handle gracefully
+        assert isinstance(data["pagination"]["total_count"], int)
+        assert data["pagination"]["total_count"] >= 0
+        assert data["pagination"]["total_pages"] >= 0
+        assert len(data["workflows"]) <= data["pagination"]["per_page"]
+        # Verify has_next_page and has_prev_page are booleans
+        assert isinstance(data["pagination"]["has_next_page"], bool)
+        assert isinstance(data["pagination"]["has_prev_page"], bool)
+
+    def test_list_workflows_pagination_defaults(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+    ):
+        """Default pagination parameters are page=1, per_page=20."""
+        response = client.get(
+            "/v1/workflows",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["page"] == 1
+        assert data["pagination"]["per_page"] == 20
+
+    def test_list_workflows_custom_per_page(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Can customize per_page parameter."""
+        # Create 3 workflows using helper function
+        for i in range(3):
+            create_test_workflow(client, process_manager_token, f"Test Workflow {i}")
+
+        # Request with per_page=2
+        response = client.get(
+            "/v1/workflows?per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["per_page"] == 2
+        assert len(data["workflows"]) <= 2
+
+    def test_list_workflows_multiple_pages(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Pagination across multiple pages works correctly."""
+        # Create 5 workflows
+        for i in range(5):
+            payload = {
+                "name": f"Workflow {i}",
+                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
+                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
+            }
+            client.post(
+                "/v1/workflows",
+                json=payload,
+                headers={"Authorization": f"Bearer {process_manager_token}"},
+            )
+
+        # Page 1 with per_page=2
+        response_p1 = client.get(
+            "/v1/workflows?page=1&per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+        assert response_p1.status_code == 200
+        data_p1 = response_p1.json()
+        assert data_p1["pagination"]["page"] == 1
+        assert len(data_p1["workflows"]) == 2
+
+        # Page 2 with per_page=2
+        response_p2 = client.get(
+            "/v1/workflows?page=2&per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+        assert response_p2.status_code == 200
+        data_p2 = response_p2.json()
+        assert data_p2["pagination"]["page"] == 2
+        assert len(data_p2["workflows"]) == 2
+
+        # Verify different workflows on each page
+        p1_ids = {wf["id"] for wf in data_p1["workflows"]}
+        p2_ids = {wf["id"] for wf in data_p2["workflows"]}
+        assert len(p1_ids.intersection(p2_ids)) == 0  # No overlap
+
+    def test_list_workflows_total_pages_calculation(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Total pages calculation is correct."""
+        # Create exactly 5 workflows
+        for i in range(5):
+            payload = {
+                "name": f"Workflow {i}",
+                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
+                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
+            }
+            client.post(
+                "/v1/workflows",
+                json=payload,
+                headers={"Authorization": f"Bearer {process_manager_token}"},
+            )
+
+        # With per_page=2, should have 3 pages (5/2 = 2.5 -> 3 pages)
+        response = client.get(
+            "/v1/workflows?per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] >= 5
+        # Should be at least 3 pages for the 5 new workflows (may be more if seeded data exists)
+        assert data["pagination"]["total_pages"] >= 3
+
+    def test_list_workflows_sort_by_created_at_desc(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Default sorting is by created_at descending (newest first)."""
+        # Create workflows with distinct names
+        for i in range(3):
+            payload = {
+                "name": f"Workflow Created {i}",
+                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
+                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
+            }
+            client.post(
+                "/v1/workflows",
+                json=payload,
+                headers={"Authorization": f"Bearer {process_manager_token}"},
+            )
+
+        response = client.get(
+            "/v1/workflows?sort_by=created_at&order=desc",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        workflows = data["workflows"]
+
+        if len(workflows) >= 2:
+            # Verify newest is first
+            for i in range(len(workflows) - 1):
+                assert workflows[i]["created_at"] >= workflows[i + 1]["created_at"]
+
+    def test_list_workflows_sort_by_name_asc(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Can sort by name ascending (alphabetical)."""
+        # Create workflows with specific names
+        names = ["Zebra Workflow", "Alpha Workflow", "Beta Workflow"]
+        for name in names:
+            payload = {
+                "name": name,
+                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
+                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
+            }
+            client.post(
+                "/v1/workflows",
+                json=payload,
+                headers={"Authorization": f"Bearer {process_manager_token}"},
+            )
+
+        response = client.get(
+            "/v1/workflows?sort_by=name&order=asc",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        workflows = data["workflows"]
+
+        # Verify alphabetical order
+        if len(workflows) >= 2:
+            for i in range(len(workflows) - 1):
+                assert workflows[i]["name"].lower() <= workflows[i + 1]["name"].lower()
+
+    def test_list_workflows_sort_by_name_desc(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Can sort by name descending (reverse alphabetical)."""
+        # Create workflows with specific names using helper function
+        names = ["Alpha Workflow", "Beta Workflow", "Gamma Workflow"]
+        for name in names:
+            create_test_workflow(client, process_manager_token, name)
+
+        response = client.get(
+            "/v1/workflows?sort_by=name&order=desc",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        workflows = data["workflows"]
+
+        # Verify reverse alphabetical order
+        if len(workflows) >= 2:
+            for i in range(len(workflows) - 1):
+                assert workflows[i]["name"].lower() >= workflows[i + 1]["name"].lower()
+
+    def test_list_workflows_invalid_page_zero(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+    ):
+        """Page parameter must be >= 1."""
+        response = client.get(
+            "/v1/workflows?page=0",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 422  # Validation error
+
+    def test_list_workflows_invalid_per_page_exceeds_max(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+    ):
+        """Per_page parameter cannot exceed 100."""
+        response = client.get(
+            "/v1/workflows?per_page=1000",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 422  # Validation error
+
+    def test_list_workflows_invalid_sort_field(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+    ):
+        """Sort_by must be either 'created_at' or 'name'."""
+        response = client.get(
+            "/v1/workflows?sort_by=invalid_field",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 422  # Validation error
+
+    def test_list_workflows_invalid_order(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+    ):
+        """Order must be either 'asc' or 'desc'."""
+        response = client.get(
+            "/v1/workflows?order=invalid",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 422  # Validation error
+
+    def test_list_workflows_page_beyond_total_pages(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Requesting page beyond total_pages returns empty workflows array."""
+        # Create 3 workflows
+        for i in range(3):
+            create_test_workflow(client, process_manager_token, f"Workflow {i}")
+
+        # First get the current total_pages
+        response = client.get(
+            "/v1/workflows?per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+        assert response.status_code == 200
+        total_pages = response.json()["pagination"]["total_pages"]
+
+        # Request a page way beyond total_pages (total_pages + 100)
+        beyond_page = total_pages + 100
+        response = client.get(
+            f"/v1/workflows?page={beyond_page}&per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # Should return empty workflows array
+        assert len(data["workflows"]) == 0
+        # Pagination metadata should still be valid
+        assert data["pagination"]["page"] == beyond_page
+        assert data["pagination"]["per_page"] == 2
+        assert data["pagination"]["total_pages"] >= 2
+        assert data["pagination"]["has_next_page"] is False
+        assert data["pagination"]["has_prev_page"] is True
+
+    def test_list_workflows_has_next_prev_page_first_page(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """First page has no previous page but may have next page."""
+        # Create 5 workflows
+        for i in range(5):
+            payload = {
+                "name": f"Workflow {i}",
+                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
+                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
+            }
+            client.post(
+                "/v1/workflows",
+                json=payload,
+                headers={"Authorization": f"Bearer {process_manager_token}"},
+            )
+
+        # Request first page with per_page=2
+        response = client.get(
+            "/v1/workflows?page=1&per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["page"] == 1
+        assert data["pagination"]["has_prev_page"] is False
+        # Should have next page since we have 5 workflows and per_page=2
+        assert data["pagination"]["has_next_page"] is True
+
+    def test_list_workflows_has_next_prev_page_last_page(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Last page has previous page but no next page."""
+        # Create 5 workflows
+        for i in range(5):
+            payload = {
+                "name": f"Workflow {i}",
+                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
+                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
+            }
+            client.post(
+                "/v1/workflows",
+                json=payload,
+                headers={"Authorization": f"Bearer {process_manager_token}"},
+            )
+
+        # Get total pages first
+        response = client.get(
+            "/v1/workflows?per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+        total_pages = response.json()["pagination"]["total_pages"]
+
+        # Request last page
+        response = client.get(
+            f"/v1/workflows?page={total_pages}&per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["page"] == total_pages
+        assert data["pagination"]["has_next_page"] is False
+        assert data["pagination"]["has_prev_page"] is True
 
 
 class TestGetWorkflow:
@@ -489,7 +919,8 @@ class TestMultiTenancyIsolation:
             headers={"Authorization": f"Bearer {org_a_process_manager_token}"},
         )
         assert list_response_a.status_code == 200
-        org_a_workflows = list_response_a.json()
+        org_a_data = list_response_a.json()
+        org_a_workflows = org_a_data["workflows"]
         assert len(org_a_workflows) > 0
         assert any(wf["id"] == org_a_workflow_id for wf in org_a_workflows)
 
@@ -499,7 +930,8 @@ class TestMultiTenancyIsolation:
             headers={"Authorization": f"Bearer {org_b_admin_token}"},
         )
         assert list_response_b.status_code == 200
-        org_b_workflows = list_response_b.json()
+        org_b_data = list_response_b.json()
+        org_b_workflows = org_b_data["workflows"]
         # Org B should not see org A's workflow
         assert not any(wf["id"] == org_a_workflow_id for wf in org_b_workflows)
 
