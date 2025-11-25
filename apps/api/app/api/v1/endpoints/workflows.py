@@ -606,6 +606,18 @@ def update_workflow(
             )
             buckets_deleted = len(buckets_to_delete)
 
+            # Clean up criteria that reference deleted buckets
+            # This prevents orphaned bucket IDs in criteria.applies_to_bucket_ids
+            for criteria in workflow.criteria:
+                if criteria.applies_to_bucket_ids:
+                    # Remove deleted bucket IDs from criteria
+                    updated_ids = [
+                        bid for bid in criteria.applies_to_bucket_ids
+                        if bid not in buckets_to_delete
+                    ]
+                    # Convert empty list to None (applies to all buckets)
+                    criteria.applies_to_bucket_ids = updated_ids if updated_ids else None
+
         # Create a mapping of existing buckets for quick lookup
         existing_buckets_map = {bucket.id: bucket for bucket in workflow.buckets}
 

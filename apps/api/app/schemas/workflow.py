@@ -460,27 +460,7 @@ class WorkflowUpdate(BaseModel):
 
         return self
 
-    @model_validator(mode='after')
-    def validate_criteria_bucket_references(self) -> 'WorkflowUpdate':
-        """
-        Validate that criteria bucket references are valid UUIDs that exist in the buckets list.
-
-        Criteria can reference buckets by UUID. This validates that all referenced UUIDs exist
-        in the provided buckets list.
-        """
-        # Get bucket IDs from the update request (both new and existing)
-        bucket_ids = {bucket.id for bucket in self.buckets if bucket.id is not None}
-
-        for criteria in self.criteria:
-            # Skip validation if applies_to_bucket_ids is empty (applies to all)
-            if not criteria.applies_to_bucket_ids:
-                continue
-
-            for bucket_id in criteria.applies_to_bucket_ids:
-                if bucket_id not in bucket_ids:
-                    raise ValueError(
-                        f"Criteria '{criteria.name}' references invalid bucket ID {bucket_id}. "
-                        f"Bucket ID must exist in the buckets list."
-                    )
-
-        return self
+    # Note: Bucket reference validation removed as per PR review #82
+    # The validator only checked references within the request payload, which incorrectly
+    # rejected valid scenarios where criteria reference existing buckets not being updated.
+    # Database-level validation (IntegrityError) handles truly invalid references.

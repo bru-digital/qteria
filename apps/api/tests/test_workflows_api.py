@@ -829,12 +829,17 @@ class TestUpdateWorkflow:
         mock_audit_service
     ):
         """
-        Test criteria referencing non-existent bucket returns 400.
+        Test criteria referencing non-existent bucket triggers IntegrityError.
 
         Validation Test:
-        - Criteria applies_to_bucket_ids must reference valid buckets
+        - Criteria applies_to_bucket_ids with invalid references cause database IntegrityError
         - Returns 400 Bad Request with VALIDATION_ERROR code
+
+        Note: After PR #82 review, Pydantic validation was removed as it incorrectly
+        rejected valid scenarios. Database-level validation now handles this.
         """
+        from sqlalchemy.exc import IntegrityError
+
         db_mock, query_mock = mock_db
 
         buckets = [
@@ -857,6 +862,13 @@ class TestUpdateWorkflow:
         )
 
         query_mock.first.return_value = workflow
+
+        # Mock IntegrityError when commit is called (database detects invalid reference)
+        db_mock.commit.side_effect = IntegrityError(
+            "violates foreign key constraint",
+            params=None,
+            orig=Exception("invalid bucket reference")
+        )
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
@@ -891,5 +903,7 @@ class TestUpdateWorkflow:
                 headers={"Authorization": f"Bearer {token}"}
             )
 
-        # Pydantic validation should catch this before hitting endpoint
-        assert response.status_code == 422
+        # Database IntegrityError is caught and returns 400
+        assert response.status_code == 400
+        error = response.json()
+        assert error["detail"]["code"] == "VALIDATION_ERROR"
