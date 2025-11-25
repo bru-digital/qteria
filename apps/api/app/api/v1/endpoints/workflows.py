@@ -18,6 +18,7 @@ Note: All endpoints use `def` (not `async def`) because:
 """
 from typing import List
 from uuid import UUID
+from datetime import datetime, timezone
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -30,6 +31,7 @@ from app.core.dependencies import get_db
 from app.models import Workflow, Bucket, Criteria
 from app.schemas.workflow import (
     WorkflowCreate,
+    WorkflowUpdate,
     WorkflowResponse,
     WorkflowListItem,
     WorkflowListResponse,
@@ -465,3 +467,301 @@ def get_workflow(
     # Use Pydantic's ORM mode to automatically map SQLAlchemy model to response schema
     # This ensures type safety and validates all fields according to the schema
     return WorkflowResponse.model_validate(workflow)
+
+
+@router.put(
+    "/{workflow_id}",
+    response_model=WorkflowResponse,
+    summary="Update workflow",
+    description="""
+Update workflow with nested buckets and criteria in a single transaction.
+
+**Authorization**: Requires `process_manager` or `admin` role.
+
+**Multi-Tenancy**: Returns 404 if workflow not in user's organization.
+
+**Differential Updates**: Supports add/update/delete operations:
+- Bucket/Criteria with id=None: Create new
+- Bucket/Criteria with id=UUID: Update existing
+- Bucket/Criteria omitted from request: Delete
+
+**Journey Step 1**: Process Manager refines validation workflow based on feedback.
+
+**Example Request**:
+```json
+{
+  "name": "Medical Device - Class II (Updated)",
+  "description": "Updated validation workflow",
+  "buckets": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "Technical Documentation (Renamed)",
+      "required": true,
+      "order_index": 0
+    },
+    {
+      "name": "Test Reports",
+      "required": false,
+      "order_index": 1
+    }
+  ],
+  "criteria": [
+    {
+      "id": "223e4567-e89b-12d3-a456-426614174000",
+      "name": "All documents must be signed",
+      "description": "Updated description",
+      "applies_to_bucket_ids": ["123e4567-e89b-12d3-a456-426614174000"]
+    }
+  ]
+}
+```
+    """,
+)
+def update_workflow(
+    workflow_id: UUID,
+    workflow_data: WorkflowUpdate,
+    current_user: ProcessManagerOrAdmin,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> WorkflowResponse:
+    """
+    Update workflow with nested buckets and criteria.
+
+    This endpoint supports differential updates:
+    1. Update workflow metadata (name, description)
+    2. Add new buckets (id=None)
+    3. Update existing buckets (id=UUID)
+    4. Delete removed buckets (not in request)
+    5. Add new criteria (id=None)
+    6. Update existing criteria (id=UUID)
+    7. Delete removed criteria (not in request)
+
+    All operations occur in a single database transaction (atomic).
+
+    Args:
+        workflow_id: Workflow UUID to update
+        workflow_data: Updated workflow data with nested buckets and criteria
+        current_user: Authenticated user (requires process_manager or admin role)
+        request: FastAPI request (for audit logging)
+        db: Database session
+
+    Returns:
+        WorkflowResponse: Updated workflow with all nested data
+
+    Raises:
+        HTTPException 400: Validation error (invalid data)
+        HTTPException 403: Insufficient permissions (not process_manager/admin)
+        HTTPException 404: Workflow not found or not in user's organization
+        HTTPException 500: Database error
+    """
+    try:
+        # 1. Get existing workflow with multi-tenancy check
+        workflow = (
+            db.query(Workflow)
+            .options(
+                selectinload(Workflow.buckets),
+                selectinload(Workflow.criteria),
+            )
+            .filter(
+                Workflow.id == workflow_id,
+                Workflow.organization_id == current_user.organization_id,
+            )
+            .first()
+        )
+
+        if not workflow:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "RESOURCE_NOT_FOUND",
+                    "message": "Workflow not found",
+                    "request_id": getattr(request.state, "request_id", None),
+                },
+            )
+
+        # Track changes for audit logging
+        buckets_added = 0
+        buckets_updated = 0
+        buckets_deleted = 0
+        criteria_added = 0
+        criteria_updated = 0
+        criteria_deleted = 0
+
+        # 2. Update workflow metadata
+        workflow.name = workflow_data.name
+        workflow.description = workflow_data.description
+        workflow.updated_at = datetime.now(timezone.utc)
+
+        # 3. Update buckets (delete, update, create)
+        existing_bucket_ids = {bucket.id for bucket in workflow.buckets}
+        incoming_bucket_ids = {
+            bucket.id for bucket in workflow_data.buckets if bucket.id is not None
+        }
+
+        # Delete removed buckets
+        buckets_to_delete = existing_bucket_ids - incoming_bucket_ids
+        if buckets_to_delete:
+            db.query(Bucket).filter(Bucket.id.in_(buckets_to_delete)).delete(
+                synchronize_session=False
+            )
+            buckets_deleted = len(buckets_to_delete)
+
+        # Create a mapping of existing buckets for quick lookup
+        existing_buckets_map = {bucket.id: bucket for bucket in workflow.buckets}
+
+        # Update/create buckets
+        new_buckets = []
+        for bucket_data in workflow_data.buckets:
+            if bucket_data.id and bucket_data.id in existing_buckets_map:
+                # Update existing bucket
+                bucket = existing_buckets_map[bucket_data.id]
+                bucket.name = bucket_data.name
+                bucket.required = bucket_data.required
+                bucket.order_index = bucket_data.order_index
+                buckets_updated += 1
+            else:
+                # Create new bucket
+                bucket = Bucket(
+                    workflow_id=workflow.id,
+                    name=bucket_data.name,
+                    required=bucket_data.required,
+                    order_index=bucket_data.order_index,
+                )
+                db.add(bucket)
+                new_buckets.append(bucket)
+                buckets_added += 1
+
+        db.flush()  # Get new bucket IDs
+
+        # 4. Update criteria (delete, update, create)
+        existing_criteria_ids = {criteria.id for criteria in workflow.criteria}
+        incoming_criteria_ids = {
+            criteria.id for criteria in workflow_data.criteria if criteria.id is not None
+        }
+
+        # Delete removed criteria
+        criteria_to_delete = existing_criteria_ids - incoming_criteria_ids
+        if criteria_to_delete:
+            db.query(Criteria).filter(Criteria.id.in_(criteria_to_delete)).delete(
+                synchronize_session=False
+            )
+            criteria_deleted = len(criteria_to_delete)
+
+        # Create a mapping of existing criteria for quick lookup
+        existing_criteria_map = {criteria.id: criteria for criteria in workflow.criteria}
+
+        # Update/create criteria
+        for criteria_data in workflow_data.criteria:
+            # Convert empty list to None for applies_to_all semantics
+            applies_to_bucket_ids = (
+                criteria_data.applies_to_bucket_ids if criteria_data.applies_to_bucket_ids else None
+            )
+
+            if criteria_data.id and criteria_data.id in existing_criteria_map:
+                # Update existing criteria
+                criteria = existing_criteria_map[criteria_data.id]
+                criteria.name = criteria_data.name
+                criteria.description = criteria_data.description
+                criteria.applies_to_bucket_ids = applies_to_bucket_ids
+                criteria.order_index = criteria_data.order_index
+                criteria_updated += 1
+            else:
+                # Create new criteria
+                criteria = Criteria(
+                    workflow_id=workflow.id,
+                    name=criteria_data.name,
+                    description=criteria_data.description,
+                    applies_to_bucket_ids=applies_to_bucket_ids,
+                    order_index=criteria_data.order_index,
+                )
+                db.add(criteria)
+                criteria_added += 1
+
+        db.flush()
+
+        # 5. Log workflow update (audit trail) - BEFORE commit for atomicity
+        AuditService.log_workflow_updated(
+            db=db,
+            user_id=current_user.id,
+            organization_id=current_user.organization_id,
+            workflow_id=workflow.id,
+            workflow_name=workflow.name,
+            buckets_added=buckets_added,
+            buckets_updated=buckets_updated,
+            buckets_deleted=buckets_deleted,
+            criteria_added=criteria_added,
+            criteria_updated=criteria_updated,
+            criteria_deleted=criteria_deleted,
+            request=request,
+        )
+
+        # 6. Commit transaction (includes audit log)
+        db.commit()
+
+        # 7. Refresh to get all relationships
+        db.refresh(workflow)
+
+        # 8. Log success with structured logging
+        logger.info(
+            "workflow_updated",
+            extra={
+                "workflow_id": str(workflow.id),
+                "organization_id": str(current_user.organization_id),
+                "updated_by": str(current_user.id),
+                "request_id": getattr(request.state, "request_id", None),
+                "buckets_added": buckets_added,
+                "buckets_updated": buckets_updated,
+                "buckets_deleted": buckets_deleted,
+                "criteria_added": criteria_added,
+                "criteria_updated": criteria_updated,
+                "criteria_deleted": criteria_deleted,
+            },
+        )
+
+        # 9. Return updated workflow response
+        return WorkflowResponse.model_validate(workflow)
+
+    except HTTPException:
+        # Re-raise HTTP exceptions (404, etc.)
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(
+            "workflow_update_integrity_error",
+            extra={
+                "error": str(e),
+                "workflow_id": str(workflow_id),
+                "organization_id": str(current_user.organization_id),
+                "user_id": str(current_user.id),
+                "request_id": getattr(request.state, "request_id", None),
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "VALIDATION_ERROR",
+                "message": "Invalid bucket references in criteria or database constraint violation",
+                "request_id": getattr(request.state, "request_id", None),
+            },
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(
+            "workflow_update_error",
+            extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "workflow_id": str(workflow_id),
+                "organization_id": str(current_user.organization_id),
+                "user_id": str(current_user.id),
+                "request_id": getattr(request.state, "request_id", None),
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "WORKFLOW_UPDATE_FAILED",
+                "message": f"Failed to update workflow: {str(e)}",
+                "request_id": getattr(request.state, "request_id", None),
+            },
+        )

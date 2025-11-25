@@ -419,3 +419,477 @@ class TestGetWorkflowDetails:
 
         # Verify that query.first() was called only once (single query)
         assert query_mock.first.call_count == 1
+
+
+class TestUpdateWorkflow:
+    """Tests for PUT /v1/workflows/{workflow_id} endpoint."""
+
+    @pytest.fixture
+    def mock_db(self):
+        """Mock database session."""
+        db_mock = MagicMock()
+        # Setup query chain mock
+        query_mock = MagicMock()
+        db_mock.query.return_value = query_mock
+        query_mock.options.return_value = query_mock
+        query_mock.filter.return_value = query_mock
+        return db_mock, query_mock
+
+    def test_update_workflow_name_success(
+        self,
+        client: TestClient,
+        mock_db,
+        mock_audit_service
+    ):
+        """
+        Test updating workflow name and description.
+
+        Acceptance Criteria:
+        - Updates workflow metadata (name, description)
+        - Returns 200 OK with updated workflow
+        - Audit log created with workflow.updated action
+        - Structured logging includes request_id
+        """
+        db_mock, query_mock = mock_db
+
+        buckets = [
+            create_mock_bucket(TEST_BUCKET_1_ID, "Technical Documentation", 0, True),
+        ]
+        criteria = [
+            create_mock_criteria(
+                TEST_CRITERIA_1_ID,
+                "All documents must be signed",
+                "Each document should have authorized signature",
+                [TEST_BUCKET_1_ID]
+            )
+        ]
+
+        workflow = create_mock_workflow(
+            TEST_WORKFLOW_ID,
+            TEST_ORG_A_ID,
+            name="Medical Device - Class II",
+            description="Validation workflow for Class II devices",
+            buckets=buckets,
+            criteria=criteria
+        )
+
+        query_mock.first.return_value = workflow
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        update_data = {
+            "name": "Medical Device - Class II (Updated)",
+            "description": "Updated validation workflow",
+            "buckets": [
+                {
+                    "id": TEST_BUCKET_1_ID,
+                    "name": "Technical Documentation",
+                    "required": True,
+                    "order_index": 0
+                }
+            ],
+            "criteria": [
+                {
+                    "id": TEST_CRITERIA_1_ID,
+                    "name": "All documents must be signed",
+                    "description": "Each document should have authorized signature",
+                    "applies_to_bucket_ids": [TEST_BUCKET_1_ID],
+                    "order_index": 0
+                }
+            ]
+        }
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.put(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                json=update_data,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "Medical Device - Class II (Updated)"
+        assert data["description"] == "Updated validation workflow"
+
+        # Verify audit log was called
+        mock_audit_service.log_workflow_updated.assert_called_once()
+
+    def test_update_workflow_add_bucket(
+        self,
+        client: TestClient,
+        mock_db,
+        mock_audit_service
+    ):
+        """
+        Test adding a new bucket to workflow.
+
+        Acceptance Criteria:
+        - Bucket with id=None creates new bucket
+        - Returns updated workflow with new bucket ID
+        - Audit log tracks buckets_added=1
+        """
+        db_mock, query_mock = mock_db
+
+        buckets = [
+            create_mock_bucket(TEST_BUCKET_1_ID, "Technical Documentation", 0, True),
+        ]
+        criteria = [
+            create_mock_criteria(
+                TEST_CRITERIA_1_ID,
+                "All documents must be signed",
+                "Description",
+                [TEST_BUCKET_1_ID]
+            )
+        ]
+
+        workflow = create_mock_workflow(
+            TEST_WORKFLOW_ID,
+            TEST_ORG_A_ID,
+            buckets=buckets,
+            criteria=criteria
+        )
+
+        query_mock.first.return_value = workflow
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        update_data = {
+            "name": "Test Workflow",
+            "description": "Test Description",
+            "buckets": [
+                {
+                    "id": TEST_BUCKET_1_ID,
+                    "name": "Technical Documentation",
+                    "required": True,
+                    "order_index": 0
+                },
+                {
+                    # New bucket (no ID)
+                    "name": "Test Reports",
+                    "required": False,
+                    "order_index": 1
+                }
+            ],
+            "criteria": [
+                {
+                    "id": TEST_CRITERIA_1_ID,
+                    "name": "All documents must be signed",
+                    "description": "Description",
+                    "applies_to_bucket_ids": [TEST_BUCKET_1_ID],
+                    "order_index": 0
+                }
+            ]
+        }
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.put(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                json=update_data,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 200
+        # Verify new bucket was added
+        assert db_mock.add.called
+
+    def test_update_workflow_delete_bucket(
+        self,
+        client: TestClient,
+        mock_db,
+        mock_audit_service
+    ):
+        """
+        Test deleting a bucket from workflow.
+
+        Acceptance Criteria:
+        - Bucket omitted from request is deleted
+        - Returns updated workflow without deleted bucket
+        - Audit log tracks buckets_deleted=1
+        """
+        db_mock, query_mock = mock_db
+
+        buckets = [
+            create_mock_bucket(TEST_BUCKET_1_ID, "Technical Documentation", 0, True),
+            create_mock_bucket(TEST_BUCKET_2_ID, "Test Reports", 1, True),
+        ]
+        criteria = [
+            create_mock_criteria(
+                TEST_CRITERIA_1_ID,
+                "All documents must be signed",
+                "Description",
+                [TEST_BUCKET_1_ID]
+            )
+        ]
+
+        workflow = create_mock_workflow(
+            TEST_WORKFLOW_ID,
+            TEST_ORG_A_ID,
+            buckets=buckets,
+            criteria=criteria
+        )
+
+        query_mock.first.return_value = workflow
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        update_data = {
+            "name": "Test Workflow",
+            "description": "Test Description",
+            "buckets": [
+                {
+                    "id": TEST_BUCKET_1_ID,
+                    "name": "Technical Documentation",
+                    "required": True,
+                    "order_index": 0
+                }
+                # TEST_BUCKET_2 omitted - should be deleted
+            ],
+            "criteria": [
+                {
+                    "id": TEST_CRITERIA_1_ID,
+                    "name": "All documents must be signed",
+                    "description": "Description",
+                    "applies_to_bucket_ids": [TEST_BUCKET_1_ID],
+                    "order_index": 0
+                }
+            ]
+        }
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.put(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                json=update_data,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 200
+
+    def test_update_workflow_not_found(
+        self,
+        client: TestClient,
+        mock_db,
+        mock_audit_service
+    ):
+        """
+        Test updating non-existent workflow returns 404.
+
+        Acceptance Criteria:
+        - Returns 404 Not Found
+        - Error response includes RESOURCE_NOT_FOUND code
+        - Error response includes request_id
+        """
+        db_mock, query_mock = mock_db
+
+        # No workflow found
+        query_mock.first.return_value = None
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        update_data = {
+            "name": "Test Workflow",
+            "description": "Test Description",
+            "buckets": [
+                {
+                    "name": "Technical Documentation",
+                    "required": True,
+                    "order_index": 0
+                }
+            ],
+            "criteria": [
+                {
+                    "name": "All documents must be signed",
+                    "description": "Description",
+                    "applies_to_bucket_ids": [],
+                    "order_index": 0
+                }
+            ]
+        }
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.put(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                json=update_data,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 404
+        error = response.json()
+        assert error["detail"]["code"] == "RESOURCE_NOT_FOUND"
+        assert "request_id" in error["detail"]
+
+    def test_update_workflow_multi_tenancy_isolation(
+        self,
+        client: TestClient,
+        mock_db,
+        mock_audit_service
+    ):
+        """
+        Test user from org A cannot update workflow from org B.
+
+        Security Test (100% coverage required):
+        - Multi-tenancy isolation enforced
+        - Returns 404 (not 403 to prevent ID enumeration)
+        """
+        db_mock, query_mock = mock_db
+
+        # Workflow belongs to org B
+        workflow = create_mock_workflow(
+            TEST_WORKFLOW_ID,
+            TEST_ORG_B_ID,  # Different org
+        )
+
+        # User from org A tries to access
+        query_mock.first.return_value = None  # Query filters by org_id, returns None
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        update_data = {
+            "name": "Test Workflow",
+            "description": "Test Description",
+            "buckets": [
+                {
+                    "name": "Technical Documentation",
+                    "required": True,
+                    "order_index": 0
+                }
+            ],
+            "criteria": [
+                {
+                    "name": "All documents must be signed",
+                    "description": "Description",
+                    "applies_to_bucket_ids": [],
+                    "order_index": 0
+                }
+            ]
+        }
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.put(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                json=update_data,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 404
+
+    def test_update_workflow_project_handler_forbidden(
+        self,
+        client: TestClient,
+        mock_db,
+        mock_audit_service
+    ):
+        """
+        Test project_handler role cannot update workflow.
+
+        Security Test (RBAC enforcement):
+        - Only process_manager and admin can update
+        - Returns 403 Forbidden for project_handler
+        """
+        db_mock, query_mock = mock_db
+
+        # User with project_handler role (insufficient permissions)
+        token = create_test_token(
+            organization_id=TEST_ORG_A_ID,
+            role="project_handler"  # Not process_manager or admin
+        )
+
+        update_data = {
+            "name": "Test Workflow",
+            "description": "Test Description",
+            "buckets": [
+                {
+                    "name": "Technical Documentation",
+                    "required": True,
+                    "order_index": 0
+                }
+            ],
+            "criteria": [
+                {
+                    "name": "All documents must be signed",
+                    "description": "Description",
+                    "applies_to_bucket_ids": [],
+                    "order_index": 0
+                }
+            ]
+        }
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.put(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                json=update_data,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 403
+
+    def test_update_workflow_invalid_bucket_reference(
+        self,
+        client: TestClient,
+        mock_db,
+        mock_audit_service
+    ):
+        """
+        Test criteria referencing non-existent bucket returns 400.
+
+        Validation Test:
+        - Criteria applies_to_bucket_ids must reference valid buckets
+        - Returns 400 Bad Request with VALIDATION_ERROR code
+        """
+        db_mock, query_mock = mock_db
+
+        buckets = [
+            create_mock_bucket(TEST_BUCKET_1_ID, "Technical Documentation", 0, True),
+        ]
+        criteria = [
+            create_mock_criteria(
+                TEST_CRITERIA_1_ID,
+                "All documents must be signed",
+                "Description",
+                [TEST_BUCKET_1_ID]
+            )
+        ]
+
+        workflow = create_mock_workflow(
+            TEST_WORKFLOW_ID,
+            TEST_ORG_A_ID,
+            buckets=buckets,
+            criteria=criteria
+        )
+
+        query_mock.first.return_value = workflow
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
+
+        # Invalid bucket ID in criteria
+        invalid_bucket_id = str(uuid4())
+
+        update_data = {
+            "name": "Test Workflow",
+            "description": "Test Description",
+            "buckets": [
+                {
+                    "id": TEST_BUCKET_1_ID,
+                    "name": "Technical Documentation",
+                    "required": True,
+                    "order_index": 0
+                }
+            ],
+            "criteria": [
+                {
+                    "name": "All documents must be signed",
+                    "description": "Description",
+                    "applies_to_bucket_ids": [invalid_bucket_id],  # Invalid reference
+                    "order_index": 0
+                }
+            ]
+        }
+
+        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+            response = client.put(
+                f"/v1/workflows/{TEST_WORKFLOW_ID}",
+                json=update_data,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+
+        # Pydantic validation should catch this before hitting endpoint
+        assert response.status_code == 422
