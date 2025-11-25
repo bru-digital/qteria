@@ -35,6 +35,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
+# Allowed sort fields mapping for security and maintainability
+ALLOWED_SORT_FIELDS = {
+    "created_at": Workflow.created_at,
+    "name": Workflow.name,
+}
+
 
 @router.post(
     "",
@@ -332,8 +338,8 @@ async def list_workflows(
         )
     )
 
-    # Apply sorting
-    sort_column = getattr(Workflow, sort_by)
+    # Apply sorting using explicit field mapping
+    sort_column = ALLOWED_SORT_FIELDS[sort_by]
     if order == "desc":
         query = query.order_by(sort_column.desc())
     else:
@@ -363,6 +369,8 @@ async def list_workflows(
             page=page,
             per_page=per_page,
             total_pages=total_pages,
+            has_next_page=page < total_pages,
+            has_prev_page=page > 1,
         )
     )
 

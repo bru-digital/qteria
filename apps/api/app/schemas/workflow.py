@@ -271,6 +271,14 @@ class PaginationMeta(BaseModel):
         ge=0,
         description="Total number of pages"
     )
+    has_next_page: bool = Field(
+        ...,
+        description="Whether there is a next page available"
+    )
+    has_prev_page: bool = Field(
+        ...,
+        description="Whether there is a previous page available"
+    )
 
 
 class WorkflowListResponse(BaseModel):

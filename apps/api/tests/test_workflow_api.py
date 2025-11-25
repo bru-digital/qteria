@@ -646,6 +646,115 @@ class TestListWorkflows:
 
         assert response.status_code == 422  # Validation error
 
+    def test_list_workflows_page_beyond_total_pages(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Requesting page beyond total_pages returns empty workflows array."""
+        # Create 3 workflows
+        for i in range(3):
+            payload = {
+                "name": f"Workflow {i}",
+                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
+                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
+            }
+            client.post(
+                "/v1/workflows",
+                json=payload,
+                headers={"Authorization": f"Bearer {process_manager_token}"},
+            )
+
+        # Request page 100 (way beyond total_pages)
+        response = client.get(
+            "/v1/workflows?page=100&per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # Should return empty workflows array
+        assert len(data["workflows"]) == 0
+        # Pagination metadata should still be valid
+        assert data["pagination"]["page"] == 100
+        assert data["pagination"]["per_page"] == 2
+        assert data["pagination"]["total_pages"] >= 2
+        assert data["pagination"]["has_next_page"] is False
+        assert data["pagination"]["has_prev_page"] is True
+
+    def test_list_workflows_has_next_prev_page_first_page(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """First page has no previous page but may have next page."""
+        # Create 5 workflows
+        for i in range(5):
+            payload = {
+                "name": f"Workflow {i}",
+                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
+                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
+            }
+            client.post(
+                "/v1/workflows",
+                json=payload,
+                headers={"Authorization": f"Bearer {process_manager_token}"},
+            )
+
+        # Request first page with per_page=2
+        response = client.get(
+            "/v1/workflows?page=1&per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["page"] == 1
+        assert data["pagination"]["has_prev_page"] is False
+        # Should have next page since we have 5 workflows and per_page=2
+        assert data["pagination"]["has_next_page"] is True
+
+    def test_list_workflows_has_next_prev_page_last_page(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Last page has previous page but no next page."""
+        # Create 5 workflows
+        for i in range(5):
+            payload = {
+                "name": f"Workflow {i}",
+                "buckets": [{"name": "Bucket", "required": True, "order_index": 0}],
+                "criteria": [{"name": "Criteria", "applies_to_bucket_ids": [0]}],
+            }
+            client.post(
+                "/v1/workflows",
+                json=payload,
+                headers={"Authorization": f"Bearer {process_manager_token}"},
+            )
+
+        # Get total pages first
+        response = client.get(
+            "/v1/workflows?per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+        total_pages = response.json()["pagination"]["total_pages"]
+
+        # Request last page
+        response = client.get(
+            f"/v1/workflows?page={total_pages}&per_page=2",
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["page"] == total_pages
+        assert data["pagination"]["has_next_page"] is False
+        assert data["pagination"]["has_prev_page"] is True
+
 
 class TestGetWorkflow:
     """Tests for GET /v1/workflows/{id} endpoint."""
