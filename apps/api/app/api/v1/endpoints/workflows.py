@@ -9,6 +9,12 @@ Endpoints:
 - GET /v1/workflows/{id} - Get workflow details
 - PUT /v1/workflows/{id} - Update workflow
 - DELETE /v1/workflows/{id} - Archive workflow (soft delete)
+
+Note: All endpoints use `def` (not `async def`) because:
+- No async operations (no await calls to async DB, external APIs, etc.)
+- SQLAlchemy ORM operations are synchronous
+- FastAPI handles both sync and async functions efficiently
+- Using `def` is more accurate and avoids unnecessary async overhead
 """
 from typing import List
 from uuid import UUID
@@ -413,10 +419,14 @@ def get_workflow(
     """
     Get workflow details by ID.
 
+    Multi-tenancy is enforced at the database query level (not after fetching).
+    This prevents loading data from other organizations and is consistent with
+    the pattern used in list_workflows.
+
     Args:
         workflow_id: Workflow UUID
         current_user: Authenticated user
-        request: FastAPI request for audit logging
+        request: FastAPI request (for future audit logging enhancements)
         db: Database session
 
     Returns:
@@ -425,73 +435,33 @@ def get_workflow(
     Raises:
         HTTPException 404: Workflow not found or not in user's organization
     """
-    # Query workflow with eager loading (first check if it exists at all)
+    # Query workflow with eager loading + organization filter
+    # Multi-tenancy: Filter at query level (secure, efficient, consistent)
     workflow = (
         db.query(Workflow)
         .options(
             selectinload(Workflow.buckets),
             selectinload(Workflow.criteria),
         )
-        .filter(Workflow.id == workflow_id)
+        .filter(
+            Workflow.id == workflow_id,
+            Workflow.organization_id == current_user.organization_id,  # Multi-tenancy filter
+        )
         .first()
     )
 
-    # Check if workflow exists
+    # Return 404 for both "not found" and "wrong organization" cases
+    # This prevents information leakage (attacker can't enumerate valid IDs)
     if not workflow:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
                 "code": "WORKFLOW_NOT_FOUND",
-                "message": f"Workflow {workflow_id} not found",
+                "message": "Workflow not found",
+                "workflow_id": str(workflow_id),  # ID in separate field for consistency
             },
         )
 
-    # Multi-tenancy: Check if workflow belongs to user's organization
-    if workflow.organization_id != current_user.organization_id:
-        # Log multi-tenancy violation attempt
-        AuditService.log_multi_tenancy_violation(
-            db=db,
-            user_id=current_user.id,
-            user_organization_id=current_user.organization_id,
-            attempted_organization_id=workflow.organization_id,
-            resource_type="workflow",
-            resource_id=workflow_id,
-            request=request,
-        )
-        # Return 404 to prevent information leakage (don't reveal workflow exists)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "WORKFLOW_NOT_FOUND",
-                "message": f"Workflow {workflow_id} not found",
-            },
-        )
-
-    return WorkflowResponse(
-        id=workflow.id,
-        name=workflow.name,
-        description=workflow.description,
-        organization_id=workflow.organization_id,
-        created_by=workflow.created_by,
-        is_active=workflow.is_active,
-        created_at=workflow.created_at,
-        buckets=[
-            {
-                "id": bucket.id,
-                "name": bucket.name,
-                "required": bucket.required,
-                "order_index": bucket.order_index,
-            }
-            for bucket in workflow.buckets
-        ],
-        criteria=[
-            {
-                "id": c.id,
-                "name": c.name,
-                "description": c.description,
-                "applies_to_bucket_ids": c.applies_to_bucket_ids or [],
-                "order_index": c.order_index,
-            }
-            for c in workflow.criteria
-        ],
-    )
+    # Use Pydantic's ORM mode to automatically map SQLAlchemy model to response schema
+    # This ensures type safety and validates all fields according to the schema
+    return WorkflowResponse.model_validate(workflow)
