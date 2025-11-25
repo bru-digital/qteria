@@ -99,28 +99,37 @@ Create a surgical, elegant implementation plan following these principles:
 
 Your plan MUST include:
 
-#### 1. Technical Approach (2-3 sentences)
+#### 1. Product Guidelines References
+List which product-guidelines files were consulted and how they inform the implementation:
+- **User Journey**: Reference to `product-guidelines/00-user-journey.md` (which step this supports)
+- **Mission Test**: Reference to `product-guidelines/03-mission.md` (how this aligns with mission)
+- **Architecture**: Reference to `product-guidelines/04-architecture.md` (which principles apply)
+- **Database Schema**: Reference to `product-guidelines/07-database-schema-essentials.md` (if database changes)
+- **API Contracts**: Reference to `product-guidelines/08-api-contracts-essentials.md` (if API changes)
+- **Testing**: Reference to `product-guidelines/09-test-strategy-essentials.md` (coverage targets, critical scenarios)
+
+#### 2. Technical Approach (2-3 sentences)
 High-level strategy. What pattern are you using? Why is this the simplest approach?
 
-#### 2. Files to Modify (Exhaustive List)
+#### 3. Files to Modify (Exhaustive List)
 List EVERY file that will be touched with one-line reasoning:
 - `apps/api/app/models/user.py` - Add role field to User model
 - `apps/api/alembic/versions/xxx.py` - Migration for role field
 - `apps/api/app/api/v1/endpoints/auth.py` - Return role in JWT payload
 - `apps/web/app/types/user.ts` - Add role to User type
 
-#### 3. Database Changes (If Applicable)
+#### 4. Database Changes (If Applicable)
 - New tables/columns with types
 - Indexes to add
 - Foreign keys
 - Migration strategy (if breaking)
 
-#### 4. API Changes (If Applicable)
+#### 5. API Changes (If Applicable)
 - New/modified endpoints with method and path
 - Request/response schema changes
 - Breaking changes clearly marked
 
-#### 5. Implementation Steps (Sequential)
+#### 6. Implementation Steps (Sequential)
 Numbered steps in execution order:
 1. Create Alembic migration for X
 2. Update SQLAlchemy model Y
@@ -131,19 +140,19 @@ Numbered steps in execution order:
 7. Implement UI component D
 8. Write tests for E, F, G
 
-#### 6. Testing Requirements
+#### 7. Testing Requirements
 - Unit tests needed (specific functions)
 - Integration tests needed (specific flows)
 - E2E tests needed (specific user journeys)
 - Multi-tenancy tests (if data access involved)
 - Auth tests (if permissions involved)
 
-#### 7. Breaking Changes & Migration
+#### 8. Breaking Changes & Migration
 - List any breaking changes
 - Migration steps for existing data
 - NO backwards compatibility layers
 
-#### 8. Success Criteria
+#### 9. Success Criteria
 - How to verify the implementation works
 - Performance benchmarks (if applicable)
 - Coverage targets
@@ -163,6 +172,15 @@ Numbered steps in execution order:
 
 ```markdown
 ## Implementation Plan for Issue #{issue-number}: {Title}
+
+### Product Guidelines References
+
+- **User Journey**: Step 1 (Process Manager Creates Workflow) - `product-guidelines/00-user-journey.md`
+- **Mission Test**: Enables role-based access control to prevent unauthorized workflow creation, supporting the mission by ensuring data integrity and security - `product-guidelines/03-mission.md`
+- **Architecture**: Implements Fail-Safe Architecture (authentication required for all operations) - `product-guidelines/04-architecture.md`
+- **Database Schema**: Extends User model with role enum per schema patterns - `product-guidelines/07-database-schema-essentials.md`
+- **API Contracts**: JWT tokens follow authentication contract - `product-guidelines/08-api-contracts-essentials.md`
+- **Testing**: Targets 100% coverage for RBAC/multi-tenancy security - `product-guidelines/09-test-strategy-essentials.md`
 
 ### Technical Approach
 We'll add RBAC by extending the User model with a `role` enum field, updating the JWT payload to include role, and adding middleware to check permissions. This leverages SQLAlchemy enums and FastAPI dependencies—no custom framework needed.

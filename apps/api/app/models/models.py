@@ -127,6 +127,8 @@ class Workflow(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     is_active = Column(Boolean, default=True)
+    archived = Column(Boolean, default=False, nullable=False)
+    archived_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -149,6 +151,7 @@ class Workflow(Base):
     __table_args__ = (
         Index("idx_workflow_organization", "organization_id"),
         Index("idx_workflow_active", "is_active"),
+        Index("idx_workflow_archived", "archived"),
     )
 
 
