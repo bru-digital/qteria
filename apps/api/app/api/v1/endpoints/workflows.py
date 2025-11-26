@@ -916,5 +916,3 @@ def archive_workflow(
             "request_id": getattr(request.state, "request_id", None),
         },
     )
-
-    return None

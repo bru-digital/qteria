@@ -35,15 +35,9 @@ def upgrade() -> None:
         sa.Column('archived_at', sa.TIMESTAMP(timezone=True), nullable=True)
     )
 
-    # Create index on archived column for efficient filtering
-    op.create_index('idx_workflow_archived', 'workflows', ['archived'], unique=False)
-
 
 def downgrade() -> None:
     """Remove archived and archived_at columns from workflows table."""
-    # Drop index first
-    op.drop_index('idx_workflow_archived', table_name='workflows')
-
     # Drop columns
     op.drop_column('workflows', 'archived_at')
     op.drop_column('workflows', 'archived')
