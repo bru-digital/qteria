@@ -5,9 +5,9 @@ Revises: b2c3d4e5f6g8
 Create Date: 2025-11-26 08:47:33.526113+00:00
 
 Adds an explicit index on assessments.workflow_id to optimize the workflow
-archive operation's assessment count query. While PostgreSQL may create an
-implicit index for the foreign key, an explicit index ensures optimal
-performance for COUNT queries.
+archive operation's assessment count query. PostgreSQL does NOT automatically
+create indexes for foreign keys (unlike MySQL), so we must explicitly create
+this index to ensure optimal performance for COUNT queries.
 """
 from typing import Sequence, Union
 

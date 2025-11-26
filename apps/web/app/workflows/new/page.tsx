@@ -110,29 +110,67 @@ export default function NewWorkflowPage() {
     )
   }
 
+  // Role-based access control: Only process_manager and admin can create workflows
+  const allowedRoles = ["process_manager", "admin"]
+  if (session?.user?.role && !allowedRoles.includes(session.user.role)) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="flex justify-center mb-4">
+              <svg
+                className="h-12 w-12 text-red-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Access Denied
+            </h2>
+            <p className="text-gray-700 mb-4">
+              You do not have permission to create workflows. Only Process
+              Managers and Administrators can create workflows.
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              Your role: <span className="font-medium">{session.user.role}</span>
+            </p>
+            <button
+              onClick={() => router.push("/workflows")}
+              className="px-6 py-3 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700"
+            >
+              Go to Workflows
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const onSubmit = async (data: WorkflowForm) => {
     setIsSubmitting(true)
     setError("")
 
     try {
-      // Get API URL from environment or use default
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-
-      const response = await fetch(`${apiUrl}/v1/workflows`, {
+      // Call Next.js API proxy route (handles authentication server-side)
+      const response = await fetch("/api/v1/workflows", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Include auth token from session if available
-          ...(session?.user?.id && {
-            "Authorization": `Bearer ${session.user.id}`,
-          }),
         },
         body: JSON.stringify(data),
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({
-          message: "Failed to create workflow",
+          detail: { message: "Failed to create workflow" },
         }))
         throw new Error(
           errorData.detail?.message || errorData.message || "Failed to create workflow"
@@ -383,20 +421,35 @@ export default function NewWorkflowPage() {
                         Applies to buckets
                       </label>
                       <div className="space-y-2">
-                        {buckets.map((bucket, bucketIndex) => (
-                          <label
-                            key={bucketIndex}
-                            className="flex items-center gap-2 text-sm text-gray-700"
-                          >
-                            <input
-                              type="checkbox"
-                              value={bucketIndex}
-                              {...register(`criteria.${index}.applies_to_bucket_ids`)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            {bucket.name || `Bucket ${bucketIndex + 1}`}
-                          </label>
-                        ))}
+                        {buckets.map((bucket, bucketIndex) => {
+                          const bucketName = form.watch(`buckets.${bucketIndex}.name`)
+                          const displayName = bucketName || `Bucket ${bucketIndex + 1}`
+                          const isUnnamed = !bucketName
+
+                          return (
+                            <label
+                              key={bucketIndex}
+                              className={`flex items-center gap-2 text-sm ${
+                                isUnnamed
+                                  ? "text-gray-400 italic"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                value={bucketIndex}
+                                {...register(`criteria.${index}.applies_to_bucket_ids`)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              {displayName}
+                              {isUnnamed && (
+                                <span className="text-xs text-gray-400">
+                                  (unnamed)
+                                </span>
+                              )}
+                            </label>
+                          )
+                        })}
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
                         Leave unchecked to apply to all buckets
