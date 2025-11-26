@@ -218,6 +218,8 @@ class WorkflowResponse(BaseModel):
     organization_id: UUID
     created_by: UUID
     is_active: bool
+    archived: bool = Field(default=False, description="Whether workflow is archived")
+    archived_at: Optional[datetime] = Field(None, description="Archive timestamp")
     created_at: datetime
     updated_at: datetime
     buckets: List[BucketResponse]
@@ -236,6 +238,8 @@ class WorkflowListItem(BaseModel):
     name: str
     description: Optional[str]
     is_active: bool
+    archived: bool = Field(default=False, description="Whether workflow is archived")
+    archived_at: Optional[datetime] = Field(None, description="Archive timestamp")
     created_at: datetime
     buckets_count: int
     criteria_count: int

@@ -28,7 +28,7 @@ from sqlalchemy import func
 
 from app.core.auth import ProcessManagerOrAdmin, AuthenticatedUser, CurrentUser
 from app.core.dependencies import get_db
-from app.models import Workflow, Bucket, Criteria
+from app.models import Workflow, Bucket, Criteria, Assessment
 from app.schemas.workflow import (
     WorkflowCreate,
     WorkflowUpdate,
@@ -282,13 +282,14 @@ List all workflows for the current user's organization with pagination.
 
 **Sorting**: Supports sort_by (created_at, name) and order (asc, desc) parameters.
 
-**Filtering**: Returns only active workflows by default.
+**Filtering**: Returns only active workflows by default. Use `include_archived=true` to show archived workflows.
     """,
 )
 def list_workflows(
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
     is_active: bool = True,
+    include_archived: bool = Query(False, description="Include archived workflows"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
     sort_by: str = Query("created_at", pattern="^(created_at|name)$", description="Sort field"),
@@ -301,6 +302,7 @@ def list_workflows(
         current_user: Authenticated user
         db: Database session
         is_active: Filter by active status (default: True)
+        include_archived: Include archived workflows (default: False)
         page: Page number (1-indexed)
         per_page: Items per page (max 100)
         sort_by: Sort field (created_at or name)
@@ -309,14 +311,21 @@ def list_workflows(
     Returns:
         WorkflowListResponse: Paginated list of workflows with metadata
     """
+    # Build filters for total count query
+    filters = [
+        Workflow.organization_id == current_user.organization_id,
+        Workflow.is_active == is_active,
+    ]
+
+    # Exclude archived workflows by default (soft delete pattern)
+    if not include_archived:
+        filters.append(Workflow.archived.is_not(True))
+
     # Count total workflows for pagination metadata
     # Note: scalar() returns None if no rows match, so we default to 0
     total_count = (
         db.query(func.count(Workflow.id))
-        .filter(
-            Workflow.organization_id == current_user.organization_id,
-            Workflow.is_active == is_active,
-        )
+        .filter(*filters)
         .scalar()
     ) or 0
 
@@ -337,17 +346,14 @@ def list_workflows(
         .scalar_subquery()
     )
 
-    # Build query with sorting
+    # Build query with sorting - apply same filters as count query
     query = (
         db.query(
             Workflow,
             buckets_count_subquery.label('buckets_count'),
             criteria_count_subquery.label('criteria_count'),
         )
-        .filter(
-            Workflow.organization_id == current_user.organization_id,
-            Workflow.is_active == is_active,
-        )
+        .filter(*filters)
     )
 
     # Apply sorting using explicit field mapping (defense-in-depth)
@@ -378,6 +384,8 @@ def list_workflows(
             name=wf.Workflow.name,
             description=wf.Workflow.description,
             is_active=wf.Workflow.is_active,
+            archived=wf.Workflow.archived,
+            archived_at=wf.Workflow.archived_at,
             created_at=wf.Workflow.created_at,
             buckets_count=wf.buckets_count,
             criteria_count=wf.criteria_count,
@@ -410,6 +418,10 @@ Get detailed workflow information including all buckets and criteria.
 **Authorization**: Requires authentication (all roles).
 
 **Multi-Tenancy**: Returns 404 if workflow not in user's organization.
+
+**Archived Workflows**: Archived workflows are still accessible via this endpoint
+for audit trail purposes (SOC2/ISO 27001 compliance). Use the `archived` field
+in the response to check if a workflow has been archived.
     """,
 )
 def get_workflow(
@@ -779,3 +791,130 @@ def update_workflow(
                 "request_id": getattr(request.state, "request_id", None),
             },
         )
+
+
+@router.delete(
+    "/{workflow_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Archive workflow (soft delete)",
+    description="""
+Archive a workflow (soft delete pattern).
+
+**Authorization**: Requires `process_manager` or `admin` role.
+
+**Soft Delete**: Marks workflow as archived instead of physically deleting it.
+This preserves data integrity and maintains audit trail for SOC2/ISO 27001 compliance.
+
+**Data Integrity Protection**: Cannot archive workflow if it has assessments (409 Conflict).
+
+**Multi-Tenancy**: Returns 404 if workflow not in user's organization.
+
+**Archived Workflow Behavior**:
+- Hidden from list endpoint by default (use include_archived=true to show)
+- Still accessible via direct GET (for audit trail)
+- Cannot be used for new assessments
+    """,
+)
+def archive_workflow(
+    workflow_id: UUID,
+    current_user: ProcessManagerOrAdmin,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    Archive a workflow (soft delete).
+
+    Args:
+        workflow_id: Workflow UUID to archive
+        current_user: Authenticated user (requires process_manager or admin role)
+        request: FastAPI request (for audit logging)
+        db: Database session
+
+    Returns:
+        None (204 No Content on success)
+
+    Raises:
+        HTTPException 400: Workflow is already archived
+        HTTPException 403: Insufficient permissions (not process_manager/admin)
+        HTTPException 404: Workflow not found or not in user's organization
+        HTTPException 409: Workflow has assessments (cannot archive)
+    """
+    # Multi-tenancy: Get workflow only if it belongs to user's organization
+    workflow = (
+        db.query(Workflow)
+        .filter(
+            Workflow.id == workflow_id,
+            Workflow.organization_id == current_user.organization_id,
+        )
+        .first()
+    )
+
+    if not workflow:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "RESOURCE_NOT_FOUND",
+                "message": "Workflow not found",
+                "workflow_id": str(workflow_id),
+            },
+        )
+
+    # Data integrity check: Prevent archiving if workflow has assessments
+    # Check external dependencies first (before checking internal state)
+    assessment_count = (
+        db.query(func.count(Assessment.id))
+        .filter(Assessment.workflow_id == workflow_id)
+        .scalar()
+    ) or 0
+
+    if assessment_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "RESOURCE_HAS_DEPENDENCIES",
+                "message": f"Cannot archive workflow with {assessment_count} existing assessments",
+                "assessment_count": assessment_count,
+            },
+        )
+
+    # Check if workflow is already archived
+    if workflow.archived:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "ALREADY_ARCHIVED",
+                "message": "Workflow is already archived",
+                "archived_at": workflow.archived_at.isoformat() if workflow.archived_at else None,
+            },
+        )
+
+    # Soft delete: Mark as archived
+    workflow.archived = True
+    workflow.archived_at = datetime.now(timezone.utc)
+    db.commit()
+
+    # Log workflow archive (important operation for audit trail)
+    AuditService.log_event(
+        db=db,
+        action="workflow.archived",
+        organization_id=current_user.organization_id,
+        user_id=current_user.id,
+        resource_type="workflow",
+        resource_id=workflow_id,
+        metadata={
+            "workflow_name": workflow.name,
+            "archived_by_email": current_user.email,
+            "archived_at": workflow.archived_at.isoformat(),
+        },
+        request=request,
+    )
+
+    logger.info(
+        "workflow_archived",
+        extra={
+            "workflow_id": str(workflow_id),
+            "organization_id": str(current_user.organization_id),
+            "archived_by": str(current_user.id),
+            "request_id": getattr(request.state, "request_id", None),
+        },
+    )

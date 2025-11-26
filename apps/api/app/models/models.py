@@ -126,7 +126,13 @@ class Workflow(Base):
     )
     name = Column(String(255), nullable=False)
     description = Column(Text)
+
+    # Workflow status fields:
+    # - is_active: Workflow enabled/disabled (can be toggled by user)
+    # - archived: Workflow soft deleted (permanent removal from normal operations, preserves audit trail)
     is_active = Column(Boolean, default=True)
+    archived = Column(Boolean, default=False, nullable=False)
+    archived_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -149,6 +155,7 @@ class Workflow(Base):
     __table_args__ = (
         Index("idx_workflow_organization", "organization_id"),
         Index("idx_workflow_active", "is_active"),
+        Index("idx_workflow_org_archived", "organization_id", "archived"),  # Composite index for list queries
     )
 
 
@@ -266,6 +273,7 @@ class Assessment(Base):
     __table_args__ = (
         Index("idx_assessment_organization_status", "organization_id", "status"),
         Index("idx_assessment_status", "status"),
+        Index("idx_assessment_workflow", "workflow_id"),  # For workflow archive checks
         Index("idx_assessment_created_at", "started_at"),
     )
 
