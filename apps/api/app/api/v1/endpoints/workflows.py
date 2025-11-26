@@ -319,7 +319,7 @@ def list_workflows(
 
     # Exclude archived workflows by default (soft delete pattern)
     if not include_archived:
-        filters.append(Workflow.archived == False)
+        filters.append(Workflow.archived.is_not(True))
 
     # Count total workflows for pagination metadata
     # Note: scalar() returns None if no rows match, so we default to 0

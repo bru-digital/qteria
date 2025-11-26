@@ -1170,16 +1170,18 @@ class TestArchiveWorkflow:
         - Returns 409 Conflict
         - Error includes assessment count
         """
+        MOCK_ASSESSMENT_COUNT = 5  # Number of assessments preventing archive
+
         db_mock, query_mock = mock_db
 
         workflow = create_mock_workflow(TEST_WORKFLOW_ID, TEST_ORG_A_ID)
         workflow.archived = False
         query_mock.first.return_value = workflow
 
-        # Mock assessment count (5 assessments)
+        # Mock assessment count (prevents archiving)
         count_query_mock = MagicMock()
         db_mock.query.return_value.filter.return_value = count_query_mock
-        count_query_mock.scalar.return_value = 5
+        count_query_mock.scalar.return_value = MOCK_ASSESSMENT_COUNT
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
@@ -1192,8 +1194,8 @@ class TestArchiveWorkflow:
         assert response.status_code == 409
         error = response.json()
         assert error["detail"]["code"] == "RESOURCE_HAS_DEPENDENCIES"
-        assert error["detail"]["assessment_count"] == 5
-        assert "5 existing assessments" in error["detail"]["message"]
+        assert error["detail"]["assessment_count"] == MOCK_ASSESSMENT_COUNT
+        assert f"{MOCK_ASSESSMENT_COUNT} existing assessments" in error["detail"]["message"]
 
     def test_archive_already_archived_workflow(
         self,
