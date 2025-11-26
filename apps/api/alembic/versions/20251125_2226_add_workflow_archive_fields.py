@@ -1,7 +1,7 @@
 """Add workflow archive fields
 
 Revision ID: a1b2c3d4e5f7
-Revises: c1a2b3d4e5f6
+Revises: d27b61e3d79a
 Create Date: 2025-11-25 22:26:00.000000
 
 This migration adds archived and archived_at columns to the workflows table
@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'a1b2c3d4e5f7'
-down_revision: Union[str, None] = 'c1a2b3d4e5f6'
+down_revision: Union[str, None] = 'd27b61e3d79a'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
