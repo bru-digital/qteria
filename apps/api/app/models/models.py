@@ -126,6 +126,10 @@ class Workflow(Base):
     )
     name = Column(String(255), nullable=False)
     description = Column(Text)
+
+    # Workflow status fields:
+    # - is_active: Workflow enabled/disabled (can be toggled by user)
+    # - archived: Workflow soft deleted (permanent removal from normal operations, preserves audit trail)
     is_active = Column(Boolean, default=True)
     archived = Column(Boolean, default=False, nullable=False)
     archived_at = Column(TIMESTAMP(timezone=True), nullable=True)
@@ -269,6 +273,7 @@ class Assessment(Base):
     __table_args__ = (
         Index("idx_assessment_organization_status", "organization_id", "status"),
         Index("idx_assessment_status", "status"),
+        Index("idx_assessment_workflow", "workflow_id"),  # For workflow archive checks
         Index("idx_assessment_created_at", "started_at"),
     )
 

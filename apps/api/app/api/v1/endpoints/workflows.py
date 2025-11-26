@@ -834,6 +834,7 @@ def archive_workflow(
         None (204 No Content on success)
 
     Raises:
+        HTTPException 400: Workflow is already archived
         HTTPException 403: Insufficient permissions (not process_manager/admin)
         HTTPException 404: Workflow not found or not in user's organization
         HTTPException 409: Workflow has assessments (cannot archive)
@@ -858,18 +859,8 @@ def archive_workflow(
             },
         )
 
-    # Check if workflow is already archived
-    if workflow.archived:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "ALREADY_ARCHIVED",
-                "message": "Workflow is already archived",
-                "archived_at": workflow.archived_at.isoformat() if workflow.archived_at else None,
-            },
-        )
-
     # Data integrity check: Prevent archiving if workflow has assessments
+    # Check external dependencies first (before checking internal state)
     assessment_count = (
         db.query(func.count(Assessment.id))
         .filter(Assessment.workflow_id == workflow_id)
@@ -883,6 +874,17 @@ def archive_workflow(
                 "code": "RESOURCE_HAS_DEPENDENCIES",
                 "message": f"Cannot archive workflow with {assessment_count} existing assessments",
                 "assessment_count": assessment_count,
+            },
+        )
+
+    # Check if workflow is already archived
+    if workflow.archived:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "ALREADY_ARCHIVED",
+                "message": "Workflow is already archived",
+                "archived_at": workflow.archived_at.isoformat() if workflow.archived_at else None,
             },
         )
 
