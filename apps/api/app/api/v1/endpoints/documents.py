@@ -135,6 +135,14 @@ async def upload_document(
     """
     try:
         # 1. Read file content and validate size
+        #
+        # DESIGN RATIONALE: Read entire file before size validation
+        # - Simpler code flow (single read, single validation)
+        # - FastAPI's UploadFile provides reliable file content
+        # - Memory impact acceptable for MVP (10 concurrent × 50MB = 500MB max)
+        # - Alternative approach (seek/tell before read) adds complexity without
+        #   meaningful benefit for current scale
+        #
         # NOTE: We read the entire file into memory here. For the MVP target of
         # 10 concurrent uploads with max 50MB files, this is acceptable (500MB RAM).
         # TODO: Future optimization for >50 concurrent uploads: implement streaming

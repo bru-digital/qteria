@@ -20,14 +20,25 @@ if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-productio
 
 /**
  * Extended JWT type with custom fields
+ *
+ * NAMING CONVENTION: JWT uses snake_case (org_id) to match backend API contract.
+ * The backend API (FastAPI/Python) uses snake_case throughout, so JWT tokens
+ * use org_id for consistency with API responses and authentication flows.
  */
 interface ExtendedJWT extends JWT {
   role?: string
-  org_id?: string
+  org_id?: string  // Snake_case to match backend API contract
 }
 
 /**
  * Extended Session type with custom user fields
+ *
+ * NAMING CONVENTION: Session uses camelCase (organizationId) to match frontend
+ * TypeScript conventions. This aligns with Prisma schema and frontend codebase.
+ *
+ * MAPPING: The JWT callback converts between these conventions:
+ * - Backend/JWT: org_id (snake_case)
+ * - Frontend/Session: organizationId (camelCase)
  */
 interface ExtendedSession extends Session {
   user: {
@@ -35,7 +46,7 @@ interface ExtendedSession extends Session {
     email: string
     name: string | null
     role: string
-    organizationId: string
+    organizationId: string  // CamelCase to match TypeScript conventions
   }
 }
 
@@ -60,6 +71,8 @@ export const baseAuthConfig = {
       if (user) {
         const extendedToken = token as ExtendedJWT
         extendedToken.role = (user as any).role
+        // Map frontend organizationId (camelCase) to JWT org_id (snake_case)
+        // This ensures JWT matches backend API contract (FastAPI uses snake_case)
         extendedToken.org_id = (user as any).organizationId
         return extendedToken
       }
@@ -72,6 +85,8 @@ export const baseAuthConfig = {
       if (session.user) {
         (session.user as any).id = token.sub as string
         ;(session.user as any).role = extendedToken.role as string
+        // Map JWT org_id (snake_case) back to Session organizationId (camelCase)
+        // This ensures frontend code follows TypeScript naming conventions
         ;(session.user as any).organizationId = extendedToken.org_id as string
       }
       return session
