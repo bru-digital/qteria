@@ -28,6 +28,7 @@ from sqlalchemy import func
 
 from app.core.auth import ProcessManagerOrAdmin, AuthenticatedUser, CurrentUser
 from app.core.dependencies import get_db
+from app.core.exceptions import create_error_response
 from app.models import Workflow, Bucket, Criteria, Assessment
 from app.schemas.workflow import (
     WorkflowCreate,
@@ -237,12 +238,10 @@ def create_workflow(
                 "user_id": str(current_user.id),
             },
         )
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "code": "DATABASE_ERROR",
-                "message": "Failed to create workflow due to database constraint violation",
-            },
+            error_code="DATABASE_ERROR",
+            message="Failed to create workflow due to database constraint violation",
         )
     except Exception as e:
         db.rollback()
@@ -255,12 +254,10 @@ def create_workflow(
                 "user_id": str(current_user.id),
             },
         )
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "code": "WORKFLOW_CREATION_FAILED",
-                "message": f"Failed to create workflow: {str(e)}",
-            },
+            error_code="WORKFLOW_CREATION_FAILED",
+            message=f"Failed to create workflow: {str(e)}",
         )
 
 
@@ -361,12 +358,10 @@ def list_workflows(
     # but we add defensive handling in case of future middleware changes
     sort_column = ALLOWED_SORT_FIELDS.get(sort_by)
     if not sort_column:
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "code": "INVALID_SORT_FIELD",
-                "message": f"Invalid sort field: {sort_by}. Allowed fields: {', '.join(ALLOWED_SORT_FIELDS.keys())}",
-            },
+            error_code="INVALID_SORT_FIELD",
+            message=f"Invalid sort field: {sort_by}. Allowed fields: {', '.join(ALLOWED_SORT_FIELDS.keys())}",
         )
 
     if order == "desc":
@@ -467,13 +462,12 @@ def get_workflow(
     # Return 404 for both "not found" and "wrong organization" cases
     # This prevents information leakage (attacker can't enumerate valid IDs)
     if not workflow:
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "WORKFLOW_NOT_FOUND",
-                "message": "Workflow not found",
-                "workflow_id": str(workflow_id),  # ID in separate field for consistency
-            },
+            error_code="WORKFLOW_NOT_FOUND",
+            message="Workflow not found",
+            details={"workflow_id": str(workflow_id)},
+            request=request,
         )
 
     # Use Pydantic's ORM mode to automatically map SQLAlchemy model to response schema
@@ -582,13 +576,11 @@ def update_workflow(
         )
 
         if not workflow:
-            raise HTTPException(
+            raise create_error_response(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={
-                    "code": "RESOURCE_NOT_FOUND",
-                    "message": "Workflow not found",
-                    "request_id": getattr(request.state, "request_id", None),
-                },
+                error_code="RESOURCE_NOT_FOUND",
+                message="Workflow not found",
+                request=request,
             )
 
         # Track changes for audit logging
@@ -762,13 +754,11 @@ def update_workflow(
                 "request_id": getattr(request.state, "request_id", None),
             },
         )
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "VALIDATION_ERROR",
-                "message": "Invalid bucket references in criteria or database constraint violation",
-                "request_id": getattr(request.state, "request_id", None),
-            },
+            error_code="VALIDATION_ERROR",
+            message="Invalid bucket references in criteria or database constraint violation",
+            request=request,
         )
     except Exception as e:
         db.rollback()
@@ -783,13 +773,11 @@ def update_workflow(
                 "request_id": getattr(request.state, "request_id", None),
             },
         )
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "code": "WORKFLOW_UPDATE_FAILED",
-                "message": f"Failed to update workflow: {str(e)}",
-                "request_id": getattr(request.state, "request_id", None),
-            },
+            error_code="WORKFLOW_UPDATE_FAILED",
+            message=f"Failed to update workflow: {str(e)}",
+            request=request,
         )
 
 
@@ -850,13 +838,12 @@ def archive_workflow(
     )
 
     if not workflow:
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "RESOURCE_NOT_FOUND",
-                "message": "Workflow not found",
-                "workflow_id": str(workflow_id),
-            },
+            error_code="RESOURCE_NOT_FOUND",
+            message="Workflow not found",
+            details={"workflow_id": str(workflow_id)},
+            request=request,
         )
 
     # Data integrity check: Prevent archiving if workflow has assessments
@@ -868,24 +855,22 @@ def archive_workflow(
     ) or 0
 
     if assessment_count > 0:
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "RESOURCE_HAS_DEPENDENCIES",
-                "message": f"Cannot archive workflow with {assessment_count} existing assessments",
-                "assessment_count": assessment_count,
-            },
+            error_code="RESOURCE_HAS_DEPENDENCIES",
+            message=f"Cannot archive workflow with {assessment_count} existing assessments",
+            details={"assessment_count": assessment_count},
+            request=request,
         )
 
     # Check if workflow is already archived
     if workflow.archived:
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "ALREADY_ARCHIVED",
-                "message": "Workflow is already archived",
-                "archived_at": workflow.archived_at.isoformat() if workflow.archived_at else None,
-            },
+            error_code="ALREADY_ARCHIVED",
+            message="Workflow is already archived",
+            details={"archived_at": workflow.archived_at.isoformat() if workflow.archived_at else None},
+            request=request,
         )
 
     # Soft delete: Mark as archived

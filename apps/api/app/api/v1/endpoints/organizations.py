@@ -23,6 +23,7 @@ from app.core.auth import (
     AdminOnly,
     AuthenticatedUser,
 )
+from app.core.exceptions import create_error_response
 from app.models.models import Organization
 from app.models.enums import UserRole
 from app.schemas.organization import (
@@ -68,9 +69,11 @@ def create_organization(
     # Check if organization with same name exists
     existing = db.query(Organization).filter(Organization.name == organization.name).first()
     if existing:
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Organization with name '{organization.name}' already exists",
+            error_code="VALIDATION_ERROR",
+            message=f"Organization with name '{organization.name}' already exists",
+            details={"field": "name", "value": organization.name},
         )
 
     # Create new organization
@@ -167,23 +170,21 @@ def get_organization(
             request=request,
         )
         # Return 404 to prevent information leakage (don't reveal org exists)
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "RESOURCE_NOT_FOUND",
-                "message": "Organization not found",
-            },
+            error_code="RESOURCE_NOT_FOUND",
+            message="Organization not found",
+            request=request,
         )
 
     organization = db.query(Organization).filter(Organization.id == organization_id).first()
 
     if not organization:
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "RESOURCE_NOT_FOUND",
-                "message": "Organization not found",
-            },
+            error_code="RESOURCE_NOT_FOUND",
+            message="Organization not found",
+            request=request,
         )
 
     return organization
@@ -238,23 +239,21 @@ def update_organization(
             request=request,
         )
         # Return 404 to prevent information leakage (don't reveal org exists)
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "RESOURCE_NOT_FOUND",
-                "message": "Organization not found",
-            },
+            error_code="RESOURCE_NOT_FOUND",
+            message="Organization not found",
+            request=request,
         )
 
     organization = db.query(Organization).filter(Organization.id == organization_id).first()
 
     if not organization:
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "RESOURCE_NOT_FOUND",
-                "message": "Organization not found",
-            },
+            error_code="RESOURCE_NOT_FOUND",
+            message="Organization not found",
+            request=request,
         )
 
     # Update only provided fields
@@ -326,23 +325,21 @@ def delete_organization(
             request=request,
         )
         # Return 404 to prevent information leakage (don't reveal org exists)
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "RESOURCE_NOT_FOUND",
-                "message": "Organization not found",
-            },
+            error_code="RESOURCE_NOT_FOUND",
+            message="Organization not found",
+            request=request,
         )
 
     organization = db.query(Organization).filter(Organization.id == organization_id).first()
 
     if not organization:
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "RESOURCE_NOT_FOUND",
-                "message": "Organization not found",
-            },
+            error_code="RESOURCE_NOT_FOUND",
+            message="Organization not found",
+            request=request,
         )
 
     # Log organization deletion (critical operation - log before delete)

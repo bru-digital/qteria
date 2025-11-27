@@ -230,7 +230,7 @@ class TestRBACIntegration:
         # Security: 404 (not 403) to prevent info leakage
         assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
+        assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
 
     def test_non_admin_cannot_access_other_organization(self, client, test_orgs, test_users, db_session):
         """Non-admin users cannot access another organization's details.
@@ -256,7 +256,7 @@ class TestRBACIntegration:
         # Security: 404 (not 403) to prevent info leakage
         assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
+        assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
 
         # Verify audit log was created for multi-tenancy violation
         audit_logs = (
@@ -322,8 +322,8 @@ class TestRBACIntegration:
 
         assert response.status_code == 403
         data = response.json()
-        assert data["detail"]["code"] == "INSUFFICIENT_PERMISSIONS"
-        assert "admin" in data["detail"]["required_roles"]
+        assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
+        assert "admin" in data["error"]["required_roles"]
 
         # Verify audit log for authorization denial
         audit_logs = (

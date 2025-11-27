@@ -166,7 +166,7 @@ class TestJWTValidation:
         data = response.json()
         # jose library reports expired tokens as JWT_ERROR (ExpiredSignatureError)
         # The important thing is that we get 401, not access granted
-        assert data["detail"]["code"] in ["TOKEN_EXPIRED", "JWT_ERROR"]
+        assert data["error"]["code"] in ["TOKEN_EXPIRED", "JWT_ERROR"]
 
     def test_malformed_token_returns_401(self, client: TestClient, malformed_token: str):
         """Malformed token string returns 401."""
@@ -200,7 +200,7 @@ class TestJWTValidation:
         )
         assert response.status_code == 401
         data = response.json()
-        assert data["detail"]["code"] == "INVALID_ROLE"
+        assert data["error"]["code"] == "INVALID_ROLE"
 
 
 class TestRoleEnforcement:
@@ -226,9 +226,9 @@ class TestRoleEnforcement:
         )
         assert response.status_code == 403
         data = response.json()
-        assert data["detail"]["code"] == "INSUFFICIENT_PERMISSIONS"
-        assert "admin" in data["detail"]["required_roles"]
-        assert data["detail"]["your_role"] == "process_manager"
+        assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
+        assert "admin" in data["error"]["required_roles"]
+        assert data["error"]["your_role"] == "process_manager"
 
     def test_project_handler_cannot_create_organization(
         self, client: TestClient, project_handler_token: str
@@ -241,7 +241,7 @@ class TestRoleEnforcement:
         )
         assert response.status_code == 403
         data = response.json()
-        assert data["detail"]["code"] == "INSUFFICIENT_PERMISSIONS"
+        assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
 
     def test_authenticated_user_can_list_organizations(
         self, client: TestClient, project_handler_token: str
@@ -319,7 +319,7 @@ class TestMultiTenancy:
         # Security: 404 (not 403) to prevent info leakage
         assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
+        assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
 
     def test_admin_cannot_update_other_org(
         self, client: TestClient, org_a_admin_token: str
@@ -336,7 +336,7 @@ class TestMultiTenancy:
         # Security: 404 (not 403) to prevent info leakage
         assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
+        assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
 
     def test_admin_cannot_delete_other_org(
         self, client: TestClient, org_a_admin_token: str
@@ -352,7 +352,7 @@ class TestMultiTenancy:
         # Security: 404 (not 403) to prevent info leakage
         assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "RESOURCE_NOT_FOUND"
+        assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
 
 
 class TestRequireRoleDecorator:
@@ -431,8 +431,8 @@ class TestErrorResponses:
         assert response.status_code == 401
         data = response.json()
         assert "detail" in data
-        assert "code" in data["detail"]
-        assert "message" in data["detail"]
+        assert "code" in data["error"]
+        assert "message" in data["error"]
 
     def test_403_response_format(
         self, client: TestClient, project_handler_token: str
@@ -446,6 +446,6 @@ class TestErrorResponses:
         assert response.status_code == 403
         data = response.json()
         assert "detail" in data
-        assert data["detail"]["code"] == "INSUFFICIENT_PERMISSIONS"
-        assert "required_roles" in data["detail"]
-        assert "your_role" in data["detail"]
+        assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
+        assert "required_roles" in data["error"]
+        assert "your_role" in data["error"]
