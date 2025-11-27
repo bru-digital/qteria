@@ -43,10 +43,12 @@ logger = logging.getLogger(__name__)
 
 
 # HTTP Bearer security scheme
+# NOTE: auto_error=False so we can return 401 (not 403) for missing credentials
+# This follows REST API convention: 401 = missing/invalid auth, 403 = insufficient permissions
 security = HTTPBearer(
     scheme_name="JWT",
     description="Enter your JWT token",
-    auto_error=True,
+    auto_error=False,
 )
 
 
@@ -100,7 +102,7 @@ class TokenPayload(BaseModel):
 
 
 async def get_current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(security)],
     request: Request,
     db: Session = Depends(get_db),
 ) -> CurrentUser:
@@ -116,7 +118,7 @@ async def get_current_user(
     6. Logs authentication events for audit trail (SOC2)
 
     Args:
-        credentials: HTTP Bearer credentials containing JWT token
+        credentials: HTTP Bearer credentials containing JWT token (None if missing)
         request: FastAPI request for audit logging
         db: Database session for audit logging
 
@@ -124,8 +126,25 @@ async def get_current_user(
         CurrentUser: Validated user information
 
     Raises:
-        HTTPException: 401 if token is invalid, expired, or malformed
+        HTTPException: 401 if token is missing, invalid, expired, or malformed
     """
+    # Handle missing credentials (auto_error=False means credentials can be None)
+    if credentials is None:
+        AuditService.log_token_invalid(
+            db=db,
+            reason="missing_credentials",
+            request=request,
+            token_snippet="N/A",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "code": "MISSING_CREDENTIALS",
+                "message": "Missing authentication credentials",
+            },
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     token = credentials.credentials
 
     # Get token snippet for audit logging (first 8 + last 8 chars)

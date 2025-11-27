@@ -134,11 +134,13 @@ async def upload_document(
         HTTPException: 400 for invalid file type/size, 500 for upload failures
     """
     try:
-        # 1. Validate file size first (before reading into memory)
-        # Get file size without reading entire content
-        file.file.seek(0, 2)  # Seek to end of file
-        file_size = file.file.tell()  # Get current position (file size)
-        file.file.seek(0)  # Reset to beginning for later reading
+        # 1. Read file content and validate size
+        # NOTE: We read the entire file into memory here. For the MVP target of
+        # 10 concurrent uploads with max 50MB files, this is acceptable (500MB RAM).
+        # TODO: Future optimization for >50 concurrent uploads: implement streaming
+        # uploads using vercel_blob's async streaming support to reduce memory usage.
+        file_content = file.file.read()
+        file_size = len(file_content)
 
         # Log upload attempt
         logger.info(
@@ -283,45 +285,7 @@ async def upload_document(
                     }
                 )
 
-        # 3. Read file content now that size and bucket are validated
-        file_content = file.file.read()
-
-        # Validate actual read size matches expected size (race condition protection)
-        actual_size = len(file_content)
-        if actual_size != file_size:
-            logger.warning(
-                "File size mismatch detected - using actual size",
-                extra={
-                    "user_id": str(current_user.id),
-                    "file_name": file.filename,
-                    "expected_size": file_size,
-                    "actual_size": actual_size,
-                },
-            )
-            file_size = actual_size
-
-            # Re-validate size limit with actual size
-            if not validate_file_size(file_size):
-                if file_size == 0:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail={
-                            "code": "EMPTY_FILE",
-                            "message": "File is empty. Please upload a valid document.",
-                        },
-                    )
-                else:
-                    raise HTTPException(
-                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                        detail={
-                            "code": "FILE_TOO_LARGE",
-                            "message": f"File too large: {file_size} bytes. Maximum allowed: {MAX_FILE_SIZE_BYTES} bytes (50MB).",
-                            "file_size_bytes": file_size,
-                            "max_size_bytes": MAX_FILE_SIZE_BYTES,
-                        },
-                    )
-
-        # 4. Validate file type using python-magic (content-based detection)
+        # 2. Validate file type using python-magic (content-based detection)
         try:
             mime_type = magic.from_buffer(file_content, mime=True)
         except Exception as e:
@@ -379,10 +343,10 @@ async def upload_document(
                 },
             )
 
-        # 5. Generate document ID for tracking
+        # 3. Generate document ID for tracking
         document_id = str(uuid4())
 
-        # 6. Upload to Vercel Blob storage
+        # 4. Upload to Vercel Blob storage
         try:
             storage_url = await BlobStorageService.upload_file(
                 file_content=file_content,
@@ -425,7 +389,7 @@ async def upload_document(
                 },
             )
 
-        # 7. Log successful upload for audit trail (SOC2 compliance)
+        # 5. Log successful upload for audit trail (SOC2 compliance)
         AuditService.log_event(
             db=db,
             action="document.upload.success",
@@ -453,7 +417,7 @@ async def upload_document(
             },
         )
 
-        # 8. Return document response
+        # 6. Return document response
         #
         # DESIGN DECISION: No database persistence at upload time
         #
