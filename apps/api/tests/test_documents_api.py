@@ -630,3 +630,38 @@ class TestDocumentUpload:
             )
 
         assert response.status_code == 201
+
+    def test_upload_mime_detection_fails(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test handling when python-magic fails to detect MIME type.
+
+        Acceptance Criteria:
+        - Returns 500 Internal Server Error
+        - Error code is MIME_DETECTION_FAILED
+        - Security: Fails closed instead of trusting client-provided MIME type
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        # Mock MIME detection failure
+        mock_magic.from_buffer.side_effect = Exception("libmagic error")
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+            )
+
+        assert response.status_code == 500
+        data = response.json()
+        assert data["detail"]["code"] == "MIME_DETECTION_FAILED"
+        assert "unable to validate file type" in data["detail"]["message"].lower()

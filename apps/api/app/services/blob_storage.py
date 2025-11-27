@@ -93,6 +93,8 @@ class BlobStorageService:
         Returns:
             str: Unique storage key path
         """
+        # Timestamp with microseconds (%f) + Vercel's addRandomSuffix=True prevents collisions
+        # even under high-concurrency uploads
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
         safe_filename = BlobStorageService._sanitize_filename(filename)
 
@@ -170,6 +172,14 @@ class BlobStorageService:
                     "content_type": content_type,
                 }
             )
+
+            # Validate response contains URL (defensive coding)
+            if not response or "url" not in response:
+                logger.error(
+                    "Invalid response from Vercel Blob - missing URL",
+                    extra={"response": str(response)},
+                )
+                raise Exception("Invalid response from Vercel Blob - missing URL")
 
             return response["url"]
 

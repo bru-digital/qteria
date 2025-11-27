@@ -26,6 +26,9 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
+# Initialize logger before importing magic (needed for startup validation)
+logger = logging.getLogger(__name__)
+
 import magic  # python-magic for MIME type detection
 
 # Validate that libmagic is available at startup (fail fast if not installed)
@@ -54,8 +57,6 @@ from app.schemas.document import (
 )
 from app.services.blob_storage import BlobStorageService
 from app.services.audit import AuditService
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -150,41 +151,42 @@ async def upload_document(
             },
         )
 
-        # Check for empty file first (more specific error message)
-        if file_size == 0:
-            logger.warning(
-                "Document upload failed - empty file",
-                extra={
-                    "user_id": str(current_user.id),
-                    "file_name": file.filename,
-                },
-            )
+        # Validate file size using centralized validation function
+        if not validate_file_size(file_size):
+            # Check for empty file first (more specific error message)
+            if file_size == 0:
+                logger.warning(
+                    "Document upload failed - empty file",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "file_name": file.filename,
+                    },
+                )
 
-            # Audit log for monitoring
-            AuditService.log_event(
-                db=db,
-                action="document.upload.failed",
-                organization_id=current_user.organization_id,
-                user_id=current_user.id,
-                resource_type="document",
-                metadata={
-                    "file_name": file.filename,
-                    "file_size": 0,
-                    "reason": "empty_file",
-                },
-                request=request,
-            )
+                # Audit log for monitoring
+                AuditService.log_event(
+                    db=db,
+                    action="document.upload.failed",
+                    organization_id=current_user.organization_id,
+                    user_id=current_user.id,
+                    resource_type="document",
+                    metadata={
+                        "file_name": file.filename,
+                        "file_size": 0,
+                        "reason": "empty_file",
+                    },
+                    request=request,
+                )
 
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "code": "EMPTY_FILE",
-                    "message": "File is empty. Please upload a valid document.",
-                },
-            )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={
+                        "code": "EMPTY_FILE",
+                        "message": "File is empty. Please upload a valid document.",
+                    },
+                )
 
-        # Check file size limit
-        if file_size > MAX_FILE_SIZE_BYTES:
+            # File too large
             error_msg = f"File too large: {file_size} bytes. Maximum allowed: {MAX_FILE_SIZE_BYTES} bytes (50MB)."
             logger.warning(
                 "Document upload failed - file too large",
@@ -282,6 +284,41 @@ async def upload_document(
 
         # 3. Read file content now that size and bucket are validated
         file_content = file.file.read()
+
+        # Validate actual read size matches expected size (race condition protection)
+        actual_size = len(file_content)
+        if actual_size != file_size:
+            logger.warning(
+                "File size mismatch detected - using actual size",
+                extra={
+                    "user_id": str(current_user.id),
+                    "file_name": file.filename,
+                    "expected_size": file_size,
+                    "actual_size": actual_size,
+                },
+            )
+            file_size = actual_size
+
+            # Re-validate size limit with actual size
+            if not validate_file_size(file_size):
+                if file_size == 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail={
+                            "code": "EMPTY_FILE",
+                            "message": "File is empty. Please upload a valid document.",
+                        },
+                    )
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail={
+                            "code": "FILE_TOO_LARGE",
+                            "message": f"File too large: {file_size} bytes. Maximum allowed: {MAX_FILE_SIZE_BYTES} bytes (50MB).",
+                            "file_size_bytes": file_size,
+                            "max_size_bytes": MAX_FILE_SIZE_BYTES,
+                        },
+                    )
 
         # 4. Validate file type using python-magic (content-based detection)
         try:
@@ -430,7 +467,11 @@ async def upload_document(
         # Trade-offs:
         # - Risk: If frontend crashes after upload but before assessment creation, blob becomes orphaned
         # - Risk: No query capability for "all uploaded documents" or "documents uploaded in last 30 days"
-        # - Mitigation: Vercel Blob has built-in retention policies; orphaned blobs auto-expire
+        # - Cleanup Strategy: Vercel Blob does NOT auto-expire by default. Post-MVP, implement:
+        #   1. Add environment variable BLOB_EXPIRATION_DAYS=30
+        #   2. Create background job to query blobs older than 30 days
+        #   3. Check if blob exists in assessment_documents table
+        #   4. Delete orphaned blobs to prevent storage cost accumulation
         # - Future: Add documents table with status field (uploaded, attached, orphaned) post-MVP
         #
         # This design optimizes for Journey Step 3 (AI validation speed) over administrative queries.
@@ -470,6 +511,10 @@ async def upload_document(
             },
         )
     finally:
-        # Ensure file handle is closed
-        if file and hasattr(file.file, "close"):
-            file.file.close()
+        # Ensure file handle is closed (defensive cleanup)
+        if file and hasattr(file, 'file') and hasattr(file.file, "close"):
+            try:
+                file.file.close()
+            except Exception:
+                # Ignore cleanup errors - file might already be closed
+                pass
