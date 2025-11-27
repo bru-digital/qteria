@@ -30,6 +30,7 @@ import magic  # python-magic for MIME type detection
 
 from app.core.auth import AuthenticatedUser
 from app.core.dependencies import get_db
+from app.models import Bucket, Workflow
 from app.schemas.document import (
     DocumentResponse,
     ALLOWED_MIME_TYPES,
@@ -170,10 +171,51 @@ async def upload_document(
                 },
             )
 
-        # 2. Read file content now that size is validated
+        # 2. Validate bucket_id if provided (multi-tenancy check)
+        if bucket_id:
+            # Query bucket and join with workflow to check organization_id
+            bucket = db.query(Bucket).join(Workflow).filter(
+                Bucket.id == UUID(bucket_id),
+                Workflow.organization_id == current_user.organization_id
+            ).first()
+
+            if not bucket:
+                logger.warning(
+                    "Document upload failed - invalid bucket",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "organization_id": str(current_user.organization_id),
+                        "bucket_id": bucket_id,
+                    },
+                )
+
+                # Audit log for security monitoring (potential cross-org access attempt)
+                AuditService.log_event(
+                    db=db,
+                    action="document.upload.failed",
+                    organization_id=current_user.organization_id,
+                    user_id=current_user.id,
+                    resource_type="document",
+                    metadata={
+                        "file_name": file.filename,
+                        "bucket_id": bucket_id,
+                        "reason": "invalid_bucket_id",
+                    },
+                    request=request,
+                )
+
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail={
+                        "code": "BUCKET_NOT_FOUND",
+                        "message": "Bucket not found or access denied"
+                    }
+                )
+
+        # 3. Read file content now that size and bucket are validated
         file_content = file.file.read()
 
-        # 3. Validate file type using python-magic (content-based detection)
+        # 4. Validate file type using python-magic (content-based detection)
         try:
             mime_type = magic.from_buffer(file_content, mime=True)
         except Exception as e:
@@ -185,8 +227,15 @@ async def upload_document(
                 },
                 exc_info=True,
             )
-            # Fallback to file extension check if magic fails
-            mime_type = file.content_type or "application/octet-stream"
+            # SECURITY: Fail closed - do not trust client-provided content_type
+            # If content validation fails, reject the upload
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "code": "MIME_DETECTION_FAILED",
+                    "message": "Unable to validate file type. Please try again.",
+                },
+            )
 
         if not validate_file_type(mime_type):
             error_msg = f"Invalid file type: {mime_type}. Only PDF and DOCX files are allowed."
@@ -224,10 +273,10 @@ async def upload_document(
                 },
             )
 
-        # 4. Generate document ID for tracking
+        # 5. Generate document ID for tracking
         document_id = str(uuid4())
 
-        # 5. Upload to Vercel Blob storage
+        # 6. Upload to Vercel Blob storage
         try:
             storage_url = await BlobStorageService.upload_file(
                 file_content=file_content,
@@ -270,7 +319,7 @@ async def upload_document(
                 },
             )
 
-        # 6. Log successful upload for audit trail (SOC2 compliance)
+        # 7. Log successful upload for audit trail (SOC2 compliance)
         AuditService.log_event(
             db=db,
             action="document.upload.success",
@@ -298,9 +347,25 @@ async def upload_document(
             },
         )
 
-        # 7. Return document response
-        # Note: In the MVP, we return metadata for the frontend to use when creating assessments
-        # The document will be formally saved to assessment_documents table when assessment is created
+        # 8. Return document response
+        #
+        # DESIGN DECISION: No database persistence at upload time
+        #
+        # In the MVP, we return metadata for the frontend to use when creating assessments.
+        # The document will be formally saved to assessment_documents table when assessment is created.
+        #
+        # Rationale:
+        # - Simplifies upload flow (no database writes during upload)
+        # - Assessment creation is the atomic operation that links documents to buckets/workflows
+        # - Orphaned blobs are acceptable for MVP (cleanup job can be added post-launch)
+        #
+        # Trade-offs:
+        # - Risk: If frontend crashes after upload but before assessment creation, blob becomes orphaned
+        # - Risk: No query capability for "all uploaded documents" or "documents uploaded in last 30 days"
+        # - Mitigation: Vercel Blob has built-in retention policies; orphaned blobs auto-expire
+        # - Future: Add documents table with status field (uploaded, attached, orphaned) post-MVP
+        #
+        # This design optimizes for Journey Step 3 (AI validation speed) over administrative queries.
         from datetime import datetime, timezone
 
         return DocumentResponse(
