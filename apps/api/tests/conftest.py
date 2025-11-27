@@ -96,7 +96,7 @@ def create_test_token(
         "sub": user_id,
         "email": email,
         "role": role,
-        "organizationId": organization_id,
+        "org_id": organization_id,
         "name": name,
         "iat": datetime.now(timezone.utc).timestamp(),
         "exp": exp.timestamp(),
@@ -152,7 +152,7 @@ def invalid_token() -> str:
             "sub": str(uuid4()),
             "email": "test@example.com",
             "role": "admin",
-            "organizationId": str(uuid4()),
+            "org_id": str(uuid4()),
         },
         "wrong_secret_key",
         algorithm="HS256",
@@ -173,8 +173,8 @@ def token_missing_role() -> str:
 
 @pytest.fixture
 def token_missing_org() -> str:
-    """Create a token missing the organizationId field."""
-    return create_test_token(missing_fields=["organizationId"])
+    """Create a token missing the org_id field."""
+    return create_test_token(missing_fields=["org_id"])
 
 
 @pytest.fixture

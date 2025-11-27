@@ -16,7 +16,7 @@ jobs:
   plan-issue:
     if: |
       (github.event_name == 'issues' && (contains(github.event.issue.labels.*.name, 'needs-plan') || contains(github.event.issue.body, '@claude-plan'))) ||
-      (github.event_name == 'issue_comment' && (contains(github.event.comment.body, '/plan-issue') || contains(github.event.comment.body, '@claude-plan'))) ||
+      (github.event_name == 'issue_comment' && (contains(github.event.comment.body, '/plan-issue') || contains(github.event.comment.body, '@claude-plan') || contains(github.event.comment.body, '@plan-issue'))) ||
       github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
@@ -47,63 +47,9 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # Direct prompt for planning
+          # Invoke the /plan-issue slash command which handles product guidelines analysis
           direct_prompt: |
-            Create a detailed implementation plan for GitHub issue #${{ steps.get-issue.outputs.issue_number }}.
-
-            Please analyze the issue and create a comprehensive plan that includes:
-
-            ## 1. Problem Analysis
-            - What is the core problem or feature being requested?
-            - What are the key requirements and acceptance criteria?
-            - Are there any ambiguities that need clarification?
-
-            ## 2. Technical Approach
-            - What is the recommended technical solution?
-            - What are the key components/files that need to be modified or created?
-            - Are there any architectural considerations?
-            - What are potential alternative approaches and why is this one preferred?
-
-            ## 3. Implementation Steps
-            Create a numbered list of concrete implementation steps:
-            - Each step should be specific and actionable
-            - Include file paths and function/component names where applicable
-            - Order steps logically (e.g., backend before frontend, models before controllers)
-            - Estimate complexity (simple/moderate/complex) for each step
-
-            ## 4. Testing Strategy
-            - What types of tests are needed? (unit, integration, E2E)
-            - What are the critical test cases to cover?
-            - Are there edge cases that need special attention?
-
-            ## 5. Dependencies & Risks
-            - Are there dependencies on other issues or features?
-            - What are potential technical risks or blockers?
-            - Are there any third-party dependencies needed?
-
-            ## 6. Acceptance Criteria Checklist
-            Convert the issue's acceptance criteria into a checklist format that can be used to track progress.
-
-            ## 7. Estimated Effort
-            - Provide a rough time estimate (e.g., 2-4 hours, 1-2 days)
-            - Break down by implementation, testing, and documentation
-
-            ---
-
-            **Context from CLAUDE.md:**
-            - Follow the product mission: Help Project Handlers validate documents faster through evidence-based AI
-            - Use the tech stack: Next.js 14+, FastAPI, PostgreSQL, TypeScript strict mode
-            - Ensure multi-tenancy security (100% test coverage for data isolation)
-            - Reference the user journey (5 steps) to ensure feature alignment
-            - Apply the mission test: "Does this help validate documents faster through evidence-based AI?"
-
-            **Coding Standards:**
-            - TypeScript strict mode (no plain JavaScript)
-            - Co-located unit tests with business logic
-            - API-first design with versioned endpoints (/v1/)
-            - Evidence-based architecture (everything traceable to page/section in PDFs)
-
-            Please post this plan as a comment on the issue. Be thorough but concise.
+            /plan-issue ${{ steps.get-issue.outputs.issue_number }}
 
           allowed_tools: >
             Bash(gh issue view ${{ steps.get-issue.outputs.issue_number }} --repo ${{ github.repository }}),

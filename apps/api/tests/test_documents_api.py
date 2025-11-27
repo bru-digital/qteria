@@ -454,7 +454,9 @@ class TestDocumentUpload:
             files={"file": ("test.pdf", pdf_file, "application/pdf")},
         )
 
-        assert response.status_code == 403  # FastAPI returns 403 for missing credentials
+        # Should return 401 for missing authentication (not 403)
+        # 401 = missing/invalid auth, 403 = valid auth but insufficient permissions
+        assert response.status_code == 401
 
     def test_upload_blob_storage_failure(
         self,

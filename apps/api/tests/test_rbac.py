@@ -146,7 +146,7 @@ class TestJWTValidation:
     def test_missing_token_returns_401(self, client: TestClient):
         """Missing Authorization header returns 401."""
         response = client.get("/v1/organizations")
-        assert response.status_code in [401, 403]  # FastAPI returns 403 for missing auth
+        assert response.status_code == 401  # Missing credentials = 401 (not 403)
 
     def test_invalid_token_returns_401(self, client: TestClient, invalid_token: str):
         """Invalid JWT signature returns 401."""
@@ -185,7 +185,7 @@ class TestJWTValidation:
         assert response.status_code == 401
 
     def test_token_missing_org_returns_401(self, client: TestClient, token_missing_org: str):
-        """Token without organizationId field returns 401."""
+        """Token without org_id field returns 401."""
         response = client.get(
             "/v1/organizations",
             headers={"Authorization": f"Bearer {token_missing_org}"},
