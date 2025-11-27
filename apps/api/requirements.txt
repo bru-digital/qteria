@@ -38,5 +38,11 @@ pillow==10.2.0
 httpx==0.26.0
 tenacity==8.2.3
 
+# File Storage
+vercel-blob==0.1.0
+
+# File Type Detection
+python-magic==0.4.27
+
 # Monitoring
 sentry-sdk[fastapi]==1.40.0
