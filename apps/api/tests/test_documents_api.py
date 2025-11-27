@@ -14,7 +14,7 @@ Required Security Tests (per product guidelines):
 """
 import io
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from fastapi.testclient import TestClient
 
@@ -32,8 +32,8 @@ class TestDocumentUpload:
     def mock_blob_storage(self):
         """Mock Vercel Blob storage service."""
         with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
-            # Mock successful upload
-            mock_service.upload_file.return_value = "https://blob.vercel-storage.com/documents/test.pdf"
+            # Mock successful async upload
+            mock_service.upload_file = AsyncMock(return_value="https://blob.vercel-storage.com/documents/test.pdf")
             yield mock_service
 
     @pytest.fixture
@@ -285,8 +285,6 @@ class TestDocumentUpload:
         pdf_file = io.BytesIO(pdf_content)
 
         # Mock blob storage upload failure
-        import asyncio
-
         async def upload_error(*args, **kwargs):
             raise Exception("Blob storage connection timeout")
 
@@ -295,12 +293,11 @@ class TestDocumentUpload:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-            with patch('app.api.v1.endpoints.documents.asyncio.run', side_effect=upload_error):
-                response = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token}"},
-                    files={"file": ("test.pdf", pdf_file, "application/pdf")},
-                )
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+            )
 
         assert response.status_code == 500
         data = response.json()

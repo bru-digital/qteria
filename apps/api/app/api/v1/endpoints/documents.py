@@ -8,7 +8,6 @@ Endpoints:
 - GET /v1/documents/{id} - Download document (future)
 - DELETE /v1/documents/{id} - Delete uploaded document (future)
 
-Note: This endpoint is synchronous (def, not async def) following codebase patterns.
 Documents are uploaded to Vercel Blob storage with encryption at rest and multi-tenant isolation.
 """
 import logging
@@ -90,12 +89,12 @@ bucket_id: 660e8400-e29b-41d4-a716-446655440001 (optional)
 ```
     """,
 )
-def upload_document(
+async def upload_document(
+    current_user: AuthenticatedUser,
     file: UploadFile = File(..., description="Document file (PDF or DOCX)"),
     bucket_id: Optional[str] = Form(
         None, description="Optional bucket ID for validation"
     ),
-    current_user: AuthenticatedUser = Depends(),
     request: Request = None,
     db: Session = Depends(get_db),
 ) -> DocumentResponse:
@@ -118,9 +117,11 @@ def upload_document(
         HTTPException: 400 for invalid file type/size, 500 for upload failures
     """
     try:
-        # Read file content
-        file_content = file.file.read()
-        file_size = len(file_content)
+        # 1. Validate file size first (before reading into memory)
+        # Get file size without reading entire content
+        file.file.seek(0, 2)  # Seek to end of file
+        file_size = file.file.tell()  # Get current position (file size)
+        file.file.seek(0)  # Reset to beginning for later reading
 
         # Log upload attempt
         logger.info(
@@ -128,20 +129,18 @@ def upload_document(
             extra={
                 "user_id": str(current_user.id),
                 "organization_id": str(current_user.organization_id),
-                "filename": file.filename,
+                "file_name": file.filename,
                 "file_size": file_size,
                 "bucket_id": bucket_id,
             },
         )
-
-        # 1. Validate file size
         if not validate_file_size(file_size):
             error_msg = f"File too large: {file_size} bytes. Maximum allowed: {MAX_FILE_SIZE_BYTES} bytes (50MB)."
             logger.warning(
                 "Document upload failed - file too large",
                 extra={
                     "user_id": str(current_user.id),
-                    "filename": file.filename,
+                    "file_name": file.filename,
                     "file_size": file_size,
                 },
             )
@@ -154,7 +153,7 @@ def upload_document(
                 user_id=current_user.id,
                 resource_type="document",
                 metadata={
-                    "filename": file.filename,
+                    "file_name": file.filename,
                     "file_size": file_size,
                     "reason": "file_too_large",
                 },
@@ -171,14 +170,17 @@ def upload_document(
                 },
             )
 
-        # 2. Validate file type using python-magic (content-based detection)
+        # 2. Read file content now that size is validated
+        file_content = file.file.read()
+
+        # 3. Validate file type using python-magic (content-based detection)
         try:
             mime_type = magic.from_buffer(file_content, mime=True)
         except Exception as e:
             logger.error(
                 "Failed to detect MIME type",
                 extra={
-                    "filename": file.filename,
+                    "file_name": file.filename,
                     "error": str(e),
                 },
                 exc_info=True,
@@ -187,13 +189,12 @@ def upload_document(
             mime_type = file.content_type or "application/octet-stream"
 
         if not validate_file_type(mime_type):
-            allowed_types_str = ", ".join(ALLOWED_MIME_TYPES)
             error_msg = f"Invalid file type: {mime_type}. Only PDF and DOCX files are allowed."
             logger.warning(
                 "Document upload failed - invalid file type",
                 extra={
                     "user_id": str(current_user.id),
-                    "filename": file.filename,
+                    "file_name": file.filename,
                     "detected_mime_type": mime_type,
                 },
             )
@@ -206,7 +207,7 @@ def upload_document(
                 user_id=current_user.id,
                 resource_type="document",
                 metadata={
-                    "filename": file.filename,
+                    "file_name": file.filename,
                     "detected_mime_type": mime_type,
                     "reason": "invalid_file_type",
                 },
@@ -223,30 +224,24 @@ def upload_document(
                 },
             )
 
-        # 3. Generate document ID for tracking
+        # 4. Generate document ID for tracking
         document_id = str(uuid4())
 
-        # 4. Upload to Vercel Blob storage
+        # 5. Upload to Vercel Blob storage
         try:
-            # Note: BlobStorageService methods need to be awaited
-            # but we're using sync endpoint pattern, so we need to handle this
-            import asyncio
-
-            storage_url = asyncio.run(
-                BlobStorageService.upload_file(
-                    file_content=file_content,
-                    filename=file.filename,
-                    content_type=mime_type,
-                    organization_id=current_user.organization_id,
-                    document_id=document_id,
-                )
+            storage_url = await BlobStorageService.upload_file(
+                file_content=file_content,
+                filename=file.filename,
+                content_type=mime_type,
+                organization_id=current_user.organization_id,
+                document_id=document_id,
             )
         except Exception as e:
             logger.error(
                 "Failed to upload file to Vercel Blob",
                 extra={
                     "user_id": str(current_user.id),
-                    "filename": file.filename,
+                    "file_name": file.filename,
                     "error": str(e),
                 },
                 exc_info=True,
@@ -260,7 +255,7 @@ def upload_document(
                 user_id=current_user.id,
                 resource_type="document",
                 metadata={
-                    "filename": file.filename,
+                    "file_name": file.filename,
                     "reason": "blob_storage_error",
                     "error": str(e),
                 },
@@ -275,7 +270,7 @@ def upload_document(
                 },
             )
 
-        # 5. Log successful upload for audit trail (SOC2 compliance)
+        # 6. Log successful upload for audit trail (SOC2 compliance)
         AuditService.log_event(
             db=db,
             action="document.upload.success",
@@ -298,12 +293,12 @@ def upload_document(
                 "document_id": document_id,
                 "user_id": str(current_user.id),
                 "organization_id": str(current_user.organization_id),
-                "filename": file.filename,
+                "file_name": file.filename,
                 "storage_url": storage_url,
             },
         )
 
-        # 6. Return document response
+        # 7. Return document response
         # Note: In the MVP, we return metadata for the frontend to use when creating assessments
         # The document will be formally saved to assessment_documents table when assessment is created
         from datetime import datetime, timezone
@@ -328,7 +323,7 @@ def upload_document(
             "Unexpected error during document upload",
             extra={
                 "user_id": str(current_user.id),
-                "filename": file.filename if file else "unknown",
+                "file_name": file.filename if file else "unknown",
                 "error": str(e),
             },
             exc_info=True,

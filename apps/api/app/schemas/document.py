@@ -5,7 +5,7 @@ This module defines request/response models for document upload endpoints,
 including validation rules and error responses.
 """
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
@@ -57,7 +57,7 @@ class DocumentListResponse(BaseModel):
 class DocumentErrorResponse(BaseModel):
     """Error response for document upload failures."""
 
-    error: dict[str, any] = Field(
+    error: dict[str, Any] = Field(
         ...,
         description="Error details",
         json_schema_extra={
