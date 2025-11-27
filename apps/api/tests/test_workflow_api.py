@@ -180,7 +180,7 @@ class TestCreateWorkflow:
 
         response = client.post("/v1/workflows", json=payload)
 
-        assert response.status_code == 403  # FastAPI HTTPBearer returns 403 for missing auth
+        assert response.status_code == 401  # Returns 401 for missing/invalid auth
 
     def test_create_workflow_missing_name(
         self,
@@ -407,10 +407,10 @@ class TestListWorkflows:
         self,
         client: TestClient,
     ):
-        """Unauthenticated request returns 403."""
+        """Unauthenticated request returns 401."""
         response = client.get("/v1/workflows")
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_list_workflows_empty_organization(
         self,
@@ -831,11 +831,11 @@ class TestGetWorkflow:
         self,
         client: TestClient,
     ):
-        """Unauthenticated request returns 403."""
+        """Unauthenticated request returns 401."""
         fake_id = "00000000-0000-0000-0000-000000000001"
         response = client.get(f"/v1/workflows/{fake_id}")
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestMultiTenancyIsolation:

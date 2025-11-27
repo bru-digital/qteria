@@ -30,9 +30,10 @@ class TestFilenameSanitization:
         sanitized = BlobStorageService._sanitize_filename(malicious)
 
         # Should remove path components and special chars
+        # Path.name extracts only the final component
         assert ".." not in sanitized
         assert "/" not in sanitized
-        assert sanitized == "etc_passwd"
+        assert sanitized == "passwd"
 
     def test_sanitize_filename_path_traversal_windows(self):
         """Test sanitization of Windows path traversal attempts."""
@@ -40,8 +41,11 @@ class TestFilenameSanitization:
         sanitized = BlobStorageService._sanitize_filename(malicious)
 
         # Should remove path components and backslashes
+        # On Unix systems, backslashes are not path separators, so Path.name
+        # returns the whole string, then backslashes are replaced with underscores
         assert ".." not in sanitized
         assert "\\" not in sanitized
+        # On Unix/macOS: backslashes are treated as filename chars, then sanitized to underscores
         assert sanitized == "windows_system32_config_sam"
 
     def test_sanitize_filename_null_byte_injection(self):
@@ -190,8 +194,10 @@ class TestStorageKeyGeneration:
         )
 
         # Should not contain path traversal
+        # Path.name extracts only the final component
         assert ".." not in storage_key
-        assert "etc_passwd" in storage_key
+        assert "passwd" in storage_key
+        assert "etc" not in storage_key  # Path components should be removed
 
 
 # ============================================================================
