@@ -61,6 +61,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Git
 - Neon PostgreSQL account (free tier available)
 - Docker & Docker Compose (optional, only for local PostgreSQL)
+- **libmagic** - System library for content-based file type detection
+  - macOS: `brew install libmagic`
+  - Ubuntu/Debian: `sudo apt-get install libmagic1`
+  - Windows: Download from [here](https://github.com/pidydx/libmagicwin64) or use WSL
 
 ### Database Environment Separation
 
@@ -519,6 +523,55 @@ Examples:
 6. **Story 007: Document Upload** - Project Handler uploads PDFs
 7. **Story 008: AI Validation Engine** - Claude integration with evidence extraction
 8. **Story 009: Results Display** - Evidence-based pass/fail UI
+
+---
+
+## Deployment Notes
+
+### Backend Deployment (Railway/Render)
+
+**Critical System Dependencies:**
+- **libmagic1** must be installed in the deployment container for document upload API to work
+- The `python-magic` Python package depends on the `libmagic` system library
+- Startup validation will fail if libmagic is not available (see `apps/api/app/api/v1/endpoints/documents.py:34-46`)
+
+**Installation Methods:**
+
+**Railway:**
+Add to `nixpacks.toml` (if using Nixpacks):
+```toml
+[phases.setup]
+aptPkgs = ['libmagic1']
+```
+
+Or add to Dockerfile:
+```dockerfile
+RUN apt-get update && apt-get install -y libmagic1
+```
+
+**Render:**
+Add to `render.yaml`:
+```yaml
+services:
+  - type: web
+    name: qteria-api
+    env: python
+    buildCommand: "apt-get update && apt-get install -y libmagic1 && pip install -r requirements.txt"
+```
+
+**Environment Variables Required:**
+- `DATABASE_URL` - Neon PostgreSQL connection string
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage token
+- `JWT_SECRET` - For authentication
+- `ANTHROPIC_API_KEY` - For AI validation
+- `REDIS_URL` - For Celery background jobs
+
+**Pre-Deployment Checklist:**
+- [ ] Set all required environment variables
+- [ ] Verify libmagic1 installed in container
+- [ ] Test upload with 50MB file in staging
+- [ ] Verify audit logs appear in monitoring
+- [ ] Confirm Vercel Blob storage bucket is private
 
 ---
 

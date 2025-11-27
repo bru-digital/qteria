@@ -11,6 +11,7 @@ Endpoints:
 Documents are uploaded to Vercel Blob storage with encryption at rest and multi-tenant isolation.
 """
 import logging
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -475,7 +476,6 @@ async def upload_document(
         # - Future: Add documents table with status field (uploaded, attached, orphaned) post-MVP
         #
         # This design optimizes for Journey Step 3 (AI validation speed) over administrative queries.
-        from datetime import datetime, timezone
 
         return DocumentResponse(
             id=UUID(document_id),
