@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { sign } from "jsonwebtoken"
+import { randomUUID } from "crypto"
 
 /**
  * API Proxy Route for Workflows
@@ -17,7 +18,9 @@ import { sign } from "jsonwebtoken"
  * - Session validation happens before token generation
  */
 
-const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+// Use API_URL environment variable (server-side only, not NEXT_PUBLIC_*)
+// Default to localhost for development
+const API_URL = process.env.API_URL || "http://localhost:8000"
 
 /**
  * Get JWT secret with runtime validation
@@ -35,6 +38,11 @@ function getJWTSecret(): string {
 /**
  * Generate a JWT token from Next Auth session data
  * Format matches what FastAPI backend expects (see apps/api/app/core/auth.py)
+ *
+ * Token Expiration: 30 minutes
+ * - Tokens are regenerated on each request through this proxy
+ * - Short expiration reduces risk if token is compromised
+ * - User session is managed separately by NextAuth (typically 30 days)
  */
 function generateJWTFromSession(session: any): string {
   const JWT_SECRET = getJWTSecret()
@@ -45,7 +53,7 @@ function generateJWTFromSession(session: any): string {
     organizationId: session.user.organizationId,
     name: session.user.name || null,
     iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 7 days
+    exp: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes
   }
 
   return sign(payload, JWT_SECRET, { algorithm: "HS256" })
@@ -89,12 +97,14 @@ export async function POST(request: NextRequest) {
     // Return response with same status code
     return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error("[API Proxy] Error:", error)
+    const requestId = randomUUID()
+    console.error("[API Proxy] Error:", { requestId, error })
     return NextResponse.json(
       {
         detail: {
           code: "PROXY_ERROR",
           message: error instanceof Error ? error.message : "Internal server error",
+          request_id: requestId,
         },
       },
       { status: 500 }
@@ -129,12 +139,14 @@ export async function GET(request: NextRequest) {
     const data = await response.json()
     return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error("[API Proxy] Error:", error)
+    const requestId = randomUUID()
+    console.error("[API Proxy] Error:", { requestId, error })
     return NextResponse.json(
       {
         detail: {
           code: "PROXY_ERROR",
           message: error instanceof Error ? error.message : "Internal server error",
+          request_id: requestId,
         },
       },
       { status: 500 }

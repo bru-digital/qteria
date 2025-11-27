@@ -23,12 +23,26 @@ import { useSession } from "next-auth/react"
 
 // Zod validation schema matching API contract
 const workflowSchema = z.object({
-  name: z.string().min(1, "Workflow name is required").max(255),
-  description: z.string().max(2000).optional().or(z.literal("")),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Workflow name is required")
+    .max(255)
+    .refine((val) => val.length > 0, "Workflow name cannot be only whitespace"),
+  description: z
+    .string()
+    .trim()
+    .max(2000)
+    .transform((val) => val.trim()),
   buckets: z
     .array(
       z.object({
-        name: z.string().min(1, "Bucket name is required").max(100),
+        name: z
+          .string()
+          .trim()
+          .min(1, "Bucket name is required")
+          .max(100)
+          .refine((val) => val.length > 0, "Bucket name cannot be only whitespace"),
         required: z.boolean(),
         order_index: z.number(),
       })
@@ -37,8 +51,19 @@ const workflowSchema = z.object({
   criteria: z
     .array(
       z.object({
-        name: z.string().min(1, "Criteria name is required").max(255),
-        description: z.string().max(2000).optional().or(z.literal("")),
+        name: z
+          .string()
+          .trim()
+          .min(1, "Criteria name is required")
+          .max(255)
+          .refine((val) => val.length > 0, "Criteria name cannot be only whitespace"),
+        description: z
+          .string()
+          .trim()
+          .max(2000)
+          .transform((val) => val.trim()),
+        // Array indices (0-based) that map to bucket order_index
+        // These will be transformed to actual bucket positions before sending to API
         applies_to_bucket_ids: z.array(z.number()),
       })
     )
@@ -103,7 +128,11 @@ export default function NewWorkflowPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div
+            className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"
+            role="status"
+            aria-label="Loading authentication status"
+          ></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -159,22 +188,53 @@ export default function NewWorkflowPage() {
     setError("")
 
     try {
+      // Transform criteria applies_to_bucket_ids from array indices to 0-indexed positions
+      // This ensures bucket indices are always numbers (not strings from checkbox values)
+      const transformedData = {
+        ...data,
+        criteria: data.criteria.map((c) => ({
+          ...c,
+          applies_to_bucket_ids: c.applies_to_bucket_ids.map(Number),
+        })),
+      }
+
       // Call Next.js API proxy route (handles authentication server-side)
       const response = await fetch("/api/v1/workflows", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(transformedData),
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({
           detail: { message: "Failed to create workflow" },
         }))
-        throw new Error(
-          errorData.detail?.message || errorData.message || "Failed to create workflow"
-        )
+
+        // Provide specific error messages based on status codes
+        let errorMessage: string
+        switch (response.status) {
+          case 400:
+            errorMessage = errorData.detail?.message || "Invalid workflow data. Please check your inputs."
+            break
+          case 401:
+            errorMessage = "Your session has expired. Please log in again."
+            break
+          case 403:
+            errorMessage = "You don't have permission to create workflows."
+            break
+          case 422:
+            errorMessage = errorData.detail?.message || "Validation failed. Please check your inputs."
+            break
+          case 500:
+            errorMessage = "Server error. Please try again or contact support."
+            break
+          default:
+            errorMessage = errorData.detail?.message || errorData.message || "Failed to create workflow"
+        }
+
+        throw new Error(errorMessage)
       }
 
       const workflow = await response.json()
@@ -326,6 +386,7 @@ export default function NewWorkflowPage() {
                         <button
                           type="button"
                           onClick={() => removeBucket(index)}
+                          aria-label={`Remove bucket ${index + 1}: ${watch(`buckets.${index}.name`) || "unnamed"}`}
                           className="text-red-600 hover:text-red-700 text-sm font-medium"
                         >
                           Remove
@@ -461,6 +522,7 @@ export default function NewWorkflowPage() {
                         <button
                           type="button"
                           onClick={() => removeCriteria(index)}
+                          aria-label={`Remove criteria ${index + 1}: ${watch(`criteria.${index}.name`) || "unnamed"}`}
                           className="text-red-600 hover:text-red-700 text-sm font-medium"
                         >
                           Remove Criteria
@@ -530,7 +592,11 @@ export default function NewWorkflowPage() {
               className="px-6 py-3 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               {isSubmitting && (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div
+                  className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
+                  role="status"
+                  aria-label="Creating workflow"
+                ></div>
               )}
               {isSubmitting ? "Creating..." : "Create Workflow"}
             </button>
