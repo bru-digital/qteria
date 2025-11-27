@@ -19,17 +19,25 @@ import { sign } from "jsonwebtoken"
 
 const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-// JWT_SECRET is required - validated at runtime
-if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET environment variable is required for API proxy")
+/**
+ * Get JWT secret with runtime validation
+ * This is checked at request time, not build time, to support Vercel deployments
+ * where environment variables are only available at runtime.
+ */
+function getJWTSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is required for API proxy")
+  }
+  return secret
 }
-const JWT_SECRET: string = process.env.JWT_SECRET
 
 /**
  * Generate a JWT token from Next Auth session data
  * Format matches what FastAPI backend expects (see apps/api/app/core/auth.py)
  */
 function generateJWTFromSession(session: any): string {
+  const JWT_SECRET = getJWTSecret()
   const payload = {
     sub: session.user.id,
     email: session.user.email || "",
