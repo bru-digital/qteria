@@ -28,6 +28,20 @@ from sqlalchemy.orm import Session
 
 import magic  # python-magic for MIME type detection
 
+# Validate that libmagic is available at startup (fail fast if not installed)
+try:
+    # Test that libmagic system library is available
+    magic.from_buffer(b"test", mime=True)
+except Exception as e:
+    logger.critical(
+        "libmagic system library not available - python-magic requires libmagic to be installed",
+        extra={"error": str(e)},
+    )
+    raise RuntimeError(
+        "libmagic system library not found. "
+        "Install it using: brew install libmagic (macOS) or apt-get install libmagic1 (Ubuntu)"
+    ) from e
+
 from app.core.auth import AuthenticatedUser
 from app.core.dependencies import get_db
 from app.models import Bucket, Workflow
@@ -135,7 +149,42 @@ async def upload_document(
                 "bucket_id": bucket_id,
             },
         )
-        if not validate_file_size(file_size):
+
+        # Check for empty file first (more specific error message)
+        if file_size == 0:
+            logger.warning(
+                "Document upload failed - empty file",
+                extra={
+                    "user_id": str(current_user.id),
+                    "file_name": file.filename,
+                },
+            )
+
+            # Audit log for monitoring
+            AuditService.log_event(
+                db=db,
+                action="document.upload.failed",
+                organization_id=current_user.organization_id,
+                user_id=current_user.id,
+                resource_type="document",
+                metadata={
+                    "file_name": file.filename,
+                    "file_size": 0,
+                    "reason": "empty_file",
+                },
+                request=request,
+            )
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "EMPTY_FILE",
+                    "message": "File is empty. Please upload a valid document.",
+                },
+            )
+
+        # Check file size limit
+        if file_size > MAX_FILE_SIZE_BYTES:
             error_msg = f"File too large: {file_size} bytes. Maximum allowed: {MAX_FILE_SIZE_BYTES} bytes (50MB)."
             logger.warning(
                 "Document upload failed - file too large",
@@ -173,9 +222,28 @@ async def upload_document(
 
         # 2. Validate bucket_id if provided (multi-tenancy check)
         if bucket_id:
+            # Validate UUID format first
+            try:
+                bucket_uuid = UUID(bucket_id)
+            except ValueError:
+                logger.warning(
+                    "Document upload failed - invalid bucket UUID format",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "bucket_id": bucket_id,
+                    },
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={
+                        "code": "INVALID_BUCKET_ID",
+                        "message": "bucket_id must be a valid UUID",
+                    },
+                )
+
             # Query bucket and join with workflow to check organization_id
             bucket = db.query(Bucket).join(Workflow).filter(
-                Bucket.id == UUID(bucket_id),
+                Bucket.id == bucket_uuid,
                 Workflow.organization_id == current_user.organization_id
             ).first()
 

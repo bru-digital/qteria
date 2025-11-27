@@ -17,7 +17,7 @@ Usage:
 """
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 from uuid import UUID
@@ -93,7 +93,7 @@ class BlobStorageService:
         Returns:
             str: Unique storage key path
         """
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
         safe_filename = BlobStorageService._sanitize_filename(filename)
 
         if document_id:

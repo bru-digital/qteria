@@ -281,6 +281,41 @@ class TestDocumentUpload:
         # Verify audit log
         assert mock_audit_service['log_event'].called
 
+    def test_upload_invalid_uuid_bucket_id(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for bucket_id with invalid UUID format.
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code INVALID_BUCKET_ID
+        - Clear error message about UUID format
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        # Use an invalid UUID format
+        invalid_bucket_id = "not-a-valid-uuid"
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                data={"bucket_id": invalid_bucket_id},
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["detail"]["code"] == "INVALID_BUCKET_ID"
+        assert "uuid" in data["detail"]["message"].lower()
+
     def test_upload_invalid_file_type_jpg(
         self,
         client: TestClient,
@@ -392,11 +427,11 @@ class TestDocumentUpload:
                 files={"file": ("empty.pdf", empty_file, "application/pdf")},
             )
 
-        # validate_file_size checks for size > 0, so empty files get FILE_TOO_LARGE (technically not accurate)
-        # This could be improved in the future to have a separate error for empty files
-        assert response.status_code == 413
+        # Empty files should return 400 Bad Request with EMPTY_FILE code
+        assert response.status_code == 400
         data = response.json()
-        assert data["detail"]["code"] == "FILE_TOO_LARGE"
+        assert data["detail"]["code"] == "EMPTY_FILE"
+        assert "empty" in data["detail"]["message"].lower()
 
     def test_upload_no_authentication(
         self,
@@ -408,8 +443,8 @@ class TestDocumentUpload:
         Test upload rejection without authentication token.
 
         Acceptance Criteria:
-        - Returns 401 Unauthorized
-        - Error code INVALID_TOKEN
+        - Returns 403 Forbidden (FastAPI behavior for missing credentials)
+        - No authenticated user in context
         """
         pdf_content = b"%PDF-1.4 Test"
         pdf_file = io.BytesIO(pdf_content)
