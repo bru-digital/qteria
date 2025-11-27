@@ -154,3 +154,4 @@ test-results/
 .turbo
 .eslintcache
 *.tgz
+coverage.xml
