@@ -78,7 +78,7 @@ class TokenPayload(BaseModel):
         "sub": "user-uuid",
         "email": "user@example.com",
         "role": "process_manager",
-        "organizationId": "org-uuid",
+        "org_id": "org-uuid",
         "name": "John Doe",
         "iat": 1234567890,
         "exp": 1234567890
@@ -88,7 +88,7 @@ class TokenPayload(BaseModel):
     sub: str = Field(..., description="Subject (user ID)")
     email: str = Field(..., description="User email")
     role: str = Field(..., description="User role")
-    organizationId: str = Field(..., alias="organizationId", description="Organization ID")
+    org_id: str = Field(..., description="Organization ID")
     name: Optional[str] = Field(default=None, description="User name")
     iat: Optional[int] = Field(default=None, description="Issued at timestamp")
     exp: Optional[int] = Field(default=None, description="Expiration timestamp")
@@ -152,7 +152,7 @@ async def get_current_user(
         user_id = payload.get("sub")
         email = payload.get("email")
         role = payload.get("role")
-        organization_id = payload.get("organizationId")
+        organization_id = payload.get("org_id")
         name = payload.get("name")
 
         # Validate required fields

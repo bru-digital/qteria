@@ -23,7 +23,7 @@ if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-productio
  */
 interface ExtendedJWT extends JWT {
   role?: string
-  organizationId?: string
+  org_id?: string
 }
 
 /**
@@ -60,7 +60,7 @@ export const baseAuthConfig = {
       if (user) {
         const extendedToken = token as ExtendedJWT
         extendedToken.role = (user as any).role
-        extendedToken.organizationId = (user as any).organizationId
+        extendedToken.org_id = (user as any).organizationId
         return extendedToken
       }
       return token
@@ -72,7 +72,7 @@ export const baseAuthConfig = {
       if (session.user) {
         (session.user as any).id = token.sub as string
         ;(session.user as any).role = extendedToken.role as string
-        ;(session.user as any).organizationId = extendedToken.organizationId as string
+        ;(session.user as any).organizationId = extendedToken.org_id as string
       }
       return session
     }

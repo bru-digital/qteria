@@ -185,7 +185,7 @@ class TestJWTValidation:
         assert response.status_code == 401
 
     def test_token_missing_org_returns_401(self, client: TestClient, token_missing_org: str):
-        """Token without organizationId field returns 401."""
+        """Token without org_id field returns 401."""
         response = client.get(
             "/v1/organizations",
             headers={"Authorization": f"Bearer {token_missing_org}"},

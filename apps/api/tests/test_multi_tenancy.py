@@ -485,7 +485,7 @@ class TestMultiTenancyEdgeCases:
         self, client: TestClient, mock_audit_service
     ):
         """Empty organization_id in token should be rejected."""
-        token = create_test_token(missing_fields=["organizationId"])
+        token = create_test_token(missing_fields=["org_id"])
 
         response = client.get(
             f"/v1/organizations/{TEST_ORG_A_ID}",
