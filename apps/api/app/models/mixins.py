@@ -35,13 +35,14 @@ from fastapi import HTTPException, Request, status
 from sqlalchemy import and_, exists, select
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import create_error_response
 from app.services.audit import AuditService
 
 # Generic type variable for model classes
 T = TypeVar("T")
 
 
-def not_found_error(resource_name: str) -> HTTPException:
+def not_found_error(resource_name: str, request: Optional[Request] = None) -> HTTPException:
     """
     Create a standardized 404 Not Found HTTPException.
 
@@ -50,20 +51,20 @@ def not_found_error(resource_name: str) -> HTTPException:
 
     Args:
         resource_name: Human-readable name of the resource (e.g., "Workflow", "Assessment")
+        request: Optional FastAPI request object for request_id extraction
 
     Returns:
         HTTPException: 404 error with standardized response structure
 
     Example:
-        raise not_found_error("Workflow")
-        # Returns: {"code": "RESOURCE_NOT_FOUND", "message": "Workflow not found"}
+        raise not_found_error("Workflow", request)
+        # Returns: {"error": {"code": "RESOURCE_NOT_FOUND", "message": "Workflow not found", "request_id": "..."}}
     """
-    return HTTPException(
+    return create_error_response(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail={
-            "code": "RESOURCE_NOT_FOUND",
-            "message": f"{resource_name} not found",
-        },
+        error_code="RESOURCE_NOT_FOUND",
+        message=f"{resource_name} not found",
+        request=request,
     )
 
 
@@ -395,7 +396,7 @@ def get_scoped_or_404(
                     request=request,
                 )
 
-        raise not_found_error(resource_name)
+        raise not_found_error(resource_name, request)
 
     return record
 

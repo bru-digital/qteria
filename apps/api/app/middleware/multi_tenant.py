@@ -49,6 +49,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, CurrentUser
 from app.core.dependencies import get_db
+from app.core.exceptions import create_error_response
 from app.services.audit import AuditService
 
 logger = logging.getLogger(__name__)
@@ -199,12 +200,11 @@ def validate_organization_access(
         )
 
         # Return 404 to prevent info leakage (don't reveal resource exists)
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "RESOURCE_NOT_FOUND",
-                "message": f"{resource_type.title()} not found",
-            },
+            error_code="RESOURCE_NOT_FOUND",
+            message=f"{resource_type.title()} not found",
+            request=request,
         )
 
 

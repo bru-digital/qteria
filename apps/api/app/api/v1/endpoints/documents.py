@@ -48,6 +48,7 @@ except Exception as e:
 
 from app.core.auth import AuthenticatedUser
 from app.core.dependencies import get_db
+from app.core.exceptions import create_error_response
 from app.models import Bucket, Workflow
 from app.schemas.document import (
     DocumentResponse,
@@ -189,12 +190,11 @@ async def upload_document(
                     request=request,
                 )
 
-                raise HTTPException(
+                raise create_error_response(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail={
-                        "code": "EMPTY_FILE",
-                        "message": "File is empty. Please upload a valid document.",
-                    },
+                    error_code="EMPTY_FILE",
+                    message="File is empty. Please upload a valid document.",
+                    request=request,
                 )
 
             # File too large
@@ -223,14 +223,15 @@ async def upload_document(
                 request=request,
             )
 
-            raise HTTPException(
+            raise create_error_response(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail={
-                    "code": "FILE_TOO_LARGE",
-                    "message": error_msg,
+                error_code="FILE_TOO_LARGE",
+                message=error_msg,
+                details={
                     "file_size_bytes": file_size,
                     "max_size_bytes": MAX_FILE_SIZE_BYTES,
                 },
+                request=request,
             )
 
         # 2. Validate bucket_id if provided (multi-tenancy check)
@@ -246,12 +247,11 @@ async def upload_document(
                         "bucket_id": bucket_id,
                     },
                 )
-                raise HTTPException(
+                raise create_error_response(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail={
-                        "code": "INVALID_BUCKET_ID",
-                        "message": "bucket_id must be a valid UUID",
-                    },
+                    error_code="INVALID_BUCKET_ID",
+                    message="bucket_id must be a valid UUID",
+                    request=request,
                 )
 
             # Query bucket and join with workflow to check organization_id
@@ -285,12 +285,11 @@ async def upload_document(
                     request=request,
                 )
 
-                raise HTTPException(
+                raise create_error_response(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail={
-                        "code": "BUCKET_NOT_FOUND",
-                        "message": "Bucket not found or access denied"
-                    }
+                    error_code="BUCKET_NOT_FOUND",
+                    message="Bucket not found or access denied",
+                    request=request,
                 )
 
         # 2. Validate file type using python-magic (content-based detection)
@@ -307,12 +306,11 @@ async def upload_document(
             )
             # SECURITY: Fail closed - do not trust client-provided content_type
             # If content validation fails, reject the upload
-            raise HTTPException(
+            raise create_error_response(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={
-                    "code": "MIME_DETECTION_FAILED",
-                    "message": "Unable to validate file type. Please try again.",
-                },
+                error_code="MIME_DETECTION_FAILED",
+                message="Unable to validate file type. Please try again.",
+                request=request,
             )
 
         if not validate_file_type(mime_type):
@@ -341,14 +339,15 @@ async def upload_document(
                 request=request,
             )
 
-            raise HTTPException(
+            raise create_error_response(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "code": "INVALID_FILE_TYPE",
-                    "message": error_msg,
+                error_code="INVALID_FILE_TYPE",
+                message=error_msg,
+                details={
                     "detected_mime_type": mime_type,
                     "allowed_types": list(ALLOWED_MIME_TYPES),
                 },
+                request=request,
             )
 
         # 3. Generate document ID for tracking
@@ -389,12 +388,11 @@ async def upload_document(
                 request=request,
             )
 
-            raise HTTPException(
+            raise create_error_response(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={
-                    "code": "UPLOAD_FAILED",
-                    "message": "Failed to upload file to storage. Please try again.",
-                },
+                error_code="UPLOAD_FAILED",
+                message="Failed to upload file to storage. Please try again.",
+                request=request,
             )
 
         # 5. Log successful upload for audit trail (SOC2 compliance)
@@ -475,12 +473,11 @@ async def upload_document(
             exc_info=True,
         )
 
-        raise HTTPException(
+        raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "code": "INTERNAL_ERROR",
-                "message": "An unexpected error occurred during upload.",
-            },
+            error_code="INTERNAL_ERROR",
+            message="An unexpected error occurred during upload.",
+            request=request,
         )
     finally:
         # Ensure file handle is closed (defensive cleanup)

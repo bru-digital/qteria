@@ -226,8 +226,8 @@ class TestDocumentUpload:
 
         assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "BUCKET_NOT_FOUND"
-        assert "access denied" in data["detail"]["message"].lower()
+        assert data["error"]["code"] == "BUCKET_NOT_FOUND"
+        assert "access denied" in data["error"]["message"].lower()
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
@@ -276,7 +276,7 @@ class TestDocumentUpload:
 
         assert response.status_code == 404
         data = response.json()
-        assert data["detail"]["code"] == "BUCKET_NOT_FOUND"
+        assert data["error"]["code"] == "BUCKET_NOT_FOUND"
 
         # Verify audit log
         assert mock_audit_service['log_event'].called
@@ -313,8 +313,8 @@ class TestDocumentUpload:
 
         assert response.status_code == 400
         data = response.json()
-        assert data["detail"]["code"] == "INVALID_BUCKET_ID"
-        assert "uuid" in data["detail"]["message"].lower()
+        assert data["error"]["code"] == "INVALID_BUCKET_ID"
+        assert "uuid" in data["error"]["message"].lower()
 
     def test_upload_invalid_file_type_jpg(
         self,
@@ -349,9 +349,9 @@ class TestDocumentUpload:
 
         assert response.status_code == 400
         data = response.json()
-        assert data["detail"]["code"] == "INVALID_FILE_TYPE"
-        assert "image/jpeg" in data["detail"]["message"]
-        assert "allowed_types" in data["detail"]
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "image/jpeg" in data["error"]["message"]
+        assert "allowed_types" in data["error"]
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
@@ -389,9 +389,9 @@ class TestDocumentUpload:
 
         assert response.status_code == 413
         data = response.json()
-        assert data["detail"]["code"] == "FILE_TOO_LARGE"
-        assert "max_size_bytes" in data["detail"]
-        assert data["detail"]["max_size_bytes"] == 50 * 1024 * 1024
+        assert data["error"]["code"] == "FILE_TOO_LARGE"
+        assert "max_size_bytes" in data["error"]
+        assert data["error"]["max_size_bytes"] == 50 * 1024 * 1024
 
         # Verify audit log
         assert mock_audit_service['log_event'].called
@@ -430,8 +430,8 @@ class TestDocumentUpload:
         # Empty files should return 400 Bad Request with EMPTY_FILE code
         assert response.status_code == 400
         data = response.json()
-        assert data["detail"]["code"] == "EMPTY_FILE"
-        assert "empty" in data["detail"]["message"].lower()
+        assert data["error"]["code"] == "EMPTY_FILE"
+        assert "empty" in data["error"]["message"].lower()
 
     def test_upload_no_authentication(
         self,
@@ -493,7 +493,7 @@ class TestDocumentUpload:
 
         assert response.status_code == 500
         data = response.json()
-        assert data["detail"]["code"] == "UPLOAD_FAILED"
+        assert data["error"]["code"] == "UPLOAD_FAILED"
 
         # Verify audit log for operational monitoring
         assert mock_audit_service['log_event'].called
@@ -665,5 +665,5 @@ class TestDocumentUpload:
 
         assert response.status_code == 500
         data = response.json()
-        assert data["detail"]["code"] == "MIME_DETECTION_FAILED"
-        assert "unable to validate file type" in data["detail"]["message"].lower()
+        assert data["error"]["code"] == "MIME_DETECTION_FAILED"
+        assert "unable to validate file type" in data["error"]["message"].lower()

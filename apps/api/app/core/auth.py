@@ -36,6 +36,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.dependencies import get_db
+from app.core.exceptions import create_error_response
 from app.models.enums import UserRole, Permission, has_permission
 from app.services.audit import AuditService, AuditEventType
 
@@ -136,28 +137,30 @@ async def get_current_user(
             request=request,
             token_snippet="N/A",
         )
-        raise HTTPException(
+        error = create_error_response(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "code": "MISSING_CREDENTIALS",
-                "message": "Missing authentication credentials",
-            },
-            headers={"WWW-Authenticate": "Bearer"},
+            error_code="MISSING_CREDENTIALS",
+            message="Missing authentication credentials",
+            request=request,
         )
+        error.headers = {"WWW-Authenticate": "Bearer"}
+        raise error
 
     token = credentials.credentials
 
     # Get token snippet for audit logging (first 8 + last 8 chars)
     token_snippet = f"{token[:8]}...{token[-8:]}" if len(token) > 16 else "***"
 
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail={
-            "code": "INVALID_TOKEN",
-            "message": "Could not validate credentials",
-        },
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    def get_credentials_exception() -> HTTPException:
+        """Helper to create credentials exception with headers."""
+        error = create_error_response(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            error_code="INVALID_TOKEN",
+            message="Could not validate credentials",
+            request=request,
+        )
+        error.headers = {"WWW-Authenticate": "Bearer"}
+        return error
 
     try:
         # Decode JWT token
@@ -182,7 +185,7 @@ async def get_current_user(
                 request=request,
                 token_snippet=token_snippet,
             )
-            raise credentials_exception
+            raise get_credentials_exception()
 
         # Validate role
         try:
@@ -194,14 +197,14 @@ async def get_current_user(
                 request=request,
                 token_snippet=token_snippet,
             )
-            raise HTTPException(
+            error = create_error_response(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={
-                    "code": "INVALID_ROLE",
-                    "message": f"Invalid user role: {role}",
-                },
-                headers={"WWW-Authenticate": "Bearer"},
+                error_code="INVALID_ROLE",
+                message=f"Invalid user role: {role}",
+                request=request,
             )
+            error.headers = {"WWW-Authenticate": "Bearer"}
+            raise error
 
         # Check token expiration (if present)
         exp = payload.get("exp")
@@ -214,14 +217,14 @@ async def get_current_user(
                     organization_id=UUID(organization_id) if organization_id else None,
                     request=request,
                 )
-                raise HTTPException(
+                error = create_error_response(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail={
-                        "code": "TOKEN_EXPIRED",
-                        "message": "Token has expired",
-                    },
-                    headers={"WWW-Authenticate": "Bearer"},
+                    error_code="TOKEN_EXPIRED",
+                    message="Token has expired",
+                    request=request,
                 )
+                error.headers = {"WWW-Authenticate": "Bearer"}
+                raise error
 
         # Create current user
         current_user = CurrentUser(
@@ -252,14 +255,14 @@ async def get_current_user(
             request=request,
             token_snippet=token_snippet,
         )
-        raise HTTPException(
+        error = create_error_response(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "code": "JWT_ERROR",
-                "message": f"JWT validation failed: {str(e)}",
-            },
-            headers={"WWW-Authenticate": "Bearer"},
+            error_code="JWT_ERROR",
+            message=f"JWT validation failed: {str(e)}",
+            request=request,
         )
+        error.headers = {"WWW-Authenticate": "Bearer"}
+        raise error
     except ValueError as e:
         # UUID parsing errors
         AuditService.log_token_invalid(
@@ -268,14 +271,14 @@ async def get_current_user(
             request=request,
             token_snippet=token_snippet,
         )
-        raise HTTPException(
+        error = create_error_response(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "code": "INVALID_TOKEN_FORMAT",
-                "message": f"Token contains invalid data format: {str(e)}",
-            },
-            headers={"WWW-Authenticate": "Bearer"},
+            error_code="INVALID_TOKEN_FORMAT",
+            message=f"Token contains invalid data format: {str(e)}",
+            request=request,
         )
+        error.headers = {"WWW-Authenticate": "Bearer"}
+        raise error
 
 
 def require_role(*allowed_roles: UserRole) -> Callable:
@@ -337,14 +340,15 @@ def require_role(*allowed_roles: UserRole) -> Callable:
                 request=request,
             )
 
-            raise HTTPException(
+            raise create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "code": "INSUFFICIENT_PERMISSIONS",
-                    "message": "You do not have permission to perform this action",
+                error_code="INSUFFICIENT_PERMISSIONS",
+                message="You do not have permission to perform this action",
+                details={
                     "required_roles": allowed_role_names,
                     "your_role": current_user.role.value,
                 },
+                request=request,
             )
 
         return current_user
@@ -405,14 +409,15 @@ def require_permission(*required_permissions: Permission) -> Callable:
                 request=request,
             )
 
-            raise HTTPException(
+            raise create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "code": "INSUFFICIENT_PERMISSIONS",
-                    "message": "You do not have permission to perform this action",
+                error_code="INSUFFICIENT_PERMISSIONS",
+                message="You do not have permission to perform this action",
+                details={
                     "missing_permissions": missing_permissions,
                     "your_role": current_user.role.value,
                 },
+                request=request,
             )
 
         return current_user

@@ -165,7 +165,7 @@ class TestCreateWorkflow:
         )
 
         assert response.status_code == 403
-        assert response.json()["detail"]["code"] == "INSUFFICIENT_PERMISSIONS"
+        assert response.json()["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
 
     def test_create_workflow_unauthenticated(
         self,
@@ -375,7 +375,7 @@ class TestCreateWorkflow:
         )
 
         assert response.status_code == 422
-        error_detail = response.json()["detail"]
+        error_detail = response.json()["error"]
         assert any("unique" in str(err).lower() and "technical documentation" in str(err).lower() for err in error_detail)
 
 
@@ -825,7 +825,7 @@ class TestGetWorkflow:
         )
 
         assert response.status_code == 404
-        assert response.json()["detail"]["code"] == "WORKFLOW_NOT_FOUND"
+        assert response.json()["error"]["code"] == "WORKFLOW_NOT_FOUND"
 
     def test_get_workflow_unauthenticated(
         self,
@@ -977,4 +977,4 @@ class TestMultiTenancyIsolation:
             headers={"Authorization": f"Bearer {org_b_admin_token}"},
         )
         assert get_response.status_code == 404
-        assert get_response.json()["detail"]["code"] == "WORKFLOW_NOT_FOUND"
+        assert get_response.json()["error"]["code"] == "WORKFLOW_NOT_FOUND"

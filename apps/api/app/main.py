@@ -8,6 +8,7 @@ import logging
 
 from app.core.config import settings
 from app.middleware.multi_tenant import MultiTenantMiddleware
+from app.middleware.request_id import RequestIDMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -25,6 +26,12 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
+
+# Request ID middleware
+# Sets request.state.request_id from X-Request-ID header or generates UUID
+# Must run BEFORE other middleware to ensure request_id is available for error handling
+# Client can provide: fetch('/api', { headers: { 'X-Request-ID': 'uuid' } })
+app.add_middleware(RequestIDMiddleware)
 
 # Multi-tenant isolation middleware
 # Ensures organization context is properly reset after each request
@@ -85,15 +92,26 @@ async def global_exception_handler(request, exc):
         exc: Exception instance
 
     Returns:
-        JSONResponse: Error response
+        JSONResponse: Error response with request_id for audit trail
     """
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    from uuid import uuid4
+
+    # Extract request_id from request state (set by RequestIDMiddleware)
+    # Fall back to generating a new UUID if not present
+    request_id = getattr(request.state, "request_id", str(uuid4()))
+
+    logger.error(
+        f"Unhandled exception: {exc}",
+        exc_info=True,
+        extra={"request_id": request_id}
+    )
     return JSONResponse(
         status_code=500,
         content={
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
                 "message": "An internal server error occurred. Please try again later.",
+                "request_id": request_id,
                 "details": str(exc) if settings.ENVIRONMENT == "development" else None,
             }
         },

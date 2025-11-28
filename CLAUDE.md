@@ -270,7 +270,43 @@ Consistent error structure:
 }
 ```
 
-Common error codes: `VALIDATION_ERROR` (400), `INVALID_TOKEN` (401), `INSUFFICIENT_PERMISSIONS` (403), `RESOURCE_NOT_FOUND` (404), `INSUFFICIENT_CREDITS` (422), `RATE_LIMIT_EXCEEDED` (429)
+#### Standard Error Codes
+
+All error codes use SCREAMING_SNAKE_CASE and map to appropriate HTTP status codes:
+
+**Client Errors (4xx):**
+- `VALIDATION_ERROR` (400) - Request validation failed (invalid input, missing required fields)
+- `INVALID_TOKEN` (401) - JWT token is invalid, malformed, or has invalid signature
+- `TOKEN_EXPIRED` (401) - JWT token has expired (check `exp` claim)
+- `INSUFFICIENT_PERMISSIONS` (403) - User role lacks required permissions for this action
+- `RESOURCE_NOT_FOUND` (404) - Resource doesn't exist or belongs to different organization
+- `ALREADY_ARCHIVED` (400) - Attempting to archive already archived resource
+- `RESOURCE_HAS_DEPENDENCIES` (409) - Cannot delete resource due to foreign key dependencies
+- `INSUFFICIENT_CREDITS` (422) - Not enough credits to perform operation
+- `RATE_LIMIT_EXCEEDED` (429) - Too many requests, retry after rate limit window
+
+**Server Errors (5xx):**
+- `DATABASE_ERROR` (500) - Database constraint violation or integrity error
+- `WORKFLOW_CREATION_FAILED` (500) - Workflow creation failed due to unexpected error
+- `WORKFLOW_UPDATE_FAILED` (500) - Workflow update failed due to unexpected error
+- `INTERNAL_ERROR` (500) - Unexpected server error (catch-all for unhandled exceptions)
+
+#### Error Code Naming Conventions
+
+When adding new error codes:
+1. **Use SCREAMING_SNAKE_CASE** - e.g., `RESOURCE_NOT_FOUND`, not `resource-not-found`
+2. **Be specific but concise** - e.g., `FILE_TOO_LARGE` not `UPLOADED_FILE_SIZE_EXCEEDS_MAXIMUM_ALLOWED`
+3. **Match HTTP semantics** - 404 errors use `NOT_FOUND`, not `MISSING` or `DOES_NOT_EXIST`
+4. **Avoid abbreviations** - e.g., `AUTHENTICATION_FAILED` not `AUTH_FAIL`
+5. **Use active voice** - e.g., `PERMISSION_DENIED` not `NO_PERMISSION`
+
+#### Request ID for Debugging
+
+Every error response includes a `request_id` field:
+- Used for audit trail and support debugging
+- Generated from `X-Request-ID` header (if provided by client) or auto-generated UUID
+- Logged in structured logs with all error details
+- Client can provide custom request ID: `fetch('/api', { headers: { 'X-Request-ID': 'client-uuid' } })`
 
 ---
 

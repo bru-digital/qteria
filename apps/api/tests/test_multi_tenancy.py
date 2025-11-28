@@ -306,7 +306,7 @@ class TestOrganizationEndpointMultiTenancy:
 
         # Should return 404 (not 403) to prevent info leakage
         assert response.status_code == 404
-        assert response.json()["detail"]["code"] == "RESOURCE_NOT_FOUND"
+        assert response.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
 
     def test_admin_cannot_access_other_organization(
         self, client: TestClient, org_a_admin_token: str, mock_audit_service
@@ -447,8 +447,8 @@ class TestMultiTenancyErrorResponses:
         assert response_existing.status_code == response_nonexisting.status_code == 404
 
         # Both should have same error structure (can't distinguish)
-        assert response_existing.json()["detail"]["code"] == "RESOURCE_NOT_FOUND"
-        assert response_nonexisting.json()["detail"]["code"] == "RESOURCE_NOT_FOUND"
+        assert response_existing.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
+        assert response_nonexisting.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
 
 
 # ============================================================================
