@@ -86,6 +86,13 @@ ALLOWED_MIME_TYPES = {
     "application/vnd.ms-excel",  # XLS (legacy)
 }
 
+# SECURITY: Explicitly reject macro-enabled files to prevent malicious code execution
+# These file types can contain embedded macros that pose security risks
+REJECTED_MIME_TYPES = {
+    "application/vnd.ms-excel.sheet.macroEnabled.12",  # XLSM (macro-enabled Excel)
+    "application/vnd.ms-word.document.macroEnabled.12",  # DOCM (macro-enabled Word)
+}
+
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50MB
 
 
@@ -93,12 +100,20 @@ def validate_file_type(mime_type: str) -> bool:
     """
     Validate if MIME type is allowed.
 
+    SECURITY: Explicitly rejects macro-enabled files (XLSM, DOCM) to prevent
+    malicious code execution. Even if not in allowed list, explicit rejection
+    provides clear security intent and better error messages.
+
     Args:
         mime_type: MIME type to validate
 
     Returns:
         bool: True if allowed, False otherwise
     """
+    # Explicitly reject dangerous file types first (security defense-in-depth)
+    if mime_type in REJECTED_MIME_TYPES:
+        return False
+
     return mime_type in ALLOWED_MIME_TYPES
 
 

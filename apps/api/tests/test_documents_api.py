@@ -828,3 +828,98 @@ class TestDocumentUpload:
         call_args = mock_audit_service['log_event'].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_file_type"
+
+    def test_upload_xlsm_rejected_security(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for XLSM files (SECURITY - macro-enabled Excel).
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code INVALID_FILE_TYPE
+        - XLSM files are explicitly rejected due to macro security risks
+        - Security-specific error message about macro-enabled files
+        - Audit log created for security monitoring
+
+        Rationale: XLSM files can contain embedded macros that execute arbitrary code,
+        posing a significant security risk in document validation workflows.
+        """
+        # Create XLSM file content (macro-enabled Excel)
+        xlsm_content = b"PK\x03\x04 XLSM content with macros"
+        xlsm_file = io.BytesIO(xlsm_content)
+
+        # Mock XLSM MIME type (macro-enabled Excel 2007+)
+        mock_magic.from_buffer.return_value = "application/vnd.ms-excel.sheet.macroEnabled.12"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("malicious-data.xlsm", xlsm_file, "application/vnd.ms-excel.sheet.macroEnabled.12")},
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "application/vnd.ms-excel.sheet.macroEnabled.12" in data["error"]["message"]
+        # Verify security-specific error message
+        assert "macro" in data["error"]["message"].lower()
+
+        # Verify audit log for security monitoring (macro upload attempt)
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.upload.failed"
+        assert call_args["metadata"]["reason"] == "invalid_file_type"
+        assert call_args["metadata"]["detected_mime_type"] == "application/vnd.ms-excel.sheet.macroEnabled.12"
+
+    def test_upload_docm_rejected_security(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for DOCM files (SECURITY - macro-enabled Word).
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code INVALID_FILE_TYPE
+        - DOCM files are explicitly rejected due to macro security risks
+        - Security-specific error message about macro-enabled files
+        """
+        # Create DOCM file content (macro-enabled Word)
+        docm_content = b"PK\x03\x04 DOCM content with macros"
+        docm_file = io.BytesIO(docm_content)
+
+        # Mock DOCM MIME type (macro-enabled Word 2007+)
+        mock_magic.from_buffer.return_value = "application/vnd.ms-word.document.macroEnabled.12"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("malicious-doc.docm", docm_file, "application/vnd.ms-word.document.macroEnabled.12")},
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "application/vnd.ms-word.document.macroEnabled.12" in data["error"]["message"]
+        # Verify security-specific error message
+        assert "macro" in data["error"]["message"].lower()
+
+        # Verify audit log for security monitoring
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.upload.failed"
+        assert call_args["metadata"]["reason"] == "invalid_file_type"

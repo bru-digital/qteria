@@ -314,13 +314,20 @@ async def upload_document(
             )
 
         if not validate_file_type(mime_type):
-            error_msg = f"Invalid file type: {mime_type}. Only PDF, DOCX, and XLSX files are allowed."
+            # SECURITY: Provide specific error message for macro-enabled files
+            from app.schemas.document import REJECTED_MIME_TYPES
+            if mime_type in REJECTED_MIME_TYPES:
+                error_msg = f"Security: Macro-enabled files are not allowed. Detected: {mime_type}. Please use standard formats (XLSX, DOCX, PDF)."
+            else:
+                error_msg = f"Invalid file type: {mime_type}. Only PDF, DOCX, and XLSX files are allowed."
+
             logger.warning(
                 "Document upload failed - invalid file type",
                 extra={
                     "user_id": str(current_user.id),
                     "file_name": file.filename,
                     "detected_mime_type": mime_type,
+                    "is_macro_enabled": mime_type in REJECTED_MIME_TYPES,
                 },
             )
 
