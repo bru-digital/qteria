@@ -63,10 +63,15 @@ class DocumentErrorResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "code": "INVALID_FILE_TYPE",
-                "message": "Invalid file type: image/jpeg. Only PDF and DOCX allowed.",
+                "message": "Invalid file type: image/jpeg. Only PDF, DOCX, and XLSX allowed.",
                 "details": {
                     "detected_mime_type": "image/jpeg",
-                    "allowed_types": ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+                    "allowed_types": [
+                        "application/pdf",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "application/vnd.ms-excel"
+                    ],
                 },
             }
         },
@@ -77,6 +82,8 @@ class DocumentErrorResponse(BaseModel):
 ALLOWED_MIME_TYPES = {
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # DOCX
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # XLSX
+    "application/vnd.ms-excel",  # XLS (legacy)
 }
 
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50MB

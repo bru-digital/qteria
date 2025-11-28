@@ -78,7 +78,7 @@ Upload a document to Vercel Blob storage for later use in assessments.
 **Journey Step 2**: Project Handler uploads documents into workflow buckets.
 
 **File Requirements**:
-- Accepted types: PDF, DOCX
+- Accepted types: PDF, DOCX, XLSX
 - Maximum size: 50MB
 - Content-based validation (not just extension)
 
@@ -109,7 +109,7 @@ bucket_id: 660e8400-e29b-41d4-a716-446655440001 (optional)
 )
 async def upload_document(
     current_user: AuthenticatedUser,
-    file: UploadFile = File(..., description="Document file (PDF or DOCX)"),
+    file: UploadFile = File(..., description="Document file (PDF, DOCX, or XLSX)"),
     bucket_id: Optional[str] = Form(
         None, description="Optional bucket ID for validation"
     ),
@@ -122,7 +122,7 @@ async def upload_document(
     Journey Step 2: Project Handler uploads documents into workflow buckets.
 
     Args:
-        file: Uploaded file (PDF or DOCX)
+        file: Uploaded file (PDF, DOCX, or XLSX)
         bucket_id: Optional bucket ID for early validation
         current_user: Authenticated user (from JWT)
         request: FastAPI request for audit logging
@@ -314,7 +314,7 @@ async def upload_document(
             )
 
         if not validate_file_type(mime_type):
-            error_msg = f"Invalid file type: {mime_type}. Only PDF and DOCX files are allowed."
+            error_msg = f"Invalid file type: {mime_type}. Only PDF, DOCX, and XLSX files are allowed."
             logger.warning(
                 "Document upload failed - invalid file type",
                 extra={
