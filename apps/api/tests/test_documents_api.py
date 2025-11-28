@@ -778,9 +778,9 @@ class TestDocumentUpload:
 
         assert response.status_code == 400
         data = response.json()
-        assert data["detail"]["error"]["code"] == "INVALID_FILE_TYPE"
-        assert "text/csv" in data["detail"]["error"]["message"]
-        assert "allowed_types" in data["detail"]["error"]["details"]
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "text/csv" in data["error"]["message"]
+        assert "allowed_types" in data["error"]
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
@@ -820,8 +820,8 @@ class TestDocumentUpload:
 
         assert response.status_code == 400
         data = response.json()
-        assert data["detail"]["error"]["code"] == "INVALID_FILE_TYPE"
-        assert "application/vnd.oasis.opendocument.spreadsheet" in data["detail"]["error"]["message"]
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "application/vnd.oasis.opendocument.spreadsheet" in data["error"]["message"]
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
