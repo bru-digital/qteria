@@ -46,6 +46,7 @@ router = APIRouter()
 def create_organization(
     organization: OrganizationCreate,
     current_user: AdminOnly,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -56,6 +57,7 @@ def create_organization(
     Args:
         organization: Organization creation data
         current_user: Authenticated admin user
+        request: FastAPI request for audit logging
         db: Database session
 
     Returns:
@@ -74,6 +76,7 @@ def create_organization(
             error_code="VALIDATION_ERROR",
             message=f"Organization with name '{organization.name}' already exists",
             details={"field": "name", "value": organization.name},
+            request=request,
         )
 
     # Create new organization
