@@ -92,15 +92,26 @@ async def global_exception_handler(request, exc):
         exc: Exception instance
 
     Returns:
-        JSONResponse: Error response
+        JSONResponse: Error response with request_id for audit trail
     """
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    from uuid import uuid4
+
+    # Extract request_id from request state (set by RequestIDMiddleware)
+    # Fall back to generating a new UUID if not present
+    request_id = getattr(request.state, "request_id", str(uuid4()))
+
+    logger.error(
+        f"Unhandled exception: {exc}",
+        exc_info=True,
+        extra={"request_id": request_id}
+    )
     return JSONResponse(
         status_code=500,
         content={
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
                 "message": "An internal server error occurred. Please try again later.",
+                "request_id": request_id,
                 "details": str(exc) if settings.ENVIRONMENT == "development" else None,
             }
         },
