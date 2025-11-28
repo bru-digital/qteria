@@ -36,7 +36,9 @@ def mock_audit_service():
          patch.object(AuditService, 'log_authz_denied', return_value=MagicMock()) as mock_authz_denied, \
          patch.object(AuditService, 'log_multi_tenancy_violation', return_value=MagicMock()) as mock_mt_violation, \
          patch.object(AuditService, 'log_permission_denied', return_value=MagicMock()) as mock_perm_denied, \
-         patch.object(AuditService, 'log_access_granted', return_value=MagicMock()) as mock_access_granted:
+         patch.object(AuditService, 'log_access_granted', return_value=MagicMock()) as mock_access_granted, \
+         patch.object(AuditService, 'log_workflow_created', return_value=MagicMock()) as mock_workflow_created, \
+         patch.object(AuditService, 'log_workflow_updated', return_value=MagicMock()) as mock_workflow_updated:
         yield {
             'log_event': mock_event,
             'log_auth_success': mock_auth_success,
@@ -47,6 +49,8 @@ def mock_audit_service():
             'log_multi_tenancy_violation': mock_mt_violation,
             'log_permission_denied': mock_perm_denied,
             'log_access_granted': mock_access_granted,
+            'log_workflow_created': mock_workflow_created,
+            'log_workflow_updated': mock_workflow_updated,
         }
 
 

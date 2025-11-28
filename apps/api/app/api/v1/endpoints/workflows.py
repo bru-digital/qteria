@@ -96,6 +96,7 @@ Create a new validation workflow with nested buckets and criteria in a single tr
 def create_workflow(
     workflow_data: WorkflowCreate,
     current_user: ProcessManagerOrAdmin,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> WorkflowResponse:
     """
@@ -178,6 +179,7 @@ def create_workflow(
             organization_id=current_user.organization_id,
             workflow_id=workflow.id,
             workflow_name=workflow.name,
+            request=request,
         )
 
         # 5. Commit transaction (includes audit log)
@@ -199,34 +201,9 @@ def create_workflow(
         )
 
         # 8. Return workflow response
-        return WorkflowResponse(
-            id=workflow.id,
-            name=workflow.name,
-            description=workflow.description,
-            organization_id=workflow.organization_id,
-            created_by=workflow.created_by,
-            is_active=workflow.is_active,
-            created_at=workflow.created_at,
-            buckets=[
-                {
-                    "id": bucket.id,
-                    "name": bucket.name,
-                    "required": bucket.required,
-                    "order_index": bucket.order_index,
-                }
-                for bucket in workflow.buckets
-            ],
-            criteria=[
-                {
-                    "id": c.id,
-                    "name": c.name,
-                    "description": c.description,
-                    "applies_to_bucket_ids": c.applies_to_bucket_ids or [],
-                    "order_index": c.order_index,
-                }
-                for c in workflow.criteria
-            ],
-        )
+        # Use Pydantic's ORM mode to automatically map SQLAlchemy model to response schema
+        # This ensures type safety and validates all fields according to the schema
+        return WorkflowResponse.model_validate(workflow)
 
     except IntegrityError as e:
         db.rollback()
@@ -242,6 +219,7 @@ def create_workflow(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_code="DATABASE_ERROR",
             message="Failed to create workflow due to database constraint violation",
+            request=request,
         )
     except Exception as e:
         db.rollback()
@@ -258,6 +236,7 @@ def create_workflow(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_code="WORKFLOW_CREATION_FAILED",
             message=f"Failed to create workflow: {str(e)}",
+            request=request,
         )
 
 
@@ -284,6 +263,7 @@ List all workflows for the current user's organization with pagination.
 )
 def list_workflows(
     current_user: AuthenticatedUser,
+    request: Request,
     db: Session = Depends(get_db),
     is_active: bool = True,
     include_archived: bool = Query(False, description="Include archived workflows"),
@@ -362,6 +342,7 @@ def list_workflows(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             error_code="INVALID_SORT_FIELD",
             message=f"Invalid sort field: {sort_by}. Allowed fields: {', '.join(ALLOWED_SORT_FIELDS.keys())}",
+            request=request,
         )
 
     if order == "desc":
