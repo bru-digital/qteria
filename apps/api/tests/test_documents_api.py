@@ -784,6 +784,12 @@ class TestDocumentUpload:
         assert data["error"]["code"] == "INVALID_FILE_TYPE"
         assert "text/csv" in data["error"]["message"]
         assert "allowed_types" in data["error"]["details"]
+        # Verify all allowed types are present (PDF, DOCX, XLSX, XLS)
+        assert len(data["error"]["details"]["allowed_types"]) == 4
+        assert "application/pdf" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.ms-excel" in data["error"]["details"]["allowed_types"]
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
@@ -825,6 +831,13 @@ class TestDocumentUpload:
         data = response.json()
         assert data["error"]["code"] == "INVALID_FILE_TYPE"
         assert "application/vnd.oasis.opendocument.spreadsheet" in data["error"]["message"]
+        # Verify all allowed types are present in error details (PDF, DOCX, XLSX, XLS)
+        assert "allowed_types" in data["error"]["details"]
+        assert len(data["error"]["details"]["allowed_types"]) == 4
+        assert "application/pdf" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.ms-excel" in data["error"]["details"]["allowed_types"]
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
