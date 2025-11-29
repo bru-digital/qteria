@@ -343,7 +343,7 @@ Organizations (notified bodies)
 **Content-Type**: `multipart/form-data`
 **Request**:
 ```
-file: <binary PDF/DOCX file>
+file: <binary PDF/DOCX/XLSX file>
 bucket_id: "bucket_1" (optional, for validation)
 ```
 **Response** (201 Created):
@@ -377,7 +377,7 @@ bucket_id: "bucket_1" (optional, for validation)
 - `page` (int, optional) - Open PDF at specific page (#page=X anchor)
 
 **Response** (200 OK):
-- Content-Type: `application/pdf` or `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+- Content-Type: `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, or `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
 - Content-Disposition: `inline; filename="technical-spec.pdf"`
 - Binary file stream
 
