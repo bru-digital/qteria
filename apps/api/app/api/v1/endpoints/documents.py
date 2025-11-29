@@ -53,6 +53,7 @@ from app.models import Bucket, Workflow
 from app.schemas.document import (
     DocumentResponse,
     ALLOWED_MIME_TYPES,
+    REJECTED_MIME_TYPES,
     MAX_FILE_SIZE_BYTES,
     validate_file_size,
     validate_file_type,
@@ -315,7 +316,6 @@ async def upload_document(
 
         if not validate_file_type(mime_type):
             # SECURITY: Provide specific error message for macro-enabled files
-            from app.schemas.document import REJECTED_MIME_TYPES
             if mime_type in REJECTED_MIME_TYPES:
                 error_msg = f"Security: Macro-enabled files are not allowed. Detected: {mime_type}. Please use standard formats (XLSX, DOCX, PDF)."
             else:

@@ -1,7 +1,9 @@
 """
 FastAPI main application entry point.
 """
-from fastapi import FastAPI
+from uuid import uuid4
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
@@ -81,6 +83,40 @@ async def health_check():
     }
 
 
+# Custom HTTPException handler to unwrap detail field
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc: HTTPException):
+    """
+    Custom HTTPException handler to unwrap the detail field.
+
+    FastAPI automatically wraps HTTPException.detail in {"detail": ...},
+    but our create_error_response already creates {"error": {...}} format.
+    This handler unwraps the detail field to return {"error": {...}} directly.
+
+    Args:
+        request: FastAPI request object
+        exc: HTTPException instance
+
+    Returns:
+        JSONResponse: Error response in standardized format
+    """
+    # If detail is already a dict (from create_error_response), return it directly
+    if isinstance(exc.detail, dict):
+        return JSONResponse(status_code=exc.status_code, content=exc.detail)
+
+    # Otherwise, create standardized error format
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "code": "HTTP_ERROR",
+                "message": str(exc.detail),
+                "request_id": getattr(request.state, "request_id", str(uuid4())),
+            }
+        },
+    )
+
+
 # Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
@@ -94,8 +130,6 @@ async def global_exception_handler(request, exc):
     Returns:
         JSONResponse: Error response with request_id for audit trail
     """
-    from uuid import uuid4
-
     # Extract request_id from request state (set by RequestIDMiddleware)
     # Fall back to generating a new UUID if not present
     request_id = getattr(request.state, "request_id", str(uuid4()))

@@ -351,7 +351,7 @@ class TestDocumentUpload:
         data = response.json()
         assert data["error"]["code"] == "INVALID_FILE_TYPE"
         assert "image/jpeg" in data["error"]["message"]
-        assert "allowed_types" in data["error"]
+        assert "allowed_types" in data["error"]["details"]
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
@@ -390,8 +390,8 @@ class TestDocumentUpload:
         assert response.status_code == 413
         data = response.json()
         assert data["error"]["code"] == "FILE_TOO_LARGE"
-        assert "max_size_bytes" in data["error"]
-        assert data["error"]["max_size_bytes"] == 50 * 1024 * 1024
+        assert "max_size_bytes" in data["error"]["details"]
+        assert data["error"]["details"]["max_size_bytes"] == 50 * 1024 * 1024
 
         # Verify audit log
         assert mock_audit_service['log_event'].called
@@ -780,7 +780,7 @@ class TestDocumentUpload:
         data = response.json()
         assert data["error"]["code"] == "INVALID_FILE_TYPE"
         assert "text/csv" in data["error"]["message"]
-        assert "allowed_types" in data["error"]
+        assert "allowed_types" in data["error"]["details"]
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
