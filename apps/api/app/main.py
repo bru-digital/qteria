@@ -93,6 +93,16 @@ async def http_exception_handler(request, exc: HTTPException):
     but our create_error_response already creates {"error": {...}} format.
     This handler unwraps the detail field to return {"error": {...}} directly.
 
+    DOUBLE-WRAPPING PREVENTION:
+    Without this handler, errors would be double-wrapped:
+    - create_error_response() creates: {"error": {"code": "...", "message": "..."}}
+    - FastAPI wraps it again: {"detail": {"error": {"code": "...", "message": "..."}}}
+
+    This handler prevents double-wrapping by:
+    1. Checking if exc.detail is a dict (from create_error_response)
+    2. If yes, returning it directly as {"error": {...}} (unwrapped)
+    3. If no (plain string from direct HTTPException), wrapping it in {"error": {...}}
+
     Args:
         request: FastAPI request object
         exc: HTTPException instance

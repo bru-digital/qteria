@@ -91,6 +91,7 @@ ALLOWED_MIME_TYPES = {
 REJECTED_MIME_TYPES = {
     "application/vnd.ms-excel.sheet.macroEnabled.12",  # XLSM (macro-enabled Excel)
     "application/vnd.ms-word.document.macroEnabled.12",  # DOCM (macro-enabled Word)
+    "application/vnd.ms-powerpoint.presentation.macroEnabled.12",  # PPTM (macro-enabled PowerPoint)
 }
 
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50MB
