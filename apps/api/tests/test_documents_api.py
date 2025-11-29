@@ -352,6 +352,9 @@ class TestDocumentUpload:
         assert data["error"]["code"] == "INVALID_FILE_TYPE"
         assert "image/jpeg" in data["error"]["message"]
         assert "allowed_types" in data["error"]["details"]
+        # Verify XLSX is included in allowed types (API contract compliance)
+        allowed_types = data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in allowed_types
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
@@ -923,3 +926,56 @@ class TestDocumentUpload:
         call_args = mock_audit_service['log_event'].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_file_type"
+
+    def test_upload_pptm_rejected_security(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for PPTM files (SECURITY - macro-enabled PowerPoint).
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code INVALID_FILE_TYPE
+        - PPTM files are explicitly rejected due to macro security risks
+        - Security-specific error message about macro-enabled files
+        - Audit log created for security monitoring
+
+        Rationale:
+        PPTM files can contain VBA macros that could execute malicious code.
+        While PowerPoint presentations are not currently accepted in any form,
+        explicitly rejecting PPTM ensures defense-in-depth security posture
+        and provides clear error messages if acceptance criteria change.
+        """
+        # Create PPTM file content (macro-enabled PowerPoint)
+        pptm_content = b"PK\x03\x04 PPTM content with macros"
+        pptm_file = io.BytesIO(pptm_content)
+
+        # Mock PPTM MIME type (macro-enabled PowerPoint 2007+)
+        mock_magic.from_buffer.return_value = "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("malicious-presentation.pptm", pptm_file, "application/vnd.ms-powerpoint.presentation.macroEnabled.12")},
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "application/vnd.ms-powerpoint.presentation.macroEnabled.12" in data["error"]["message"]
+        # Verify security-specific error message
+        assert "macro" in data["error"]["message"].lower()
+
+        # Verify audit log for security monitoring (macro upload attempt)
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.upload.failed"
+        assert call_args["metadata"]["reason"] == "invalid_file_type"
+        assert call_args["metadata"]["detected_mime_type"] == "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
