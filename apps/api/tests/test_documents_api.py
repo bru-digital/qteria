@@ -351,7 +351,10 @@ class TestDocumentUpload:
         data = response.json()
         assert data["error"]["code"] == "INVALID_FILE_TYPE"
         assert "image/jpeg" in data["error"]["message"]
-        assert "allowed_types" in data["error"]
+        assert "allowed_types" in data["error"]["details"]
+        # Verify XLSX is included in allowed types (API contract compliance)
+        allowed_types = data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in allowed_types
 
         # Verify audit log for security monitoring
         assert mock_audit_service['log_event'].called
@@ -390,8 +393,8 @@ class TestDocumentUpload:
         assert response.status_code == 413
         data = response.json()
         assert data["error"]["code"] == "FILE_TOO_LARGE"
-        assert "max_size_bytes" in data["error"]
-        assert data["error"]["max_size_bytes"] == 50 * 1024 * 1024
+        assert "max_size_bytes" in data["error"]["details"]
+        assert data["error"]["details"]["max_size_bytes"] == 50 * 1024 * 1024
 
         # Verify audit log
         assert mock_audit_service['log_event'].called
@@ -667,3 +670,325 @@ class TestDocumentUpload:
         data = response.json()
         assert data["error"]["code"] == "MIME_DETECTION_FAILED"
         assert "unable to validate file type" in data["error"]["message"].lower()
+
+    def test_upload_xlsx_success(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test successful XLSX upload (Issue #90 - Add XLSX file type support).
+
+        Acceptance Criteria:
+        - XLSX files are accepted
+        - Returns 201 Created with correct MIME type
+        - Verifies guideline compliance (product-guidelines/08-api-contracts.md:363)
+        """
+        # Create XLSX file content with magic bytes
+        xlsx_content = b"PK\x03\x04 XLSX content"
+        xlsx_file = io.BytesIO(xlsx_content)
+
+        # Mock XLSX MIME type (modern Office Open XML format)
+        mock_magic.from_buffer.return_value = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("test-data.xlsx", xlsx_file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["file_name"] == "test-data.xlsx"
+        assert data["mime_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+        # Verify blob storage called
+        assert mock_blob_storage.upload_file.called
+
+        # Verify audit log created
+        assert mock_audit_service['log_event'].called
+
+    def test_upload_xls_success(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test successful XLS upload (Issue #90 - Legacy Excel format support).
+
+        Acceptance Criteria:
+        - Legacy XLS files are accepted for backward compatibility
+        - Returns 201 Created with correct MIME type
+        """
+        # Create XLS file content
+        xls_content = b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1 XLS content"
+        xls_file = io.BytesIO(xls_content)
+
+        # Mock legacy XLS MIME type
+        mock_magic.from_buffer.return_value = "application/vnd.ms-excel"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("legacy-data.xls", xls_file, "application/vnd.ms-excel")},
+            )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["file_name"] == "legacy-data.xls"
+        assert data["mime_type"] == "application/vnd.ms-excel"
+
+    def test_upload_csv_rejected(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for CSV files (Issue #90 - CSV not in allowed types).
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code INVALID_FILE_TYPE
+        - CSV files are rejected despite being spreadsheet format
+        - Rationale: CSV is structured data format, not document format for AI validation
+        """
+        csv_content = b"Column1,Column2,Column3\nValue1,Value2,Value3"
+        csv_file = io.BytesIO(csv_content)
+
+        # Mock CSV MIME type
+        mock_magic.from_buffer.return_value = "text/csv"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("data.csv", csv_file, "text/csv")},
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "text/csv" in data["error"]["message"]
+        assert "allowed_types" in data["error"]["details"]
+        # Verify all allowed types are present (PDF, DOCX, XLSX, XLS)
+        assert len(data["error"]["details"]["allowed_types"]) == 4
+        assert "application/pdf" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.ms-excel" in data["error"]["details"]["allowed_types"]
+
+        # Verify audit log for security monitoring
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.upload.failed"
+        assert call_args["metadata"]["reason"] == "invalid_file_type"
+
+    def test_upload_ods_rejected(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for ODS files (Issue #90 - OpenDocument Spreadsheet not supported).
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code INVALID_FILE_TYPE
+        - ODS files are rejected (not in guideline requirement)
+        """
+        ods_content = b"PK\x03\x04 ODS content"
+        ods_file = io.BytesIO(ods_content)
+
+        # Mock ODS MIME type
+        mock_magic.from_buffer.return_value = "application/vnd.oasis.opendocument.spreadsheet"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("data.ods", ods_file, "application/vnd.oasis.opendocument.spreadsheet")},
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "application/vnd.oasis.opendocument.spreadsheet" in data["error"]["message"]
+        # Verify all allowed types are present in error details (PDF, DOCX, XLSX, XLS)
+        assert "allowed_types" in data["error"]["details"]
+        assert len(data["error"]["details"]["allowed_types"]) == 4
+        assert "application/pdf" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in data["error"]["details"]["allowed_types"]
+        assert "application/vnd.ms-excel" in data["error"]["details"]["allowed_types"]
+
+        # Verify audit log for security monitoring
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.upload.failed"
+        assert call_args["metadata"]["reason"] == "invalid_file_type"
+
+    def test_upload_xlsm_rejected_security(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for XLSM files (SECURITY - macro-enabled Excel).
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code INVALID_FILE_TYPE
+        - XLSM files are explicitly rejected due to macro security risks
+        - Security-specific error message about macro-enabled files
+        - Audit log created for security monitoring
+
+        Rationale: XLSM files can contain embedded macros that execute arbitrary code,
+        posing a significant security risk in document validation workflows.
+        """
+        # Create XLSM file content (macro-enabled Excel)
+        xlsm_content = b"PK\x03\x04 XLSM content with macros"
+        xlsm_file = io.BytesIO(xlsm_content)
+
+        # Mock XLSM MIME type (macro-enabled Excel 2007+)
+        mock_magic.from_buffer.return_value = "application/vnd.ms-excel.sheet.macroEnabled.12"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("malicious-data.xlsm", xlsm_file, "application/vnd.ms-excel.sheet.macroEnabled.12")},
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "application/vnd.ms-excel.sheet.macroEnabled.12" in data["error"]["message"]
+        # Verify security-specific error message
+        assert "macro" in data["error"]["message"].lower()
+
+        # Verify audit log for security monitoring (macro upload attempt)
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.upload.failed"
+        assert call_args["metadata"]["reason"] == "invalid_file_type"
+        assert call_args["metadata"]["detected_mime_type"] == "application/vnd.ms-excel.sheet.macroEnabled.12"
+
+    def test_upload_docm_rejected_security(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for DOCM files (SECURITY - macro-enabled Word).
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code INVALID_FILE_TYPE
+        - DOCM files are explicitly rejected due to macro security risks
+        - Security-specific error message about macro-enabled files
+        """
+        # Create DOCM file content (macro-enabled Word)
+        docm_content = b"PK\x03\x04 DOCM content with macros"
+        docm_file = io.BytesIO(docm_content)
+
+        # Mock DOCM MIME type (macro-enabled Word 2007+)
+        mock_magic.from_buffer.return_value = "application/vnd.ms-word.document.macroEnabled.12"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("malicious-doc.docm", docm_file, "application/vnd.ms-word.document.macroEnabled.12")},
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "application/vnd.ms-word.document.macroEnabled.12" in data["error"]["message"]
+        # Verify security-specific error message
+        assert "macro" in data["error"]["message"].lower()
+
+        # Verify audit log for security monitoring
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.upload.failed"
+        assert call_args["metadata"]["reason"] == "invalid_file_type"
+
+    def test_upload_pptm_rejected_security(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for PPTM files (SECURITY - macro-enabled PowerPoint).
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code INVALID_FILE_TYPE
+        - PPTM files are explicitly rejected due to macro security risks
+        - Security-specific error message about macro-enabled files
+        - Audit log created for security monitoring
+
+        Rationale:
+        PPTM files can contain VBA macros that could execute malicious code.
+        While PowerPoint presentations are not currently accepted in any form,
+        explicitly rejecting PPTM ensures defense-in-depth security posture
+        and provides clear error messages if acceptance criteria change.
+        """
+        # Create PPTM file content (macro-enabled PowerPoint)
+        pptm_content = b"PK\x03\x04 PPTM content with macros"
+        pptm_file = io.BytesIO(pptm_content)
+
+        # Mock PPTM MIME type (macro-enabled PowerPoint 2007+)
+        mock_magic.from_buffer.return_value = "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": ("malicious-presentation.pptm", pptm_file, "application/vnd.ms-powerpoint.presentation.macroEnabled.12")},
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "application/vnd.ms-powerpoint.presentation.macroEnabled.12" in data["error"]["message"]
+        # Verify security-specific error message
+        assert "macro" in data["error"]["message"].lower()
+
+        # Verify audit log for security monitoring (macro upload attempt)
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.upload.failed"
+        assert call_args["metadata"]["reason"] == "invalid_file_type"
+        assert call_args["metadata"]["detected_mime_type"] == "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
