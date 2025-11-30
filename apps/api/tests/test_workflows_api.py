@@ -242,7 +242,8 @@ class TestGetWorkflowDetails:
         error = response.json()["error"]
         assert error["code"] == "WORKFLOW_NOT_FOUND"
         assert error["message"] == "Workflow not found"
-        assert error["workflow_id"] == TEST_WORKFLOW_ID
+        assert error["details"]["workflow_id"] == TEST_WORKFLOW_ID
+        assert "request_id" in error
 
     def test_get_workflow_different_organization(
         self,
@@ -276,6 +277,7 @@ class TestGetWorkflowDetails:
         assert response.status_code == 404
         error = response.json()["error"]
         assert error["code"] == "WORKFLOW_NOT_FOUND"
+        assert "request_id" in error
 
     def test_get_workflow_requires_authentication(
         self,
@@ -313,6 +315,7 @@ class TestGetWorkflowDetails:
         assert response.status_code == 401
         error = response.json()["error"]
         assert error["code"] == "TOKEN_EXPIRED"
+        assert "request_id" in error
 
     def test_get_workflow_with_invalid_token(
         self,
@@ -334,6 +337,7 @@ class TestGetWorkflowDetails:
         assert response.status_code == 401
         error = response.json()["error"]
         assert error["code"] in ["JWT_ERROR", "INVALID_TOKEN"]
+        assert "request_id" in error
 
     def test_get_workflow_with_malformed_token(
         self,
@@ -731,9 +735,9 @@ class TestUpdateWorkflow:
             )
 
         assert response.status_code == 404
-        error = response.json()
-        assert error["error"]["code"] == "RESOURCE_NOT_FOUND"
-        assert "request_id" in error["error"]
+        error = response.json()["error"]
+        assert error["code"] == "RESOURCE_NOT_FOUND"
+        assert "request_id" in error
 
     def test_update_workflow_multi_tenancy_isolation(
         self,
@@ -923,8 +927,9 @@ class TestUpdateWorkflow:
 
         # Database IntegrityError is caught and returns 400
         assert response.status_code == 400
-        error = response.json()
-        assert error["error"]["code"] == "VALIDATION_ERROR"
+        error = response.json()["error"]
+        assert error["code"] == "VALIDATION_ERROR"
+        assert "request_id" in error
 
     def test_update_workflow_generic_exception(
         self,
@@ -1000,9 +1005,10 @@ class TestUpdateWorkflow:
 
         # Generic exception is caught and returns 500
         assert response.status_code == 500
-        error = response.json()
-        assert error["error"]["code"] == "WORKFLOW_UPDATE_FAILED"
-        assert "Unexpected database error" in error["error"]["message"]
+        error = response.json()["error"]
+        assert error["code"] == "WORKFLOW_UPDATE_FAILED"
+        assert "Unexpected database error" in error["message"]
+        assert "request_id" in error
 
         # Verify rollback was called
         assert db_mock.rollback.called
@@ -1128,8 +1134,9 @@ class TestArchiveWorkflow:
             )
 
         assert response.status_code == 404
-        error = response.json()
-        assert error["error"]["code"] == "RESOURCE_NOT_FOUND"
+        error = response.json()["error"]
+        assert error["code"] == "RESOURCE_NOT_FOUND"
+        assert "request_id" in error
 
     def test_archive_workflow_wrong_organization(
         self,
@@ -1192,10 +1199,11 @@ class TestArchiveWorkflow:
             )
 
         assert response.status_code == 409
-        error = response.json()
-        assert error["error"]["code"] == "RESOURCE_HAS_DEPENDENCIES"
-        assert error["error"]["assessment_count"] == MOCK_ASSESSMENT_COUNT
-        assert f"{MOCK_ASSESSMENT_COUNT} existing assessments" in error["error"]["message"]
+        error = response.json()["error"]
+        assert error["code"] == "RESOURCE_HAS_DEPENDENCIES"
+        assert error["details"]["assessment_count"] == MOCK_ASSESSMENT_COUNT
+        assert f"{MOCK_ASSESSMENT_COUNT} existing assessments" in error["message"]
+        assert "request_id" in error
 
     def test_archive_already_archived_workflow(
         self,
@@ -1228,10 +1236,11 @@ class TestArchiveWorkflow:
             )
 
         assert response.status_code == 400
-        error = response.json()
-        assert error["error"]["code"] == "ALREADY_ARCHIVED"
-        assert "already archived" in error["error"]["message"]
-        assert error["error"]["archived_at"] == "2025-11-20T10:00:00+00:00"
+        error = response.json()["error"]
+        assert error["code"] == "ALREADY_ARCHIVED"
+        assert "already archived" in error["message"]
+        assert error["details"]["archived_at"] == "2025-11-20T10:00:00+00:00"
+        assert "request_id" in error
 
 
 class TestListWorkflowsWithArchived:
