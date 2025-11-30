@@ -25,6 +25,9 @@ from app.models.base import SessionLocal
 
 logger = logging.getLogger(__name__)
 
+# Rate limiting constants
+UPLOAD_RATE_LIMIT_PER_HOUR = 100
+
 # Global Redis client instance (connection pooling)
 _redis_client: Optional[Redis] = None
 
@@ -96,9 +99,6 @@ def get_redis() -> Generator[Redis, None, None]:
 
     # Yield existing Redis client
     try:
-        if _redis_client:
-            # Verify connection is still alive
-            _redis_client.ping()
         yield _redis_client
     except RedisConnectionError:
         logger.warning(
@@ -147,7 +147,7 @@ def check_upload_rate_limit(
 
     Rate limit implementation:
     - Key pattern: rate_limit:upload:{user_id}:{hour_bucket}
-    - Counter: Incremented atomically with Redis INCR
+    - Counter: Atomically incremented with Redis INCRBY (prevents race conditions)
     - TTL: 1 hour (3600 seconds) to ensure automatic cleanup
     - Hour bucket: Format YYYY-MM-DD-HH for hourly reset
 
@@ -166,6 +166,7 @@ def check_upload_rate_limit(
 
     Note:
         Graceful degradation: If Redis unavailable, allows upload (logged as warning)
+        Uses increment-first approach to prevent TOCTOU race conditions
     """
     from datetime import datetime, timedelta, timezone
     from fastapi import HTTPException, Request, status
@@ -192,16 +193,32 @@ def check_upload_rate_limit(
     rate_limit_key = f"rate_limit:upload:{current_user.id}:{hour_bucket}"
 
     try:
-        # Get current count (atomic operation)
-        current_count_str = redis.get(rate_limit_key)
-        current_count = int(current_count_str) if current_count_str else 0
+        # DESIGN RATIONALE: Increment-first approach prevents TOCTOU race conditions
+        # Instead of check-then-increment (vulnerable to race conditions where multiple
+        # concurrent requests could all see count=99 and proceed), we increment first
+        # atomically, then check. If exceeded, we rollback the increment.
 
-        # Check if this upload would exceed limit (100 uploads per hour)
-        if current_count + file_count > 100:
+        # Increment counter atomically FIRST (prevents race conditions)
+        # Use Redis pipeline to ensure atomicity of INCRBY + EXPIRE
+        pipe = redis.pipeline()
+        pipe.incrby(rate_limit_key, file_count)
+        pipe.expire(rate_limit_key, 3600)  # 1 hour TTL (prevent memory leak)
+        result = pipe.execute()
+
+        # Get the new count from pipeline result (first command result)
+        new_count = result[0]
+
+        # Check if this upload exceeded limit (AFTER increment)
+        if new_count > UPLOAD_RATE_LIMIT_PER_HOUR:
+            # Rollback the increment since we're rejecting this upload
+            redis.decrby(rate_limit_key, file_count)
+
             # Calculate seconds until rate limit resets (next hour)
-            minutes_remaining = 59 - now.minute
-            seconds_remaining = 59 - now.second
-            retry_after_seconds = (minutes_remaining * 60) + seconds_remaining
+            next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+            retry_after_seconds = int((next_hour - now).total_seconds())
+
+            # Current count before this upload attempt
+            current_count = new_count - file_count
 
             logger.warning(
                 "Upload rate limit exceeded",
@@ -209,7 +226,7 @@ def check_upload_rate_limit(
                     "user_id": str(current_user.id),
                     "organization_id": str(current_user.organization_id),
                     "current_count": current_count,
-                    "limit": 100,
+                    "limit": UPLOAD_RATE_LIMIT_PER_HOUR,
                     "retry_after_seconds": retry_after_seconds,
                 },
             )
@@ -224,7 +241,7 @@ def check_upload_rate_limit(
                 metadata={
                     "limit_type": "upload",
                     "current_count": current_count,
-                    "limit": 100,
+                    "limit": UPLOAD_RATE_LIMIT_PER_HOUR,
                     "hour_bucket": hour_bucket,
                 },
                 request=request,
@@ -232,13 +249,13 @@ def check_upload_rate_limit(
 
             # Raise 429 with standardized error format and rate limit headers
             from app.core.exceptions import create_error_response
-            reset_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+            reset_time = next_hour
             raise create_error_response(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 error_code="RATE_LIMIT_EXCEEDED",
-                message=f"Upload rate limit exceeded. Maximum 100 uploads per hour. Try again in {retry_after_seconds} seconds.",
+                message=f"Upload rate limit exceeded. Maximum {UPLOAD_RATE_LIMIT_PER_HOUR} uploads per hour. Try again in {retry_after_seconds} seconds.",
                 details={
-                    "limit": 100,
+                    "limit": UPLOAD_RATE_LIMIT_PER_HOUR,
                     "current_count": current_count,
                     "retry_after_seconds": retry_after_seconds,
                     "reset_time": reset_time.isoformat() + "Z",
@@ -246,24 +263,13 @@ def check_upload_rate_limit(
                 request=request,
             )
 
-        # Increment counter atomically by file_count (prevents race conditions)
-        # Use Redis pipeline to ensure atomicity of INCRBY + EXPIRE
-        pipe = redis.pipeline()
-        pipe.incrby(rate_limit_key, file_count)
-        pipe.expire(rate_limit_key, 3600)  # 1 hour TTL (prevent memory leak)
-        result = pipe.execute()
-
-        # Get the new count from pipeline result (first command result)
-        new_count = result[0]
-
         logger.debug(
             "Upload rate limit check passed",
             extra={
                 "user_id": str(current_user.id),
                 "file_count": file_count,
-                "previous_count": current_count,
                 "new_count": new_count,
-                "limit": 100,
+                "limit": UPLOAD_RATE_LIMIT_PER_HOUR,
                 "hour_bucket": hour_bucket,
             },
         )

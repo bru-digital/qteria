@@ -593,8 +593,10 @@ async def upload_document(
         # - If Redis unavailable, new_upload_count is 0 (headers not added)
         try:
             if redis and new_upload_count > 0:
+                from app.core.dependencies import UPLOAD_RATE_LIMIT_PER_HOUR
+
                 # Calculate remaining uploads based on returned count
-                uploads_remaining = max(0, 100 - new_upload_count)
+                uploads_remaining = max(0, UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count)
 
                 # Calculate reset timestamp (next hour)
                 now_for_headers = datetime.now(timezone.utc)
@@ -602,7 +604,7 @@ async def upload_document(
                 reset_timestamp = int(reset_time.timestamp())
 
                 # Add standard rate limit headers (API contract compliance)
-                response.headers["X-RateLimit-Limit"] = "100"
+                response.headers["X-RateLimit-Limit"] = str(UPLOAD_RATE_LIMIT_PER_HOUR)
                 response.headers["X-RateLimit-Remaining"] = str(uploads_remaining)
                 response.headers["X-RateLimit-Reset"] = str(reset_timestamp)
 

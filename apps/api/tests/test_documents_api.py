@@ -1448,8 +1448,9 @@ class TestDocumentUploadRateLimiting:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock Redis to return count of 100 (limit reached)
-        mock_redis.get.return_value = "100"
+        # Mock Redis to return count of 101 after increment (limit exceeded)
+        # With increment-first approach: was at 100, incremented by 1 → 101 (exceeds limit)
+        mock_redis.execute.return_value = [101, True]
 
         # Mock Redis at module level to avoid real connection attempts
         with patch('app.core.dependencies._redis_client', mock_redis):
@@ -1475,6 +1476,9 @@ class TestDocumentUploadRateLimiting:
         assert call_args["metadata"]["limit_type"] == "upload"
         assert call_args["metadata"]["current_count"] == 100
 
+        # Verify decrby was called to rollback the increment
+        assert mock_redis.decrby.called
+
     def test_rate_limit_allows_99_uploads(
         self,
         client: TestClient,
@@ -1496,16 +1500,18 @@ class TestDocumentUploadRateLimiting:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock Redis to return count of 99 (under limit)
-        mock_redis.get.return_value = "99"
+        # Mock Redis to return count of 100 after increment (at limit, but allowed)
+        # With increment-first approach: was at 99, incremented by 1 → 100 (exactly at limit)
+        mock_redis.execute.return_value = [100, True]
 
-        with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-                response = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token}"},
-                    files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                )
+        with patch('app.core.dependencies._redis_client', mock_redis):
+            with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
+                with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                    response = client.post(
+                        "/v1/documents",
+                        headers={"Authorization": f"Bearer {token}"},
+                        files={"files": ("test.pdf", pdf_file, "application/pdf")},
+                    )
 
         assert response.status_code == 201
 
@@ -1532,31 +1538,38 @@ class TestDocumentUploadRateLimiting:
         """
         pdf_content = b"%PDF-1.4 Test PDF"
 
-        # User A at limit
-        token_a = create_test_token(organization_id=TEST_ORG_A_ID, user_id="user_a")
-        mock_redis.get.return_value = "100"
+        # Use valid UUIDs for user isolation testing
+        from uuid import uuid4
+        user_a_id = str(uuid4())
+        user_b_id = str(uuid4())
 
-        with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-                response_a = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token_a}"},
-                    files={"files": ("test.pdf", io.BytesIO(pdf_content), "application/pdf")},
-                )
+        # User A at limit (101 after increment → exceeds limit)
+        token_a = create_test_token(organization_id=TEST_ORG_A_ID, user_id=user_a_id)
+        mock_redis.execute.return_value = [101, True]
+
+        with patch('app.core.dependencies._redis_client', mock_redis):
+            with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
+                with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                    response_a = client.post(
+                        "/v1/documents",
+                        headers={"Authorization": f"Bearer {token_a}"},
+                        files={"files": ("test.pdf", io.BytesIO(pdf_content), "application/pdf")},
+                    )
 
         assert response_a.status_code == 429
 
-        # User B under limit
-        token_b = create_test_token(organization_id=TEST_ORG_A_ID, user_id="user_b")
-        mock_redis.get.return_value = "0"
+        # User B under limit (1 after increment → well under limit)
+        token_b = create_test_token(organization_id=TEST_ORG_A_ID, user_id=user_b_id)
+        mock_redis.execute.return_value = [1, True]
 
-        with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-                response_b = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token_b}"},
-                    files={"files": ("test.pdf", io.BytesIO(pdf_content), "application/pdf")},
-                )
+        with patch('app.core.dependencies._redis_client', mock_redis):
+            with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
+                with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                    response_b = client.post(
+                        "/v1/documents",
+                        headers={"Authorization": f"Bearer {token_b}"},
+                        files={"files": ("test.pdf", io.BytesIO(pdf_content), "application/pdf")},
+                    )
 
         assert response_b.status_code == 201
 
@@ -1582,16 +1595,17 @@ class TestDocumentUploadRateLimiting:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock Redis to return count of 50
-        mock_redis.get.return_value = "50"
+        # Mock Redis to return count of 50 after increment
+        mock_redis.execute.return_value = [50, True]
 
-        with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-                response = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token}"},
-                    files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                )
+        with patch('app.core.dependencies._redis_client', mock_redis):
+            with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
+                with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                    response = client.post(
+                        "/v1/documents",
+                        headers={"Authorization": f"Bearer {token}"},
+                        files={"files": ("test.pdf", pdf_file, "application/pdf")},
+                    )
 
         assert response.status_code == 201
 
@@ -1619,7 +1633,7 @@ class TestDocumentUploadRateLimiting:
         Test Redis counter increments on each upload.
 
         Acceptance Criteria:
-        - Redis INCR called for rate limit key
+        - Redis INCRBY called for rate limit key
         - Redis EXPIRE called with 3600 seconds TTL
         - Pipeline used for atomicity
         """
@@ -1628,16 +1642,17 @@ class TestDocumentUploadRateLimiting:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock Redis to return count of 10
-        mock_redis.get.return_value = "10"
+        # Mock Redis to return count of 11 after increment (was 10, +1)
+        mock_redis.execute.return_value = [11, True]
 
-        with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-                response = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token}"},
-                    files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                )
+        with patch('app.core.dependencies._redis_client', mock_redis):
+            with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
+                with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                    response = client.post(
+                        "/v1/documents",
+                        headers={"Authorization": f"Bearer {token}"},
+                        files={"files": ("test.pdf", pdf_file, "application/pdf")},
+                    )
 
         assert response.status_code == 201
 
@@ -1673,49 +1688,46 @@ class TestDocumentUploadRateLimiting:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Test 1: User at 96, uploading 5 files = 101 total (should fail)
+        # After increment-first: 96 + 5 = 101 (exceeds limit)
         files_data_5 = [(f"file{i}.pdf", b"%PDF-1.4 content") for i in range(1, 6)]
         file_objects_5 = [
             ("files", (name, io.BytesIO(content), "application/pdf"))
             for name, content in files_data_5
         ]
 
-        mock_redis.get.return_value = "96"
+        mock_redis.execute.return_value = [101, True]
 
-        with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-                response_fail = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token}"},
-                    files=file_objects_5,
-                )
+        with patch('app.core.dependencies._redis_client', mock_redis):
+            with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
+                with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                    response_fail = client.post(
+                        "/v1/documents",
+                        headers={"Authorization": f"Bearer {token}"},
+                        files=file_objects_5,
+                    )
 
         assert response_fail.status_code == 429
         assert response_fail.json()["error"]["code"] == "RATE_LIMIT_EXCEEDED"
 
         # Test 2: User at 96, uploading 4 files = 100 total (should succeed)
+        # After increment-first: 96 + 4 = 100 (exactly at limit, allowed)
         files_data_4 = [(f"file{i}.pdf", b"%PDF-1.4 content") for i in range(1, 5)]
         file_objects_4 = [
             ("files", (name, io.BytesIO(content), "application/pdf"))
             for name, content in files_data_4
         ]
 
-        mock_redis.get.return_value = "96"
+        mock_redis.execute.return_value = [100, True]
 
-        with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-                response_success = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token}"},
-                    files=file_objects_4,
-                )
+        with patch('app.core.dependencies._redis_client', mock_redis):
+            with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
+                with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                    response_success = client.post(
+                        "/v1/documents",
+                        headers={"Authorization": f"Bearer {token}"},
+                        files=file_objects_4,
+                    )
 
-        # Note: This will actually fail at Redis check because we're checking the count
-        # BEFORE incrementing. The actual implementation checks current_count >= 100.
-        # For 96 uploads, uploading 4 more would work, but the check happens before.
-        # Let's adjust the test to match actual implementation behavior.
-
-        # Actually, looking at the implementation, it checks current_count >= 100 first,
-        # then increments. So 96 uploads + 4 more would pass the check (96 < 100).
         assert response_success.status_code == 201
 
     def test_rate_limit_redis_unavailable_allows_upload(
@@ -1772,16 +1784,17 @@ class TestDocumentUploadRateLimiting:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock Redis to return count of 100 (limit reached)
-        mock_redis.get.return_value = "100"
+        # Mock Redis to return count of 101 after increment (limit exceeded)
+        mock_redis.execute.return_value = [101, True]
 
-        with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-                response = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token}"},
-                    files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                )
+        with patch('app.core.dependencies._redis_client', mock_redis):
+            with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
+                with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                    response = client.post(
+                        "/v1/documents",
+                        headers={"Authorization": f"Bearer {token}"},
+                        files={"files": ("test.pdf", pdf_file, "application/pdf")},
+                    )
 
         assert response.status_code == 429
         data = response.json()
@@ -1790,8 +1803,8 @@ class TestDocumentUploadRateLimiting:
         assert "retry_after_seconds" in data["error"]["details"]
         retry_after = data["error"]["details"]["retry_after_seconds"]
 
-        # Should be between 1 and 3599 seconds (less than 1 hour)
-        assert 1 <= retry_after < 3600
+        # Should be between 1 and 3600 seconds (up to 1 hour)
+        assert 1 <= retry_after <= 3600
 
     def test_rate_limit_response_format_compliance(
         self,
@@ -1815,16 +1828,17 @@ class TestDocumentUploadRateLimiting:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock Redis to return count of 100
-        mock_redis.get.return_value = "100"
+        # Mock Redis to return count of 101 after increment (limit exceeded)
+        mock_redis.execute.return_value = [101, True]
 
-        with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
-                response = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token}"},
-                    files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                )
+        with patch('app.core.dependencies._redis_client', mock_redis):
+            with patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])):
+                with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                    response = client.post(
+                        "/v1/documents",
+                        headers={"Authorization": f"Bearer {token}"},
+                        files={"files": ("test.pdf", pdf_file, "application/pdf")},
+                    )
 
         assert response.status_code == 429
         data = response.json()
