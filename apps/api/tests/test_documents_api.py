@@ -72,20 +72,25 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test-document.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test-document.pdf", pdf_file, "application/pdf")},
             )
 
         assert response.status_code == 201
         data = response.json()
 
-        # Verify response structure
-        assert "id" in data
-        assert data["file_name"] == "test-document.pdf"
-        assert data["file_size"] == len(pdf_content)
-        assert data["mime_type"] == "application/pdf"
-        assert "storage_key" in data
-        assert "uploaded_at" in data
-        assert "uploaded_by" in data
+        # Response should be a list (even for single file upload)
+        assert isinstance(data, list)
+        assert len(data) == 1
+
+        # Verify first document structure
+        doc = data[0]
+        assert "id" in doc
+        assert doc["file_name"] == "test-document.pdf"
+        assert doc["file_size"] == len(pdf_content)
+        assert doc["mime_type"] == "application/pdf"
+        assert "storage_key" in doc
+        assert "uploaded_at" in doc
+        assert "uploaded_by" in doc
 
         # Verify blob storage called
         assert mock_blob_storage.upload_file.called
@@ -120,13 +125,16 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test-document.docx", docx_file, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+                files={"files": ("test-document.docx", docx_file, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
             )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["file_name"] == "test-document.docx"
-        assert data["mime_type"] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        assert isinstance(data, list)
+        assert len(data) == 1
+        doc = data[0]
+        assert doc["file_name"] == "test-document.docx"
+        assert doc["mime_type"] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
     def test_upload_with_bucket_id(
         self,
@@ -173,13 +181,16 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
                 data={"bucket_id": bucket_id},
             )
 
             assert response.status_code == 201
             data = response.json()
-            assert data["bucket_id"] == bucket_id
+            assert isinstance(data, list)
+            assert len(data) == 1
+            doc = data[0]
+            assert doc["bucket_id"] == bucket_id
         finally:
             # Clean up the override
             app.dependency_overrides.clear()
@@ -220,7 +231,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
                 data={"bucket_id": invalid_bucket_id},
             )
 
@@ -270,7 +281,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
                 data={"bucket_id": org_b_bucket_id},
             )
 
@@ -307,7 +318,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
                 data={"bucket_id": invalid_bucket_id},
             )
 
@@ -344,7 +355,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("image.jpg", jpg_file, "image/jpeg")},
+                files={"files": ("image.jpg", jpg_file, "image/jpeg")},
             )
 
         assert response.status_code == 400
@@ -387,7 +398,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("large.pdf", large_file, "application/pdf")},
+                files={"files": ("large.pdf", large_file, "application/pdf")},
             )
 
         assert response.status_code == 413
@@ -427,7 +438,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("empty.pdf", empty_file, "application/pdf")},
+                files={"files": ("empty.pdf", empty_file, "application/pdf")},
             )
 
         # Empty files should return 400 Bad Request with EMPTY_FILE code
@@ -454,7 +465,7 @@ class TestDocumentUpload:
 
         response = client.post(
             "/v1/documents",
-            files={"file": ("test.pdf", pdf_file, "application/pdf")},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
         )
 
         # Should return 401 for missing authentication (not 403)
@@ -491,7 +502,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
             )
 
         assert response.status_code == 500
@@ -532,10 +543,13 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
             )
 
         assert response.status_code == 201
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
 
     def test_upload_unicode_filename(
         self,
@@ -567,12 +581,15 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": (unicode_filename, pdf_file, "application/pdf")},
+                files={"files": (unicode_filename, pdf_file, "application/pdf")},
             )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["file_name"] == unicode_filename
+        assert isinstance(data, list)
+        assert len(data) == 1
+        doc = data[0]
+        assert doc["file_name"] == unicode_filename
 
     def test_upload_process_manager_can_upload(
         self,
@@ -600,10 +617,13 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
             )
 
         assert response.status_code == 201
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
 
     def test_upload_admin_can_upload(
         self,
@@ -631,10 +651,13 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
             )
 
         assert response.status_code == 201
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
 
     def test_upload_mime_detection_fails(
         self,
@@ -663,7 +686,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test.pdf", pdf_file, "application/pdf")},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
             )
 
         assert response.status_code == 500
@@ -699,13 +722,16 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("test-data.xlsx", xlsx_file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                files={"files": ("test-data.xlsx", xlsx_file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
             )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["file_name"] == "test-data.xlsx"
-        assert data["mime_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        assert isinstance(data, list)
+        assert len(data) == 1
+        doc = data[0]
+        assert doc["file_name"] == "test-data.xlsx"
+        assert doc["mime_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
         # Verify blob storage called
         assert mock_blob_storage.upload_file.called
@@ -740,13 +766,16 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("legacy-data.xls", xls_file, "application/vnd.ms-excel")},
+                files={"files": ("legacy-data.xls", xls_file, "application/vnd.ms-excel")},
             )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["file_name"] == "legacy-data.xls"
-        assert data["mime_type"] == "application/vnd.ms-excel"
+        assert isinstance(data, list)
+        assert len(data) == 1
+        doc = data[0]
+        assert doc["file_name"] == "legacy-data.xls"
+        assert doc["mime_type"] == "application/vnd.ms-excel"
 
     def test_upload_csv_rejected(
         self,
@@ -776,7 +805,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("data.csv", csv_file, "text/csv")},
+                files={"files": ("data.csv", csv_file, "text/csv")},
             )
 
         assert response.status_code == 400
@@ -824,7 +853,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("data.ods", ods_file, "application/vnd.oasis.opendocument.spreadsheet")},
+                files={"files": ("data.ods", ods_file, "application/vnd.oasis.opendocument.spreadsheet")},
             )
 
         assert response.status_code == 400
@@ -878,7 +907,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("malicious-data.xlsm", xlsm_file, "application/vnd.ms-excel.sheet.macroEnabled.12")},
+                files={"files": ("malicious-data.xlsm", xlsm_file, "application/vnd.ms-excel.sheet.macroEnabled.12")},
             )
 
         assert response.status_code == 400
@@ -924,7 +953,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("malicious-doc.docm", docm_file, "application/vnd.ms-word.document.macroEnabled.12")},
+                files={"files": ("malicious-doc.docm", docm_file, "application/vnd.ms-word.document.macroEnabled.12")},
             )
 
         assert response.status_code == 400
@@ -976,7 +1005,7 @@ class TestDocumentUpload:
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"file": ("malicious-presentation.pptm", pptm_file, "application/vnd.ms-powerpoint.presentation.macroEnabled.12")},
+                files={"files": ("malicious-presentation.pptm", pptm_file, "application/vnd.ms-powerpoint.presentation.macroEnabled.12")},
             )
 
         assert response.status_code == 400
@@ -992,3 +1021,376 @@ class TestDocumentUpload:
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_file_type"
         assert call_args["metadata"]["detected_mime_type"] == "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
+
+
+class TestBatchDocumentUpload:
+    """Tests for batch document upload (Issue #91 - Guideline Compliance)."""
+
+    @pytest.fixture
+    def mock_blob_storage(self):
+        """Mock Vercel Blob storage service."""
+        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+            # Mock successful async upload
+            mock_service.upload_file = AsyncMock(return_value="https://blob.vercel-storage.com/documents/test.pdf")
+            yield mock_service
+
+    @pytest.fixture
+    def mock_magic(self):
+        """Mock python-magic MIME type detection."""
+        with patch('app.api.v1.endpoints.documents.magic') as mock_magic:
+            # Default to PDF
+            mock_magic.from_buffer.return_value = "application/pdf"
+            yield mock_magic
+
+    def test_upload_single_file_backwards_compatibility(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test single file upload still works (backwards compatibility).
+
+        Acceptance Criteria:
+        - Returns 201 Created
+        - Returns list with single DocumentResponse
+        - Existing frontend code continues to work
+        """
+        pdf_content = b"%PDF-1.4 Test PDF content"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"files": ("test-document.pdf", pdf_file, "application/pdf")},
+            )
+
+        assert response.status_code == 201
+        data = response.json()
+
+        # Response should be a list (even for single file)
+        assert isinstance(data, list)
+        assert len(data) == 1
+
+        # Verify first document
+        doc = data[0]
+        assert doc["file_name"] == "test-document.pdf"
+        assert doc["file_size"] == len(pdf_content)
+        assert doc["mime_type"] == "application/pdf"
+
+    def test_upload_multiple_files_success(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test successful upload of multiple files (2-5 files).
+
+        Acceptance Criteria:
+        - Returns 201 Created
+        - Returns list of DocumentResponse objects
+        - All files validated and uploaded
+        - Audit logs created for each file
+        """
+        # Create 5 test files
+        files_data = [
+            ("file1.pdf", b"%PDF-1.4 File 1"),
+            ("file2.pdf", b"%PDF-1.4 File 2"),
+            ("file3.pdf", b"%PDF-1.4 File 3"),
+            ("file4.docx", b"PK\x03\x04 DOCX"),
+            ("file5.xlsx", b"PK\x03\x04 XLSX"),
+        ]
+
+        # Mock different MIME types
+        mime_types = [
+            "application/pdf",
+            "application/pdf",
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ]
+        mock_magic.from_buffer.side_effect = mime_types
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Create file objects
+        file_objects = [
+            ("files", (name, io.BytesIO(content), "application/octet-stream"))
+            for name, content in files_data
+        ]
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files=file_objects,
+            )
+
+        assert response.status_code == 201
+        data = response.json()
+
+        # Verify response is list with 5 items
+        assert isinstance(data, list)
+        assert len(data) == 5
+
+        # Verify all filenames present
+        returned_filenames = {doc["file_name"] for doc in data}
+        expected_filenames = {name for name, _ in files_data}
+        assert returned_filenames == expected_filenames
+
+        # Verify blob storage called 5 times
+        assert mock_blob_storage.upload_file.call_count == 5
+
+        # Verify audit logs created for each file
+        success_logs = [
+            call for call in mock_audit_service['log_event'].call_args_list
+            if call[1].get("action") == "document.upload.success"
+        ]
+        assert len(success_logs) == 5
+
+    def test_upload_twenty_files_max_allowed(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload with maximum allowed files (20).
+
+        Acceptance Criteria:
+        - Returns 201 Created
+        - All 20 files uploaded successfully
+        - Guideline compliance: product-guidelines/08-api-contracts.md:364
+        """
+        # Create 20 test files
+        files_data = [(f"file{i}.pdf", b"%PDF-1.4 content") for i in range(1, 21)]
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        file_objects = [
+            ("files", (name, io.BytesIO(content), "application/pdf"))
+            for name, content in files_data
+        ]
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files=file_objects,
+            )
+
+        assert response.status_code == 201
+        data = response.json()
+
+        assert isinstance(data, list)
+        assert len(data) == 20
+
+        # Verify blob storage called 20 times
+        assert mock_blob_storage.upload_file.call_count == 20
+
+    def test_upload_twentyone_files_rejected(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test upload rejection for exceeding max files (21 files).
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error code BATCH_SIZE_EXCEEDED
+        - No files uploaded (atomic failure)
+        - Audit log created
+        """
+        # Create 21 test files
+        files_data = [(f"file{i}.pdf", b"%PDF-1.4 content") for i in range(1, 22)]
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        file_objects = [
+            ("files", (name, io.BytesIO(content), "application/pdf"))
+            for name, content in files_data
+        ]
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files=file_objects,
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "BATCH_SIZE_EXCEEDED"
+        assert "21" in data["error"]["message"]
+        assert "20" in data["error"]["message"]
+        assert data["error"]["details"]["file_count"] == 21
+        assert data["error"]["details"]["max_files"] == 20
+
+        # Verify NO files uploaded
+        assert not mock_blob_storage.upload_file.called
+
+        # Verify audit log
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.upload.failed"
+        assert call_args["metadata"]["reason"] == "batch_size_exceeded"
+
+    def test_upload_batch_with_one_invalid_file_atomic_failure(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test atomic failure when one file in batch is invalid.
+
+        Acceptance Criteria:
+        - Returns 400 Bad Request
+        - Error indicates which file failed
+        - NO files uploaded (atomic operation)
+        - Validates ALL before uploading ANY
+        """
+        # Create 3 files: 2 valid PDFs, 1 invalid JPG
+        files_data = [
+            ("file1.pdf", b"%PDF-1.4 File 1"),
+            ("invalid.jpg", b"\xFF\xD8\xFF JPG content"),  # Invalid
+            ("file3.pdf", b"%PDF-1.4 File 3"),
+        ]
+
+        # Mock MIME types
+        mime_types = [
+            "application/pdf",
+            "image/jpeg",  # Invalid type
+            "application/pdf",
+        ]
+        mock_magic.from_buffer.side_effect = mime_types
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        file_objects = [
+            ("files", (name, io.BytesIO(content), "application/octet-stream"))
+            for name, content in files_data
+        ]
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files=file_objects,
+            )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "INVALID_FILE_TYPE"
+        assert "invalid.jpg" in data["error"]["message"]
+        assert "image/jpeg" in data["error"]["message"]
+
+        # Verify NO files uploaded (atomic failure)
+        assert not mock_blob_storage.upload_file.called
+
+    def test_upload_batch_with_one_oversized_file_atomic_failure(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test atomic failure when one file exceeds size limit.
+
+        Acceptance Criteria:
+        - Returns 413 Payload Too Large
+        - Error indicates which file is too large
+        - NO files uploaded (atomic operation)
+        """
+        # Create 3 files: 2 valid, 1 too large
+        files_data = [
+            ("file1.pdf", b"%PDF-1.4 content"),
+            ("huge.pdf", b"X" * (51 * 1024 * 1024)),  # 51MB - too large
+            ("file3.pdf", b"%PDF-1.4 content"),
+        ]
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        file_objects = [
+            ("files", (name, io.BytesIO(content), "application/pdf"))
+            for name, content in files_data
+        ]
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files=file_objects,
+            )
+
+        assert response.status_code == 413
+        data = response.json()
+        assert data["error"]["code"] == "FILE_TOO_LARGE"
+        assert "huge.pdf" in data["error"]["message"]
+        assert data["error"]["details"]["file_name"] == "huge.pdf"
+
+        # Verify NO files uploaded
+        assert not mock_blob_storage.upload_file.called
+
+    def test_upload_batch_with_mixed_file_types(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test successful upload with mixed valid file types (PDF, DOCX, XLSX).
+
+        Acceptance Criteria:
+        - Returns 201 Created
+        - All file types accepted
+        - Response preserves correct MIME types
+        """
+        files_data = [
+            ("report.pdf", b"%PDF-1.4 Report"),
+            ("document.docx", b"PK\x03\x04 DOCX"),
+            ("data.xlsx", b"PK\x03\x04 XLSX"),
+        ]
+
+        mime_types = [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ]
+        mock_magic.from_buffer.side_effect = mime_types
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        file_objects = [
+            ("files", (name, io.BytesIO(content), "application/octet-stream"))
+            for name, content in files_data
+        ]
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files=file_objects,
+            )
+
+        assert response.status_code == 201
+        data = response.json()
+
+        assert len(data) == 3
+
+        # Verify each file type
+        mime_types_returned = {doc["mime_type"] for doc in data}
+        assert mime_types_returned == set(mime_types)
