@@ -66,150 +66,118 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 
 @router.post(
     "",
-    response_model=DocumentResponse,
+    response_model=list[DocumentResponse],
     status_code=status.HTTP_201_CREATED,
-    summary="Upload document",
+    summary="Upload document(s)",
     description="""
-Upload a document to Vercel Blob storage for later use in assessments.
+Upload one or more documents to Vercel Blob storage for later use in assessments.
 
 **Authorization**: Requires authentication (project_handler, process_manager, or admin).
 
-**Multi-Tenancy**: Document is automatically assigned to user's organization.
+**Multi-Tenancy**: Documents are automatically assigned to user's organization.
 
 **Journey Step 2**: Project Handler uploads documents into workflow buckets.
 
 **File Requirements**:
 - Accepted types: PDF, DOCX, XLSX
-- Maximum size: 50MB
+- Maximum size per file: 50MB
+- Maximum files per request: 20
 - Content-based validation (not just extension)
 
-**Example Request** (multipart/form-data):
+**Example Request - Single File** (multipart/form-data):
 ```
 POST /v1/documents
 Content-Type: multipart/form-data
 Authorization: Bearer <jwt_token>
 
-file: <binary PDF data>
+files: <binary PDF data>
+bucket_id: 660e8400-e29b-41d4-a716-446655440001 (optional)
+```
+
+**Example Request - Multiple Files** (multipart/form-data):
+```
+POST /v1/documents
+Content-Type: multipart/form-data
+Authorization: Bearer <jwt_token>
+
+files: <binary PDF data 1>
+files: <binary PDF data 2>
+files: <binary DOCX data>
 bucket_id: 660e8400-e29b-41d4-a716-446655440001 (optional)
 ```
 
 **Example Response**:
 ```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "file_name": "technical-spec.pdf",
-  "file_size": 2048576,
-  "mime_type": "application/pdf",
-  "storage_key": "https://blob.vercel-storage.com/documents/...",
-  "bucket_id": "660e8400-e29b-41d4-a716-446655440001",
-  "uploaded_at": "2024-11-17T14:30:00Z",
-  "uploaded_by": "770e8400-e29b-41d4-a716-446655440002"
-}
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "file_name": "technical-spec.pdf",
+    "file_size": 2048576,
+    "mime_type": "application/pdf",
+    "storage_key": "https://blob.vercel-storage.com/documents/...",
+    "bucket_id": "660e8400-e29b-41d4-a716-446655440001",
+    "uploaded_at": "2024-11-17T14:30:00Z",
+    "uploaded_by": "770e8400-e29b-41d4-a716-446655440002"
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440003",
+    "file_name": "test-report.pdf",
+    "file_size": 1024576,
+    "mime_type": "application/pdf",
+    "storage_key": "https://blob.vercel-storage.com/documents/...",
+    "bucket_id": "660e8400-e29b-41d4-a716-446655440001",
+    "uploaded_at": "2024-11-17T14:30:01Z",
+    "uploaded_by": "770e8400-e29b-41d4-a716-446655440002"
+  }
+]
 ```
     """,
 )
 async def upload_document(
     current_user: AuthenticatedUser,
-    file: UploadFile = File(..., description="Document file (PDF, DOCX, or XLSX)"),
+    files: list[UploadFile] = File(..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"),
     bucket_id: Optional[str] = Form(
         None, description="Optional bucket ID for validation"
     ),
     request: Request = None,
     db: Session = Depends(get_db),
-) -> DocumentResponse:
+) -> list[DocumentResponse]:
     """
-    Upload document to Vercel Blob storage.
+    Upload one or more documents to Vercel Blob storage (batch upload).
 
     Journey Step 2: Project Handler uploads documents into workflow buckets.
 
     Args:
-        file: Uploaded file (PDF, DOCX, or XLSX)
+        files: List of uploaded files (PDF, DOCX, or XLSX) - max 20 files
         bucket_id: Optional bucket ID for early validation
         current_user: Authenticated user (from JWT)
         request: FastAPI request for audit logging
         db: Database session for audit logging
 
     Returns:
-        DocumentResponse: Document metadata including storage URL
+        list[DocumentResponse]: List of document metadata including storage URLs
 
     Raises:
-        HTTPException: 400 for invalid file type/size, 500 for upload failures
+        HTTPException: 400 for invalid file count/type/size, 500 for upload failures
     """
     try:
-        # 1. Read file content and validate size
+        # 1. Validate batch size (max 20 files per request)
         #
-        # DESIGN RATIONALE: Read entire file before size validation
-        # - Simpler code flow (single read, single validation)
-        # - FastAPI's UploadFile provides reliable file content
-        # - Memory impact acceptable for MVP (10 concurrent × 50MB = 500MB max)
-        # - Alternative approach (seek/tell before read) adds complexity without
-        #   meaningful benefit for current scale
-        #
-        # NOTE: We read the entire file into memory here. For the MVP target of
-        # 10 concurrent uploads with max 50MB files, this is acceptable (500MB RAM).
-        # TODO: Future optimization for >50 concurrent uploads: implement streaming
-        # uploads using vercel_blob's async streaming support to reduce memory usage.
-        file_content = file.file.read()
-        file_size = len(file_content)
-
-        # Log upload attempt
-        logger.info(
-            "Document upload started",
-            extra={
-                "user_id": str(current_user.id),
-                "organization_id": str(current_user.organization_id),
-                "file_name": file.filename,
-                "file_size": file_size,
-                "bucket_id": bucket_id,
-            },
-        )
-
-        # Validate file size using centralized validation function
-        if not validate_file_size(file_size):
-            # Check for empty file first (more specific error message)
-            if file_size == 0:
-                logger.warning(
-                    "Document upload failed - empty file",
-                    extra={
-                        "user_id": str(current_user.id),
-                        "file_name": file.filename,
-                    },
-                )
-
-                # Audit log for monitoring
-                AuditService.log_event(
-                    db=db,
-                    action="document.upload.failed",
-                    organization_id=current_user.organization_id,
-                    user_id=current_user.id,
-                    resource_type="document",
-                    metadata={
-                        "file_name": file.filename,
-                        "file_size": 0,
-                        "reason": "empty_file",
-                    },
-                    request=request,
-                )
-
-                raise create_error_response(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    error_code="EMPTY_FILE",
-                    message="File is empty. Please upload a valid document.",
-                    request=request,
-                )
-
-            # File too large
-            error_msg = f"File too large: {file_size} bytes. Maximum allowed: {MAX_FILE_SIZE_BYTES} bytes (50MB)."
+        # DESIGN RATIONALE: Atomic batch validation
+        # - All files validated before ANY uploads (fail-fast pattern)
+        # - Prevents partial uploads on batch size violation
+        # - Guideline compliance: product-guidelines/08-api-contracts.md:364
+        if len(files) > 20:
             logger.warning(
-                "Document upload failed - file too large",
+                "Document upload failed - too many files in batch",
                 extra={
                     "user_id": str(current_user.id),
-                    "file_name": file.filename,
-                    "file_size": file_size,
+                    "organization_id": str(current_user.organization_id),
+                    "file_count": len(files),
                 },
             )
 
-            # Audit log for security monitoring
+            # Audit log for monitoring
             AuditService.log_event(
                 db=db,
                 action="document.upload.failed",
@@ -217,25 +185,37 @@ async def upload_document(
                 user_id=current_user.id,
                 resource_type="document",
                 metadata={
-                    "file_name": file.filename,
-                    "file_size": file_size,
-                    "reason": "file_too_large",
+                    "file_count": len(files),
+                    "reason": "batch_size_exceeded",
                 },
                 request=request,
             )
 
             raise create_error_response(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                error_code="FILE_TOO_LARGE",
-                message=error_msg,
+                status_code=status.HTTP_400_BAD_REQUEST,
+                error_code="BATCH_SIZE_EXCEEDED",
+                message=f"Too many files in request: {len(files)}. Maximum allowed: 20 files per request.",
                 details={
-                    "file_size_bytes": file_size,
-                    "max_size_bytes": MAX_FILE_SIZE_BYTES,
+                    "file_count": len(files),
+                    "max_files": 20,
                 },
                 request=request,
             )
 
-        # 2. Validate bucket_id if provided (multi-tenancy check)
+        # Log batch upload attempt
+        logger.info(
+            "Document batch upload started",
+            extra={
+                "user_id": str(current_user.id),
+                "organization_id": str(current_user.organization_id),
+                "file_count": len(files),
+                "file_names": [f.filename for f in files],
+                "bucket_id": bucket_id,
+            },
+        )
+
+        # 2. Validate bucket_id if provided (multi-tenancy check) - BEFORE processing files
+        bucket = None
         if bucket_id:
             # Validate UUID format first
             try:
@@ -279,7 +259,7 @@ async def upload_document(
                     user_id=current_user.id,
                     resource_type="document",
                     metadata={
-                        "file_name": file.filename,
+                        "file_count": len(files),
                         "bucket_id": bucket_id,
                         "reason": "invalid_bucket_id",
                     },
@@ -293,188 +273,324 @@ async def upload_document(
                     request=request,
                 )
 
-        # 2. Validate file type using python-magic (content-based detection)
-        try:
-            mime_type = magic.from_buffer(file_content, mime=True)
-        except Exception as e:
-            logger.error(
-                "Failed to detect MIME type",
-                extra={
-                    "file_name": file.filename,
-                    "error": str(e),
-                },
-                exc_info=True,
-            )
-            # SECURITY: Fail closed - do not trust client-provided content_type
-            # If content validation fails, reject the upload
-            raise create_error_response(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                error_code="MIME_DETECTION_FAILED",
-                message="Unable to validate file type. Please try again.",
-                request=request,
-            )
+        # 3. Read and validate ALL files BEFORE uploading ANY (atomic validation)
+        #
+        # DESIGN RATIONALE: Fail-fast atomic batch processing
+        # - Validate all files before uploading to prevent partial success scenarios
+        # - If any file fails validation, entire batch fails (consistency)
+        # - Single file failure = entire batch fails (atomic semantics)
+        # - Memory impact: 20 files × 50MB = 1GB max (acceptable for MVP)
+        #
+        # Alternative approaches considered:
+        # - Partial success with rollback: Too complex, requires tracking uploaded blobs
+        # - Stream validation: Adds complexity without meaningful benefit at MVP scale
+        # - Per-file validation + upload: Risk of partial uploads on mid-batch failure
+        #
+        # This approach optimizes for data consistency over memory efficiency.
 
-        if not validate_file_type(mime_type):
-            # SECURITY: Provide specific error message for macro-enabled files
-            if mime_type in REJECTED_MIME_TYPES:
-                error_msg = f"Security: Macro-enabled files are not allowed. Detected: {mime_type}. Please use standard formats (XLSX, DOCX, PDF)."
-            else:
-                error_msg = f"Invalid file type: {mime_type}. Only PDF, DOCX, and XLSX files are allowed."
+        file_data_list = []
+        for file in files:
+            # Read file content and validate size
+            file_content = file.file.read()
+            file_size = len(file_content)
 
-            logger.warning(
-                "Document upload failed - invalid file type",
-                extra={
-                    "user_id": str(current_user.id),
-                    "file_name": file.filename,
-                    "detected_mime_type": mime_type,
-                    "is_macro_enabled": mime_type in REJECTED_MIME_TYPES,
-                },
-            )
+            # Validate file size using centralized validation function
+            if not validate_file_size(file_size):
+                # Check for empty file first (more specific error message)
+                if file_size == 0:
+                    logger.warning(
+                        "Document upload failed - empty file in batch",
+                        extra={
+                            "user_id": str(current_user.id),
+                            "file_name": file.filename,
+                            "file_count": len(files),
+                        },
+                    )
 
-            # Audit log for security monitoring (potential malicious upload attempt)
-            AuditService.log_event(
-                db=db,
-                action="document.upload.failed",
-                organization_id=current_user.organization_id,
-                user_id=current_user.id,
-                resource_type="document",
-                metadata={
-                    "file_name": file.filename,
-                    "detected_mime_type": mime_type,
-                    "reason": "invalid_file_type",
-                },
-                request=request,
-            )
+                    # Audit log for monitoring
+                    AuditService.log_event(
+                        db=db,
+                        action="document.upload.failed",
+                        organization_id=current_user.organization_id,
+                        user_id=current_user.id,
+                        resource_type="document",
+                        metadata={
+                            "file_name": file.filename,
+                            "file_size": 0,
+                            "file_count": len(files),
+                            "reason": "empty_file",
+                        },
+                        request=request,
+                    )
 
-            raise create_error_response(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                error_code="INVALID_FILE_TYPE",
-                message=error_msg,
-                details={
-                    "detected_mime_type": mime_type,
-                    "allowed_types": list(ALLOWED_MIME_TYPES),
-                },
-                request=request,
-            )
+                    raise create_error_response(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        error_code="EMPTY_FILE",
+                        message=f"File '{file.filename}' is empty. Please upload valid documents.",
+                        details={"file_name": file.filename},
+                        request=request,
+                    )
 
-        # 3. Generate document ID for tracking
-        document_id = str(uuid4())
+                # File too large
+                error_msg = f"File '{file.filename}' too large: {file_size} bytes. Maximum allowed: {MAX_FILE_SIZE_BYTES} bytes (50MB)."
+                logger.warning(
+                    "Document upload failed - file too large in batch",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "file_name": file.filename,
+                        "file_size": file_size,
+                        "file_count": len(files),
+                    },
+                )
 
-        # 4. Upload to Vercel Blob storage
-        try:
-            storage_url = await BlobStorageService.upload_file(
-                file_content=file_content,
-                filename=file.filename,
-                content_type=mime_type,
-                organization_id=current_user.organization_id,
-                document_id=document_id,
-            )
-        except Exception as e:
-            logger.error(
-                "Failed to upload file to Vercel Blob",
-                extra={
-                    "user_id": str(current_user.id),
-                    "file_name": file.filename,
-                    "error": str(e),
-                },
-                exc_info=True,
-            )
+                # Audit log for security monitoring
+                AuditService.log_event(
+                    db=db,
+                    action="document.upload.failed",
+                    organization_id=current_user.organization_id,
+                    user_id=current_user.id,
+                    resource_type="document",
+                    metadata={
+                        "file_name": file.filename,
+                        "file_size": file_size,
+                        "file_count": len(files),
+                        "reason": "file_too_large",
+                    },
+                    request=request,
+                )
 
-            # Audit log for operational monitoring
-            AuditService.log_event(
-                db=db,
-                action="document.upload.failed",
-                organization_id=current_user.organization_id,
-                user_id=current_user.id,
-                resource_type="document",
-                metadata={
-                    "file_name": file.filename,
-                    "reason": "blob_storage_error",
-                    "error": str(e),
-                },
-                request=request,
-            )
+                raise create_error_response(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    error_code="FILE_TOO_LARGE",
+                    message=error_msg,
+                    details={
+                        "file_name": file.filename,
+                        "file_size_bytes": file_size,
+                        "max_size_bytes": MAX_FILE_SIZE_BYTES,
+                    },
+                    request=request,
+                )
 
-            raise create_error_response(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                error_code="UPLOAD_FAILED",
-                message="Failed to upload file to storage. Please try again.",
-                request=request,
-            )
+            # Validate file type using python-magic (content-based detection)
+            try:
+                mime_type = magic.from_buffer(file_content, mime=True)
+            except Exception as e:
+                logger.error(
+                    "Failed to detect MIME type in batch",
+                    extra={
+                        "file_name": file.filename,
+                        "file_count": len(files),
+                        "error": str(e),
+                    },
+                    exc_info=True,
+                )
+                # SECURITY: Fail closed - do not trust client-provided content_type
+                # If content validation fails, reject the entire batch
+                raise create_error_response(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    error_code="MIME_DETECTION_FAILED",
+                    message=f"Unable to validate file type for '{file.filename}'. Please try again.",
+                    details={"file_name": file.filename},
+                    request=request,
+                )
 
-        # 5. Log successful upload for audit trail (SOC2 compliance)
-        AuditService.log_event(
-            db=db,
-            action="document.upload.success",
-            organization_id=current_user.organization_id,
-            user_id=current_user.id,
-            resource_type="document",
-            resource_id=UUID(document_id),
-            metadata={
+            if not validate_file_type(mime_type):
+                # SECURITY: Provide specific error message for macro-enabled files
+                if mime_type in REJECTED_MIME_TYPES:
+                    error_msg = f"Security: Macro-enabled files are not allowed. Detected: {mime_type} in '{file.filename}'. Please use standard formats (XLSX, DOCX, PDF)."
+                else:
+                    error_msg = f"Invalid file type: {mime_type} in '{file.filename}'. Only PDF, DOCX, and XLSX files are allowed."
+
+                logger.warning(
+                    "Document upload failed - invalid file type in batch",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "file_name": file.filename,
+                        "detected_mime_type": mime_type,
+                        "is_macro_enabled": mime_type in REJECTED_MIME_TYPES,
+                        "file_count": len(files),
+                    },
+                )
+
+                # Audit log for security monitoring (potential malicious upload attempt)
+                AuditService.log_event(
+                    db=db,
+                    action="document.upload.failed",
+                    organization_id=current_user.organization_id,
+                    user_id=current_user.id,
+                    resource_type="document",
+                    metadata={
+                        "file_name": file.filename,
+                        "detected_mime_type": mime_type,
+                        "file_count": len(files),
+                        "reason": "invalid_file_type",
+                    },
+                    request=request,
+                )
+
+                raise create_error_response(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    error_code="INVALID_FILE_TYPE",
+                    message=error_msg,
+                    details={
+                        "file_name": file.filename,
+                        "detected_mime_type": mime_type,
+                        "allowed_types": list(ALLOWED_MIME_TYPES),
+                    },
+                    request=request,
+                )
+
+            # Store validated file data for upload phase
+            file_data_list.append({
                 "filename": file.filename,
-                "file_size": file_size,
+                "content": file_content,
+                "size": file_size,
                 "mime_type": mime_type,
-                "bucket_id": bucket_id,
-            },
-            request=request,
-        )
+            })
+
+        # 4. ALL files validated successfully - now upload to Vercel Blob storage
+        #
+        # DESIGN: Process files sequentially to manage memory usage
+        # - Sequential uploads prevent 20 concurrent HTTP connections
+        # - Simpler error handling (no partial upload cleanup needed)
+        # - Memory-efficient (release each file after upload)
+        # - Trade-off: Slower batch upload time, but acceptable for MVP
+        #
+        # Future optimization: Parallel uploads with asyncio.gather() for >10 file batches
+
+        document_responses = []
+        upload_timestamp = datetime.now(timezone.utc)
+
+        for file_data in file_data_list:
+            # Generate unique document ID for tracking
+            document_id = str(uuid4())
+
+            # Upload to Vercel Blob storage
+            try:
+                storage_url = await BlobStorageService.upload_file(
+                    file_content=file_data["content"],
+                    filename=file_data["filename"],
+                    content_type=file_data["mime_type"],
+                    organization_id=current_user.organization_id,
+                    document_id=document_id,
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to upload file to Vercel Blob in batch",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "file_name": file_data["filename"],
+                        "file_count": len(file_data_list),
+                        "error": str(e),
+                    },
+                    exc_info=True,
+                )
+
+                # Audit log for operational monitoring
+                AuditService.log_event(
+                    db=db,
+                    action="document.upload.failed",
+                    organization_id=current_user.organization_id,
+                    user_id=current_user.id,
+                    resource_type="document",
+                    metadata={
+                        "file_name": file_data["filename"],
+                        "file_count": len(file_data_list),
+                        "reason": "blob_storage_error",
+                        "error": str(e),
+                    },
+                    request=request,
+                )
+
+                raise create_error_response(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    error_code="UPLOAD_FAILED",
+                    message=f"Failed to upload file '{file_data['filename']}' to storage. Please try again.",
+                    details={"file_name": file_data["filename"]},
+                    request=request,
+                )
+
+            # Log successful upload for audit trail (SOC2 compliance)
+            AuditService.log_event(
+                db=db,
+                action="document.upload.success",
+                organization_id=current_user.organization_id,
+                user_id=current_user.id,
+                resource_type="document",
+                resource_id=UUID(document_id),
+                metadata={
+                    "filename": file_data["filename"],
+                    "file_size": file_data["size"],
+                    "mime_type": file_data["mime_type"],
+                    "bucket_id": bucket_id,
+                    "batch_size": len(file_data_list),
+                },
+                request=request,
+            )
+
+            logger.info(
+                "Document uploaded successfully in batch",
+                extra={
+                    "document_id": document_id,
+                    "user_id": str(current_user.id),
+                    "organization_id": str(current_user.organization_id),
+                    "file_name": file_data["filename"],
+                    "storage_url": storage_url,
+                    "batch_size": len(file_data_list),
+                },
+            )
+
+            # Create response object
+            document_responses.append(
+                DocumentResponse(
+                    id=UUID(document_id),
+                    file_name=file_data["filename"],
+                    file_size=file_data["size"],
+                    mime_type=file_data["mime_type"],
+                    storage_key=storage_url,
+                    bucket_id=UUID(bucket_id) if bucket_id else None,
+                    uploaded_at=upload_timestamp,
+                    uploaded_by=current_user.id,
+                )
+            )
 
         logger.info(
-            "Document upload completed successfully",
+            "Document batch upload completed successfully",
             extra={
-                "document_id": document_id,
                 "user_id": str(current_user.id),
                 "organization_id": str(current_user.organization_id),
-                "file_name": file.filename,
-                "storage_url": storage_url,
+                "file_count": len(document_responses),
+                "file_names": [doc.file_name for doc in document_responses],
             },
         )
 
-        # 6. Return document response
+        # Return list of document responses
         #
         # DESIGN DECISION: No database persistence at upload time
         #
         # In the MVP, we return metadata for the frontend to use when creating assessments.
-        # The document will be formally saved to assessment_documents table when assessment is created.
+        # The documents will be formally saved to assessment_documents table when assessment is created.
         #
-        # Rationale:
+        # Rationale (same as single file upload):
         # - Simplifies upload flow (no database writes during upload)
         # - Assessment creation is the atomic operation that links documents to buckets/workflows
         # - Orphaned blobs are acceptable for MVP (cleanup job can be added post-launch)
         #
-        # Trade-offs:
-        # - Risk: If frontend crashes after upload but before assessment creation, blob becomes orphaned
-        # - Risk: No query capability for "all uploaded documents" or "documents uploaded in last 30 days"
-        # - Cleanup Strategy: Vercel Blob does NOT auto-expire by default. Post-MVP, implement:
-        #   1. Add environment variable BLOB_EXPIRATION_DAYS=30
-        #   2. Create background job to query blobs older than 30 days
-        #   3. Check if blob exists in assessment_documents table
-        #   4. Delete orphaned blobs to prevent storage cost accumulation
-        # - Future: Add documents table with status field (uploaded, attached, orphaned) post-MVP
-        #
         # This design optimizes for Journey Step 3 (AI validation speed) over administrative queries.
 
-        return DocumentResponse(
-            id=UUID(document_id),
-            file_name=file.filename,
-            file_size=file_size,
-            mime_type=mime_type,
-            storage_key=storage_url,
-            bucket_id=UUID(bucket_id) if bucket_id else None,
-            uploaded_at=datetime.now(timezone.utc),
-            uploaded_by=current_user.id,
-        )
+        return document_responses
 
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        # Catch any unexpected errors
+        # Catch any unexpected errors during batch upload
         logger.error(
-            "Unexpected error during document upload",
+            "Unexpected error during document batch upload",
             extra={
                 "user_id": str(current_user.id),
-                "file_name": file.filename if file else "unknown",
+                "file_count": len(files) if files else 0,
+                "file_names": [f.filename for f in files] if files else [],
                 "error": str(e),
             },
             exc_info=True,
@@ -483,14 +599,16 @@ async def upload_document(
         raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_code="INTERNAL_ERROR",
-            message="An unexpected error occurred during upload.",
+            message="An unexpected error occurred during batch upload.",
             request=request,
         )
     finally:
-        # Ensure file handle is closed (defensive cleanup)
-        if file and hasattr(file, 'file') and hasattr(file.file, "close"):
-            try:
-                file.file.close()
-            except Exception:
-                # Ignore cleanup errors - file might already be closed
-                pass
+        # Ensure all file handles are closed (defensive cleanup)
+        if files:
+            for file in files:
+                if file and hasattr(file, 'file') and hasattr(file.file, "close"):
+                    try:
+                        file.file.close()
+                    except Exception:
+                        # Ignore cleanup errors - file might already be closed
+                        pass
