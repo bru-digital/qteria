@@ -1420,7 +1420,7 @@ class TestDocumentUploadRateLimiting:
         # Default: No rate limit (counter at 0)
         mock_redis_client.get.return_value = None
         mock_redis_client.pipeline.return_value = mock_redis_client
-        mock_redis_client.incr.return_value = 1
+        mock_redis_client.incrby.return_value = 1
         mock_redis_client.expire.return_value = True
         mock_redis_client.execute.return_value = [1, True]
         return mock_redis_client
@@ -1511,7 +1511,7 @@ class TestDocumentUploadRateLimiting:
 
         # Verify Redis counter incremented
         assert mock_redis.pipeline.called
-        assert mock_redis.incr.called
+        assert mock_redis.incrby.called
         assert mock_redis.expire.called
 
     def test_rate_limit_per_user_isolation(
@@ -1643,7 +1643,7 @@ class TestDocumentUploadRateLimiting:
 
         # Verify Redis pipeline operations
         assert mock_redis.pipeline.called
-        assert mock_redis.incr.called
+        assert mock_redis.incrby.called
 
         # Verify EXPIRE called with 3600 seconds (1 hour)
         assert mock_redis.expire.called
