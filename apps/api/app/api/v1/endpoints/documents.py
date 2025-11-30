@@ -11,7 +11,7 @@ Endpoints:
 Documents are uploaded to Vercel Blob storage with encryption at rest and multi-tenant isolation.
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -48,7 +48,7 @@ except Exception as e:
     ) from e
 
 from app.core.auth import AuthenticatedUser
-from app.core.dependencies import get_db, check_upload_rate_limit
+from app.core.dependencies import get_db, get_redis, check_upload_rate_limit, RedisClient
 from app.core.exceptions import create_error_response
 from app.models import Bucket, Workflow
 from app.schemas.document import (
@@ -69,7 +69,6 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
     "",
     response_model=list[DocumentResponse],
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(check_upload_rate_limit)],
     summary="Upload document(s)",
     description="""
 Upload one or more documents to Vercel Blob storage for later use in assessments.
@@ -138,6 +137,7 @@ bucket_id: 660e8400-e29b-41d4-a716-446655440001 (optional)
 async def upload_document(
     current_user: AuthenticatedUser,
     response: Response,
+    redis: RedisClient,
     files: list[UploadFile] = File(..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"),
     bucket_id: Optional[str] = Form(
         None, description="Optional bucket ID for validation"
@@ -217,7 +217,23 @@ async def upload_document(
             },
         )
 
-        # 2. Validate bucket_id if provided (multi-tenancy check) - BEFORE processing files
+        # 2. Check upload rate limit BEFORE processing files
+        #
+        # DESIGN RATIONALE: Per-file rate limiting
+        # - Each file in batch counts toward the 100 uploads/hour limit
+        # - Example: Uploading 20 files = 20 uploads toward limit
+        # - Check happens AFTER batch size validation (fail fast on batch size first)
+        # - Check happens BEFORE file validation (avoid wasted work if rate limited)
+        # - Returns new upload count for accurate rate limit headers (fixes race condition)
+        new_upload_count = check_upload_rate_limit(
+            current_user=current_user,
+            redis=redis,
+            db=db,
+            file_count=len(files),
+            request=request,
+        )
+
+        # 3. Validate bucket_id if provided (multi-tenancy check) - BEFORE processing files
         bucket = None
         if bucket_id:
             # Validate UUID format first
@@ -276,7 +292,7 @@ async def upload_document(
                     request=request,
                 )
 
-        # 3. Read and validate ALL files BEFORE uploading ANY (atomic validation)
+        # 4. Read and validate ALL files BEFORE uploading ANY (atomic validation)
         #
         # DESIGN RATIONALE: Fail-fast atomic batch processing
         # - Validate all files before uploading to prevent partial success scenarios
@@ -451,7 +467,7 @@ async def upload_document(
                 "mime_type": mime_type,
             })
 
-        # 4. ALL files validated successfully - now upload to Vercel Blob storage
+        # 5. ALL files validated successfully - now upload to Vercel Blob storage
         #
         # DESIGN: Process files sequentially to manage memory usage
         # - Sequential uploads prevent 20 concurrent HTTP connections
@@ -569,22 +585,20 @@ async def upload_document(
 
         # Add rate limit headers to response
         # (per API contract: product-guidelines/08-api-contracts.md:838-846)
+        #
+        # DESIGN RATIONALE: Use count from rate limit check (no race condition)
+        # - new_upload_count is returned from check_upload_rate_limit() call above
+        # - Reflects accurate count AFTER this upload's increment
+        # - Avoids race condition from fetching Redis again (concurrent requests)
+        # - If Redis unavailable, new_upload_count is 0 (headers not added)
         try:
-            from app.core.dependencies import get_redis
-            redis = next(get_redis())
-            if redis:
-                # Get current rate limit count for headers
-                now_for_headers = datetime.now(timezone.utc)
-                hour_bucket_for_headers = now_for_headers.strftime("%Y-%m-%d-%H")
-                rate_limit_key_for_headers = f"rate_limit:upload:{current_user.id}:{hour_bucket_for_headers}"
-
-                current_count_for_headers = redis.get(rate_limit_key_for_headers)
-                uploads_used = int(current_count_for_headers) if current_count_for_headers else 0
-                uploads_remaining = max(0, 100 - uploads_used)
+            if redis and new_upload_count > 0:
+                # Calculate remaining uploads based on returned count
+                uploads_remaining = max(0, 100 - new_upload_count)
 
                 # Calculate reset timestamp (next hour)
-                reset_time = now_for_headers.replace(minute=0, second=0, microsecond=0)
-                reset_time = reset_time.replace(hour=reset_time.hour + 1)
+                now_for_headers = datetime.now(timezone.utc)
+                reset_time = now_for_headers.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
                 reset_timestamp = int(reset_time.timestamp())
 
                 # Add standard rate limit headers (API contract compliance)
@@ -596,7 +610,7 @@ async def upload_document(
                     "Rate limit headers added to response",
                     extra={
                         "user_id": str(current_user.id),
-                        "uploads_used": uploads_used,
+                        "uploads_used": new_upload_count,
                         "uploads_remaining": uploads_remaining,
                         "reset_timestamp": reset_timestamp,
                     },

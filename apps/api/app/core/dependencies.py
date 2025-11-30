@@ -106,13 +106,6 @@ def get_redis() -> Generator[Redis, None, None]:
         )
         _redis_client = None
         yield None
-    except Exception as e:
-        logger.error(
-            "Unexpected error with Redis client",
-            extra={"error": str(e)},
-            exc_info=True,
-        )
-        yield None
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -141,14 +134,16 @@ def check_upload_rate_limit(
     current_user: "AuthenticatedUser",  # Forward reference to avoid circular import
     redis: RedisClient,
     db: DbSession,
+    file_count: int = 1,
     request: "Request" = None,
-) -> None:
+) -> int:
     """
     Check if user has exceeded upload rate limit (100 uploads per hour).
 
     Implements Redis-based rate limiting with graceful degradation:
     - If Redis unavailable: Log warning and allow upload (fail-open for availability)
     - If limit exceeded: Raise 429 HTTPException with proper headers
+    - Batch uploads: Each file counts toward the limit (20 files = 20 uploads)
 
     Rate limit implementation:
     - Key pattern: rate_limit:upload:{user_id}:{hour_bucket}
@@ -160,7 +155,11 @@ def check_upload_rate_limit(
         current_user: Authenticated user from JWT
         redis: Redis client (can be None if Redis unavailable)
         db: Database session for audit logging
+        file_count: Number of files being uploaded (default 1)
         request: FastAPI request for extracting request_id
+
+    Returns:
+        int: Updated upload count after incrementing (or 0 if Redis unavailable)
 
     Raises:
         HTTPException: 429 if rate limit exceeded with retry-after header
@@ -168,7 +167,7 @@ def check_upload_rate_limit(
     Note:
         Graceful degradation: If Redis unavailable, allows upload (logged as warning)
     """
-    from datetime import datetime, timezone
+    from datetime import datetime, timedelta, timezone
     from fastapi import HTTPException, Request, status
     from app.core.auth import AuthenticatedUser
     from app.services.audit import AuditService
@@ -180,9 +179,10 @@ def check_upload_rate_limit(
             extra={
                 "user_id": str(current_user.id),
                 "organization_id": str(current_user.organization_id),
+                "file_count": file_count,
             },
         )
-        return
+        return 0
 
     # Get current hour bucket (e.g., "2024-11-30-14" for 2PM on Nov 30, 2024)
     now = datetime.now(timezone.utc)
@@ -196,8 +196,8 @@ def check_upload_rate_limit(
         current_count_str = redis.get(rate_limit_key)
         current_count = int(current_count_str) if current_count_str else 0
 
-        # Check if limit exceeded (100 uploads per hour)
-        if current_count >= 100:
+        # Check if this upload would exceed limit (100 uploads per hour)
+        if current_count + file_count > 100:
             # Calculate seconds until rate limit resets (next hour)
             minutes_remaining = 59 - now.minute
             seconds_remaining = 59 - now.second
@@ -232,6 +232,7 @@ def check_upload_rate_limit(
 
             # Raise 429 with standardized error format and rate limit headers
             from app.core.exceptions import create_error_response
+            reset_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
             raise create_error_response(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 error_code="RATE_LIMIT_EXCEEDED",
@@ -240,27 +241,34 @@ def check_upload_rate_limit(
                     "limit": 100,
                     "current_count": current_count,
                     "retry_after_seconds": retry_after_seconds,
-                    "reset_time": now.replace(minute=0, second=0, microsecond=0).isoformat() + "Z",
+                    "reset_time": reset_time.isoformat() + "Z",
                 },
                 request=request,
             )
 
-        # Increment counter atomically (prevents race conditions)
-        # Use Redis pipeline to ensure atomicity of INCR + EXPIRE
+        # Increment counter atomically by file_count (prevents race conditions)
+        # Use Redis pipeline to ensure atomicity of INCRBY + EXPIRE
         pipe = redis.pipeline()
-        pipe.incr(rate_limit_key)
+        pipe.incrby(rate_limit_key, file_count)
         pipe.expire(rate_limit_key, 3600)  # 1 hour TTL (prevent memory leak)
-        pipe.execute()
+        result = pipe.execute()
+
+        # Get the new count from pipeline result (first command result)
+        new_count = result[0]
 
         logger.debug(
             "Upload rate limit check passed",
             extra={
                 "user_id": str(current_user.id),
-                "current_count": current_count + 1,
+                "file_count": file_count,
+                "previous_count": current_count,
+                "new_count": new_count,
                 "limit": 100,
                 "hour_bucket": hour_bucket,
             },
         )
+
+        return new_count
 
     except HTTPException:
         # Re-raise HTTP exceptions (rate limit exceeded)
@@ -271,11 +279,13 @@ def check_upload_rate_limit(
             "Failed to check upload rate limit - allowing upload",
             extra={
                 "user_id": str(current_user.id),
+                "file_count": file_count,
                 "error": str(e),
             },
             exc_info=True,
         )
         # Fail open: Allow upload if rate limiting fails
+        return 0
 
 
 # Type alias for database dependency
