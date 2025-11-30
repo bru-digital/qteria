@@ -44,6 +44,11 @@ class Settings(BaseSettings):
         default="", description="PostgreSQL database URL (direct connection for migrations)"
     )
 
+    # Redis (for rate limiting, caching, and background jobs)
+    REDIS_URL: str = Field(
+        default="", description="Redis connection URL (e.g., redis://localhost:6379/0)"
+    )
+
     # Security
     JWT_SECRET: str = Field(..., description="Secret key for JWT token signing")
     JWT_ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm")

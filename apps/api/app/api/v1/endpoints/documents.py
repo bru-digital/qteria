@@ -22,6 +22,7 @@ from fastapi import (
     Form,
     HTTPException,
     Request,
+    Response,
     UploadFile,
     status,
 )
@@ -47,7 +48,7 @@ except Exception as e:
     ) from e
 
 from app.core.auth import AuthenticatedUser
-from app.core.dependencies import get_db
+from app.core.dependencies import get_db, check_upload_rate_limit
 from app.core.exceptions import create_error_response
 from app.models import Bucket, Workflow
 from app.schemas.document import (
@@ -68,6 +69,7 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
     "",
     response_model=list[DocumentResponse],
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(check_upload_rate_limit)],
     summary="Upload document(s)",
     description="""
 Upload one or more documents to Vercel Blob storage for later use in assessments.
@@ -135,6 +137,7 @@ bucket_id: 660e8400-e29b-41d4-a716-446655440001 (optional)
 )
 async def upload_document(
     current_user: AuthenticatedUser,
+    response: Response,
     files: list[UploadFile] = File(..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"),
     bucket_id: Optional[str] = Form(
         None, description="Optional bucket ID for validation"
@@ -563,6 +566,48 @@ async def upload_document(
                 "file_names": [doc.file_name for doc in document_responses],
             },
         )
+
+        # Add rate limit headers to response
+        # (per API contract: product-guidelines/08-api-contracts.md:838-846)
+        try:
+            from app.core.dependencies import get_redis
+            redis = next(get_redis())
+            if redis:
+                # Get current rate limit count for headers
+                now_for_headers = datetime.now(timezone.utc)
+                hour_bucket_for_headers = now_for_headers.strftime("%Y-%m-%d-%H")
+                rate_limit_key_for_headers = f"rate_limit:upload:{current_user.id}:{hour_bucket_for_headers}"
+
+                current_count_for_headers = redis.get(rate_limit_key_for_headers)
+                uploads_used = int(current_count_for_headers) if current_count_for_headers else 0
+                uploads_remaining = max(0, 100 - uploads_used)
+
+                # Calculate reset timestamp (next hour)
+                reset_time = now_for_headers.replace(minute=0, second=0, microsecond=0)
+                reset_time = reset_time.replace(hour=reset_time.hour + 1)
+                reset_timestamp = int(reset_time.timestamp())
+
+                # Add standard rate limit headers (API contract compliance)
+                response.headers["X-RateLimit-Limit"] = "100"
+                response.headers["X-RateLimit-Remaining"] = str(uploads_remaining)
+                response.headers["X-RateLimit-Reset"] = str(reset_timestamp)
+
+                logger.debug(
+                    "Rate limit headers added to response",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "uploads_used": uploads_used,
+                        "uploads_remaining": uploads_remaining,
+                        "reset_timestamp": reset_timestamp,
+                    },
+                )
+        except Exception as e:
+            # Don't fail upload if header addition fails
+            logger.warning(
+                "Failed to add rate limit headers to response",
+                extra={"error": str(e)},
+                exc_info=True,
+            )
 
         # Return list of document responses
         #
