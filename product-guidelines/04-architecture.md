@@ -435,6 +435,7 @@ CREATE TABLE organizations (
 ```sql
 CREATE TABLE audit_logs (
   id UUID PRIMARY KEY,
+  organization_id UUID REFERENCES organizations(id), -- Organization context (nullable for pre-auth events)
   user_id UUID REFERENCES users(id),
   action VARCHAR(100), -- workflow_created, assessment_started, document_uploaded, etc.
   resource_type VARCHAR(50),
@@ -445,15 +446,18 @@ CREATE TABLE audit_logs (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE INDEX idx_audit_logs_organization_id ON audit_logs(organization_id);
 CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 ```
 
 **Why This Schema**:
 - ✅ **Relational integrity**: Workflows → Buckets → Criteria (cascading deletes prevent orphaned data)
 - ✅ **JSONB for flexibility**: `ai_response_raw` stores full Claude JSON (for debugging false positives)
 - ✅ **Audit trail**: Every action logged with user context (SOC2 requirement)
-- ✅ **Indexes**: Fast queries on common patterns (user_id, created_at, workflow_id)
+- ✅ **Multi-tenant audit logs**: `organization_id` enables efficient querying of audit logs per organization (nullable to allow logging security events before org context is known, e.g., failed auth attempts)
+- ✅ **Indexes**: Fast queries on common patterns (organization_id, user_id, created_at, action)
 
 ---
 
