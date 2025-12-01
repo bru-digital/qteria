@@ -64,53 +64,42 @@ def get_redis() -> Generator[Redis, None, None]:
             # Double-check pattern: verify client is still None after acquiring lock
             # (another thread might have initialized it while we were waiting)
             if _redis_client is None:
-                try:
-                    redis_url = settings.REDIS_URL
-                    if not redis_url:
-                        logger.warning(
-                            "REDIS_URL not configured - Redis features disabled (rate limiting will not be enforced)"
+                redis_url = settings.REDIS_URL
+                if not redis_url:
+                    logger.warning(
+                        "REDIS_URL not configured - Redis features disabled (rate limiting will not be enforced)"
+                    )
+                    # Don't set _redis_client, keep it as None for graceful degradation
+                else:
+                    # Redis URL is configured, attempt connection
+                    try:
+                        _redis_client = Redis.from_url(
+                            redis_url,
+                            decode_responses=True,  # Return strings instead of bytes
+                            socket_timeout=5,       # 5 second timeout for operations
+                            socket_connect_timeout=2,  # 2 second timeout for connection
+                            max_connections=10,     # Connection pool size (10-20 for typical API)
+                            health_check_interval=30,  # Auto-reconnect on connection loss (seconds)
                         )
-                        # Don't set _redis_client, allow retry on next request
-                        yield None
-                        return
 
-                    _redis_client = Redis.from_url(
-                        redis_url,
-                        decode_responses=True,  # Return strings instead of bytes
-                        socket_timeout=5,       # 5 second timeout for operations
-                        socket_connect_timeout=2,  # 2 second timeout for connection
-                        max_connections=10,     # Connection pool size (10-20 for typical API)
-                        health_check_interval=30,  # Auto-reconnect on connection loss (seconds)
-                    )
+                        # Test connection
+                        _redis_client.ping()
+                        logger.info("Redis connection established successfully", extra={"redis_url": redis_url})
 
-                    # Test connection
-                    _redis_client.ping()
-                    logger.info("Redis connection established successfully", extra={"redis_url": redis_url})
-
-                except RedisConnectionError as e:
-                    logger.error(
-                        "Failed to connect to Redis - Redis features disabled",
-                        extra={"error": str(e), "redis_url": settings.REDIS_URL},
-                        exc_info=True,
-                    )
-                    # Don't set _redis_client to None, keep it uninitialized
-                    # This allows retry on next request
-                    yield None
-                    # Early return is intentional (generator cleanup pattern)
-                    # Safe for single-yield generators - no resources to clean up
-                    return
-                except Exception as e:
-                    logger.error(
-                        "Unexpected error initializing Redis client",
-                        extra={"error": str(e)},
-                        exc_info=True,
-                    )
-                    # Don't set _redis_client to None, keep it uninitialized
-                    # This allows retry on next request
-                    yield None
-                    # Early return is intentional (generator cleanup pattern)
-                    # Safe for single-yield generators - no resources to clean up
-                    return
+                    except RedisConnectionError as e:
+                        logger.error(
+                            "Failed to connect to Redis - Redis features disabled",
+                            extra={"error": str(e), "redis_url": settings.REDIS_URL},
+                            exc_info=True,
+                        )
+                        # Don't set _redis_client, keep it as None to allow retry on next request
+                    except Exception as e:
+                        logger.error(
+                            "Unexpected error initializing Redis client",
+                            extra={"error": str(e)},
+                            exc_info=True,
+                        )
+                        # Don't set _redis_client, keep it as None to allow retry on next request
 
     # Yield existing Redis client (connection health checked by pool)
     # REMOVED: PING check on every request (adds unnecessary latency)
@@ -273,6 +262,17 @@ def check_upload_rate_limit(
             # Raise 429 with standardized error format and rate limit headers
             from app.core.exceptions import create_error_response
             reset_time = next_hour
+            reset_timestamp = int(reset_time.timestamp())
+
+            # Prepare rate limit headers for 429 response
+            # API contract compliance: product-guidelines/08-api-contracts.md:838-846
+            rate_limit_headers = {
+                "X-RateLimit-Limit": str(settings.UPLOAD_RATE_LIMIT_PER_HOUR),
+                "X-RateLimit-Remaining": "0",  # No remaining capacity when limit exceeded
+                "X-RateLimit-Reset": str(reset_timestamp),
+                "Retry-After": str(retry_after_seconds),
+            }
+
             raise create_error_response(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 error_code="RATE_LIMIT_EXCEEDED",
@@ -284,6 +284,7 @@ def check_upload_rate_limit(
                     "reset_time": reset_time.isoformat() + "Z",
                 },
                 request=request,
+                headers=rate_limit_headers,
             )
 
         logger.debug(

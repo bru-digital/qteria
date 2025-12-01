@@ -26,6 +26,7 @@ def create_error_response(
     message: str,
     details: Optional[dict[str, Any]] = None,
     request: Optional[Request] = None,
+    headers: Optional[dict[str, str]] = None,
 ) -> HTTPException:
     """Create standardized error response matching API contract.
 
@@ -35,6 +36,7 @@ def create_error_response(
         message: Human-readable error message
         details: Optional additional error context
         request: Optional Request object for extracting request_id
+        headers: Optional HTTP headers to include in the response
 
     Returns:
         HTTPException with standardized error format
@@ -63,4 +65,4 @@ def create_error_response(
     if details:
         error_body["error"]["details"] = details
 
-    return HTTPException(status_code=status_code, detail=error_body)
+    return HTTPException(status_code=status_code, detail=error_body, headers=headers)
