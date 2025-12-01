@@ -96,6 +96,8 @@ def get_redis() -> Generator[Redis, None, None]:
                     # Don't set _redis_client to None, keep it uninitialized
                     # This allows retry on next request
                     yield None
+                    # Early return is intentional (generator cleanup pattern)
+                    # Safe for single-yield generators - no resources to clean up
                     return
                 except Exception as e:
                     logger.error(
@@ -106,6 +108,8 @@ def get_redis() -> Generator[Redis, None, None]:
                     # Don't set _redis_client to None, keep it uninitialized
                     # This allows retry on next request
                     yield None
+                    # Early return is intentional (generator cleanup pattern)
+                    # Safe for single-yield generators - no resources to clean up
                     return
 
     # Yield existing Redis client with connection verification

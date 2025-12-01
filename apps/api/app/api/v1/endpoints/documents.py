@@ -612,6 +612,9 @@ async def upload_document(
                 reset_timestamp = int(reset_time.timestamp())
 
                 # Add standard rate limit headers (API contract compliance)
+                # Cache-Control: no-store prevents caching of potentially stale rate limit values
+                # (concurrent requests may cause brief inconsistencies in Remaining count)
+                response.headers["Cache-Control"] = "no-store"
                 response.headers["X-RateLimit-Limit"] = str(settings.UPLOAD_RATE_LIMIT_PER_HOUR)
                 response.headers["X-RateLimit-Remaining"] = str(uploads_remaining)
                 response.headers["X-RateLimit-Reset"] = str(reset_timestamp)
