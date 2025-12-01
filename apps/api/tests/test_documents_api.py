@@ -1469,7 +1469,12 @@ class TestDocumentUploadRateLimiting:
 
         # Mock Redis to return count of 101 after increment (limit exceeded)
         # With increment-first approach: was at 100, incremented by 1 → 101 (exceeds limit)
-        mock_redis.execute.return_value = [101, True]
+        # First execute() is increment pipeline (INCRBY, EXPIRE) → [101, True]
+        # Second execute() is rollback pipeline (DECRBY, EXPIRE, GET) → [100, True, "100"]
+        mock_redis.execute.side_effect = [
+            [101, True],        # Increment pipeline result
+            [100, True, "100"]  # Rollback pipeline result
+        ]
 
         response = client.post(
             "/v1/documents",
@@ -1608,7 +1613,14 @@ class TestDocumentUploadRateLimiting:
 
         # User A at limit (101 after increment → exceeds limit)
         token_a = create_test_token(organization_id=TEST_ORG_A_ID, user_id=user_a_id)
-        mock_redis.execute.return_value = [101, True]
+        # First execute() is increment pipeline → [101, True]
+        # Second execute() is rollback pipeline → [100, True, "100"]
+        # Third execute() is User B's increment pipeline → [1, True]
+        mock_redis.execute.side_effect = [
+            [101, True],        # User A increment
+            [100, True, "100"], # User A rollback
+            [1, True]           # User B increment
+        ]
 
         response_a = client.post(
             "/v1/documents",
@@ -1620,7 +1632,6 @@ class TestDocumentUploadRateLimiting:
 
         # User B under limit (1 after increment → well under limit)
         token_b = create_test_token(organization_id=TEST_ORG_A_ID, user_id=user_b_id)
-        mock_redis.execute.return_value = [1, True]
 
         response_b = client.post(
             "/v1/documents",
@@ -1749,7 +1760,14 @@ class TestDocumentUploadRateLimiting:
             for name, content in files_data_5
         ]
 
-        mock_redis.execute.return_value = [101, True]
+        # First execute() is increment pipeline → [101, True]
+        # Second execute() is rollback pipeline → [96, True, "96"]
+        # Third execute() is Test 2's increment pipeline → [100, True]
+        mock_redis.execute.side_effect = [
+            [101, True],       # Test 1 increment (96 + 5 = 101)
+            [96, True, "96"],  # Test 1 rollback
+            [100, True]        # Test 2 increment (96 + 4 = 100)
+        ]
 
         response_fail = client.post(
             "/v1/documents",
@@ -1767,8 +1785,6 @@ class TestDocumentUploadRateLimiting:
             ("files", (name, io.BytesIO(content), "application/pdf"))
             for name, content in files_data_4
         ]
-
-        mock_redis.execute.return_value = [100, True]
 
         response_success = client.post(
             "/v1/documents",
@@ -1834,7 +1850,10 @@ class TestDocumentUploadRateLimiting:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock Redis to return count of 101 after increment (limit exceeded)
-        mock_redis.execute.return_value = [101, True]
+        mock_redis.execute.side_effect = [
+            [101, True],        # Increment pipeline
+            [100, True, "100"]  # Rollback pipeline
+        ]
 
         response = client.post(
             "/v1/documents",
@@ -1876,7 +1895,10 @@ class TestDocumentUploadRateLimiting:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock Redis to return count of 101 after increment (limit exceeded)
-        mock_redis.execute.return_value = [101, True]
+        mock_redis.execute.side_effect = [
+            [101, True],        # Increment pipeline
+            [100, True, "100"]  # Rollback pipeline
+        ]
 
         response = client.post(
             "/v1/documents",
@@ -1964,14 +1986,24 @@ class TestDocumentUploadRateLimiting:
                 return redis_counter["count"]
 
         # Configure mock to use our atomic counter
-        def execute_side_effect():
-            # First command: INCRBY (atomic increment)
-            new_count = mock_redis_atomic_increment("test_key", 2)  # 2 files per request
-            # Second command: EXPIRE
-            return [new_count, True]
+        # Track state for each pipeline call
+        last_increment_result = {"value": None}
 
-        mock_redis.execute.side_effect = lambda: execute_side_effect()
-        mock_redis.decrby.side_effect = lambda key, amount: mock_redis_decrement(key, amount)
+        def execute_side_effect():
+            # Check if this is a rollback pipeline call
+            # Rollback happens when last increment exceeded limit (> 100)
+            if last_increment_result["value"] is not None and last_increment_result["value"] > 100:
+                # This is a rollback pipeline (DECRBY, EXPIRE, GET)
+                current_count = mock_redis_decrement("test_key", 2)
+                last_increment_result["value"] = None  # Reset for next request
+                return [current_count, True, str(current_count)]
+            else:
+                # This is an increment pipeline (INCRBY, EXPIRE)
+                new_count = mock_redis_atomic_increment("test_key", 2)  # 2 files per request
+                last_increment_result["value"] = new_count
+                return [new_count, True]
+
+        mock_redis.execute.side_effect = execute_side_effect
 
         def upload_request():
             """Simulate concurrent upload request."""

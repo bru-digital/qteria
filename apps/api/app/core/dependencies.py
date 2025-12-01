@@ -238,7 +238,9 @@ def check_upload_rate_limit(
 
             # Get actual count after rollback (third command result)
             # More accurate than new_count - file_count due to potential concurrent requests
-            current_count = int(rollback_results[2]) if rollback_results[2] else 0
+            # Fallback to new_count - file_count if key doesn't exist (e.g., expired between operations)
+            # This preserves semantic meaning: user exceeded limit even if Redis key disappeared
+            current_count = int(rollback_results[2]) if rollback_results[2] else (new_count - file_count)
 
             # Calculate seconds until rate limit resets (next hour)
             next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
