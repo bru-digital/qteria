@@ -631,18 +631,31 @@ async def upload_document(
                         "reset_timestamp": reset_timestamp,
                     },
                 )
-        except Exception as e:
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Expected errors in header calculation/formatting:
+            # - ValueError: Invalid int/string conversion
+            # - TypeError: Unexpected type in arithmetic operations
+            # - KeyError: Missing config setting
+            # - AttributeError: Response header mutation error
             # Graceful degradation: Don't fail upload if header addition fails
-            # Broad exception catch is intentional - header addition involves:
-            # - Integer arithmetic (uploads_remaining calculation)
-            # - Datetime operations (reset_time calculation)
-            # - String conversions (header value formatting)
-            # - Response header mutations
-            # Any unexpected failure here should NOT prevent the upload from succeeding
             # (upload already completed successfully by this point)
             logger.warning(
                 "Failed to add rate limit headers to response",
-                extra={"error": str(e)},
+                extra={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+                exc_info=True,
+            )
+        except Exception as e:
+            # Unexpected error - log at ERROR level for investigation
+            # Should not happen in normal operation
+            logger.error(
+                "Unexpected error adding rate limit headers to response",
+                extra={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
                 exc_info=True,
             )
 

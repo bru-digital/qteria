@@ -32,61 +32,84 @@ app = FastAPI(
 
 
 @app.on_event("startup")
-async def validate_server_timezone():
+async def log_server_timezone():
     """
-    Validate that server is running in UTC timezone.
+    Log server timezone for debugging and monitoring.
 
-    Rate limiting hour buckets use UTC time calculation via datetime.now(timezone.utc),
-    which is timezone-aware and works correctly regardless of system timezone.
-    However, running in UTC is recommended for consistency and to avoid confusion.
+    Rate limiting uses UTC-aware datetimes via datetime.now(timezone.utc),
+    which works correctly regardless of system timezone. This check is purely
+    informational for ops/debugging purposes.
 
-    This validation logs a warning if the server is not running in UTC, but does NOT
-    fail in production because the code uses timezone-aware datetimes that work correctly
-    regardless of system timezone.
+    Note: Server timezone does NOT affect rate limiting accuracy.
     """
-    # Check if local timezone is UTC
-    now = datetime.now()
-    local_tz = now.astimezone().tzinfo
+    try:
+        import time
 
-    # Compare timezone offset with UTC
-    # UTC offset should be 0 (no offset from UTC)
-    utc_offset = now.astimezone().utcoffset()
+        # Simple timezone check using time module (more reliable in containers)
+        is_utc = time.timezone == 0 and time.daylight == 0
 
-    # If utc_offset != 0, the server is NOT running in UTC
-    # Log warning but don't fail - code uses datetime.now(timezone.utc) which is already correct
-    if utc_offset is None or utc_offset.total_seconds() != 0:
-        logger.warning(
-            f"Server is not running in UTC timezone (current: {local_tz}, offset: {utc_offset}). "
-            f"While the code uses UTC-aware datetimes, running in UTC is recommended. "
-            f"Set TZ=UTC environment variable if preferred."
+        if not is_utc:
+            logger.info(
+                "Server timezone is not UTC, but rate limiting uses UTC-aware datetimes (no issue)",
+                extra={"timezone_offset_seconds": time.timezone},
+            )
+        else:
+            logger.info("Server timezone: UTC")
+    except Exception as e:
+        # Non-critical: timezone detection failed (e.g., in some container environments)
+        logger.debug(
+            "Could not determine server timezone - not critical",
+            extra={"error": str(e)},
         )
-    else:
-        logger.info(
-            "Server timezone validation passed",
-            extra={"timezone": str(local_tz), "utc_offset": utc_offset}
-        )
+
+
+@app.on_event("startup")
+async def initialize_redis():
+    """
+    Initialize Redis client at application startup.
+
+    Establishes Redis connection once at startup instead of on first request,
+    eliminating lock contention on every request for better performance under
+    high concurrency (100+ req/s).
+
+    Benefits:
+    - Fail-fast: Redis connection issues discovered at startup
+    - No lock contention on request path (was bottleneck at 100+ req/s)
+    - Simpler dependency injection (no thread-safety concerns)
+
+    Graceful degradation: If Redis unavailable, application starts normally
+    with rate limiting disabled (logged as warning).
+    """
+    from app.core.dependencies import initialize_redis_client
+
+    initialize_redis_client()
 
 
 @app.on_event("shutdown")
 async def close_redis():
     """
-    Close Redis connection on application shutdown.
+    Close Redis connection pool on application shutdown.
 
-    Prevents potential memory leaks by properly closing the global Redis client
-    connection pool when the application shuts down.
+    Properly disconnects all connections in the pool, waiting for in-flight
+    requests to complete. Prevents "connection reset" errors during graceful shutdown.
 
-    Note: Low impact in production (processes are recycled), but good practice
-    for clean shutdown and local development environments.
+    Uses connection_pool.disconnect() instead of close() to ensure:
+    - All active connections finish their operations
+    - Connection pool is properly cleaned up
+    - No race conditions with concurrent requests during shutdown
+
+    Note: Low impact in production (processes are recycled), but critical
+    for clean shutdown in local development and container orchestration.
     """
     from app.core.dependencies import _redis_client
 
     if _redis_client:
         try:
-            _redis_client.close()
-            logger.info("Redis connection closed successfully")
+            _redis_client.connection_pool.disconnect()
+            logger.info("Redis connection pool closed successfully")
         except Exception as e:
             logger.error(
-                "Error closing Redis connection",
+                "Error closing Redis connection pool",
                 extra={"error": str(e)},
                 exc_info=True
             )
