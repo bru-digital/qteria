@@ -112,11 +112,13 @@ def get_redis() -> Generator[Redis, None, None]:
                     # Safe for single-yield generators - no resources to clean up
                     return
 
-    # Yield existing Redis client with connection verification
+    # Yield existing Redis client (connection health checked by pool)
+    # REMOVED: PING check on every request (adds unnecessary latency)
+    # Redis client connection pooling handles stale connections automatically
+    # via health_check_interval (configured at line 83). If a connection fails
+    # during actual Redis operation, graceful degradation in check_upload_rate_limit()
+    # will catch and log the error.
     try:
-        if _redis_client:
-            # Test connection before yielding to detect stale connections
-            _redis_client.ping()
         yield _redis_client
     except RedisConnectionError:
         logger.warning(
