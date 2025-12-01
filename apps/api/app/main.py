@@ -1,6 +1,7 @@
 """
 FastAPI main application entry point.
 """
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -20,28 +21,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    description=settings.DESCRIPTION,
-    version=settings.VERSION,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
-)
 
-
-@app.on_event("startup")
-async def log_server_timezone():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """
-    Log server timezone for debugging and monitoring.
+    FastAPI lifespan context manager for startup and shutdown logic.
 
-    Rate limiting uses UTC-aware datetimes via datetime.now(timezone.utc),
-    which works correctly regardless of system timezone. This check is purely
-    informational for ops/debugging purposes.
+    Replaces deprecated @app.on_event("startup") and @app.on_event("shutdown")
+    decorators with modern lifespan pattern (FastAPI 0.109+).
 
-    Note: Server timezone does NOT affect rate limiting accuracy.
+    Startup (before yield):
+    - Log server timezone for debugging
+    - Initialize Redis connection pool
+
+    Shutdown (after yield):
+    - Close Redis connection pool cleanly
     """
+    # Startup
+    # Log server timezone for debugging and monitoring
     try:
         import time
 
@@ -62,47 +59,15 @@ async def log_server_timezone():
             extra={"error": str(e)},
         )
 
-
-@app.on_event("startup")
-async def initialize_redis():
-    """
-    Initialize Redis client at application startup.
-
-    Establishes Redis connection once at startup instead of on first request,
-    eliminating lock contention on every request for better performance under
-    high concurrency (100+ req/s).
-
-    Benefits:
-    - Fail-fast: Redis connection issues discovered at startup
-    - No lock contention on request path (was bottleneck at 100+ req/s)
-    - Simpler dependency injection (no thread-safety concerns)
-
-    Graceful degradation: If Redis unavailable, application starts normally
-    with rate limiting disabled (logged as warning).
-    """
-    from app.core.dependencies import initialize_redis_client
+    # Initialize Redis client
+    from app.core.dependencies import initialize_redis_client, _redis_client
 
     initialize_redis_client()
 
+    yield
 
-@app.on_event("shutdown")
-async def close_redis():
-    """
-    Close Redis connection pool on application shutdown.
-
-    Properly disconnects all connections in the pool, waiting for in-flight
-    requests to complete. Prevents "connection reset" errors during graceful shutdown.
-
-    Uses connection_pool.disconnect() instead of close() to ensure:
-    - All active connections finish their operations
-    - Connection pool is properly cleaned up
-    - No race conditions with concurrent requests during shutdown
-
-    Note: Low impact in production (processes are recycled), but critical
-    for clean shutdown in local development and container orchestration.
-    """
-    from app.core.dependencies import _redis_client
-
+    # Shutdown
+    # Close Redis connection pool
     if _redis_client:
         try:
             _redis_client.connection_pool.disconnect()
@@ -113,6 +78,18 @@ async def close_redis():
                 extra={"error": str(e)},
                 exc_info=True
             )
+
+
+# Create FastAPI app with lifespan context manager
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    description=settings.DESCRIPTION,
+    version=settings.VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    lifespan=lifespan,
+)
 
 
 # Request ID middleware

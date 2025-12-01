@@ -68,6 +68,8 @@ def initialize_redis_client() -> None:
             socket_timeout=5,       # 5 second timeout for operations
             socket_connect_timeout=2,  # 2 second timeout for connection
             max_connections=settings.REDIS_MAX_CONNECTIONS,  # Connection pool size
+            socket_keepalive=settings.REDIS_SOCKET_KEEPALIVE,  # Enable TCP keepalive
+            socket_keepalive_options=settings.REDIS_SOCKET_KEEPALIVE_OPTIONS,  # Platform-specific keepalive options
             health_check_interval=30,  # Auto-reconnect on connection loss (seconds)
         )
 
@@ -240,7 +242,22 @@ def check_upload_rate_limit(
             # More accurate than new_count - file_count due to potential concurrent requests
             # Fallback to new_count - file_count if key doesn't exist (e.g., expired between operations)
             # This preserves semantic meaning: user exceeded limit even if Redis key disappeared
-            current_count = int(rollback_results[2]) if rollback_results[2] else (new_count - file_count)
+            if rollback_results[2]:
+                current_count = int(rollback_results[2])
+            else:
+                # Fallback: key expired between increment and rollback
+                current_count = new_count - file_count
+                logger.warning(
+                    "Rate limit key expired between increment and rollback - using fallback count",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "organization_id": str(current_user.organization_id),
+                        "fallback_count": current_count,
+                        "new_count": new_count,
+                        "file_count": file_count,
+                        "hour_bucket": hour_bucket,
+                    },
+                )
 
             # Calculate seconds until rate limit resets (next hour)
             next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)

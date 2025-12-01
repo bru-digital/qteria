@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     REDIS_MAX_CONNECTIONS: int = Field(
         default=10, description="Redis connection pool size (10-20 for typical API)"
     )
+    REDIS_SOCKET_KEEPALIVE: bool = Field(
+        default=True, description="Enable TCP keepalive for Redis connections (prevents idle connection drops)"
+    )
+    REDIS_SOCKET_KEEPALIVE_OPTIONS: dict = Field(
+        default_factory=dict, description="TCP keepalive options (platform-specific socket options)"
+    )
 
     # Rate Limiting
     UPLOAD_RATE_LIMIT_PER_HOUR: int = Field(

@@ -586,31 +586,41 @@ async def upload_document(
         # Add rate limit headers to response
         # (per API contract: product-guidelines/08-api-contracts.md:838-846)
         #
-        # DESIGN RATIONALE: Use count from rate limit check (minimizes race condition)
-        # - new_upload_count is returned from check_upload_rate_limit() call above
-        # - Reflects accurate count AFTER this upload's increment
-        # - Avoids additional Redis fetch (which would introduce larger race window)
-        # - If Redis unavailable, new_upload_count is 0 (headers not added)
-        #
-        # KNOWN LIMITATION: Race condition under concurrent load
-        # - Under concurrent load, X-RateLimit-Remaining may be briefly inaccurate
-        # - Example race: Request A increments to 99, calculates Remaining=1, but
-        #   Request B (concurrent) increments to 100 before Request A responds,
-        #   so actual remaining is 0 when Request A returns Remaining=1
-        # - This is a known trade-off: header accuracy vs performance
+        # DESIGN RATIONALE: Re-fetch count for accurate headers
+        # - Re-fetch current count from Redis just before adding headers
+        # - Minimizes race window from ~350 lines to ~5 lines (much more accurate)
+        # - Slight latency cost (~1-2ms) for significantly better header accuracy
         # - Rate limit ENFORCEMENT is atomic and correct (increment-first approach)
-        # - Only the header information may lag by 1-2 uploads under high concurrency
-        # - Alternative (re-fetch from Redis) would add ~1-5ms latency per upload
-        # - For MVP: Acceptable compromise - enforcement is correct, headers may lag slightly
+        # - If re-fetch fails, falls back to original count (graceful degradation)
         try:
             if redis and new_upload_count > 0:
                 from app.core.config import settings
 
-                # Calculate remaining uploads based on returned count
-                uploads_remaining = max(0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count)
+                # Re-fetch current count for accurate headers (minimizes race window)
+                try:
+                    # Get current hour bucket for the same rate limit key
+                    now_for_headers = datetime.now(timezone.utc)
+                    hour_bucket = now_for_headers.strftime("%Y-%m-%d-%H")
+                    rate_limit_key = f"rate_limit:upload:{current_user.id}:{hour_bucket}"
+
+                    # Fetch current count (minimal latency ~1-2ms)
+                    current_count_str = redis.get(rate_limit_key)
+                    current_count = int(current_count_str) if current_count_str else 0
+
+                    # Use re-fetched count for headers
+                    uploads_remaining = max(0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - current_count)
+                except Exception as refetch_error:
+                    # Fallback to original count on re-fetch error
+                    logger.warning(
+                        "Failed to re-fetch rate limit count for headers - using original count",
+                        extra={
+                            "error": str(refetch_error),
+                            "error_type": type(refetch_error).__name__,
+                        },
+                    )
+                    uploads_remaining = max(0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count)
 
                 # Calculate reset timestamp (next hour)
-                now_for_headers = datetime.now(timezone.utc)
                 reset_time = now_for_headers.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
                 reset_timestamp = int(reset_time.timestamp())
 
@@ -626,7 +636,6 @@ async def upload_document(
                     "Rate limit headers added to response",
                     extra={
                         "user_id": str(current_user.id),
-                        "uploads_used": new_upload_count,
                         "uploads_remaining": uploads_remaining,
                         "reset_timestamp": reset_timestamp,
                     },
