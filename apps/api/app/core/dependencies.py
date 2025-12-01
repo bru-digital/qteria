@@ -14,6 +14,7 @@ Exports:
 - RedisClient: Type alias for Redis client dependency
 """
 import logging
+import threading
 from typing import Annotated, Generator, Optional
 
 from fastapi import Depends
@@ -30,6 +31,7 @@ UPLOAD_RATE_LIMIT_PER_HOUR = 100
 
 # Global Redis client instance (connection pooling)
 _redis_client: Optional[Redis] = None
+_redis_client_lock = threading.Lock()
 
 
 def get_redis() -> Generator[Redis, None, None]:
@@ -39,6 +41,9 @@ def get_redis() -> Generator[Redis, None, None]:
     Provides Redis client for rate limiting, caching, and background job queuing.
     Implements graceful degradation - if Redis is unavailable, yields None to allow
     endpoints to continue functioning (fail-open for availability over strict enforcement).
+
+    Thread-safe initialization using lock to prevent race conditions during startup
+    when multiple concurrent requests arrive before Redis client is initialized.
 
     Usage:
         @app.post("/items")
@@ -56,46 +61,50 @@ def get_redis() -> Generator[Redis, None, None]:
     """
     global _redis_client
 
-    # Initialize Redis client on first use (lazy loading)
+    # Initialize Redis client on first use (lazy loading with thread safety)
     if _redis_client is None:
-        try:
-            redis_url = settings.REDIS_URL
-            if not redis_url:
-                logger.warning(
-                    "REDIS_URL not configured - Redis features disabled (rate limiting will not be enforced)"
-                )
-                yield None
-                return
+        with _redis_client_lock:
+            # Double-check pattern: verify client is still None after acquiring lock
+            # (another thread might have initialized it while we were waiting)
+            if _redis_client is None:
+                try:
+                    redis_url = settings.REDIS_URL
+                    if not redis_url:
+                        logger.warning(
+                            "REDIS_URL not configured - Redis features disabled (rate limiting will not be enforced)"
+                        )
+                        yield None
+                        return
 
-            _redis_client = Redis.from_url(
-                redis_url,
-                decode_responses=True,  # Return strings instead of bytes
-                socket_timeout=5,       # 5 second timeout for operations
-                socket_connect_timeout=2,  # 2 second timeout for connection
-            )
+                    _redis_client = Redis.from_url(
+                        redis_url,
+                        decode_responses=True,  # Return strings instead of bytes
+                        socket_timeout=5,       # 5 second timeout for operations
+                        socket_connect_timeout=2,  # 2 second timeout for connection
+                    )
 
-            # Test connection
-            _redis_client.ping()
-            logger.info("Redis connection established successfully", extra={"redis_url": redis_url})
+                    # Test connection
+                    _redis_client.ping()
+                    logger.info("Redis connection established successfully", extra={"redis_url": redis_url})
 
-        except RedisConnectionError as e:
-            logger.error(
-                "Failed to connect to Redis - Redis features disabled",
-                extra={"error": str(e), "redis_url": settings.REDIS_URL},
-                exc_info=True,
-            )
-            _redis_client = None
-            yield None
-            return
-        except Exception as e:
-            logger.error(
-                "Unexpected error initializing Redis client",
-                extra={"error": str(e)},
-                exc_info=True,
-            )
-            _redis_client = None
-            yield None
-            return
+                except RedisConnectionError as e:
+                    logger.error(
+                        "Failed to connect to Redis - Redis features disabled",
+                        extra={"error": str(e), "redis_url": settings.REDIS_URL},
+                        exc_info=True,
+                    )
+                    _redis_client = None
+                    yield None
+                    return
+                except Exception as e:
+                    logger.error(
+                        "Unexpected error initializing Redis client",
+                        extra={"error": str(e)},
+                        exc_info=True,
+                    )
+                    _redis_client = None
+                    yield None
+                    return
 
     # Yield existing Redis client
     try:
