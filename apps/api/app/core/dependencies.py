@@ -26,9 +26,6 @@ from app.models.base import SessionLocal
 
 logger = logging.getLogger(__name__)
 
-# Rate limiting constants
-UPLOAD_RATE_LIMIT_PER_HOUR = 100
-
 # Global Redis client instance (connection pooling)
 _redis_client: Optional[Redis] = None
 _redis_client_lock = threading.Lock()
@@ -73,6 +70,7 @@ def get_redis() -> Generator[Redis, None, None]:
                         logger.warning(
                             "REDIS_URL not configured - Redis features disabled (rate limiting will not be enforced)"
                         )
+                        # Don't set _redis_client, allow retry on next request
                         yield None
                         return
 
@@ -81,6 +79,8 @@ def get_redis() -> Generator[Redis, None, None]:
                         decode_responses=True,  # Return strings instead of bytes
                         socket_timeout=5,       # 5 second timeout for operations
                         socket_connect_timeout=2,  # 2 second timeout for connection
+                        max_connections=10,     # Connection pool size (10-20 for typical API)
+                        health_check_interval=30,  # Auto-reconnect on connection loss (seconds)
                     )
 
                     # Test connection
@@ -93,7 +93,8 @@ def get_redis() -> Generator[Redis, None, None]:
                         extra={"error": str(e), "redis_url": settings.REDIS_URL},
                         exc_info=True,
                     )
-                    _redis_client = None
+                    # Don't set _redis_client to None, keep it uninitialized
+                    # This allows retry on next request
                     yield None
                     return
                 except Exception as e:
@@ -102,17 +103,22 @@ def get_redis() -> Generator[Redis, None, None]:
                         extra={"error": str(e)},
                         exc_info=True,
                     )
-                    _redis_client = None
+                    # Don't set _redis_client to None, keep it uninitialized
+                    # This allows retry on next request
                     yield None
                     return
 
-    # Yield existing Redis client
+    # Yield existing Redis client with connection verification
     try:
+        if _redis_client:
+            # Test connection before yielding to detect stale connections
+            _redis_client.ping()
         yield _redis_client
     except RedisConnectionError:
         logger.warning(
             "Redis connection lost during request - returning None for graceful degradation"
         )
+        # Reset to None to trigger reconnection attempt on next request
         _redis_client = None
         yield None
 
@@ -218,9 +224,11 @@ def check_upload_rate_limit(
         new_count = result[0]
 
         # Check if this upload exceeded limit (AFTER increment)
-        if new_count > UPLOAD_RATE_LIMIT_PER_HOUR:
+        if new_count > settings.UPLOAD_RATE_LIMIT_PER_HOUR:
             # Rollback the increment since we're rejecting this upload
             redis.decrby(rate_limit_key, file_count)
+            # Ensure TTL exists after rollback (edge case: key expired between INCRBY and DECRBY)
+            redis.expire(rate_limit_key, 3600)
 
             # Calculate seconds until rate limit resets (next hour)
             next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
@@ -235,7 +243,7 @@ def check_upload_rate_limit(
                     "user_id": str(current_user.id),
                     "organization_id": str(current_user.organization_id),
                     "current_count": current_count,
-                    "limit": UPLOAD_RATE_LIMIT_PER_HOUR,
+                    "limit": settings.UPLOAD_RATE_LIMIT_PER_HOUR,
                     "retry_after_seconds": retry_after_seconds,
                 },
             )
@@ -250,7 +258,7 @@ def check_upload_rate_limit(
                 metadata={
                     "limit_type": "upload",
                     "current_count": current_count,
-                    "limit": UPLOAD_RATE_LIMIT_PER_HOUR,
+                    "limit": settings.UPLOAD_RATE_LIMIT_PER_HOUR,
                     "hour_bucket": hour_bucket,
                 },
                 request=request,
@@ -262,9 +270,9 @@ def check_upload_rate_limit(
             raise create_error_response(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 error_code="RATE_LIMIT_EXCEEDED",
-                message=f"Upload rate limit exceeded. Maximum {UPLOAD_RATE_LIMIT_PER_HOUR} uploads per hour. Try again in {retry_after_seconds} seconds.",
+                message=f"Upload rate limit exceeded. Maximum {settings.UPLOAD_RATE_LIMIT_PER_HOUR} uploads per hour. Try again in {retry_after_seconds} seconds.",
                 details={
-                    "limit": UPLOAD_RATE_LIMIT_PER_HOUR,
+                    "limit": settings.UPLOAD_RATE_LIMIT_PER_HOUR,
                     "current_count": current_count,
                     "retry_after_seconds": retry_after_seconds,
                     "reset_time": reset_time.isoformat() + "Z",
@@ -278,7 +286,7 @@ def check_upload_rate_limit(
                 "user_id": str(current_user.id),
                 "file_count": file_count,
                 "new_count": new_count,
-                "limit": UPLOAD_RATE_LIMIT_PER_HOUR,
+                "limit": settings.UPLOAD_RATE_LIMIT_PER_HOUR,
                 "hour_bucket": hour_bucket,
             },
         )

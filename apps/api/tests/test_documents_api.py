@@ -1863,3 +1863,105 @@ class TestDocumentUploadRateLimiting:
         # Values correctness
         assert details["limit"] == 100
         assert details["current_count"] == 100
+
+    def test_rate_limit_concurrent_requests_race_condition(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test rate limiting under concurrent load (verifies increment-first pattern prevents race conditions).
+
+        Acceptance Criteria:
+        - Concurrent requests at edge of limit are handled correctly
+        - Increment-first pattern ensures no requests slip through when limit is reached
+        - Redis pipeline atomicity prevents TOCTOU race conditions
+        - Exactly the right number of requests succeed (no over/under enforcement)
+
+        Scenario: User at 98 uploads, two concurrent requests each uploading 2 files
+        - Old approach (check-then-increment): Both see 98, both increment to 100, both succeed (102 total - BUG)
+        - New approach (increment-first): First increments to 100 (succeeds), second increments to 102 then rolls back (fails)
+
+        This test verifies the new approach is implemented correctly.
+        """
+        import threading
+        import time
+        from collections import Counter
+
+        pdf_content = b"%PDF-1.4 Test PDF"
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Shared counter to simulate Redis behavior
+        redis_counter = {"count": 98}  # Start at 98 uploads
+        redis_lock = threading.Lock()
+
+        # Track responses
+        responses = []
+
+        def mock_redis_atomic_increment(key, amount):
+            """Simulate atomic Redis INCRBY operation with lock."""
+            with redis_lock:
+                redis_counter["count"] += amount
+                return redis_counter["count"]
+
+        def mock_redis_decrement(key, amount):
+            """Simulate Redis DECRBY operation."""
+            with redis_lock:
+                redis_counter["count"] -= amount
+                return redis_counter["count"]
+
+        # Configure mock to use our atomic counter
+        def execute_side_effect():
+            # First command: INCRBY (atomic increment)
+            new_count = mock_redis_atomic_increment("test_key", 2)  # 2 files per request
+            # Second command: EXPIRE
+            return [new_count, True]
+
+        mock_redis.execute.side_effect = lambda: execute_side_effect()
+        mock_redis.decrby.side_effect = lambda key, amount: mock_redis_decrement(key, amount)
+
+        def upload_request():
+            """Simulate concurrent upload request."""
+            try:
+                # Upload 2 files
+                files_data = [
+                    ("files", (f"file1.pdf", io.BytesIO(pdf_content), "application/pdf")),
+                    ("files", (f"file2.pdf", io.BytesIO(pdf_content), "application/pdf")),
+                ]
+                response = client.post(
+                    "/v1/documents",
+                    headers={"Authorization": f"Bearer {token}"},
+                    files=files_data,
+                )
+                responses.append(response.status_code)
+            except Exception as e:
+                responses.append(f"error: {e}")
+
+        # Fire two concurrent requests
+        thread1 = threading.Thread(target=upload_request)
+        thread2 = threading.Thread(target=upload_request)
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+        # Verify results
+        status_counts = Counter(responses)
+
+        # Expected behavior with increment-first pattern:
+        # - Request 1: 98 + 2 = 100 (SUCCESS - at limit)
+        # - Request 2: 100 + 2 = 102 (REJECTED - exceeds limit, rolls back to 100)
+        # OR vice versa (order not guaranteed in threading)
+
+        # Verify exactly 1 succeeded and 1 failed
+        assert status_counts[201] == 1, f"Expected exactly 1 success (201), got {status_counts[201]}"
+        assert status_counts[429] == 1, f"Expected exactly 1 rejection (429), got {status_counts[429]}"
+
+        # Verify final count is 100 (one request succeeded, one rolled back)
+        assert redis_counter["count"] == 100, f"Expected final count 100, got {redis_counter['count']}"

@@ -49,6 +49,12 @@ class Settings(BaseSettings):
         default="", description="Redis connection URL (e.g., redis://localhost:6379/0)"
     )
 
+    # Rate Limiting
+    UPLOAD_RATE_LIMIT_PER_HOUR: int = Field(
+        default=100,
+        description="Maximum uploads per user per hour (configurable per environment)"
+    )
+
     # Security
     JWT_SECRET: str = Field(..., description="Secret key for JWT token signing")
     JWT_ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm")

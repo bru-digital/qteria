@@ -586,17 +586,25 @@ async def upload_document(
         # Add rate limit headers to response
         # (per API contract: product-guidelines/08-api-contracts.md:838-846)
         #
-        # DESIGN RATIONALE: Use count from rate limit check (no race condition)
+        # DESIGN RATIONALE: Use count from rate limit check (minimizes race condition)
         # - new_upload_count is returned from check_upload_rate_limit() call above
         # - Reflects accurate count AFTER this upload's increment
-        # - Avoids race condition from fetching Redis again (concurrent requests)
+        # - Avoids additional Redis fetch (which would introduce larger race window)
         # - If Redis unavailable, new_upload_count is 0 (headers not added)
+        #
+        # KNOWN LIMITATION: Minor race condition with concurrent requests
+        # - Concurrent requests may see slightly incorrect "Remaining" count in headers
+        # - Example: Request A calculates remaining=2, but Request B (concurrent)
+        #   increments to 99, so actual remaining=1 when Request A responds
+        # - This is acceptable: Rate limit ENFORCEMENT is still correct (atomic),
+        #   only the header information may be briefly stale
+        # - Trade-off: Accuracy vs performance (fetching Redis again adds latency)
         try:
             if redis and new_upload_count > 0:
-                from app.core.dependencies import UPLOAD_RATE_LIMIT_PER_HOUR
+                from app.core.config import settings
 
                 # Calculate remaining uploads based on returned count
-                uploads_remaining = max(0, UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count)
+                uploads_remaining = max(0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count)
 
                 # Calculate reset timestamp (next hour)
                 now_for_headers = datetime.now(timezone.utc)
@@ -604,7 +612,7 @@ async def upload_document(
                 reset_timestamp = int(reset_time.timestamp())
 
                 # Add standard rate limit headers (API contract compliance)
-                response.headers["X-RateLimit-Limit"] = str(UPLOAD_RATE_LIMIT_PER_HOUR)
+                response.headers["X-RateLimit-Limit"] = str(settings.UPLOAD_RATE_LIMIT_PER_HOUR)
                 response.headers["X-RateLimit-Remaining"] = str(uploads_remaining)
                 response.headers["X-RateLimit-Reset"] = str(reset_timestamp)
 
