@@ -40,8 +40,9 @@ async def validate_server_timezone():
     which is timezone-aware and works correctly regardless of system timezone.
     However, running in UTC is recommended for consistency and to avoid confusion.
 
-    This validation logs a warning in development/test environments and raises an
-    error only in production environments.
+    This validation logs a warning if the server is not running in UTC, but does NOT
+    fail in production because the code uses timezone-aware datetimes that work correctly
+    regardless of system timezone.
     """
     # Check if local timezone is UTC
     now = datetime.now()
@@ -51,22 +52,14 @@ async def validate_server_timezone():
     # UTC offset should be 0 (no offset from UTC)
     utc_offset = now.astimezone().utcoffset()
 
-    # If utc_offset != 0, the server is NOT running in UTC (should raise error in production)
-    # The condition checks if timezone is NOT UTC, then raises error/warning accordingly
+    # If utc_offset != 0, the server is NOT running in UTC
+    # Log warning but don't fail - code uses datetime.now(timezone.utc) which is already correct
     if utc_offset is None or utc_offset.total_seconds() != 0:
-        warning_msg = (
-            f"Server is not running in UTC timezone. "
-            f"Current timezone: {local_tz}, UTC offset: {utc_offset}. "
-            f"While the code uses UTC-aware datetimes, running in UTC is recommended for production. "
-            f"Set TZ=UTC environment variable or configure system timezone to UTC."
+        logger.warning(
+            f"Server is not running in UTC timezone (current: {local_tz}, offset: {utc_offset}). "
+            f"While the code uses UTC-aware datetimes, running in UTC is recommended. "
+            f"Set TZ=UTC environment variable if preferred."
         )
-
-        # Only raise error in production, warn in development/test
-        if settings.ENVIRONMENT == "production":
-            logger.critical(warning_msg)
-            raise RuntimeError(warning_msg)
-        else:
-            logger.warning(warning_msg)
     else:
         logger.info(
             "Server timezone validation passed",

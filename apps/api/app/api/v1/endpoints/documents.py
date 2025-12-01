@@ -592,13 +592,16 @@ async def upload_document(
         # - Avoids additional Redis fetch (which would introduce larger race window)
         # - If Redis unavailable, new_upload_count is 0 (headers not added)
         #
-        # KNOWN LIMITATION: Minor race condition with concurrent requests
-        # - Concurrent requests may see slightly incorrect "Remaining" count in headers
-        # - Example: Request A calculates remaining=2, but Request B (concurrent)
-        #   increments to 99, so actual remaining=1 when Request A responds
-        # - This is acceptable: Rate limit ENFORCEMENT is still correct (atomic),
-        #   only the header information may be briefly stale
-        # - Trade-off: Accuracy vs performance (fetching Redis again adds latency)
+        # KNOWN LIMITATION: Race condition under concurrent load
+        # - Under concurrent load, X-RateLimit-Remaining may be briefly inaccurate
+        # - Example race: Request A increments to 99, calculates Remaining=1, but
+        #   Request B (concurrent) increments to 100 before Request A responds,
+        #   so actual remaining is 0 when Request A returns Remaining=1
+        # - This is a known trade-off: header accuracy vs performance
+        # - Rate limit ENFORCEMENT is atomic and correct (increment-first approach)
+        # - Only the header information may lag by 1-2 uploads under high concurrency
+        # - Alternative (re-fetch from Redis) would add ~1-5ms latency per upload
+        # - For MVP: Acceptable compromise - enforcement is correct, headers may lag slightly
         try:
             if redis and new_upload_count > 0:
                 from app.core.config import settings
@@ -629,7 +632,14 @@ async def upload_document(
                     },
                 )
         except Exception as e:
-            # Don't fail upload if header addition fails
+            # Graceful degradation: Don't fail upload if header addition fails
+            # Broad exception catch is intentional - header addition involves:
+            # - Integer arithmetic (uploads_remaining calculation)
+            # - Datetime operations (reset_time calculation)
+            # - String conversions (header value formatting)
+            # - Response header mutations
+            # Any unexpected failure here should NOT prevent the upload from succeeding
+            # (upload already completed successfully by this point)
             logger.warning(
                 "Failed to add rate limit headers to response",
                 extra={"error": str(e)},
