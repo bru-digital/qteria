@@ -78,7 +78,7 @@ def get_redis() -> Generator[Redis, None, None]:
                             decode_responses=True,  # Return strings instead of bytes
                             socket_timeout=5,       # 5 second timeout for operations
                             socket_connect_timeout=2,  # 2 second timeout for connection
-                            max_connections=10,     # Connection pool size (10-20 for typical API)
+                            max_connections=settings.REDIS_MAX_CONNECTIONS,  # Connection pool size
                             health_check_interval=30,  # Auto-reconnect on connection loss (seconds)
                         )
 

@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     REDIS_URL: str = Field(
         default="", description="Redis connection URL (e.g., redis://localhost:6379/0)"
     )
+    REDIS_MAX_CONNECTIONS: int = Field(
+        default=10, description="Redis connection pool size (10-20 for typical API)"
+    )
 
     # Rate Limiting
     UPLOAD_RATE_LIMIT_PER_HOUR: int = Field(

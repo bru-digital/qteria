@@ -51,6 +51,8 @@ async def validate_server_timezone():
     # UTC offset should be 0 (no offset from UTC)
     utc_offset = now.astimezone().utcoffset()
 
+    # If utc_offset != 0, the server is NOT running in UTC (should raise error in production)
+    # The condition checks if timezone is NOT UTC, then raises error/warning accordingly
     if utc_offset is None or utc_offset.total_seconds() != 0:
         warning_msg = (
             f"Server is not running in UTC timezone. "
@@ -70,6 +72,31 @@ async def validate_server_timezone():
             "Server timezone validation passed",
             extra={"timezone": str(local_tz), "utc_offset": utc_offset}
         )
+
+
+@app.on_event("shutdown")
+async def close_redis():
+    """
+    Close Redis connection on application shutdown.
+
+    Prevents potential memory leaks by properly closing the global Redis client
+    connection pool when the application shuts down.
+
+    Note: Low impact in production (processes are recycled), but good practice
+    for clean shutdown and local development environments.
+    """
+    from app.core.dependencies import _redis_client
+
+    if _redis_client:
+        try:
+            _redis_client.close()
+            logger.info("Redis connection closed successfully")
+        except Exception as e:
+            logger.error(
+                "Error closing Redis connection",
+                extra={"error": str(e)},
+                exc_info=True
+            )
 
 
 # Request ID middleware
