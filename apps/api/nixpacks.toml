@@ -1,0 +1,14 @@
+# Railway build configuration for Qteria API
+# This file tells Railway to install system dependencies before Python packages
+
+[phases.setup]
+# Install system dependencies required by Python packages
+aptPkgs = ['libmagic1']
+
+[phases.install]
+# Install Python dependencies
+cmds = ['pip install -r requirements.txt']
+
+[start]
+# Start the FastAPI application
+cmd = 'uvicorn app.main:app --host 0.0.0.0 --port $PORT'
