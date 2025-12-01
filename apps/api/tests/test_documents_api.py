@@ -1516,7 +1516,51 @@ class TestDocumentUploadRateLimiting:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock Redis to return count of 100 after increment (at limit, but allowed)
+        # Mock Redis to return count of 99 after increment (below limit)
+        # With increment-first approach: was at 98, incremented by 1 → 99 (below limit)
+        mock_redis.execute.return_value = [99, True]
+
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
+
+        assert response.status_code == 201
+
+        # Verify Redis counter incremented
+        assert mock_redis.pipeline.called
+        assert mock_redis.incrby.called
+        assert mock_redis.expire.called
+
+    def test_rate_limit_allows_exactly_100th_upload(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test that exactly 100th upload succeeds (boundary test).
+
+        Boundary case: Verifies off-by-one error prevention.
+        The rate limit is 100 uploads per hour, so the 100th upload should succeed.
+        Only the 101st upload should be rejected.
+
+        Acceptance Criteria:
+        - Returns 201 Created (upload succeeds)
+        - X-RateLimit-Remaining header is "0" (at capacity but allowed)
+        - Redis counter incremented to exactly 100
+        - Verifies condition uses > not >= (new_count > limit, not new_count >= limit)
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock Redis to return count of 100 after increment (exactly at limit)
         # With increment-first approach: was at 99, incremented by 1 → 100 (exactly at limit)
         mock_redis.execute.return_value = [100, True]
 
@@ -1526,7 +1570,12 @@ class TestDocumentUploadRateLimiting:
             files={"files": ("test.pdf", pdf_file, "application/pdf")},
         )
 
+        # Upload should succeed (100th upload is allowed, only 101st is rejected)
         assert response.status_code == 201
+
+        # Verify rate limit headers show remaining capacity is 0
+        assert response.headers["X-RateLimit-Remaining"] == "0"
+        assert response.headers["X-RateLimit-Limit"] == "100"
 
         # Verify Redis counter incremented
         assert mock_redis.pipeline.called

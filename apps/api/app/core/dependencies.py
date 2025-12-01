@@ -92,14 +92,16 @@ def get_redis() -> Generator[Redis, None, None]:
                             extra={"error": str(e), "redis_url": settings.REDIS_URL},
                             exc_info=True,
                         )
-                        # Don't set _redis_client, keep it as None to allow retry on next request
+                        # Reset to None to allow retry on next request
+                        _redis_client = None
                     except Exception as e:
                         logger.error(
                             "Unexpected error initializing Redis client",
                             extra={"error": str(e)},
                             exc_info=True,
                         )
-                        # Don't set _redis_client, keep it as None to allow retry on next request
+                        # Reset to None to allow retry on next request
+                        _redis_client = None
 
     # Yield existing Redis client (connection health checked by pool)
     # REMOVED: PING check on every request (adds unnecessary latency)
@@ -107,15 +109,7 @@ def get_redis() -> Generator[Redis, None, None]:
     # via health_check_interval (configured at line 83). If a connection fails
     # during actual Redis operation, graceful degradation in check_upload_rate_limit()
     # will catch and log the error.
-    try:
-        yield _redis_client
-    except RedisConnectionError:
-        logger.warning(
-            "Redis connection lost during request - returning None for graceful degradation"
-        )
-        # Reset to None to trigger reconnection attempt on next request
-        _redis_client = None
-        yield None
+    yield _redis_client
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -266,6 +260,13 @@ def check_upload_rate_limit(
 
             # Prepare rate limit headers for 429 response
             # API contract compliance: product-guidelines/08-api-contracts.md:838-846
+            #
+            # NOTE: Minor race condition possible with concurrent requests.
+            # Headers show count at time of THIS request's increment, but concurrent
+            # requests may have incremented the counter since then. This is acceptable
+            # as rate limit ENFORCEMENT (INCRBY) is atomic - only header values may
+            # be briefly stale. The increment-first approach guarantees no request
+            # bypasses the rate limit, even under concurrent load.
             rate_limit_headers = {
                 "X-RateLimit-Limit": str(settings.UPLOAD_RATE_LIMIT_PER_HOUR),
                 "X-RateLimit-Remaining": "0",  # No remaining capacity when limit exceeded

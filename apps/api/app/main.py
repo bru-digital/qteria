@@ -1,6 +1,7 @@
 """
 FastAPI main application entry point.
 """
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
@@ -28,6 +29,48 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
+
+
+@app.on_event("startup")
+async def validate_server_timezone():
+    """
+    Validate that server is running in UTC timezone.
+
+    Rate limiting hour buckets use UTC time calculation via datetime.now(timezone.utc),
+    which is timezone-aware and works correctly regardless of system timezone.
+    However, running in UTC is recommended for consistency and to avoid confusion.
+
+    This validation logs a warning in development/test environments and raises an
+    error only in production environments.
+    """
+    # Check if local timezone is UTC
+    now = datetime.now()
+    local_tz = now.astimezone().tzinfo
+
+    # Compare timezone offset with UTC
+    # UTC offset should be 0 (no offset from UTC)
+    utc_offset = now.astimezone().utcoffset()
+
+    if utc_offset is None or utc_offset.total_seconds() != 0:
+        warning_msg = (
+            f"Server is not running in UTC timezone. "
+            f"Current timezone: {local_tz}, UTC offset: {utc_offset}. "
+            f"While the code uses UTC-aware datetimes, running in UTC is recommended for production. "
+            f"Set TZ=UTC environment variable or configure system timezone to UTC."
+        )
+
+        # Only raise error in production, warn in development/test
+        if settings.ENVIRONMENT == "production":
+            logger.critical(warning_msg)
+            raise RuntimeError(warning_msg)
+        else:
+            logger.warning(warning_msg)
+    else:
+        logger.info(
+            "Server timezone validation passed",
+            extra={"timezone": str(local_tz), "utc_offset": utc_offset}
+        )
+
 
 # Request ID middleware
 # Sets request.state.request_id from X-Request-ID header or generates UUID
