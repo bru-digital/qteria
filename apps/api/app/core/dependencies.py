@@ -373,6 +373,8 @@ def check_upload_rate_limit(
     except Exception as e:
         # Unexpected error - should be investigated
         # This catch-all ensures availability but logs at ERROR level for investigation
+        # Fail open consistently across all environments for availability
+        # (logging infrastructure should alert on ERROR-level logs for investigation)
         logger.error(
             "Unexpected error in rate limit check - allowing upload (requires investigation)",
             extra={
@@ -383,10 +385,7 @@ def check_upload_rate_limit(
             },
             exc_info=True,
         )
-        # Re-raise in development to fail fast on programming errors
-        if settings.ENVIRONMENT == "development":
-            raise
-        # Fail open in production for availability
+        # Always fail open for availability (consistent behavior across environments)
         return 0
 
 

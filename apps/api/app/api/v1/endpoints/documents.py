@@ -233,6 +233,71 @@ async def upload_document(
             request=request,
         )
 
+        # 2a. Calculate rate limit headers immediately to minimize race window
+        #     (per API contract: product-guidelines/08-api-contracts.md:838-846)
+        #
+        # DESIGN RATIONALE: Minimize race window from ~350 lines to ~5 lines
+        # - Calculate headers RIGHT AFTER rate limit check (before file processing)
+        # - Reduces race window from ~350 lines of processing to ~5 lines
+        # - Rate limit ENFORCEMENT is still atomic and correct (increment-first approach)
+        # - Header values may still be briefly stale under concurrent load, but much more accurate
+        #
+        # Headers will be added to response at the end of the function (after upload completes)
+        rate_limit_headers = {}
+        try:
+            if redis and new_upload_count > 0:
+                from app.core.config import settings
+
+                # Calculate headers immediately (minimize race window)
+                now_for_headers = datetime.now(timezone.utc)
+                uploads_remaining = max(0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count)
+
+                # Calculate reset timestamp (next hour)
+                reset_time = now_for_headers.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+                reset_timestamp = int(reset_time.timestamp())
+
+                # Store header values for later addition to response
+                rate_limit_headers = {
+                    "Cache-Control": "no-store",  # Prevent caching of potentially stale values
+                    "X-RateLimit-Limit": str(settings.UPLOAD_RATE_LIMIT_PER_HOUR),
+                    "X-RateLimit-Remaining": str(uploads_remaining),
+                    "X-RateLimit-Reset": str(reset_timestamp),
+                }
+
+                logger.debug(
+                    "Rate limit headers calculated",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "uploads_remaining": uploads_remaining,
+                        "reset_timestamp": reset_timestamp,
+                    },
+                )
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Expected errors in header calculation/formatting:
+            # - ValueError: Invalid int/string conversion
+            # - TypeError: Unexpected type in arithmetic operations
+            # - KeyError: Missing config setting
+            # - AttributeError: Missing attribute access
+            # Graceful degradation: Don't fail upload if header calculation fails
+            logger.warning(
+                "Failed to calculate rate limit headers",
+                extra={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+                exc_info=True,
+            )
+        except Exception as e:
+            # Unexpected error - log at ERROR level for investigation
+            logger.error(
+                "Unexpected error calculating rate limit headers",
+                extra={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+                exc_info=True,
+            )
+
         # 3. Validate bucket_id if provided (multi-tenancy check) - BEFORE processing files
         bucket = None
         if bucket_id:
@@ -583,84 +648,26 @@ async def upload_document(
             },
         )
 
-        # Add rate limit headers to response
-        # (per API contract: product-guidelines/08-api-contracts.md:838-846)
-        #
-        # DESIGN RATIONALE: Re-fetch count for accurate headers
-        # - Re-fetch current count from Redis just before adding headers
-        # - Minimizes race window from ~350 lines to ~5 lines (much more accurate)
-        # - Slight latency cost (~1-2ms) for significantly better header accuracy
-        # - Rate limit ENFORCEMENT is atomic and correct (increment-first approach)
-        # - If re-fetch fails, falls back to original count (graceful degradation)
+        # Add rate limit headers to response (using pre-calculated values)
+        # Headers were calculated immediately after rate limit check to minimize race window
+        # (see header calculation at line ~236)
         try:
-            if redis and new_upload_count > 0:
-                from app.core.config import settings
-
-                # Re-fetch current count for accurate headers (minimizes race window)
-                try:
-                    # Get current hour bucket for the same rate limit key
-                    now_for_headers = datetime.now(timezone.utc)
-                    hour_bucket = now_for_headers.strftime("%Y-%m-%d-%H")
-                    rate_limit_key = f"rate_limit:upload:{current_user.id}:{hour_bucket}"
-
-                    # Fetch current count (minimal latency ~1-2ms)
-                    current_count_str = redis.get(rate_limit_key)
-                    current_count = int(current_count_str) if current_count_str else 0
-
-                    # Use re-fetched count for headers
-                    uploads_remaining = max(0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - current_count)
-                except Exception as refetch_error:
-                    # Fallback to original count on re-fetch error
-                    logger.warning(
-                        "Failed to re-fetch rate limit count for headers - using original count",
-                        extra={
-                            "error": str(refetch_error),
-                            "error_type": type(refetch_error).__name__,
-                        },
-                    )
-                    uploads_remaining = max(0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count)
-
-                # Calculate reset timestamp (next hour)
-                reset_time = now_for_headers.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-                reset_timestamp = int(reset_time.timestamp())
-
-                # Add standard rate limit headers (API contract compliance)
-                # Cache-Control: no-store prevents caching of potentially stale rate limit values
-                # (concurrent requests may cause brief inconsistencies in Remaining count)
-                response.headers["Cache-Control"] = "no-store"
-                response.headers["X-RateLimit-Limit"] = str(settings.UPLOAD_RATE_LIMIT_PER_HOUR)
-                response.headers["X-RateLimit-Remaining"] = str(uploads_remaining)
-                response.headers["X-RateLimit-Reset"] = str(reset_timestamp)
+            if rate_limit_headers:
+                for header_name, header_value in rate_limit_headers.items():
+                    response.headers[header_name] = header_value
 
                 logger.debug(
                     "Rate limit headers added to response",
                     extra={
                         "user_id": str(current_user.id),
-                        "uploads_remaining": uploads_remaining,
-                        "reset_timestamp": reset_timestamp,
+                        "headers": rate_limit_headers,
                     },
                 )
-        except (ValueError, TypeError, KeyError, AttributeError) as e:
-            # Expected errors in header calculation/formatting:
-            # - ValueError: Invalid int/string conversion
-            # - TypeError: Unexpected type in arithmetic operations
-            # - KeyError: Missing config setting
-            # - AttributeError: Response header mutation error
-            # Graceful degradation: Don't fail upload if header addition fails
+        except Exception as e:
+            # Unexpected error adding headers - log but don't fail upload
             # (upload already completed successfully by this point)
             logger.warning(
                 "Failed to add rate limit headers to response",
-                extra={
-                    "error": str(e),
-                    "error_type": type(e).__name__,
-                },
-                exc_info=True,
-            )
-        except Exception as e:
-            # Unexpected error - log at ERROR level for investigation
-            # Should not happen in normal operation
-            logger.error(
-                "Unexpected error adding rate limit headers to response",
                 extra={
                     "error": str(e),
                     "error_type": type(e).__name__,
