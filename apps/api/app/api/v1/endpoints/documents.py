@@ -92,6 +92,9 @@ def calculate_rate_limit_headers(
             from app.core.config import settings
 
             # Calculate headers immediately (minimize race window)
+            # NOTE: Headers may be briefly stale under high concurrent load.
+            # This is acceptable as enforcement (INCRBY in check_upload_rate_limit) is atomic.
+            # Headers provide best-effort information, not enforcement.
             now_for_headers = datetime.now(timezone.utc)
             uploads_remaining = max(
                 0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count
