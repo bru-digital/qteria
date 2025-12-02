@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
     # Close Redis connection pool
     if _redis_client:
         try:
-            _redis_client.connection_pool.disconnect()
+            _redis_client.close()  # Use close() not connection_pool.disconnect()
             logger.info("Redis connection pool closed successfully")
         except Exception as e:
             logger.error(
