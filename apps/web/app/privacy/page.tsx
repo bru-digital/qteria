@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import Link from "next/link"
 
 // Privacy Policy Configuration
-const LAST_UPDATED_DATE = "January 20, 2025"
+const LAST_UPDATED_DATE = "December 2, 2025"
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Qteria",
