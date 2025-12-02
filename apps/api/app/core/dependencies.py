@@ -240,7 +240,7 @@ def check_upload_rate_limit(
             # leading to incorrect counts or lost TTL
             rollback_pipe = redis.pipeline()
             rollback_pipe.decrby(rate_limit_key, file_count)
-            rollback_pipe.expireat(rate_limit_key, reset_timestamp, nx=True)  # Only set if doesn't exist (prevent TTL reset)
+            rollback_pipe.expireat(rate_limit_key, reset_timestamp)  # EXPIREAT is idempotent - no NX needed
             rollback_pipe.get(rate_limit_key)  # Fetch actual count after rollback
             rollback_results = rollback_pipe.execute()
 
