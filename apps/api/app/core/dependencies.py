@@ -208,6 +208,12 @@ def check_upload_rate_limit(
     now = datetime.now(timezone.utc)
     hour_bucket = now.strftime("%Y-%m-%d-%H")
 
+    # Calculate reset time (next hour boundary) for EXPIREAT
+    # This ensures rate limit always resets at the next hour boundary,
+    # regardless of when requests arrive (prevents TTL reset bugs with EXPIRE)
+    reset_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+    reset_timestamp = int(reset_time.timestamp())
+
     # Redis key for rate limiting (per user, per hour)
     rate_limit_key = f"rate_limit:upload:{current_user.id}:{hour_bucket}"
 
@@ -218,10 +224,10 @@ def check_upload_rate_limit(
         # atomically, then check. If exceeded, we rollback the increment.
 
         # Increment counter atomically FIRST (prevents race conditions)
-        # Use Redis pipeline to ensure atomicity of INCRBY + EXPIRE
+        # Use Redis pipeline to ensure atomicity of INCRBY + EXPIREAT
         pipe = redis.pipeline()
         pipe.incrby(rate_limit_key, file_count)
-        pipe.expire(rate_limit_key, 3600)  # 1 hour TTL (prevent memory leak)
+        pipe.expireat(rate_limit_key, reset_timestamp)  # Absolute timestamp (prevents TTL reset bugs)
         result = pipe.execute()
 
         # Get the new count from pipeline result (first command result)
@@ -230,11 +236,11 @@ def check_upload_rate_limit(
         # Check if this upload exceeded limit (AFTER increment)
         if new_count > settings.UPLOAD_RATE_LIMIT_PER_HOUR:
             # Rollback the increment atomically using pipeline (prevents race conditions)
-            # Without pipeline: concurrent requests could increment between DECRBY and EXPIRE,
+            # Without pipeline: concurrent requests could increment between DECRBY and EXPIREAT,
             # leading to incorrect counts or lost TTL
             rollback_pipe = redis.pipeline()
             rollback_pipe.decrby(rate_limit_key, file_count)
-            rollback_pipe.expire(rate_limit_key, 3600, nx=True)  # Only set if doesn't exist (prevent TTL reset)
+            rollback_pipe.expireat(rate_limit_key, reset_timestamp, nx=True)  # Only set if doesn't exist (prevent TTL reset)
             rollback_pipe.get(rate_limit_key)  # Fetch actual count after rollback
             rollback_results = rollback_pipe.execute()
 
@@ -259,9 +265,8 @@ def check_upload_rate_limit(
                     },
                 )
 
-            # Calculate seconds until rate limit resets (next hour)
-            next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-            retry_after_seconds = int((next_hour - now).total_seconds())
+            # Calculate seconds until rate limit resets (use pre-calculated reset_time)
+            retry_after_seconds = int((reset_time - now).total_seconds())
 
             logger.warning(
                 "Upload rate limit exceeded",
@@ -292,8 +297,6 @@ def check_upload_rate_limit(
 
             # Raise 429 with standardized error format and rate limit headers
             from app.core.exceptions import create_error_response
-            reset_time = next_hour
-            reset_timestamp = int(reset_time.timestamp())
 
             # Prepare rate limit headers for 429 response
             # API contract compliance: product-guidelines/08-api-contracts.md:838-846
