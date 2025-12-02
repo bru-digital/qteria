@@ -65,6 +65,89 @@ from app.services.audit import AuditService
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 
+def calculate_rate_limit_headers(
+    redis: RedisClient,
+    new_upload_count: int,
+    current_user: AuthenticatedUser,
+) -> dict[str, str]:
+    """
+    Calculate rate limit headers for successful uploads.
+
+    Args:
+        redis: Redis client (can be None if Redis unavailable)
+        new_upload_count: Updated upload count after increment
+        current_user: Authenticated user for logging context
+
+    Returns:
+        dict[str, str]: Rate limit headers to add to response (empty dict if calculation fails)
+
+    Note:
+        Graceful degradation: Returns empty dict if calculation fails
+        (upload succeeds even if headers can't be calculated)
+    """
+    rate_limit_headers = {}
+
+    try:
+        if redis and new_upload_count > 0:
+            from app.core.config import settings
+
+            # Calculate headers immediately (minimize race window)
+            now_for_headers = datetime.now(timezone.utc)
+            uploads_remaining = max(
+                0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count
+            )
+
+            # Calculate reset timestamp (next hour)
+            reset_time = now_for_headers.replace(
+                minute=0, second=0, microsecond=0
+            ) + timedelta(hours=1)
+            reset_timestamp = int(reset_time.timestamp())
+
+            # Store header values for later addition to response
+            rate_limit_headers = {
+                "Cache-Control": "no-store",  # Prevent caching of potentially stale values
+                "X-RateLimit-Limit": str(settings.UPLOAD_RATE_LIMIT_PER_HOUR),
+                "X-RateLimit-Remaining": str(uploads_remaining),
+                "X-RateLimit-Reset": str(reset_timestamp),
+            }
+
+            logger.debug(
+                "Rate limit headers calculated",
+                extra={
+                    "user_id": str(current_user.id),
+                    "uploads_remaining": uploads_remaining,
+                    "reset_timestamp": reset_timestamp,
+                },
+            )
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Expected errors in header calculation/formatting:
+        # - ValueError: Invalid int/string conversion
+        # - TypeError: Unexpected type in arithmetic operations
+        # - KeyError: Missing config setting
+        # - AttributeError: Missing attribute access
+        # Graceful degradation: Don't fail upload if header calculation fails
+        logger.warning(
+            "Failed to calculate rate limit headers",
+            extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+    except Exception as e:
+        # Unexpected error - log at ERROR level for investigation
+        logger.error(
+            "Unexpected error calculating rate limit headers",
+            extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+
+    return rate_limit_headers
+
+
 @router.post(
     "",
     response_model=list[DocumentResponse],
@@ -243,60 +326,7 @@ async def upload_document(
         # - Header values may still be briefly stale under concurrent load, but much more accurate
         #
         # Headers will be added to response at the end of the function (after upload completes)
-        rate_limit_headers = {}
-        try:
-            if redis and new_upload_count > 0:
-                from app.core.config import settings
-
-                # Calculate headers immediately (minimize race window)
-                now_for_headers = datetime.now(timezone.utc)
-                uploads_remaining = max(0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count)
-
-                # Calculate reset timestamp (next hour)
-                reset_time = now_for_headers.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-                reset_timestamp = int(reset_time.timestamp())
-
-                # Store header values for later addition to response
-                rate_limit_headers = {
-                    "Cache-Control": "no-store",  # Prevent caching of potentially stale values
-                    "X-RateLimit-Limit": str(settings.UPLOAD_RATE_LIMIT_PER_HOUR),
-                    "X-RateLimit-Remaining": str(uploads_remaining),
-                    "X-RateLimit-Reset": str(reset_timestamp),
-                }
-
-                logger.debug(
-                    "Rate limit headers calculated",
-                    extra={
-                        "user_id": str(current_user.id),
-                        "uploads_remaining": uploads_remaining,
-                        "reset_timestamp": reset_timestamp,
-                    },
-                )
-        except (ValueError, TypeError, KeyError, AttributeError) as e:
-            # Expected errors in header calculation/formatting:
-            # - ValueError: Invalid int/string conversion
-            # - TypeError: Unexpected type in arithmetic operations
-            # - KeyError: Missing config setting
-            # - AttributeError: Missing attribute access
-            # Graceful degradation: Don't fail upload if header calculation fails
-            logger.warning(
-                "Failed to calculate rate limit headers",
-                extra={
-                    "error": str(e),
-                    "error_type": type(e).__name__,
-                },
-                exc_info=True,
-            )
-        except Exception as e:
-            # Unexpected error - log at ERROR level for investigation
-            logger.error(
-                "Unexpected error calculating rate limit headers",
-                extra={
-                    "error": str(e),
-                    "error_type": type(e).__name__,
-                },
-                exc_info=True,
-            )
+        rate_limit_headers = calculate_rate_limit_headers(redis, new_upload_count, current_user)
 
         # 3. Validate bucket_id if provided (multi-tenancy check) - BEFORE processing files
         bucket = None

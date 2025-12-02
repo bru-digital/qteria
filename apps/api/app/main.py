@@ -42,8 +42,10 @@ async def lifespan(app: FastAPI):
     try:
         import time
 
-        # Simple timezone check using time module (more reliable in containers)
-        is_utc = time.timezone == 0 and time.daylight == 0
+        # Check if we're in UTC timezone (no offset and no DST info)
+        # time.timezone: offset from UTC in seconds (0 for UTC)
+        # time.daylight: indicates if DST is in effect (0 means no DST)
+        is_utc = time.timezone == 0 and not time.daylight
 
         if not is_utc:
             logger.info(
@@ -60,7 +62,7 @@ async def lifespan(app: FastAPI):
         )
 
     # Initialize Redis client
-    from app.core.dependencies import initialize_redis_client, _redis_client
+    from app.core.dependencies import initialize_redis_client
 
     initialize_redis_client()
 
@@ -68,9 +70,12 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     # Close Redis connection pool
+    from app.core.dependencies import _redis_client
     if _redis_client:
         try:
-            _redis_client.close()  # Use close() not connection_pool.disconnect()
+            # close() is sufficient for synchronous Redis client (waits for in-flight operations)
+            # For async Redis client (redis.asyncio.Redis), would use: await _redis_client.aclose()
+            _redis_client.close()
             logger.info("Redis connection pool closed successfully")
         except Exception as e:
             logger.error(
