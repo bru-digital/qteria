@@ -1394,3 +1394,655 @@ class TestBatchDocumentUpload:
         # Verify each file type
         mime_types_returned = {doc["mime_type"] for doc in data}
         assert mime_types_returned == set(mime_types)
+
+
+class TestDocumentUploadRateLimiting:
+    """Tests for rate limiting on document upload (Issue #93 - Guideline Compliance)."""
+
+    @pytest.fixture
+    def mock_blob_storage(self):
+        """Mock Vercel Blob storage service."""
+        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+            mock_service.upload_file = AsyncMock(return_value="https://blob.vercel-storage.com/documents/test.pdf")
+            yield mock_service
+
+    @pytest.fixture
+    def mock_magic(self):
+        """Mock python-magic MIME type detection."""
+        with patch('app.api.v1.endpoints.documents.magic') as mock_magic:
+            mock_magic.from_buffer.return_value = "application/pdf"
+            yield mock_magic
+
+    @pytest.fixture
+    def mock_redis(self):
+        """Mock Redis client for rate limiting."""
+        mock_redis_client = MagicMock()
+        # Default: No rate limit (counter at 0)
+        mock_redis_client.get.return_value = None
+        mock_redis_client.pipeline.return_value = mock_redis_client
+        mock_redis_client.incrby.return_value = 1
+        mock_redis_client.expire.return_value = True
+        mock_redis_client.execute.return_value = [1, True]
+        return mock_redis_client
+
+    @pytest.fixture
+    def mock_dependencies(self, mock_redis):
+        """
+        Fixture to patch all rate limiting dependencies at once.
+
+        This simplifies test code by avoiding triple-nested context managers.
+        Usage: Just include 'mock_dependencies' in test parameters.
+        """
+        mock_db = MagicMock()
+
+        with patch('app.core.dependencies._redis_client', mock_redis), \
+             patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])), \
+             patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            yield {
+                'redis': mock_redis,
+                'db': mock_db,
+            }
+
+    def test_rate_limit_enforced_at_100_uploads(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test rate limit rejection at 100th upload.
+
+        Acceptance Criteria:
+        - Returns 429 Too Many Requests on 101st upload
+        - Error code RATE_LIMIT_EXCEEDED
+        - Retry-After header present
+        - Audit log created for security monitoring
+        - Guideline compliance: product-guidelines/08-api-contracts.md:369
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock Redis to return count of 101 after increment (limit exceeded)
+        # With increment-first approach: was at 100, incremented by 1 → 101 (exceeds limit)
+        # First execute() is increment pipeline (INCRBY, EXPIRE) → [101, True]
+        # Second execute() is rollback pipeline (DECRBY, EXPIRE, GET) → [100, True, "100"]
+        mock_redis.execute.side_effect = [
+            [101, True],        # Increment pipeline result
+            [100, True, "100"]  # Rollback pipeline result
+        ]
+
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
+
+        assert response.status_code == 429
+        data = response.json()
+        assert data["error"]["code"] == "RATE_LIMIT_EXCEEDED"
+        assert "100" in data["error"]["message"]
+        assert "retry_after_seconds" in data["error"]["details"]
+        assert data["error"]["details"]["limit"] == 100
+
+        # Verify audit log for security monitoring
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "rate_limit.exceeded"
+        assert call_args["metadata"]["limit_type"] == "upload"
+        assert call_args["metadata"]["current_count"] == 100
+
+        # Verify decrby was called to rollback the increment
+        assert mock_redis.decrby.called
+
+    def test_rate_limit_allows_99_uploads(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test rate limit allows 99th upload.
+
+        Acceptance Criteria:
+        - Returns 201 Created
+        - Upload succeeds
+        - Redis counter incremented
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock Redis to return count of 99 after increment (below limit)
+        # With increment-first approach: was at 98, incremented by 1 → 99 (below limit)
+        mock_redis.execute.return_value = [99, True]
+
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
+
+        assert response.status_code == 201
+
+        # Verify Redis counter incremented
+        assert mock_redis.pipeline.called
+        assert mock_redis.incrby.called
+        assert mock_redis.expire.called
+
+    def test_rate_limit_allows_exactly_100th_upload(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test that exactly 100th upload succeeds (boundary test).
+
+        Boundary case: Verifies off-by-one error prevention.
+        The rate limit is 100 uploads per hour, so the 100th upload should succeed.
+        Only the 101st upload should be rejected.
+
+        Acceptance Criteria:
+        - Returns 201 Created (upload succeeds)
+        - X-RateLimit-Remaining header is "0" (at capacity but allowed)
+        - Redis counter incremented to exactly 100
+        - Verifies condition uses > not >= (new_count > limit, not new_count >= limit)
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock Redis to return count of 100 after increment (exactly at limit)
+        # With increment-first approach: was at 99, incremented by 1 → 100 (exactly at limit)
+        mock_redis.execute.return_value = [100, True]
+
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
+
+        # Upload should succeed (100th upload is allowed, only 101st is rejected)
+        assert response.status_code == 201
+
+        # Verify rate limit headers show remaining capacity is 0
+        assert response.headers["X-RateLimit-Remaining"] == "0"
+        assert response.headers["X-RateLimit-Limit"] == "100"
+
+        # Verify Redis counter incremented
+        assert mock_redis.pipeline.called
+        assert mock_redis.incrby.called
+        assert mock_redis.expire.called
+
+    def test_rate_limit_per_user_isolation(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test rate limit is per-user (User A limit doesn't affect User B).
+
+        Acceptance Criteria:
+        - User A at 100 uploads returns 429
+        - User B at 0 uploads returns 201
+        - Rate limit keys include user_id
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+
+        # Use valid UUIDs for user isolation testing
+        from uuid import uuid4
+        user_a_id = str(uuid4())
+        user_b_id = str(uuid4())
+
+        # User A at limit (101 after increment → exceeds limit)
+        token_a = create_test_token(organization_id=TEST_ORG_A_ID, user_id=user_a_id)
+        # First execute() is increment pipeline → [101, True]
+        # Second execute() is rollback pipeline → [100, True, "100"]
+        # Third execute() is User B's increment pipeline → [1, True]
+        mock_redis.execute.side_effect = [
+            [101, True],        # User A increment
+            [100, True, "100"], # User A rollback
+            [1, True]           # User B increment
+        ]
+
+        response_a = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token_a}"},
+            files={"files": ("test.pdf", io.BytesIO(pdf_content), "application/pdf")},
+        )
+
+        assert response_a.status_code == 429
+
+        # User B under limit (1 after increment → well under limit)
+        token_b = create_test_token(organization_id=TEST_ORG_A_ID, user_id=user_b_id)
+
+        response_b = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token_b}"},
+            files={"files": ("test.pdf", io.BytesIO(pdf_content), "application/pdf")},
+        )
+
+        assert response_b.status_code == 201
+
+    def test_rate_limit_headers_present_on_success(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test X-RateLimit-* headers present on successful upload.
+
+        Acceptance Criteria:
+        - X-RateLimit-Limit header = 100
+        - X-RateLimit-Remaining header shows remaining uploads
+        - X-RateLimit-Reset header shows reset timestamp
+        - Guideline compliance: product-guidelines/08-api-contracts.md:838-846
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock Redis to return count of 50 after increment
+        mock_redis.execute.return_value = [50, True]
+
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
+
+        assert response.status_code == 201
+
+        # Verify rate limit headers
+        assert "X-RateLimit-Limit" in response.headers
+        assert response.headers["X-RateLimit-Limit"] == "100"
+
+        assert "X-RateLimit-Remaining" in response.headers
+        assert int(response.headers["X-RateLimit-Remaining"]) == 50  # 100 - 50 used
+
+        assert "X-RateLimit-Reset" in response.headers
+        # Reset timestamp should be a valid Unix timestamp
+        reset_timestamp = int(response.headers["X-RateLimit-Reset"])
+        assert reset_timestamp > 0
+
+    def test_rate_limit_counter_increments_correctly(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test Redis counter increments on each upload.
+
+        Acceptance Criteria:
+        - Redis INCRBY called for rate limit key
+        - Redis EXPIRE called with 3600 seconds TTL
+        - Pipeline used for atomicity
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock Redis to return count of 11 after increment (was 10, +1)
+        mock_redis.execute.return_value = [11, True]
+
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
+
+        assert response.status_code == 201
+
+        # Verify Redis pipeline operations
+        assert mock_redis.pipeline.called
+        assert mock_redis.incrby.called
+
+        # Verify EXPIRE called with 3600 seconds (1 hour)
+        assert mock_redis.expire.called
+        expire_call_args = mock_redis.expire.call_args
+        assert expire_call_args[0][1] == 3600  # TTL in seconds
+
+        # Verify execute called (pipeline execution)
+        assert mock_redis.execute.called
+
+    def test_rate_limit_batch_upload_counts_all_files(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test batch upload counts each file toward rate limit.
+
+        Acceptance Criteria:
+        - 5-file batch counts as 5 uploads (not 1 upload)
+        - User at 96 uploads can upload 4 files (total 100)
+        - User at 96 uploads cannot upload 5 files (would be 101)
+        - Guideline: "20 files = 20 uploads" (not request count)
+        """
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Test 1: User at 96, uploading 5 files = 101 total (should fail)
+        # After increment-first: 96 + 5 = 101 (exceeds limit)
+        files_data_5 = [(f"file{i}.pdf", b"%PDF-1.4 content") for i in range(1, 6)]
+        file_objects_5 = [
+            ("files", (name, io.BytesIO(content), "application/pdf"))
+            for name, content in files_data_5
+        ]
+
+        # First execute() is increment pipeline → [101, True]
+        # Second execute() is rollback pipeline → [96, True, "96"]
+        # Third execute() is Test 2's increment pipeline → [100, True]
+        mock_redis.execute.side_effect = [
+            [101, True],       # Test 1 increment (96 + 5 = 101)
+            [96, True, "96"],  # Test 1 rollback
+            [100, True]        # Test 2 increment (96 + 4 = 100)
+        ]
+
+        response_fail = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files=file_objects_5,
+        )
+
+        assert response_fail.status_code == 429
+        assert response_fail.json()["error"]["code"] == "RATE_LIMIT_EXCEEDED"
+
+        # Test 2: User at 96, uploading 4 files = 100 total (should succeed)
+        # After increment-first: 96 + 4 = 100 (exactly at limit, allowed)
+        files_data_4 = [(f"file{i}.pdf", b"%PDF-1.4 content") for i in range(1, 5)]
+        file_objects_4 = [
+            ("files", (name, io.BytesIO(content), "application/pdf"))
+            for name, content in files_data_4
+        ]
+
+        response_success = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files=file_objects_4,
+        )
+
+        assert response_success.status_code == 201
+
+    def test_rate_limit_redis_unavailable_allows_upload(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+    ):
+        """
+        Test graceful degradation when Redis unavailable.
+
+        Acceptance Criteria:
+        - Returns 201 Created (upload succeeds)
+        - Warning logged about Redis unavailability
+        - Fail-open for availability over strict enforcement
+        - Guideline: Graceful degradation pattern
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock get_redis to return None (Redis unavailable)
+        with patch('app.core.dependencies.get_redis', return_value=iter([None])):
+            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+                response = client.post(
+                    "/v1/documents",
+                    headers={"Authorization": f"Bearer {token}"},
+                    files={"files": ("test.pdf", pdf_file, "application/pdf")},
+                )
+
+        # Upload should succeed despite Redis unavailable (graceful degradation)
+        assert response.status_code == 201
+
+    def test_rate_limit_retry_after_header_accurate(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test Retry-After header shows seconds until rate limit resets.
+
+        Acceptance Criteria:
+        - Retry-After header present in 429 response
+        - Value is seconds until next hour
+        - Value between 1 and 3599 seconds
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock Redis to return count of 101 after increment (limit exceeded)
+        mock_redis.execute.side_effect = [
+            [101, True],        # Increment pipeline
+            [100, True, "100"]  # Rollback pipeline
+        ]
+
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
+
+        assert response.status_code == 429
+        data = response.json()
+
+        # Verify retry_after_seconds in error details
+        assert "retry_after_seconds" in data["error"]["details"]
+        retry_after = data["error"]["details"]["retry_after_seconds"]
+
+        # Should be between 1 and 3600 seconds (up to 1 hour)
+        assert 1 <= retry_after <= 3600
+
+    def test_rate_limit_response_format_compliance(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test 429 error response follows API contract format.
+
+        Acceptance Criteria:
+        - Standard error format with code, message, details, request_id
+        - Error code is RATE_LIMIT_EXCEEDED (SCREAMING_SNAKE_CASE)
+        - Details include limit, current_count, retry_after_seconds, reset_time
+        - Guideline compliance: CLAUDE.md error response format
+        """
+        pdf_content = b"%PDF-1.4 Test PDF"
+        pdf_file = io.BytesIO(pdf_content)
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock Redis to return count of 101 after increment (limit exceeded)
+        mock_redis.execute.side_effect = [
+            [101, True],        # Increment pipeline
+            [100, True, "100"]  # Rollback pipeline
+        ]
+
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
+
+        assert response.status_code == 429
+        data = response.json()
+
+        # Verify standard error format
+        assert "error" in data
+        error = data["error"]
+
+        # Required fields
+        assert "code" in error
+        assert "message" in error
+        assert "details" in error
+        assert "request_id" in error
+
+        # Error code format (SCREAMING_SNAKE_CASE)
+        assert error["code"] == "RATE_LIMIT_EXCEEDED"
+        assert error["code"].isupper()
+        assert "_" in error["code"]
+
+        # Details structure
+        details = error["details"]
+        assert "limit" in details
+        assert "current_count" in details
+        assert "retry_after_seconds" in details
+        assert "reset_time" in details
+
+        # Values correctness
+        assert details["limit"] == 100
+        assert details["current_count"] == 100
+
+    def test_rate_limit_concurrent_requests_race_condition(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_magic,
+        mock_audit_service,
+        mock_redis,
+        mock_dependencies,
+    ):
+        """
+        Test rate limiting under concurrent load (verifies increment-first pattern prevents race conditions).
+
+        Acceptance Criteria:
+        - Concurrent requests at edge of limit are handled correctly
+        - Increment-first pattern ensures no requests slip through when limit is reached
+        - Redis pipeline atomicity prevents TOCTOU race conditions
+        - Exactly the right number of requests succeed (no over/under enforcement)
+
+        Scenario: User at 98 uploads, two concurrent requests each uploading 2 files
+        - Old approach (check-then-increment): Both see 98, both increment to 100, both succeed (102 total - BUG)
+        - New approach (increment-first): First increments to 100 (succeeds), second increments to 102 then rolls back (fails)
+
+        This test verifies the new approach is implemented correctly.
+        """
+        import threading
+        import time
+        from collections import Counter
+
+        pdf_content = b"%PDF-1.4 Test PDF"
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Shared counter to simulate Redis behavior
+        redis_counter = {"count": 98}  # Start at 98 uploads
+        redis_lock = threading.Lock()
+
+        # Track responses
+        responses = []
+
+        def mock_redis_atomic_increment(key, amount):
+            """Simulate atomic Redis INCRBY operation with lock."""
+            with redis_lock:
+                redis_counter["count"] += amount
+                return redis_counter["count"]
+
+        def mock_redis_decrement(key, amount):
+            """Simulate Redis DECRBY operation."""
+            with redis_lock:
+                redis_counter["count"] -= amount
+                return redis_counter["count"]
+
+        # Configure mock to use our atomic counter
+        # Track state for each pipeline call
+        last_increment_result = {"value": None}
+
+        def execute_side_effect():
+            # Check if this is a rollback pipeline call
+            # Rollback happens when last increment exceeded limit (> 100)
+            if last_increment_result["value"] is not None and last_increment_result["value"] > 100:
+                # This is a rollback pipeline (DECRBY, EXPIRE, GET)
+                current_count = mock_redis_decrement("test_key", 2)
+                last_increment_result["value"] = None  # Reset for next request
+                return [current_count, True, str(current_count)]
+            else:
+                # This is an increment pipeline (INCRBY, EXPIRE)
+                new_count = mock_redis_atomic_increment("test_key", 2)  # 2 files per request
+                last_increment_result["value"] = new_count
+                return [new_count, True]
+
+        mock_redis.execute.side_effect = execute_side_effect
+
+        def upload_request():
+            """Simulate concurrent upload request."""
+            try:
+                # Upload 2 files
+                files_data = [
+                    ("files", (f"file1.pdf", io.BytesIO(pdf_content), "application/pdf")),
+                    ("files", (f"file2.pdf", io.BytesIO(pdf_content), "application/pdf")),
+                ]
+                response = client.post(
+                    "/v1/documents",
+                    headers={"Authorization": f"Bearer {token}"},
+                    files=files_data,
+                )
+                responses.append(response.status_code)
+            except Exception as e:
+                responses.append(f"error: {e}")
+
+        # Fire two concurrent requests
+        thread1 = threading.Thread(target=upload_request)
+        thread2 = threading.Thread(target=upload_request)
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+        # Verify results
+        status_counts = Counter(responses)
+
+        # Expected behavior with increment-first pattern:
+        # - Request 1: 98 + 2 = 100 (SUCCESS - at limit)
+        # - Request 2: 100 + 2 = 102 (REJECTED - exceeds limit, rolls back to 100)
+        # OR vice versa (order not guaranteed in threading)
+
+        # Verify exactly 1 succeeded and 1 failed
+        assert status_counts[201] == 1, f"Expected exactly 1 success (201), got {status_counts[201]}"
+        assert status_counts[429] == 1, f"Expected exactly 1 rejection (429), got {status_counts[429]}"
+
+        # Verify final count is 100 (one request succeeded, one rolled back)
+        assert redis_counter["count"] == 100, f"Expected final count 100, got {redis_counter['count']}"

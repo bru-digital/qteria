@@ -44,6 +44,26 @@ class Settings(BaseSettings):
         default="", description="PostgreSQL database URL (direct connection for migrations)"
     )
 
+    # Redis (for rate limiting, caching, and background jobs)
+    REDIS_URL: str = Field(
+        default="", description="Redis connection URL (e.g., redis://localhost:6379/0)"
+    )
+    REDIS_MAX_CONNECTIONS: int = Field(
+        default=10, description="Redis connection pool size (10-20 for typical API)"
+    )
+    REDIS_SOCKET_KEEPALIVE: bool = Field(
+        default=True, description="Enable TCP keepalive for Redis connections (prevents idle connection drops)"
+    )
+    REDIS_SOCKET_KEEPALIVE_OPTIONS: dict = Field(
+        default_factory=dict, description="TCP keepalive options (platform-specific socket options)"
+    )
+
+    # Rate Limiting
+    UPLOAD_RATE_LIMIT_PER_HOUR: int = Field(
+        default=100,
+        description="Maximum uploads per user per hour (configurable per environment)"
+    )
+
     # Security
     JWT_SECRET: str = Field(..., description="Secret key for JWT token signing")
     JWT_ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm")

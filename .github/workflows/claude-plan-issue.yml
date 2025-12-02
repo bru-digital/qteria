@@ -47,11 +47,24 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # Invoke the /plan-issue slash command which handles product guidelines analysis
+          # Invoke the /plan-issue slash command which:
+          # 1. Intelligently selects relevant product guidelines (not all)
+          # 2. Researches proven patterns via WebSearch (don't reinvent the wheel)
+          # 3. Identifies edge cases and mitigation strategies
+          # 4. Creates implementation checklist for the implementation agent
           direct_prompt: |
             /plan-issue ${{ steps.get-issue.outputs.issue_number }}
 
+          # Allow full tool access for research phase:
+          # - WebSearch: Research proven patterns (Redis, Celery, auth, etc.)
+          # - Read: Selectively read relevant product guidelines
+          # - Glob/Grep: Search codebase for existing patterns
+          # - Bash: GitHub CLI for issue management
           allowed_tools: >
             Bash(gh issue view ${{ steps.get-issue.outputs.issue_number }} --repo ${{ github.repository }}),
             Bash(gh issue comment ${{ steps.get-issue.outputs.issue_number }} --repo ${{ github.repository }} -F -),
-            Bash(gh issue edit ${{ steps.get-issue.outputs.issue_number }} --repo ${{ github.repository }} --add-label "planned")
+            Bash(gh issue edit ${{ steps.get-issue.outputs.issue_number }} --repo ${{ github.repository }} --add-label "planned"),
+            WebSearch,
+            Read,
+            Glob,
+            Grep

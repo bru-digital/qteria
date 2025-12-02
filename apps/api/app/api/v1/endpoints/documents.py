@@ -11,7 +11,7 @@ Endpoints:
 Documents are uploaded to Vercel Blob storage with encryption at rest and multi-tenant isolation.
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -22,6 +22,7 @@ from fastapi import (
     Form,
     HTTPException,
     Request,
+    Response,
     UploadFile,
     status,
 )
@@ -47,7 +48,7 @@ except Exception as e:
     ) from e
 
 from app.core.auth import AuthenticatedUser
-from app.core.dependencies import get_db
+from app.core.dependencies import get_db, get_redis, check_upload_rate_limit, RedisClient
 from app.core.exceptions import create_error_response
 from app.models import Bucket, Workflow
 from app.schemas.document import (
@@ -62,6 +63,92 @@ from app.services.blob_storage import BlobStorageService
 from app.services.audit import AuditService
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
+
+
+def calculate_rate_limit_headers(
+    redis: RedisClient,
+    new_upload_count: int,
+    current_user: AuthenticatedUser,
+) -> dict[str, str]:
+    """
+    Calculate rate limit headers for successful uploads.
+
+    Args:
+        redis: Redis client (can be None if Redis unavailable)
+        new_upload_count: Updated upload count after increment
+        current_user: Authenticated user for logging context
+
+    Returns:
+        dict[str, str]: Rate limit headers to add to response (empty dict if calculation fails)
+
+    Note:
+        Graceful degradation: Returns empty dict if calculation fails
+        (upload succeeds even if headers can't be calculated)
+    """
+    rate_limit_headers = {}
+
+    try:
+        if redis and new_upload_count > 0:
+            from app.core.config import settings
+
+            # Calculate headers immediately (minimize race window)
+            # NOTE: Headers may be briefly stale under high concurrent load.
+            # This is acceptable as enforcement (INCRBY in check_upload_rate_limit) is atomic.
+            # Headers provide best-effort information, not enforcement.
+            now_for_headers = datetime.now(timezone.utc)
+            uploads_remaining = max(
+                0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count
+            )
+
+            # Calculate reset timestamp (next hour)
+            reset_time = now_for_headers.replace(
+                minute=0, second=0, microsecond=0
+            ) + timedelta(hours=1)
+            reset_timestamp = int(reset_time.timestamp())
+
+            # Store header values for later addition to response
+            rate_limit_headers = {
+                "Cache-Control": "no-store",  # Prevent caching of potentially stale values
+                "X-RateLimit-Limit": str(settings.UPLOAD_RATE_LIMIT_PER_HOUR),
+                "X-RateLimit-Remaining": str(uploads_remaining),
+                "X-RateLimit-Reset": str(reset_timestamp),
+            }
+
+            logger.debug(
+                "Rate limit headers calculated",
+                extra={
+                    "user_id": str(current_user.id),
+                    "uploads_remaining": uploads_remaining,
+                    "reset_timestamp": reset_timestamp,
+                },
+            )
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Expected errors in header calculation/formatting:
+        # - ValueError: Invalid int/string conversion
+        # - TypeError: Unexpected type in arithmetic operations
+        # - KeyError: Missing config setting
+        # - AttributeError: Missing attribute access
+        # Graceful degradation: Don't fail upload if header calculation fails
+        logger.warning(
+            "Failed to calculate rate limit headers",
+            extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+    except Exception as e:
+        # Unexpected error - log at ERROR level for investigation
+        logger.error(
+            "Unexpected error calculating rate limit headers",
+            extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+
+    return rate_limit_headers
 
 
 @router.post(
@@ -135,6 +222,8 @@ bucket_id: 660e8400-e29b-41d4-a716-446655440001 (optional)
 )
 async def upload_document(
     current_user: AuthenticatedUser,
+    response: Response,
+    redis: RedisClient,
     files: list[UploadFile] = File(..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"),
     bucket_id: Optional[str] = Form(
         None, description="Optional bucket ID for validation"
@@ -214,7 +303,35 @@ async def upload_document(
             },
         )
 
-        # 2. Validate bucket_id if provided (multi-tenancy check) - BEFORE processing files
+        # 2. Check upload rate limit BEFORE processing files
+        #
+        # DESIGN RATIONALE: Per-file rate limiting
+        # - Each file in batch counts toward the 100 uploads/hour limit
+        # - Example: Uploading 20 files = 20 uploads toward limit
+        # - Check happens AFTER batch size validation (fail fast on batch size first)
+        # - Check happens BEFORE file validation (avoid wasted work if rate limited)
+        # - Returns new upload count for accurate rate limit headers (fixes race condition)
+        new_upload_count = check_upload_rate_limit(
+            current_user=current_user,
+            redis=redis,
+            db=db,
+            file_count=len(files),
+            request=request,
+        )
+
+        # 2a. Calculate rate limit headers immediately to minimize race window
+        #     (per API contract: product-guidelines/08-api-contracts.md:838-846)
+        #
+        # DESIGN RATIONALE: Minimize race window from ~350 lines to ~5 lines
+        # - Calculate headers RIGHT AFTER rate limit check (before file processing)
+        # - Reduces race window from ~350 lines of processing to ~5 lines
+        # - Rate limit ENFORCEMENT is still atomic and correct (increment-first approach)
+        # - Header values may still be briefly stale under concurrent load, but much more accurate
+        #
+        # Headers will be added to response at the end of the function (after upload completes)
+        rate_limit_headers = calculate_rate_limit_headers(redis, new_upload_count, current_user)
+
+        # 3. Validate bucket_id if provided (multi-tenancy check) - BEFORE processing files
         bucket = None
         if bucket_id:
             # Validate UUID format first
@@ -273,7 +390,7 @@ async def upload_document(
                     request=request,
                 )
 
-        # 3. Read and validate ALL files BEFORE uploading ANY (atomic validation)
+        # 4. Read and validate ALL files BEFORE uploading ANY (atomic validation)
         #
         # DESIGN RATIONALE: Fail-fast atomic batch processing
         # - Validate all files before uploading to prevent partial success scenarios
@@ -448,7 +565,7 @@ async def upload_document(
                 "mime_type": mime_type,
             })
 
-        # 4. ALL files validated successfully - now upload to Vercel Blob storage
+        # 5. ALL files validated successfully - now upload to Vercel Blob storage
         #
         # DESIGN: Process files sequentially to manage memory usage
         # - Sequential uploads prevent 20 concurrent HTTP connections
@@ -563,6 +680,33 @@ async def upload_document(
                 "file_names": [doc.file_name for doc in document_responses],
             },
         )
+
+        # Add rate limit headers to response (using pre-calculated values)
+        # Headers were calculated immediately after rate limit check to minimize race window
+        # (see header calculation at line ~236)
+        try:
+            if rate_limit_headers:
+                for header_name, header_value in rate_limit_headers.items():
+                    response.headers[header_name] = header_value
+
+                logger.debug(
+                    "Rate limit headers added to response",
+                    extra={
+                        "user_id": str(current_user.id),
+                        "headers": rate_limit_headers,
+                    },
+                )
+        except Exception as e:
+            # Unexpected error adding headers - log but don't fail upload
+            # (upload already completed successfully by this point)
+            logger.warning(
+                "Failed to add rate limit headers to response",
+                extra={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+                exc_info=True,
+            )
 
         # Return list of document responses
         #

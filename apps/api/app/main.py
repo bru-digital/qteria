@@ -1,6 +1,8 @@
 """
 FastAPI main application entry point.
 """
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
@@ -19,7 +21,71 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan context manager for startup and shutdown logic.
+
+    Replaces deprecated @app.on_event("startup") and @app.on_event("shutdown")
+    decorators with modern lifespan pattern (FastAPI 0.109+).
+
+    Startup (before yield):
+    - Log server timezone for debugging
+    - Initialize Redis connection pool
+
+    Shutdown (after yield):
+    - Close Redis connection pool cleanly
+    """
+    # Startup
+    # Log server timezone for debugging and monitoring
+    try:
+        import time
+
+        # Check if we're in UTC timezone (no offset and no DST info)
+        # time.timezone: offset from UTC in seconds (0 for UTC)
+        # time.daylight: indicates if DST is in effect (0 means no DST)
+        is_utc = time.timezone == 0 and not time.daylight
+
+        if not is_utc:
+            logger.info(
+                "Server timezone is not UTC, but rate limiting uses UTC-aware datetimes (no issue)",
+                extra={"timezone_offset_seconds": time.timezone},
+            )
+        else:
+            logger.info("Server timezone: UTC")
+    except Exception as e:
+        # Non-critical: timezone detection failed (e.g., in some container environments)
+        logger.debug(
+            "Could not determine server timezone - not critical",
+            extra={"error": str(e)},
+        )
+
+    # Initialize Redis client
+    from app.core.dependencies import initialize_redis_client
+
+    initialize_redis_client()
+
+    yield
+
+    # Shutdown
+    # Close Redis connection pool
+    from app.core.dependencies import _redis_client
+    if _redis_client:
+        try:
+            # close() is sufficient for synchronous Redis client (waits for in-flight operations)
+            # For async Redis client (redis.asyncio.Redis), would use: await _redis_client.aclose()
+            _redis_client.close()
+            logger.info("Redis connection pool closed successfully")
+        except Exception as e:
+            logger.error(
+                "Error closing Redis connection pool",
+                extra={"error": str(e)},
+                exc_info=True
+            )
+
+
+# Create FastAPI app with lifespan context manager
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description=settings.DESCRIPTION,
@@ -27,7 +93,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    lifespan=lifespan,
 )
+
 
 # Request ID middleware
 # Sets request.state.request_id from X-Request-ID header or generates UUID
