@@ -13,7 +13,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Request, status
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.auth import AuthenticatedUser
@@ -44,7 +45,7 @@ Start a new assessment with uploaded documents.
 **Process**:
 1. Validates workflow exists and belongs to user's organization
 2. Validates all required buckets have at least one document
-3. Validates all documents exist in Vercel Blob storage
+3. Validates all bucket references belong to the workflow
 4. Creates assessment record with status "pending"
 5. Creates assessment_documents join records
 6. Enqueues Celery background job for AI validation (STORY-023 - stubbed for now)
@@ -327,10 +328,45 @@ async def start_assessment(
             request=request,
         )
 
-    except Exception as e:
+    except IntegrityError as e:
         db.rollback()
         logger.error(
-            "Failed to create assessment",
+            "Database integrity violation during assessment creation",
+            extra={
+                "user_id": str(current_user.id),
+                "workflow_id": str(data.workflow_id),
+                "error": str(e),
+            },
+            exc_info=True,
+        )
+
+        # Audit log for monitoring
+        AuditService.log_event(
+            db=db,
+            action="assessment.create.failed",
+            organization_id=org_id,
+            user_id=current_user.id,
+            resource_type="assessment",
+            metadata={
+                "workflow_id": str(data.workflow_id),
+                "error": str(e),
+                "reason": "integrity_error",
+            },
+            request=request,
+        )
+
+        raise create_error_response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code="DATABASE_ERROR",
+            message="Invalid data reference. Please check your bucket and document IDs.",
+            details={"error_detail": str(e)},
+            request=request,
+        )
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(
+            "Database error during assessment creation",
             extra={
                 "user_id": str(current_user.id),
                 "workflow_id": str(data.workflow_id),
@@ -356,9 +392,44 @@ async def start_assessment(
 
         raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            error_code="DATABASE_ERROR",
+            message="Database error occurred. Please try again.",
+            details={"error_detail": str(e)},
+            request=request,
+        )
+
+    except Exception as e:
+        db.rollback()
+        logger.critical(
+            "Unexpected error during assessment creation",
+            extra={
+                "user_id": str(current_user.id),
+                "workflow_id": str(data.workflow_id),
+                "error": str(e),
+            },
+            exc_info=True,
+        )
+
+        # Audit log for monitoring
+        AuditService.log_event(
+            db=db,
+            action="assessment.create.failed",
+            organization_id=org_id,
+            user_id=current_user.id,
+            resource_type="assessment",
+            metadata={
+                "workflow_id": str(data.workflow_id),
+                "error": str(e),
+                "reason": "unexpected_error",
+            },
+            request=request,
+        )
+
+        raise create_error_response(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_code="INTERNAL_ERROR",
-            message="Failed to create assessment. Please try again.",
-            details={},
+            message="An unexpected error occurred. Please try again.",
+            details={"error_detail": str(e)},
             request=request,
         )
 
