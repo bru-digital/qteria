@@ -1,6 +1,9 @@
 import { Metadata } from "next"
 import Link from "next/link"
 
+// Privacy Policy Configuration
+const LAST_UPDATED_DATE = "January 20, 2025"
+
 export const metadata: Metadata = {
   title: "Privacy Policy | Qteria",
   description: "Privacy policy and data protection practices for Qteria AI-powered document validation platform",
@@ -19,7 +22,7 @@ export default function PrivacyPage() {
             ← Back to Home
           </Link>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-          <p className="text-sm text-gray-600">Last updated: January 20, 2025</p>
+          <p className="text-sm text-gray-600">Last updated: {LAST_UPDATED_DATE}</p>
         </div>
 
         {/* Content */}
@@ -39,6 +42,12 @@ export default function PrivacyPage() {
           {/* Data Controller */}
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Data Controller Information</h2>
+            {/* TODO: [BLOCKS PRODUCTION] Add full legal entity details required by GDPR Articles 13-14:
+                - Full legal entity name (e.g., "Qteria Ltd.")
+                - Registered company address (street, city, postal code, country)
+                - Company registration number
+                - Data Protection Officer contact (if applicable for companies >250 employees or high-risk processing)
+                These details must be reviewed and approved by legal counsel before production launch. */}
             <p className="text-base text-gray-700 leading-relaxed">
               <strong>Company Name:</strong> Qteria<br />
               <strong>Email:</strong> privacy@qteria.com<br />
