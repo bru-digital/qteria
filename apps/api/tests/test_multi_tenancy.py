@@ -606,7 +606,7 @@ class TestNestedTableMultiTenancy:
     """
 
     def test_bucket_access_through_wrong_org_workflow_returns_404(
-        self, client: TestClient, mock_audit_service
+        self, client: TestClient
     ):
         """User from org A cannot access buckets belonging to org B's workflow."""
         from sqlalchemy.orm import Session
@@ -678,7 +678,7 @@ class TestNestedTableMultiTenancy:
             db.close()
 
     def test_criteria_access_through_wrong_org_workflow_returns_404(
-        self, client: TestClient, mock_audit_service
+        self, client: TestClient
     ):
         """User from org A cannot access criteria belonging to org B's workflow."""
         from sqlalchemy.orm import Session
@@ -747,9 +747,7 @@ class TestNestedTableMultiTenancy:
             db.rollback()
             db.close()
 
-    def test_assessment_document_access_through_wrong_org_assessment_returns_404(
-        self, mock_audit_service
-    ):
+    def test_assessment_document_access_through_wrong_org_assessment_returns_404(self):
         """User from org A cannot access documents in org B's assessment via database query."""
         from sqlalchemy.orm import Session
         from app.core.dependencies import get_db
@@ -864,9 +862,7 @@ class TestNestedTableMultiTenancy:
             db.rollback()
             db.close()
 
-    def test_assessment_result_access_through_wrong_org_assessment_returns_404(
-        self, mock_audit_service
-    ):
+    def test_assessment_result_access_through_wrong_org_assessment_returns_404(self):
         """User from org A cannot access results from org B's assessment via database query."""
         from sqlalchemy.orm import Session
         from app.core.dependencies import get_db
@@ -981,7 +977,7 @@ class TestNestedTableMultiTenancy:
             db.rollback()
             db.close()
 
-    def test_list_buckets_only_returns_own_org_buckets(self, mock_audit_service):
+    def test_list_buckets_only_returns_own_org_buckets(self):
         """Listing buckets (via workflows) should only return buckets from user's org workflows (database query test)."""
         from sqlalchemy.orm import Session
         from app.core.dependencies import get_db
@@ -1072,7 +1068,7 @@ class TestNestedTableMultiTenancy:
             db.rollback()
             db.close()
 
-    def test_nested_table_queries_use_parent_org_filtering(self, mock_audit_service):
+    def test_nested_table_queries_use_parent_org_filtering(self):
         """Unit test: Verify nested queries properly join through parent org_id."""
         from sqlalchemy.orm import Session
         from app.core.dependencies import get_db
