@@ -47,6 +47,14 @@ export default function Home() {
         <div className="mt-8 text-sm text-gray-400">
           <p>MVP in Development | Database Schema ✅ | Next: API Endpoints</p>
         </div>
+        <div className="mt-4 text-sm text-gray-500">
+          <Link
+            href="/privacy"
+            className="hover:text-gray-700 hover:underline"
+          >
+            Privacy Policy
+          </Link>
+        </div>
       </div>
     </div>
   );

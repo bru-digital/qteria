@@ -748,7 +748,11 @@ class TestNestedTableMultiTenancy:
             db.close()
 
     def test_assessment_document_access_through_wrong_org_assessment_returns_404(self):
-        """User from org A cannot access documents in org B's assessment via database query."""
+        """User from org A cannot access documents in org B's assessment via database query.
+
+        Note: This test intentionally does not use the client fixture because it directly tests
+        database-level multi-tenancy isolation using SQLAlchemy queries, not API endpoints.
+        """
         from sqlalchemy.orm import Session
         from app.core.dependencies import get_db
         from app.models.models import Workflow, Assessment, Bucket, AssessmentDocument
@@ -863,7 +867,11 @@ class TestNestedTableMultiTenancy:
             db.close()
 
     def test_assessment_result_access_through_wrong_org_assessment_returns_404(self):
-        """User from org A cannot access results from org B's assessment via database query."""
+        """User from org A cannot access results from org B's assessment via database query.
+
+        Note: This test intentionally does not use the client fixture because it directly tests
+        database-level multi-tenancy isolation using SQLAlchemy queries, not API endpoints.
+        """
         from sqlalchemy.orm import Session
         from app.core.dependencies import get_db
         from app.models.models import Workflow, Assessment, Criteria, AssessmentResult
