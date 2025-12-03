@@ -341,23 +341,36 @@ async def start_assessment(
         )
 
         # Audit log for monitoring
-        AuditService.log_event(
-            db=db,
-            action="assessment.create.failed",
-            organization_id=org_id,
-            user_id=current_user.id,
-            resource_type="assessment",
-            metadata={
-                "workflow_id": str(data.workflow_id),
-                "error": str(e),
-                "reason": "integrity_error",
-            },
-            request=request,
-        )
+        # NOTE: Audit logging after rollback uses the same session after rollback,
+        # which is safe because AuditService.log_event() commits in a new transaction.
+        # The structured logger above also captures this event for real-time monitoring.
+        try:
+            AuditService.log_event(
+                db=db,
+                action="assessment.create.failed",
+                organization_id=org_id,
+                user_id=current_user.id,
+                resource_type="assessment",
+                metadata={
+                    "workflow_id": str(data.workflow_id),
+                    "error": str(e),
+                    "reason": "integrity_error",
+                },
+                request=request,
+            )
+        except Exception as audit_error:
+            # If audit logging fails, log the failure but don't block the error response
+            logger.warning(
+                "Failed to write audit log after rollback",
+                extra={
+                    "original_error": str(e),
+                    "audit_error": str(audit_error),
+                },
+            )
 
         raise create_error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
-            error_code="DATABASE_ERROR",
+            error_code="VALIDATION_ERROR",
             message="Invalid data reference. Please check your bucket and document IDs.",
             details={"error_detail": str(e)},
             request=request,
@@ -376,19 +389,28 @@ async def start_assessment(
         )
 
         # Audit log for monitoring
-        AuditService.log_event(
-            db=db,
-            action="assessment.create.failed",
-            organization_id=org_id,
-            user_id=current_user.id,
-            resource_type="assessment",
-            metadata={
-                "workflow_id": str(data.workflow_id),
-                "error": str(e),
-                "reason": "database_error",
-            },
-            request=request,
-        )
+        try:
+            AuditService.log_event(
+                db=db,
+                action="assessment.create.failed",
+                organization_id=org_id,
+                user_id=current_user.id,
+                resource_type="assessment",
+                metadata={
+                    "workflow_id": str(data.workflow_id),
+                    "error": str(e),
+                    "reason": "database_error",
+                },
+                request=request,
+            )
+        except Exception as audit_error:
+            logger.warning(
+                "Failed to write audit log after rollback",
+                extra={
+                    "original_error": str(e),
+                    "audit_error": str(audit_error),
+                },
+            )
 
         raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -411,19 +433,28 @@ async def start_assessment(
         )
 
         # Audit log for monitoring
-        AuditService.log_event(
-            db=db,
-            action="assessment.create.failed",
-            organization_id=org_id,
-            user_id=current_user.id,
-            resource_type="assessment",
-            metadata={
-                "workflow_id": str(data.workflow_id),
-                "error": str(e),
-                "reason": "unexpected_error",
-            },
-            request=request,
-        )
+        try:
+            AuditService.log_event(
+                db=db,
+                action="assessment.create.failed",
+                organization_id=org_id,
+                user_id=current_user.id,
+                resource_type="assessment",
+                metadata={
+                    "workflow_id": str(data.workflow_id),
+                    "error": str(e),
+                    "reason": "unexpected_error",
+                },
+                request=request,
+            )
+        except Exception as audit_error:
+            logger.warning(
+                "Failed to write audit log after rollback",
+                extra={
+                    "original_error": str(e),
+                    "audit_error": str(audit_error),
+                },
+            )
 
         raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
