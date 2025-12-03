@@ -108,23 +108,25 @@ export default function NewAssessmentPage() {
         throw new Error(errorData.error?.message || "Upload failed")
       }
 
-      const documents: DocumentMetadata[] = await response.json()
+      const data = await response.json()
 
-      // Backend returns array of documents, take first one
-      if (documents.length > 0) {
-        const document = documents[0]
-
-        // Add uploaded document to state
-        setUploadedDocs((prev) => ({
-          ...prev,
-          [bucketId]: [...(prev[bucketId] || []), document],
-        }))
-
-        setUploadStates((prev) => ({
-          ...prev,
-          [bucketId]: { isUploading: false },
-        }))
+      // Validate response structure
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("No document data returned from upload")
       }
+
+      const document = data[0]
+
+      // Add uploaded document to state
+      setUploadedDocs((prev) => ({
+        ...prev,
+        [bucketId]: [...(prev[bucketId] || []), document],
+      }))
+
+      setUploadStates((prev) => ({
+        ...prev,
+        [bucketId]: { isUploading: false },
+      }))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Upload failed"
       setError(errorMessage)
@@ -158,6 +160,9 @@ export default function NewAssessmentPage() {
           documents.push({
             bucket_id: bucketId,
             document_id: doc.id,
+            file_name: doc.file_name,
+            storage_key: doc.storage_key,
+            file_size: doc.file_size_bytes,
           })
         })
       })

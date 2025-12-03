@@ -67,6 +67,9 @@ export interface DocumentMetadata {
 export interface AssessmentDocumentMapping {
   bucket_id: string
   document_id: string
+  file_name: string
+  storage_key: string
+  file_size: number
 }
 
 /**
