@@ -370,7 +370,7 @@ async def start_assessment(
 
         raise create_error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
-            error_code="VALIDATION_ERROR",
+            error_code="DATABASE_ERROR",
             message="Invalid data reference. Please check your bucket and document IDs.",
             details={"error_detail": str(e)},
             request=request,
