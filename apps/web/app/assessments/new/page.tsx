@@ -83,6 +83,17 @@ export default function NewAssessmentPage() {
     }
   }
 
+  // Type guard to validate document metadata structure
+  const isValidDocumentMetadata = (obj: any): obj is DocumentMetadata => {
+    return (
+      obj &&
+      typeof obj.id === "string" &&
+      typeof obj.file_name === "string" &&
+      typeof obj.storage_key === "string" &&
+      typeof obj.file_size_bytes === "number"
+    )
+  }
+
   // Upload document to bucket
   const uploadDocument = async (file: File, bucketId: string) => {
     setUploadStates((prev) => ({
@@ -110,9 +121,13 @@ export default function NewAssessmentPage() {
 
       const data = await response.json()
 
-      // Validate response structure
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error("No document data returned from upload")
+      // Validate response structure and type
+      if (
+        !Array.isArray(data) ||
+        data.length === 0 ||
+        !isValidDocumentMetadata(data[0])
+      ) {
+        throw new Error("Invalid document data returned from upload")
       }
 
       const document = data[0]
@@ -135,6 +150,14 @@ export default function NewAssessmentPage() {
         [bucketId]: { isUploading: false, error: errorMessage },
       }))
     }
+  }
+
+  // Remove document from bucket
+  const removeDocument = (bucketId: string, documentId: string) => {
+    setUploadedDocs((prev) => ({
+      ...prev,
+      [bucketId]: (prev[bucketId] || []).filter((doc) => doc.id !== documentId),
+    }))
   }
 
   // Check if all required buckets have documents
@@ -268,6 +291,7 @@ export default function NewAssessmentPage() {
                     uploadedDocs={uploadedDocs[bucket.id] || []}
                     uploadState={uploadStates[bucket.id]}
                     onUpload={(file) => uploadDocument(file, bucket.id)}
+                    onRemove={(documentId) => removeDocument(bucket.id, documentId)}
                   />
                 ))}
             </div>
@@ -377,6 +401,7 @@ interface BucketUploadZoneProps {
   uploadedDocs: DocumentMetadata[]
   uploadState?: { isUploading: boolean; error?: string }
   onUpload: (file: File) => void
+  onRemove: (documentId: string) => void
 }
 
 function BucketUploadZone({
@@ -384,6 +409,7 @@ function BucketUploadZone({
   uploadedDocs,
   uploadState,
   onUpload,
+  onRemove,
 }: BucketUploadZoneProps) {
   const [validationError, setValidationError] = useState<string>("")
 
@@ -488,6 +514,14 @@ function BucketUploadZone({
               <span className="text-xs text-gray-500">
                 {(doc.file_size_bytes / 1024 / 1024).toFixed(2)} MB
               </span>
+              <button
+                onClick={() => onRemove(doc.id)}
+                className="text-red-500 hover:text-red-700 transition-colors p-1"
+                aria-label="Remove document"
+                title="Remove document"
+              >
+                ✕
+              </button>
             </div>
           ))}
         </div>

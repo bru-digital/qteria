@@ -341,6 +341,7 @@ async def start_assessment(
         )
 
         # Audit log for monitoring
+        # Note: Commit audit log separately to avoid issues with rolled-back session
         AuditService.log_event(
             db=db,
             action="assessment.create.failed",
@@ -354,10 +355,11 @@ async def start_assessment(
             },
             request=request,
         )
+        db.commit()  # Commit audit log in separate transaction
 
         raise create_error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
-            error_code="DATABASE_ERROR",
+            error_code="VALIDATION_ERROR",
             message="Invalid data reference. Please check your bucket and document IDs.",
             details={"error_detail": str(e)},
             request=request,
@@ -376,6 +378,7 @@ async def start_assessment(
         )
 
         # Audit log for monitoring
+        # Note: Commit audit log separately to avoid issues with rolled-back session
         AuditService.log_event(
             db=db,
             action="assessment.create.failed",
@@ -389,6 +392,7 @@ async def start_assessment(
             },
             request=request,
         )
+        db.commit()  # Commit audit log in separate transaction
 
         raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -411,6 +415,7 @@ async def start_assessment(
         )
 
         # Audit log for monitoring
+        # Note: Commit audit log separately to avoid issues with rolled-back session
         AuditService.log_event(
             db=db,
             action="assessment.create.failed",
@@ -424,6 +429,7 @@ async def start_assessment(
             },
             request=request,
         )
+        db.commit()  # Commit audit log in separate transaction
 
         raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
