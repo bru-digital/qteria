@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import Link from "next/link"
 
 // Terms of Service Configuration
-const LAST_UPDATED_DATE = "January 20, 2025"
+const LAST_UPDATED_DATE = "December 4, 2024"
 
 export const metadata: Metadata = {
   title: "Terms of Service | Qteria",
