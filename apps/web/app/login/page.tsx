@@ -244,6 +244,27 @@ function LoginForm() {
             </div>
           </div>
         )}
+
+        {/* Footer Links */}
+        <div className="mt-6 text-center text-sm text-gray-500 space-x-4">
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-700 hover:underline"
+          >
+            Terms of Service
+          </a>
+          <span className="text-gray-400">•</span>
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-700 hover:underline"
+          >
+            Privacy Policy
+          </a>
+        </div>
       </div>
     </div>
   )
