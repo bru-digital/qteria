@@ -1,10 +1,32 @@
-"use client"
-
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 import { FileText } from "lucide-react"
 import { TopNav } from "@/components/navigation/TopNav"
 import { Breadcrumb } from "@/components/navigation/Breadcrumb"
+import { isAdmin, isProcessManager, type UserRoleType } from "@/lib/rbac"
 
-export default function AdminAuditLogsPage() {
+export default async function AdminAuditLogsPage() {
+  // Server-side authentication check
+  const session = await auth()
+
+  // Redirect to login if not authenticated
+  if (!session?.user) {
+    redirect("/login")
+  }
+
+  // Server-side authorization check - admin or process_manager only
+  const user = session.user as {
+    id: string
+    email: string
+    name?: string | null
+    role: UserRoleType
+    organizationId: string
+  }
+
+  if (!isAdmin(user.role) && !isProcessManager(user.role)) {
+    redirect("/dashboard")
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav />

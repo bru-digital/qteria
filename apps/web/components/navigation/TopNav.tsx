@@ -4,21 +4,36 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
 import { LogOut, User, Settings } from "lucide-react"
-import { useState } from "react"
+import { useState, useCallback, useEffect } from "react"
 
 export function TopNav() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
-  const isActive = (path: string) => {
-    if (path === "/dashboard") {
-      return pathname === "/dashboard"
-    }
-    return pathname.startsWith(path)
-  }
+  const isActive = useCallback(
+    (path: string) => {
+      if (path === "/dashboard") {
+        return pathname === "/dashboard"
+      }
+      return pathname.startsWith(path)
+    },
+    [pathname]
+  )
 
   const isAdmin = session?.user?.role === "admin" || session?.user?.role === "process_manager"
+
+  // Handle Escape key to close dropdown
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && showUserMenu) {
+        setShowUserMenu(false)
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape)
+    return () => document.removeEventListener("keydown", handleEscape)
+  }, [showUserMenu])
 
   return (
     <header className="h-16 border-b border-gray-200 bg-white">

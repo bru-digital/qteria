@@ -144,12 +144,12 @@ export default function AssessmentDetailPage({ params }: Props) {
     if (assessment?.status === "processing") {
       const interval = setInterval(() => {
         // In real implementation, this would refetch the assessment status
-        console.log("Polling assessment status...")
+        // Polling logic will be connected to API when backend is ready
       }, 30000) // Poll every 30 seconds
 
       return () => clearInterval(interval)
     }
-  }, [assessment?.status])
+  }, [assessment])
 
   if (isLoading) {
     return (

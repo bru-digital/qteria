@@ -21,7 +21,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
   const showToast = useCallback((type: ToastType, message: string) => {
-    const id = Math.random().toString(36).substring(7)
+    const id = crypto.randomUUID()
     setToasts((prev) => [...prev, { id, type, message }])
 
     // Auto-dismiss after 5 seconds

@@ -27,17 +27,34 @@ export default function WorkflowDetailPage({ params }: Props) {
   const { showToast } = useToast()
   const { data: workflow, isLoading } = useWorkflowQuery(id)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isArchiving, setIsArchiving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleArchive = async () => {
-    // TODO: Implement archive API call
-    showToast("success", "Workflow archived successfully")
-    router.push("/workflows")
+    setIsArchiving(true)
+    try {
+      // TODO: Implement archive API call
+      await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
+      showToast("success", "Workflow archived successfully")
+      router.push("/workflows")
+    } catch (error) {
+      showToast("error", "Failed to archive workflow")
+      setIsArchiving(false)
+    }
   }
 
   const handleDelete = async () => {
-    // TODO: Implement delete API call
-    showToast("success", "Workflow deleted successfully")
-    router.push("/workflows")
+    setIsDeleting(true)
+    try {
+      // TODO: Implement delete API call
+      await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
+      showToast("success", "Workflow deleted successfully")
+      setShowDeleteDialog(false)
+      router.push("/workflows")
+    } catch (error) {
+      showToast("error", "Failed to delete workflow")
+      setIsDeleting(false)
+    }
   }
 
   if (isLoading) {
@@ -98,15 +115,17 @@ export default function WorkflowDetailPage({ params }: Props) {
           <div className="flex items-center space-x-3">
             <button
               onClick={handleArchive}
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              disabled={isArchiving || isDeleting}
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Archive className="h-4 w-4" />
-              <span>Archive</span>
+              <Archive className={`h-4 w-4 ${isArchiving ? "animate-pulse" : ""}`} />
+              <span>{isArchiving ? "Archiving..." : "Archive"}</span>
             </button>
 
             <button
               onClick={() => setShowDeleteDialog(true)}
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+              disabled={isArchiving || isDeleting}
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 className="h-4 w-4" />
               <span>Delete</span>
@@ -190,15 +209,17 @@ export default function WorkflowDetailPage({ params }: Props) {
             <div className="flex items-center justify-end space-x-3 mt-6">
               <button
                 onClick={() => setShowDeleteDialog(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Delete
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
