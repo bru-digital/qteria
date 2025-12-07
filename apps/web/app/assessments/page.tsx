@@ -10,7 +10,8 @@ import { TableSkeleton } from "@/components/ui/LoadingSkeleton"
 import { useRouter } from "next/navigation"
 import type { Assessment } from "@/types/app"
 
-// This will be replaced with actual API call
+// TODO: Replace with actual API call (connects to GET /v1/assessments)
+// GitHub Issue: TBD
 const useAssessmentsQuery = () => {
   const [isLoading] = useState(false)
   const [assessments] = useState<Assessment[]>([])

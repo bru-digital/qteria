@@ -8,11 +8,13 @@ import { Breadcrumb } from "@/components/navigation/Breadcrumb"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { TableSkeleton } from "@/components/ui/LoadingSkeleton"
 import { useRouter } from "next/navigation"
+import type { Workflow } from "@/types/app"
 
-// This will be replaced with actual API call
+// TODO: Replace with actual API call (connects to GET /v1/workflows)
+// GitHub Issue: TBD
 const useWorkflowsQuery = () => {
   const [isLoading] = useState(false)
-  const [workflows] = useState([])
+  const [workflows] = useState<Workflow[]>([])
 
   return { data: workflows, isLoading }
 }
@@ -22,7 +24,7 @@ export default function WorkflowsPage() {
   const { data: workflows, isLoading } = useWorkflowsQuery()
   const [searchQuery, setSearchQuery] = useState("")
 
-  const filteredWorkflows = workflows?.filter((workflow: any) =>
+  const filteredWorkflows = workflows?.filter((workflow) =>
     workflow.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -105,7 +107,7 @@ export default function WorkflowsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredWorkflows?.map((workflow: any) => (
+                {filteredWorkflows?.map((workflow) => (
                   <tr
                     key={workflow.id}
                     onClick={() => router.push(`/workflows/${workflow.id}`)}

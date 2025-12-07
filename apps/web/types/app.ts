@@ -6,6 +6,8 @@ export interface Workflow {
   description?: string
   buckets?: Bucket[]
   criteria?: Criterion[]
+  buckets_count?: number
+  criteria_count?: number
   assessments_count?: number
   created_at: string
   updated_at: string

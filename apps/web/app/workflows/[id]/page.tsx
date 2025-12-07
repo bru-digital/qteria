@@ -10,7 +10,8 @@ import { useToast } from "@/components/ui/Toast"
 import { useState } from "react"
 import type { Workflow, Bucket, Criterion } from "@/types/app"
 
-// This will be replaced with actual API call
+// TODO: Replace with actual API call (connects to GET /v1/workflows/:id)
+// GitHub Issue: TBD
 const useWorkflowQuery = (id: string) => {
   const [isLoading] = useState(false)
   const [workflow] = useState<Workflow | null>(null)
@@ -34,7 +35,8 @@ export default function WorkflowDetailPage({ params }: Props) {
   const handleArchive = async () => {
     setIsArchiving(true)
     try {
-      // TODO: Implement archive API call
+      // TODO: Implement archive API call (connects to PATCH /v1/workflows/:id/archive)
+      // GitHub Issue: TBD
       await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
       showToast("success", "Workflow archived successfully")
       router.push("/workflows")
@@ -47,7 +49,8 @@ export default function WorkflowDetailPage({ params }: Props) {
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      // TODO: Implement delete API call
+      // TODO: Implement delete API call (connects to DELETE /v1/workflows/:id)
+      // GitHub Issue: TBD
       await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
       showToast("success", "Workflow deleted successfully")
       setShowDeleteDialog(false)

@@ -8,7 +8,8 @@ import { Breadcrumb } from "@/components/navigation/Breadcrumb"
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton"
 import type { Assessment, AssessmentResultsResponse, AssessmentResult } from "@/types/app"
 
-// This will be replaced with actual API calls
+// TODO: Replace with actual API calls (connects to GET /v1/assessments/:id)
+// GitHub Issue: TBD
 const useAssessmentQuery = (id: string) => {
   const [isLoading] = useState(false)
   const [assessment] = useState<Assessment | null>(null)
@@ -16,6 +17,8 @@ const useAssessmentQuery = (id: string) => {
   return { data: assessment, isLoading }
 }
 
+// TODO: Replace with actual API call (connects to GET /v1/assessments/:id/results)
+// GitHub Issue: TBD
 const useAssessmentResults = (id: string, enabled: boolean) => {
   const [results] = useState<AssessmentResultsResponse | null>(null)
 
