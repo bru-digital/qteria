@@ -35,7 +35,7 @@ export default async function AdminAuditLogsPage() {
         <Breadcrumb
           items={[
             { label: "Dashboard", href: "/dashboard" },
-            { label: "Admin", href: "/admin/users" },
+            { label: "Admin" },
             { label: "Audit Logs" },
           ]}
         />

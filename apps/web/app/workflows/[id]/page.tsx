@@ -8,11 +8,12 @@ import { Breadcrumb } from "@/components/navigation/Breadcrumb"
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton"
 import { useToast } from "@/components/ui/Toast"
 import { useState } from "react"
+import type { Workflow, Bucket, Criterion } from "@/types/app"
 
 // This will be replaced with actual API call
 const useWorkflowQuery = (id: string) => {
   const [isLoading] = useState(false)
-  const [workflow] = useState<any>(null)
+  const [workflow] = useState<Workflow | null>(null)
 
   return { data: workflow, isLoading }
 }
@@ -163,7 +164,7 @@ export default function WorkflowDetailPage({ params }: Props) {
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Document Buckets</h2>
             <div className="space-y-3">
-              {workflow.buckets?.map((bucket: any) => (
+              {workflow.buckets?.map((bucket) => (
                 <div key={bucket.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -186,7 +187,7 @@ export default function WorkflowDetailPage({ params }: Props) {
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Validation Criteria</h2>
             <div className="space-y-3">
-              {workflow.criteria?.map((criterion: any) => (
+              {workflow.criteria?.map((criterion) => (
                 <div key={criterion.id} className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-medium text-gray-900">{criterion.name}</h3>
                   {criterion.description && (

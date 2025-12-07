@@ -35,7 +35,7 @@ export default async function AdminSettingsPage() {
         <Breadcrumb
           items={[
             { label: "Dashboard", href: "/dashboard" },
-            { label: "Admin", href: "/admin/users" },
+            { label: "Admin" },
             { label: "Settings" },
           ]}
         />

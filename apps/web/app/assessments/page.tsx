@@ -8,11 +8,12 @@ import { Breadcrumb } from "@/components/navigation/Breadcrumb"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { TableSkeleton } from "@/components/ui/LoadingSkeleton"
 import { useRouter } from "next/navigation"
+import type { Assessment } from "@/types/app"
 
 // This will be replaced with actual API call
 const useAssessmentsQuery = () => {
   const [isLoading] = useState(false)
-  const [assessments] = useState([])
+  const [assessments] = useState<Assessment[]>([])
 
   return { data: assessments, isLoading }
 }
@@ -37,7 +38,7 @@ export default function AssessmentsPage() {
   const { data: assessments, isLoading } = useAssessmentsQuery()
   const [statusFilter, setStatusFilter] = useState<string>("all")
 
-  const filteredAssessments = assessments?.filter((assessment: any) =>
+  const filteredAssessments = assessments?.filter((assessment) =>
     statusFilter === "all" || assessment.status === statusFilter
   )
 
@@ -121,7 +122,7 @@ export default function AssessmentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAssessments?.map((assessment: any) => (
+                {filteredAssessments?.map((assessment) => (
                   <tr
                     key={assessment.id}
                     onClick={() => router.push(`/assessments/${assessment.id}`)}
@@ -136,7 +137,7 @@ export default function AssessmentsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {assessment.status === "completed" ? (
                         <span className={assessment.overall_pass ? "text-green-600" : "text-red-600"}>
-                          {assessment.criteria_passed}/{assessment.criteria_passed + assessment.criteria_failed} passed
+                          {assessment.criteria_passed ?? 0}/{(assessment.criteria_passed ?? 0) + (assessment.criteria_failed ?? 0)} passed
                         </span>
                       ) : (
                         <span className="text-gray-400">—</span>

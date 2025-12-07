@@ -6,17 +6,18 @@ import { ChevronLeft, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronU
 import { TopNav } from "@/components/navigation/TopNav"
 import { Breadcrumb } from "@/components/navigation/Breadcrumb"
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton"
+import type { Assessment, AssessmentResultsResponse, AssessmentResult } from "@/types/app"
 
 // This will be replaced with actual API calls
 const useAssessmentQuery = (id: string) => {
   const [isLoading] = useState(false)
-  const [assessment] = useState<any>(null)
+  const [assessment] = useState<Assessment | null>(null)
 
   return { data: assessment, isLoading }
 }
 
 const useAssessmentResults = (id: string, enabled: boolean) => {
-  const [results] = useState<any>(null)
+  const [results] = useState<AssessmentResultsResponse | null>(null)
 
   return { data: results }
 }
@@ -55,7 +56,7 @@ function ProgressIndicator({ percent, message }: { percent: number; message: str
   )
 }
 
-function ResultCard({ result }: { result: any }) {
+function ResultCard({ result }: { result: AssessmentResult }) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   const icons = {
@@ -149,7 +150,7 @@ export default function AssessmentDetailPage({ params }: Props) {
 
       return () => clearInterval(interval)
     }
-  }, [assessment])
+  }, [assessment?.status])
 
   if (isLoading) {
     return (
@@ -241,7 +242,7 @@ export default function AssessmentDetailPage({ params }: Props) {
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="text-sm text-gray-500">Criteria Passed</div>
                 <div className="text-2xl font-semibold text-gray-900 mt-1">
-                  {assessment.criteria_passed}/{assessment.criteria_passed + assessment.criteria_failed}
+                  {assessment.criteria_passed ?? 0}/{(assessment.criteria_passed ?? 0) + (assessment.criteria_failed ?? 0)}
                 </div>
               </div>
             </div>
@@ -258,7 +259,7 @@ export default function AssessmentDetailPage({ params }: Props) {
         {assessment.status === "completed" && results && (
           <div className="space-y-3">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Validation Results</h2>
-            {results.results?.map((result: any) => (
+            {results.results?.map((result) => (
               <ResultCard key={result.criteria_id} result={result} />
             ))}
           </div>
