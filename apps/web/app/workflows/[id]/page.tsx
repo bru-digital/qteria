@@ -10,8 +10,11 @@ import { useToast } from "@/components/ui/Toast"
 import { useState } from "react"
 import type { Workflow, Bucket, Criterion } from "@/types/app"
 
-// TODO: Replace with actual API call (connects to GET /v1/workflows/:id)
-// GitHub Issue: TBD
+// TODO(API Integration): Replace with React Query hook when backend is ready
+// Expected endpoint: GET /v1/workflows/:id
+// Returns: Single workflow with buckets and criteria
+// Implementation: Use @tanstack/react-query with proper auth headers
+// Reference: apps/api/app/api/v1/endpoints/workflows.py (when implemented)
 const useWorkflowQuery = (id: string) => {
   const [isLoading] = useState(false)
   const [workflow] = useState<Workflow | null>(null)

@@ -8,8 +8,11 @@ import { Breadcrumb } from "@/components/navigation/Breadcrumb"
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton"
 import type { Assessment, AssessmentResultsResponse, AssessmentResult } from "@/types/app"
 
-// TODO: Replace with actual API calls (connects to GET /v1/assessments/:id)
-// GitHub Issue: TBD
+// TODO(API Integration): Replace with React Query hook when backend is ready
+// Expected endpoint: GET /v1/assessments/:id
+// Returns: Single assessment with status, workflow, and document references
+// Implementation: Use @tanstack/react-query with proper auth headers
+// Reference: apps/api/app/api/v1/endpoints/assessments.py (when implemented)
 const useAssessmentQuery = (id: string) => {
   const [isLoading] = useState(false)
   const [assessment] = useState<Assessment | null>(null)
@@ -17,8 +20,11 @@ const useAssessmentQuery = (id: string) => {
   return { data: assessment, isLoading }
 }
 
-// TODO: Replace with actual API call (connects to GET /v1/assessments/:id/results)
-// GitHub Issue: TBD
+// TODO(API Integration): Replace with React Query hook when backend is ready
+// Expected endpoint: GET /v1/assessments/:id/results
+// Returns: Evidence-based results with pass/fail status per criterion
+// Implementation: Only fetch when assessment status === "completed"
+// Reference: apps/api/app/api/v1/endpoints/assessments.py (when implemented)
 const useAssessmentResults = (id: string, enabled: boolean) => {
   const [results] = useState<AssessmentResultsResponse | null>(null)
 
@@ -143,17 +149,22 @@ export default function AssessmentDetailPage({ params }: Props) {
   const { data: assessment, isLoading } = useAssessmentQuery(id)
   const { data: results } = useAssessmentResults(id, assessment?.status === "completed")
 
-  // Simulate polling for assessment status updates
+  // Polling for assessment status updates
+  // TODO(API Integration): Implement refetch logic when backend API is connected
+  // Expected behavior: Call router.refresh() or refetch() from React Query to update assessment status
+  // Endpoint: GET /v1/assessments/:id
+  // Trigger: Every 30 seconds while status === "processing"
   useEffect(() => {
     if (assessment?.status === "processing") {
       const interval = setInterval(() => {
-        // In real implementation, this would refetch the assessment status
-        // Polling logic will be connected to API when backend is ready
+        // Placeholder for API refetch - will be implemented with React Query
+        // router.refresh() or queryClient.invalidateQueries(['assessment', id])
+        console.log(`[Polling] Checking assessment ${id} status...`)
       }, 30000) // Poll every 30 seconds
 
       return () => clearInterval(interval)
     }
-  }, [assessment?.status])
+  }, [assessment?.status, id])
 
   if (isLoading) {
     return (

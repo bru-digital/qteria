@@ -10,8 +10,11 @@ import { TableSkeleton } from "@/components/ui/LoadingSkeleton"
 import { useRouter } from "next/navigation"
 import type { Assessment } from "@/types/app"
 
-// TODO: Replace with actual API call (connects to GET /v1/assessments)
-// GitHub Issue: TBD
+// TODO(API Integration): Replace with React Query hook when backend is ready
+// Expected endpoint: GET /v1/assessments
+// Returns: Array of assessments for user's organization with workflow references
+// Implementation: Use @tanstack/react-query with proper auth headers
+// Reference: apps/api/app/api/v1/endpoints/assessments.py (when implemented)
 const useAssessmentsQuery = () => {
   const [isLoading] = useState(false)
   const [assessments] = useState<Assessment[]>([])

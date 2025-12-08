@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import type { Session, User } from "next-auth"
+import type { UserRoleType } from "./rbac"
 
 // Get NEXTAUTH_SECRET from environment
 // During build, this might be empty - it will be validated at runtime
@@ -26,7 +27,7 @@ if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-productio
  * use org_id for consistency with API responses and authentication flows.
  */
 interface ExtendedJWT extends JWT {
-  role?: string
+  role?: UserRoleType
   org_id?: string  // Snake_case to match backend API contract
 }
 
@@ -45,7 +46,7 @@ interface ExtendedSession extends Session {
     id: string
     email: string
     name: string | null
-    role: string
+    role: UserRoleType
     organizationId: string  // CamelCase to match TypeScript conventions
   }
 }
@@ -70,7 +71,7 @@ export const baseAuthConfig = {
       // Add custom fields to JWT on sign in
       if (user) {
         const extendedToken = token as ExtendedJWT
-        extendedToken.role = (user as any).role
+        extendedToken.role = (user as any).role as UserRoleType
         // Map frontend organizationId (camelCase) to JWT org_id (snake_case)
         // This ensures JWT matches backend API contract (FastAPI uses snake_case)
         extendedToken.org_id = (user as any).organizationId
@@ -84,7 +85,7 @@ export const baseAuthConfig = {
       // Add custom fields to session
       if (session.user) {
         (session.user as any).id = token.sub as string
-        ;(session.user as any).role = extendedToken.role as string
+        ;(session.user as any).role = extendedToken.role as UserRoleType
         // Map JWT org_id (snake_case) back to Session organizationId (camelCase)
         // This ensures frontend code follows TypeScript naming conventions
         ;(session.user as any).organizationId = extendedToken.org_id as string

@@ -10,8 +10,11 @@ import { TableSkeleton } from "@/components/ui/LoadingSkeleton"
 import { useRouter } from "next/navigation"
 import type { Workflow } from "@/types/app"
 
-// TODO: Replace with actual API call (connects to GET /v1/workflows)
-// GitHub Issue: TBD
+// TODO(API Integration): Replace with React Query hook when backend is ready
+// Expected endpoint: GET /v1/workflows
+// Returns: Array of workflows for user's organization
+// Implementation: Use @tanstack/react-query with proper auth headers
+// Reference: apps/api/app/api/v1/endpoints/workflows.py (when implemented)
 const useWorkflowsQuery = () => {
   const [isLoading] = useState(false)
   const [workflows] = useState<Workflow[]>([])
