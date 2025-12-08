@@ -157,14 +157,14 @@ export default function AssessmentDetailPage({ params }: Props) {
   useEffect(() => {
     if (assessment?.status === "processing") {
       const interval = setInterval(() => {
-        // Placeholder for API refetch - will be implemented with React Query
-        // router.refresh() or queryClient.invalidateQueries(['assessment', id])
-        console.log(`[Polling] Checking assessment ${id} status...`)
+        // Refresh page data to check for status updates
+        // When React Query is implemented, use queryClient.invalidateQueries(['assessment', id]) instead
+        router.refresh()
       }, 30000) // Poll every 30 seconds
 
       return () => clearInterval(interval)
     }
-  }, [assessment?.status, id])
+  }, [assessment?.status, id, router])
 
   if (isLoading) {
     return (

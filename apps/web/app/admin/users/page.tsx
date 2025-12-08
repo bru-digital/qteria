@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Users as UsersIcon } from "lucide-react"
 import { TopNav } from "@/components/navigation/TopNav"
 import { Breadcrumb } from "@/components/navigation/Breadcrumb"
-import { isAdmin, isProcessManager } from "@/lib/rbac"
+import { isAdmin, isProcessManager, type UserRoleType } from "@/lib/rbac"
 
 export default async function AdminUsersPage() {
   // Server-side authentication check
@@ -15,7 +15,15 @@ export default async function AdminUsersPage() {
   }
 
   // Server-side authorization check - admin or process_manager only
-  if (!isAdmin(session.user.role) && !isProcessManager(session.user.role)) {
+  const user = session.user as {
+    id: string
+    email: string
+    name?: string | null
+    role: UserRoleType
+    organizationId: string
+  }
+
+  if (!isAdmin(user.role) && !isProcessManager(user.role)) {
     redirect("/dashboard")
   }
 
