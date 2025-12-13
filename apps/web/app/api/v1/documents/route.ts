@@ -52,7 +52,10 @@ function generateJWTFromSession(session: any): string {
     sub: session.user.id,
     email: session.user.email || "",
     role: session.user.role,
-    organizationId: session.user.organizationId,
+    // IMPORTANT: Backend expects snake_case 'org_id', not camelCase 'organizationId'
+    // Session uses organizationId (TypeScript convention), but JWT must use org_id (Python convention)
+    // See: apps/api/app/core/auth.py:177, apps/web/types/next-auth.d.ts:39
+    org_id: session.user.organizationId,
     name: session.user.name || null,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes
