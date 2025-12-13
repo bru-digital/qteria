@@ -564,50 +564,231 @@ Examples:
 
 ## Deployment Notes
 
-### Backend Deployment (Railway/Render)
+### Backend Deployment (Railway)
 
-**Critical System Dependencies:**
-- **libmagic1** must be installed in the deployment container for document upload API to work
-- The `python-magic` Python package depends on the `libmagic` system library
-- Startup validation will fail if libmagic is not available (see `apps/api/app/api/v1/endpoints/documents.py:34-46`)
+**Deployment Architecture:**
+```
+Frontend (Vercel) → Backend (Railway) → Database (Neon PostgreSQL)
+                                     → Redis (Upstash)
+                                     → Storage (Vercel Blob)
+```
 
-**Installation Methods:**
+#### Railway Configuration Files
 
-**Railway:**
-Add to `nixpacks.toml` (if using Nixpacks):
+The backend deployment to Railway is configured through three files in `/apps/api/`:
+
+1. **`railway.json`** - Railway-specific configuration (forces Nixpacks builder, health checks)
+2. **`nixpacks.toml`** - Build configuration (system dependencies, Python version)
+3. **`.python-version`** - Python version lock file (3.11)
+
+**Why these files?**
+- `railway.json` forces Nixpacks builder and explicitly sets build/start commands
+- `nixpacks.toml` installs system dependencies (libmagic1) before Python packages
+- `.python-version` ensures Railway uses Python 3.11 (not 3.14 or other versions)
+
+#### Critical System Dependencies
+
+**libmagic1 System Library:**
+- **Required for**: Document upload API (content-based file type detection)
+- **Dependency chain**: `python-magic` (Python package) → `libmagic1` (system library)
+- **Failure mode**: Startup validation will fail if libmagic is not available (see `apps/api/app/api/v1/endpoints/documents.py:34-46`)
+- **Installation**: Already configured in `nixpacks.toml` under `[phases.setup]`
+
 ```toml
+# apps/api/nixpacks.toml
 [phases.setup]
 aptPkgs = ['libmagic1']
 ```
 
-Or add to Dockerfile:
-```dockerfile
-RUN apt-get update && apt-get install -y libmagic1
+#### Environment Variables Required
+
+Configure these in Railway dashboard under your service → Variables:
+
+**Required:**
+- `DATABASE_URL` - Neon PostgreSQL connection string (format: `postgresql://user:pass@host/dbname`)
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage token (from Vercel dashboard)
+- `JWT_SECRET` - Secret key for JWT authentication (generate with `openssl rand -hex 32`)
+- `ANTHROPIC_API_KEY` - Claude API key for AI validation (from Anthropic console)
+- `CORS_ORIGINS` - Allowed CORS origins (comma-separated, e.g., `https://qteria.com,https://qteria.vercel.app`)
+- `ENVIRONMENT` - Set to `production`
+
+**Optional (with defaults):**
+- `REDIS_URL` - Upstash Redis connection string (for Celery background jobs)
+- `PORT` - Railway sets this automatically, do not override
+
+#### Railway Deployment Steps
+
+**Initial Setup:**
+
+1. **Connect GitHub Repository:**
+   - Railway dashboard → New Project → Deploy from GitHub repo
+   - Select `bru-digital/qteria` repository
+   - Select branch: `main`
+
+2. **Configure Service Settings:**
+   - Root Directory: `/apps/api`
+   - Watch Paths: `/apps/api/**`
+   - Builder: Nixpacks (automatically detected via `railway.json`)
+   - Do NOT set custom start command (uses `railway.json` startCommand)
+
+3. **Set Environment Variables:**
+   - Copy all required environment variables from the list above
+   - Verify DATABASE_URL points to `qteria_prod` (NOT `qteria_dev` or `qteria_test`)
+
+4. **Deploy:**
+   - Railway automatically deploys on push to `main` branch
+   - Watch build logs for errors
+   - Wait for "Ready" status (green checkmark)
+
+**Verify Deployment:**
+
+After Railway shows "Ready" status, verify the deployment:
+
+```bash
+# Get Railway public domain from dashboard (e.g., qteria-api-production.up.railway.app)
+RAILWAY_DOMAIN="your-railway-domain.up.railway.app"
+
+# Run deployment verification script
+cd apps/api
+python scripts/verify_deployment.py https://$RAILWAY_DOMAIN
+
+# Expected output:
+# ✅ Health check passed!
+# ✅ DEPLOYMENT VERIFICATION PASSED
 ```
 
-**Render:**
-Add to `render.yaml`:
+**Update Vercel Frontend:**
+
+Once backend is deployed, update Vercel environment variable:
+
+1. Vercel dashboard → qteria (project) → Settings → Environment Variables
+2. Update `API_URL` to Railway public domain: `https://qteria-api-production.up.railway.app`
+3. Redeploy frontend: Deployments → [...] → Redeploy
+
+#### Troubleshooting Railway Deployment
+
+**Error: "Error creating build plan with Railpack"**
+- **Cause:** Railway using wrong builder (Railpack instead of Nixpacks)
+- **Solution:** Verify `railway.json` exists in `/apps/api/` with `"builder": "NIXPACKS"`
+- **Check:** Railway dashboard → Settings → Builder should show "Nixpacks"
+
+**Error: "No start command was found"**
+- **Cause:** Railway not detecting start command from `railway.json` or `Procfile`
+- **Solution:** Verify `railway.json` has correct `startCommand`: `"uvicorn app.main:app --host 0.0.0.0 --port $PORT"`
+- **Fallback:** Manually set start command in Railway dashboard → Settings → Deploy → Start Command
+
+**Error: "ModuleNotFoundError: No module named 'magic'"**
+- **Cause:** libmagic1 system library not installed
+- **Solution:** Verify `nixpacks.toml` has `aptPkgs = ['libmagic1']` in `[phases.setup]`
+- **Verify:** Check build logs for "Installing libmagic1"
+
+**Error: Health check timeout (service starts but `/health` never responds)**
+- **Cause:** Database connection failing, missing environment variables, or app crash on startup
+- **Solution:**
+  1. Check Railway logs for startup errors: `railway logs`
+  2. Verify all environment variables are set correctly
+  3. Test DATABASE_URL is accessible from Railway (not blocked by firewall)
+  4. Check Neon PostgreSQL allows connections from Railway IP ranges
+
+**Error: "CORS policy: No 'Access-Control-Allow-Origin' header"**
+- **Cause:** `CORS_ORIGINS` environment variable not set or missing Vercel domain
+- **Solution:** Set `CORS_ORIGINS=https://qteria.com,https://qteria.vercel.app` in Railway
+
+**Build succeeds but deployment fails:**
+- **Check:** Railway dashboard → Deployments → Click deployment → View Logs
+- **Common issues:**
+  - Missing required environment variable (app crashes on startup)
+  - Database migration not applied (run `alembic upgrade head` if needed)
+  - Port binding issue (verify start command uses `--port $PORT`)
+
+#### Monorepo Considerations
+
+**Railway Root Directory:**
+- Set to `/apps/api` (NOT repository root `/`)
+- This tells Railway to build only the backend, not the entire monorepo
+
+**Watch Paths:**
+- Set to `/apps/api/**`
+- Railway will only redeploy when files in `/apps/api/` change
+- Changes to `/apps/web/` (frontend) will not trigger backend redeployment
+
+**Build Context:**
+- `railway.json` sets build context to `/apps/api/`
+- All relative paths in `nixpacks.toml` and `requirements.txt` are relative to `/apps/api/`
+
+#### Production Checklist
+
+Before directing production traffic to Railway backend:
+
+- [ ] Health check passes: `GET https://<railway-domain>/health` returns 200 OK
+- [ ] All required environment variables set and verified
+- [ ] Database migrations applied: Run `alembic upgrade head` if needed
+- [ ] CORS configured correctly (Vercel domains whitelisted)
+- [ ] Vercel `API_URL` environment variable updated to Railway domain
+- [ ] Frontend can create workflows without errors (end-to-end test)
+- [ ] Document upload works (test with 50MB PDF)
+- [ ] Logs show no startup errors or warnings
+- [ ] Set up monitoring alerts (Railway dashboard → Observability)
+
+#### Rollback Procedure
+
+If deployment fails or introduces critical bugs:
+
+1. **Railway Dashboard:**
+   - Deployments → Find last working deployment
+   - Click [...] → Redeploy
+   - Railway will rollback to previous build
+
+2. **Git Rollback:**
+   - Find last working commit: `git log --oneline`
+   - Revert: `git revert <commit-hash>`
+   - Push to main: `git push origin main`
+   - Railway auto-deploys reverted commit
+
+3. **Emergency Fallback:**
+   - Update Vercel `API_URL` to local backend temporarily
+   - Run backend locally: `cd apps/api && uvicorn app.main:app`
+   - Debug issue, fix, redeploy to Railway
+
+---
+
+### Alternative: Render Deployment
+
+If Railway continues to fail, Render is a simpler alternative:
+
+**Render Configuration:**
+Add to `render.yaml` in repository root:
 ```yaml
 services:
   - type: web
     name: qteria-api
     env: python
-    buildCommand: "apt-get update && apt-get install -y libmagic1 && pip install -r requirements.txt"
+    region: frankfurt  # Europe West for GDPR compliance
+    buildCommand: "pip install -r apps/api/requirements.txt"
+    startCommand: "cd apps/api && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: DATABASE_URL
+        sync: false  # Set manually in Render dashboard
+      - key: BLOB_READ_WRITE_TOKEN
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
 ```
 
-**Environment Variables Required:**
-- `DATABASE_URL` - Neon PostgreSQL connection string
-- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage token
-- `JWT_SECRET` - For authentication
-- `ANTHROPIC_API_KEY` - For AI validation
-- `REDIS_URL` - For Celery background jobs
+**Render Advantages:**
+- Simpler Python detection (no builder configuration needed)
+- Free tier available (512MB RAM, enough for MVP)
+- Automatic SSL certificates
+- Built-in health checks
 
-**Pre-Deployment Checklist:**
-- [ ] Set all required environment variables
-- [ ] Verify libmagic1 installed in container
-- [ ] Test upload with 50MB file in staging
-- [ ] Verify audit logs appear in monitoring
-- [ ] Confirm Vercel Blob storage bucket is private
+**Render Disadvantages:**
+- Slightly slower cold start than Railway
+- Less flexible builder configuration
+- Smaller free tier than Railway
 
 ---
 
