@@ -14,6 +14,8 @@ Exports:
 - DbSession: Type alias for database session dependency (Annotated[Session, Depends(get_db)])
 - RedisClient: Type alias for Redis client dependency
 """
+from __future__ import annotations
+
 import logging
 from typing import Annotated, Generator, Optional
 
