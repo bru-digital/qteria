@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Railway provides PORT environment variable dynamically
+# Railway routes traffic to port 8000 (shown in Networking settings)
 # Uvicorn must bind to 0.0.0.0 (not localhost) to accept external connections
-# Use exec form with shell to ensure $PORT is properly interpolated
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+# Note: Railway does NOT provide a PORT env var - port 8000 is hardcoded in Railway config
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
