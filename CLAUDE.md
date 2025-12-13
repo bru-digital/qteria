@@ -573,18 +573,34 @@ Frontend (Vercel) → Backend (Railway) → Database (Neon PostgreSQL)
                                      → Storage (Vercel Blob)
 ```
 
-#### Railway Configuration Files
+**Production Deployment:**
+- Backend URL: `https://qteriaappapi-production.up.railway.app`
+- Health Check: `https://qteriaappapi-production.up.railway.app/health`
+- Environment: `production`
+- Status: ✅ Live and operational
 
-The backend deployment to Railway is configured through three files in `/apps/api/`:
+#### Railway Configuration (Dockerfile-based)
 
-1. **`railway.json`** - Railway-specific configuration (forces Nixpacks builder, health checks)
-2. **`nixpacks.toml`** - Build configuration (system dependencies, Python version)
-3. **`.python-version`** - Python version lock file (3.11)
+**Final Configuration After Multiple Iterations:**
 
-**Why these files?**
-- `railway.json` forces Nixpacks builder and explicitly sets build/start commands
-- `nixpacks.toml` installs system dependencies (libmagic1) before Python packages
-- `.python-version` ensures Railway uses Python 3.11 (not 3.14 or other versions)
+Railway deployment now uses **Dockerfile** (NOT Nixpacks or railway.json). This approach proved most reliable after several deployment iterations:
+
+1. **Dockerfile:** `apps/api/Dockerfile` - Complete build and runtime configuration
+2. **Port Configuration:** Port 8000 is **hardcoded** in Dockerfile (Railway does NOT provide PORT env var)
+3. **Environment Variable:** Backend reads `PYTHON_ENV` (NOT `ENVIRONMENT`)
+
+**Configuration Files:**
+- `apps/api/Dockerfile` - Multi-stage build with Python 3.11, libmagic, and production dependencies
+- NO `railway.json` needed (Railway auto-detects Dockerfile)
+- NO `nixpacks.toml` needed (Dockerfile handles all dependencies)
+- NO `.python-version` needed (Dockerfile specifies Python version)
+
+**Why Dockerfile Won:**
+- ✅ Reliable Python detection (Nixpacks failed with Python 3.14 detection)
+- ✅ Explicit system dependencies (libmagic1 installed via apt)
+- ✅ Testable locally (`docker build` validates before deploy)
+- ✅ No port binding issues (hardcoded port 8000)
+- ✅ Railway auto-detects Dockerfile, no builder config needed
 
 #### Critical System Dependencies
 
@@ -592,13 +608,12 @@ The backend deployment to Railway is configured through three files in `/apps/ap
 - **Required for**: Document upload API (content-based file type detection)
 - **Dependency chain**: `python-magic` (Python package) → `libmagic1` (system library)
 - **Failure mode**: Startup validation will fail if libmagic is not available (see `apps/api/app/api/v1/endpoints/documents.py:34-46`)
-- **Installation**: Already configured in `nixpacks.toml` under `[phases.setup]`
+- **Installation**: Configured in `apps/api/Dockerfile` via `apt-get install -y libmagic1`
 
-```toml
-# apps/api/nixpacks.toml
-[phases.setup]
-aptPkgs = ['libmagic1']
-```
+**Python 3.11:**
+- **Required**: Backend built on Python 3.11 features
+- **Installation**: Dockerfile uses `python:3.11-slim` base image
+- **Why 3.11**: Balance of stability, performance, and FastAPI compatibility
 
 #### Environment Variables Required
 
@@ -609,12 +624,12 @@ Configure these in Railway dashboard under your service → Variables:
 - `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage token (from Vercel dashboard)
 - `JWT_SECRET` - Secret key for JWT authentication (generate with `openssl rand -hex 32`)
 - `ANTHROPIC_API_KEY` - Claude API key for AI validation (from Anthropic console)
-- `CORS_ORIGINS` - Allowed CORS origins (comma-separated, e.g., `https://qteria.com,https://qteria.vercel.app`)
-- `ENVIRONMENT` - Set to `production`
+- `CORS_ORIGINS` - Allowed CORS origins (comma-separated, e.g., `https://qteria.com,https://qteria.vercel.app,https://*.vercel.app`)
+- `PYTHON_ENV` - Set to `production` (NOTE: Use `PYTHON_ENV`, NOT `ENVIRONMENT`)
 
 **Optional (with defaults):**
 - `REDIS_URL` - Upstash Redis connection string (for Celery background jobs)
-- `PORT` - Railway sets this automatically, do not override
+- ~~`PORT`~~ - **DO NOT SET** (Railway does not provide PORT env var, backend uses hardcoded 8000)
 
 #### Railway Deployment Steps
 
@@ -628,106 +643,144 @@ Configure these in Railway dashboard under your service → Variables:
 2. **Configure Service Settings:**
    - Root Directory: `/apps/api`
    - Watch Paths: `/apps/api/**`
-   - Builder: Nixpacks (automatically detected via `railway.json`)
-   - Do NOT set custom start command (uses `railway.json` startCommand)
+   - Builder: **Automatic** (Railway will detect Dockerfile)
+   - Do NOT set custom build/start commands (Dockerfile handles this)
 
 3. **Set Environment Variables:**
    - Copy all required environment variables from the list above
-   - Verify DATABASE_URL points to `qteria_prod` (NOT `qteria_dev` or `qteria_test`)
+   - **CRITICAL:** Use `PYTHON_ENV=production` (NOT `ENVIRONMENT`)
+   - Verify `DATABASE_URL` points to `qteria_prod` (NOT `qteria_dev` or `qteria_test`)
+   - Verify `CORS_ORIGINS` includes all Vercel domains (production + preview deployments)
 
 4. **Deploy:**
    - Railway automatically deploys on push to `main` branch
-   - Watch build logs for errors
+   - Watch build logs for Docker image build
    - Wait for "Ready" status (green checkmark)
+   - Health check at `/health` should return 200 OK
 
 **Verify Deployment:**
 
 After Railway shows "Ready" status, verify the deployment:
 
 ```bash
-# Get Railway public domain from dashboard (e.g., qteria-api-production.up.railway.app)
-RAILWAY_DOMAIN="your-railway-domain.up.railway.app"
+# Current production Railway domain
+RAILWAY_DOMAIN="qteriaappapi-production.up.railway.app"
 
-# Run deployment verification script
-cd apps/api
-python scripts/verify_deployment.py https://$RAILWAY_DOMAIN
+# Method 1: Quick health check
+curl https://$RAILWAY_DOMAIN/health
 
 # Expected output:
-# ✅ Health check passed!
-# ✅ DEPLOYMENT VERIFICATION PASSED
+# {"status":"healthy","environment":"production"}
+
+# Method 2: Run comprehensive verification script (from frontend)
+cd apps/web
+npm run verify:integration
+
+# Expected output:
+# ✓ ALL INTEGRATION TESTS PASSED
 ```
 
 **Update Vercel Frontend:**
 
-Once backend is deployed, update Vercel environment variable:
+Once backend is deployed and verified, update Vercel environment variable:
 
 1. Vercel dashboard → qteria (project) → Settings → Environment Variables
-2. Update `API_URL` to Railway public domain: `https://qteria-api-production.up.railway.app`
+2. Update `API_URL` to Railway public domain: `https://qteriaappapi-production.up.railway.app`
 3. Redeploy frontend: Deployments → [...] → Redeploy
+4. Test workflow creation through browser UI (no CORS errors expected)
 
 #### Troubleshooting Railway Deployment
 
-**Error: "Error creating build plan with Railpack"**
-- **Cause:** Railway using wrong builder (Railpack instead of Nixpacks)
-- **Solution:** Verify `railway.json` exists in `/apps/api/` with `"builder": "NIXPACKS"`
-- **Check:** Railway dashboard → Settings → Builder should show "Nixpacks"
+**Deployment Journey & Lessons Learned:**
 
-**Error: "No start command was found"**
-- **Cause:** Railway not detecting start command from `railway.json` or `Procfile`
-- **Solution:** Verify `railway.json` has correct `startCommand`: `"uvicorn app.main:app --host 0.0.0.0 --port $PORT"`
-- **Fallback:** Manually set start command in Railway dashboard → Settings → Deploy → Start Command
+This deployment went through **3 major iterations** before succeeding:
+1. **Nixpacks (Failed):** Python 3.14 detection issue, complex configuration
+2. **railway.json + Nixpacks (Failed):** Port binding issues, environment variable confusion
+3. **Dockerfile (Success):** Simple, testable, reliable
 
-**Error: "ModuleNotFoundError: No module named 'magic'"**
-- **Cause:** libmagic1 system library not installed
-- **Solution:** Verify `nixpacks.toml` has `aptPkgs = ['libmagic1']` in `[phases.setup]`
-- **Verify:** Check build logs for "Installing libmagic1"
+**Common Issues & Solutions:**
 
-**Error: Health check timeout (service starts but `/health` never responds)**
-- **Cause:** Database connection failing, missing environment variables, or app crash on startup
+**Issue: Docker build fails with "libmagic1 not found"**
+- **Cause:** Missing system dependency in Dockerfile
+- **Solution:** Verify `apps/api/Dockerfile` has `RUN apt-get update && apt-get install -y libmagic1`
+- **Verify:** Check build logs for successful package installation
+
+**Issue: Container starts but health check fails**
+- **Cause:** Wrong environment variable name or missing DATABASE_URL
 - **Solution:**
-  1. Check Railway logs for startup errors: `railway logs`
-  2. Verify all environment variables are set correctly
-  3. Test DATABASE_URL is accessible from Railway (not blocked by firewall)
-  4. Check Neon PostgreSQL allows connections from Railway IP ranges
+  1. Check Railway logs: Dashboard → Deployments → Click deployment → Logs
+  2. Verify `PYTHON_ENV=production` is set (NOT `ENVIRONMENT`)
+  3. Verify `DATABASE_URL` is accessible from Railway
+  4. Test locally: `docker build -t qteria-api apps/api && docker run -p 8000:8000 qteria-api`
 
-**Error: "CORS policy: No 'Access-Control-Allow-Origin' header"**
-- **Cause:** `CORS_ORIGINS` environment variable not set or missing Vercel domain
-- **Solution:** Set `CORS_ORIGINS=https://qteria.com,https://qteria.vercel.app` in Railway
+**Issue: "CORS policy: No 'Access-Control-Allow-Origin' header"**
+- **Cause:** `CORS_ORIGINS` environment variable not set or missing Vercel domains
+- **Solution:** Set `CORS_ORIGINS=https://qteria.com,https://qteria.vercel.app,https://*.vercel.app` in Railway
+- **Verify:** Test with `curl -H "Origin: https://qteria.vercel.app" https://qteriaappapi-production.up.railway.app/health -I`
 
-**Build succeeds but deployment fails:**
-- **Check:** Railway dashboard → Deployments → Click deployment → View Logs
-- **Common issues:**
-  - Missing required environment variable (app crashes on startup)
-  - Database migration not applied (run `alembic upgrade head` if needed)
-  - Port binding issue (verify start command uses `--port $PORT`)
+**Issue: Port binding error or connection refused**
+- **Cause:** Railway expects app to listen on port 8000 (hardcoded in Dockerfile)
+- **Solution:** Verify Dockerfile CMD uses `--port 8000` (NOT `$PORT`)
+- **Note:** Railway does NOT provide PORT environment variable for this deployment
+
+**Issue: Application crashes on startup with "ModuleNotFoundError"**
+- **Cause:** Python dependencies not installed in Docker image
+- **Solution:** Verify `apps/api/requirements.txt` is copied and installed in Dockerfile
+- **Check:** Build logs should show `pip install -r requirements.txt` success
+
+**Issue: Database connection timeout**
+- **Cause:** Neon PostgreSQL not allowing Railway connections
+- **Solution:**
+  1. Verify DATABASE_URL format: `postgresql://user:pass@host/dbname?sslmode=require`
+  2. Check Neon dashboard → Database → Settings → Allow connections from anywhere
+  3. Test connection from Railway logs: Look for SQLAlchemy connection errors
+
+**Issue: Build succeeds but deployment shows "Deployment Failed"**
+- **Cause:** Health check endpoint not responding within timeout
+- **Solution:**
+  1. Check Railway logs for Python traceback or startup errors
+  2. Increase health check timeout: Railway dashboard → Settings → Health Check
+  3. Verify `/health` endpoint returns 200 OK when tested locally
 
 #### Monorepo Considerations
 
 **Railway Root Directory:**
 - Set to `/apps/api` (NOT repository root `/`)
-- This tells Railway to build only the backend, not the entire monorepo
+- This tells Railway to build Dockerfile from `/apps/api/Dockerfile`
+- Railway sets build context to `/apps/api/` automatically
 
 **Watch Paths:**
 - Set to `/apps/api/**`
 - Railway will only redeploy when files in `/apps/api/` change
-- Changes to `/apps/web/` (frontend) will not trigger backend redeployment
+- Changes to `/apps/web/` (frontend) will NOT trigger backend redeployment
+- This prevents unnecessary backend rebuilds when frontend changes
 
-**Build Context:**
-- `railway.json` sets build context to `/apps/api/`
-- All relative paths in `nixpacks.toml` and `requirements.txt` are relative to `/apps/api/`
+**Dockerfile Context:**
+- Dockerfile is at `/apps/api/Dockerfile`
+- All `COPY` commands in Dockerfile are relative to `/apps/api/`
+- Example: `COPY requirements.txt .` copies `/apps/api/requirements.txt`
 
 #### Production Checklist
 
-Before directing production traffic to Railway backend:
+**Pre-Deployment (Railway Configuration):**
+- [x] Dockerfile exists at `/apps/api/Dockerfile`
+- [x] Railway root directory set to `/apps/api`
+- [x] Railway watch paths set to `/apps/api/**`
+- [x] All required environment variables configured (see list above)
+- [x] `PYTHON_ENV=production` (NOT `ENVIRONMENT`)
+- [x] `CORS_ORIGINS` includes all Vercel domains
 
-- [ ] Health check passes: `GET https://<railway-domain>/health` returns 200 OK
-- [ ] All required environment variables set and verified
-- [ ] Database migrations applied: Run `alembic upgrade head` if needed
-- [ ] CORS configured correctly (Vercel domains whitelisted)
+**Post-Deployment (Verification):**
+- [x] Health check passes: `curl https://qteriaappapi-production.up.railway.app/health` returns `{"status":"healthy","environment":"production"}`
+- [x] Database migrations applied (if needed): `alembic upgrade head`
+- [x] Integration tests pass: `cd apps/web && npm run verify:integration`
+- [x] CORS headers present: `curl -I -H "Origin: https://qteria.vercel.app" https://qteriaappapi-production.up.railway.app/health`
 - [ ] Vercel `API_URL` environment variable updated to Railway domain
-- [ ] Frontend can create workflows without errors (end-to-end test)
-- [ ] Document upload works (test with 50MB PDF)
-- [ ] Logs show no startup errors or warnings
+- [ ] Frontend redeployed with new API_URL
+- [ ] Frontend can create workflows without errors (manual browser test)
+- [ ] No CORS errors in browser console
+- [ ] Document upload works (test with sample PDF)
+- [ ] Railway logs show no startup errors or warnings
 - [ ] Set up monitoring alerts (Railway dashboard → Observability)
 
 #### Rollback Procedure
