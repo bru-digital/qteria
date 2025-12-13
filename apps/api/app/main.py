@@ -141,13 +141,14 @@ async def health_check():
     Health check endpoint for monitoring and load balancers.
 
     Returns:
-        dict: Service health status
+        dict: Service health status with ISO 8601 timestamp
     """
     return {
         "status": "healthy",
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "environment": settings.ENVIRONMENT,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 

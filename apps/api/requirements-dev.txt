@@ -7,6 +7,9 @@
 # Production dependencies
 -r requirements.txt
 
+# Deployment Verification
+# Note: requests==2.31.0 is in requirements.txt for deployment scripts
+
 # Testing
 pytest==7.4.4
 pytest-asyncio==0.23.3
