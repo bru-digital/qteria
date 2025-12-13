@@ -1,13 +1,10 @@
 # Railway build configuration for Qteria API
-# This file tells Railway to install system dependencies before Python packages
+# This file configures system dependencies and Python version for Nixpacks
+# Note: Python dependency installation is handled by railway.json buildCommand
 
 [phases.setup]
 # Install system dependencies required by Python packages
 aptPkgs = ['libmagic1']
-
-[phases.install]
-# Install Python dependencies
-cmds = ['pip install -r requirements.txt']
 
 [start]
 # Start the FastAPI application
