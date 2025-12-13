@@ -4,6 +4,8 @@
 
 [phases.setup]
 # Install system dependencies required by Python packages
+# Using both nix packages (guaranteed runtime availability) and apt packages (fallback)
+nixPkgs = ['file']  # file package contains libmagic
 aptPkgs = ['libmagic1']
 
 [start]
