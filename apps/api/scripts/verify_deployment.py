@@ -16,7 +16,6 @@ import argparse
 import sys
 import time
 import requests
-from typing import Optional
 
 
 def check_health(base_url: str, timeout: int = 90) -> bool:
