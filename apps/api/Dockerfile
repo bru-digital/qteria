@@ -27,4 +27,5 @@ COPY . .
 
 # Railway provides PORT environment variable dynamically
 # Uvicorn must bind to 0.0.0.0 (not localhost) to accept external connections
-CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
+# Use exec form with shell to ensure $PORT is properly interpolated
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
