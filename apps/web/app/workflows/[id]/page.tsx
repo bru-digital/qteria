@@ -42,11 +42,18 @@ const useWorkflowQuery = (id: string) => {
 
         if (!response.ok) {
           if (response.status === 404) {
-            setWorkflow(null)
+            if (!cancelled) {
+              setWorkflow(null)
+              setIsLoading(false)
+            }
             return
           }
           // Extract error message from backend response
           const errorData = await response.json()
+
+          // Check cancelled after await before throwing
+          if (cancelled) return
+
           throw new Error(errorData.error?.message || "Failed to fetch workflow")
         }
 
@@ -54,13 +61,11 @@ const useWorkflowQuery = (id: string) => {
 
         if (!cancelled) {
           setWorkflow(data)
+          setIsLoading(false)
         }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Unknown error")
-        }
-      } finally {
-        if (!cancelled) {
           setIsLoading(false)
         }
       }
