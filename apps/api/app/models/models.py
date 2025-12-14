@@ -66,6 +66,7 @@ class Organization(Base):
     )
     workflows = relationship("Workflow", back_populates="organization")
     assessments = relationship("Assessment", back_populates="organization")
+    documents = relationship("Document", back_populates="organization")
     audit_logs = relationship("AuditLog", back_populates="organization")
 
 
@@ -103,6 +104,9 @@ class User(Base):
     )
     created_assessments = relationship(
         "Assessment", back_populates="creator", foreign_keys="Assessment.created_by"
+    )
+    uploaded_documents = relationship(
+        "Document", back_populates="uploader", foreign_keys="Document.uploaded_by"
     )
 
     # Indexes
@@ -180,6 +184,7 @@ class Bucket(Base):
 
     # Relationships
     workflow = relationship("Workflow", back_populates="buckets")
+    documents = relationship("Document", back_populates="bucket")
     assessment_documents = relationship(
         "AssessmentDocument", back_populates="bucket"
     )
@@ -275,6 +280,53 @@ class Assessment(Base):
         Index("idx_assessment_status", "status"),
         Index("idx_assessment_workflow", "workflow_id"),  # For workflow archive checks
         Index("idx_assessment_created_at", "started_at"),
+    )
+
+
+class Document(Base):
+    """
+    Standalone document storage table for uploaded files.
+
+    Documents are uploaded independently and can later be attached to assessments.
+    This enables:
+    - Multi-tenancy validation at upload time
+    - Document reuse across multiple assessments
+    - Orphan document cleanup
+    - Audit trail for document access
+    """
+
+    __tablename__ = "documents"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    file_name = Column(String(255), nullable=False)
+    file_size = Column(Integer, nullable=False)  # Size in bytes
+    mime_type = Column(String(100), nullable=False)  # e.g., "application/pdf"
+    storage_key = Column(String(500), nullable=False, unique=True)  # Vercel Blob URL
+    bucket_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("buckets.id", ondelete="SET NULL"),
+        nullable=True,  # Optional - document may not be associated with bucket yet
+    )
+    uploaded_by = Column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    uploaded_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="documents")
+    bucket = relationship("Bucket", back_populates="documents")
+    uploader = relationship("User", back_populates="uploaded_documents")
+
+    # Indexes for common queries
+    __table_args__ = (
+        Index("idx_document_organization", "organization_id"),
+        Index("idx_document_bucket", "bucket_id"),
+        Index("idx_document_uploaded_at", "uploaded_at"),
     )
 
 

@@ -2046,3 +2046,242 @@ class TestDocumentUploadRateLimiting:
 
         # Verify final count is 100 (one request succeeded, one rolled back)
         assert redis_counter["count"] == 100, f"Expected final count 100, got {redis_counter['count']}"
+
+
+class TestDocumentDownload:
+    """Tests for GET /v1/documents/:id endpoint (STORY-018)."""
+
+    @pytest.fixture
+    def mock_blob_storage(self):
+        """Mock Vercel Blob storage service."""
+        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+            # Mock get_download_url to return a signed URL
+            mock_service.get_download_url = AsyncMock(return_value="https://blob.vercel-storage.com/documents/signed-url-123.pdf?token=abc")
+            yield mock_service
+
+    @pytest.fixture
+    def mock_document_db(self):
+        """Mock database with test document."""
+        from uuid import uuid4
+        from app.models import Document
+        
+        mock_db = MagicMock()
+        mock_query = MagicMock()
+        
+        # Create mock document
+        test_document = MagicMock(spec=Document)
+        test_document.id = uuid4()
+        test_document.organization_id = TEST_ORG_A_ID
+        test_document.file_name = "test-document.pdf"
+        test_document.file_size = 1024000
+        test_document.mime_type = "application/pdf"
+        test_document.storage_key = "https://blob.vercel-storage.com/documents/test.pdf"
+        
+        # Setup query mock chain
+        mock_db.query.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.first.return_value = test_document
+        
+        return mock_db, test_document
+
+    def test_download_success(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_document_db,
+        mock_audit_service,
+    ):
+        """
+        Test successful document download.
+
+        Acceptance Criteria:
+        - Returns 307 Temporary Redirect
+        - Location header contains Vercel Blob signed URL
+        - Content-Type header matches document MIME type
+        - Content-Disposition header contains filename
+        - Audit log created
+        """
+        mock_db, test_doc = mock_document_db
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.get(
+                f"/v1/documents/{test_doc.id}",
+                headers={"Authorization": f"Bearer {token}"},
+                follow_redirects=False,
+            )
+
+        assert response.status_code == 307
+        assert "Location" in response.headers
+        assert response.headers["Location"].startswith("https://blob.vercel-storage.com/")
+        assert response.headers["Content-Type"] == "application/pdf"
+        assert "test-document.pdf" in response.headers["Content-Disposition"]
+
+        # Verify audit log
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.download.success"
+
+    def test_download_with_page_parameter(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_document_db,
+        mock_audit_service,
+    ):
+        """
+        Test download with page parameter for PDF viewing.
+
+        Acceptance Criteria:
+        - Returns 307 Temporary Redirect
+        - X-PDF-Page header present with page number
+        """
+        mock_db, test_doc = mock_document_db
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.get(
+                f"/v1/documents/{test_doc.id}?page=8",
+                headers={"Authorization": f"Bearer {token}"},
+                follow_redirects=False,
+            )
+
+        assert response.status_code == 307
+        assert "X-PDF-Page" in response.headers
+        assert response.headers["X-PDF-Page"] == "8"
+
+    def test_download_not_found(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_audit_service,
+    ):
+        """
+        Test download of non-existent document.
+
+        Acceptance Criteria:
+        - Returns 404 Not Found
+        - Error code RESOURCE_NOT_FOUND
+        - Audit log created for security monitoring
+        """
+        from uuid import uuid4
+        
+        mock_db = MagicMock()
+        mock_query = MagicMock()
+        mock_db.query.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.first.return_value = None  # Document not found
+        
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        nonexistent_id = uuid4()
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.get(
+                f"/v1/documents/{nonexistent_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
+        
+        # Verify audit log
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.download.failed"
+
+    def test_download_multi_tenancy_enforcement(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_audit_service,
+    ):
+        """
+        Test multi-tenancy: User from Org A cannot download Org B's document.
+
+        Acceptance Criteria:
+        - Returns 404 Not Found (not 403 to avoid info leakage)
+        - Error code RESOURCE_NOT_FOUND
+        - Audit log for security monitoring
+        """
+        from uuid import uuid4
+        from app.models import Document
+        
+        mock_db = MagicMock()
+        mock_query = MagicMock()
+        
+        # Document belongs to Org B
+        org_b_document = MagicMock(spec=Document)
+        org_b_document.id = uuid4()
+        org_b_document.organization_id = TEST_ORG_B_ID  # Different org
+        
+        # Setup query to return no document (multi-tenancy filter blocks it)
+        mock_db.query.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.first.return_value = None  # Filtered out
+        
+        # User from Org A tries to download Org B's document
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.get(
+                f"/v1/documents/{org_b_document.id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        # Should return 404 (not 403) to avoid leaking document existence
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
+
+    def test_download_no_authentication(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+    ):
+        """
+        Test download without authentication token.
+
+        Acceptance Criteria:
+        - Returns 401 Unauthorized
+        """
+        from uuid import uuid4
+        
+        response = client.get(
+            f"/v1/documents/{uuid4()}",
+        )
+
+        assert response.status_code == 401
+
+    def test_download_blob_storage_failure(
+        self,
+        client: TestClient,
+        mock_document_db,
+        mock_audit_service,
+    ):
+        """
+        Test handling of Vercel Blob URL generation failure.
+
+        Acceptance Criteria:
+        - Returns 500 Internal Server Error
+        - Error code DOWNLOAD_URL_FAILED
+        """
+        mock_db, test_doc = mock_document_db
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock blob storage failure
+        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+            async def url_error(*args, **kwargs):
+                raise Exception("Blob storage connection timeout")
+            
+            mock_service.get_download_url = AsyncMock(side_effect=url_error)
+
+            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+                response = client.get(
+                    f"/v1/documents/{test_doc.id}",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+
+        assert response.status_code == 500
+        data = response.json()
+        assert data["error"]["code"] == "DOWNLOAD_URL_FAILED"
