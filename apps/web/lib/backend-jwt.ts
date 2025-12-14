@@ -117,14 +117,26 @@ export function generateBackendJWT(session: { user: SessionUser }): string {
  * @returns true if session has valid user fields, false otherwise
  */
 export function isValidSession(session: unknown): session is { user: SessionUser } {
+  if (typeof session !== "object" || session === null) {
+    return false
+  }
+
+  if (!("user" in session)) {
+    return false
+  }
+
+  const user = (session as { user: unknown }).user
+
+  if (typeof user !== "object" || user === null) {
+    return false
+  }
+
   return (
-    typeof session === "object" &&
-    session !== null &&
-    "user" in session &&
-    typeof (session as any).user === "object" &&
-    (session as any).user !== null &&
-    typeof (session as any).user.id === "string" &&
-    typeof (session as any).user.role === "string" &&
-    typeof (session as any).user.organizationId === "string"
+    "id" in user &&
+    "role" in user &&
+    "organizationId" in user &&
+    typeof (user as { id: unknown }).id === "string" &&
+    typeof (user as { role: unknown }).role === "string" &&
+    typeof (user as { organizationId: unknown }).organizationId === "string"
   )
 }

@@ -45,7 +45,9 @@ const useWorkflowQuery = (id: string) => {
             setWorkflow(null)
             return
           }
-          throw new Error("Failed to fetch workflow")
+          // Extract error message from backend response
+          const errorData = await response.json()
+          throw new Error(errorData.error?.message || "Failed to fetch workflow")
         }
 
         const data = await response.json()
