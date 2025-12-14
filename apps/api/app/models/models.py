@@ -66,6 +66,7 @@ class Organization(Base):
     )
     workflows = relationship("Workflow", back_populates="organization")
     assessments = relationship("Assessment", back_populates="organization")
+    documents = relationship("Document", back_populates="organization")
     audit_logs = relationship("AuditLog", back_populates="organization")
 
 
@@ -103,6 +104,9 @@ class User(Base):
     )
     created_assessments = relationship(
         "Assessment", back_populates="creator", foreign_keys="Assessment.created_by"
+    )
+    uploaded_documents = relationship(
+        "Document", back_populates="uploader", foreign_keys="Document.uploaded_by"
     )
 
     # Indexes
@@ -180,6 +184,7 @@ class Bucket(Base):
 
     # Relationships
     workflow = relationship("Workflow", back_populates="buckets")
+    documents = relationship("Document", back_populates="bucket")
     assessment_documents = relationship(
         "AssessmentDocument", back_populates="bucket"
     )
@@ -313,9 +318,9 @@ class Document(Base):
     uploaded_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    organization = relationship("Organization")
-    bucket = relationship("Bucket")
-    uploader = relationship("User")
+    organization = relationship("Organization", back_populates="documents")
+    bucket = relationship("Bucket", back_populates="documents")
+    uploader = relationship("User", back_populates="uploaded_documents")
 
     # Indexes for common queries
     __table_args__ = (

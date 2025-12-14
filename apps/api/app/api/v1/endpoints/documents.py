@@ -577,6 +577,7 @@ async def upload_document(
 
         document_responses = []
         upload_timestamp = datetime.now(timezone.utc)
+        uploaded_blobs = []  # Track blobs for cleanup if DB save fails
 
         for file_data in file_data_list:
             # Generate unique document ID for tracking
@@ -591,6 +592,7 @@ async def upload_document(
                     organization_id=current_user.organization_id,
                     document_id=document_id,
                 )
+                uploaded_blobs.append(storage_url)  # Track for potential cleanup
             except Exception as e:
                 logger.error(
                     "Failed to upload file to Vercel Blob in batch",
@@ -627,73 +629,25 @@ async def upload_document(
                     request=request,
                 )
 
-            # Save document metadata to database
+            # Add document metadata to database session (don't commit yet)
             # This completes STORY-015 acceptance criteria: "Stores metadata in PostgreSQL"
-            try:
-                document_record = Document(
-                    id=UUID(document_id),
-                    organization_id=current_user.organization_id,
-                    file_name=file_data["filename"],
-                    file_size=file_data["size"],
-                    mime_type=file_data["mime_type"],
-                    storage_key=storage_url,
-                    bucket_id=UUID(bucket_id) if bucket_id else None,
-                    uploaded_by=current_user.id,
-                )
-                db.add(document_record)
-                db.commit()
-
-                logger.debug(
-                    "Document metadata saved to database",
-                    extra={
-                        "document_id": document_id,
-                        "organization_id": str(current_user.organization_id),
-                    },
-                )
-            except Exception as e:
-                # Database save failed - log error but don't fail the upload
-                # Document is already in Vercel Blob, so we can still return success
-                # The blob cleanup job will handle orphaned files
-                logger.error(
-                    "Failed to save document metadata to database",
-                    extra={
-                        "document_id": document_id,
-                        "file_name": file_data["filename"],
-                        "storage_url": storage_url,
-                        "error": str(e),
-                    },
-                    exc_info=True,
-                )
-                # Rollback the failed transaction
-                db.rollback()
-
-            # Log successful upload for audit trail (SOC2 compliance)
-            AuditService.log_event(
-                db=db,
-                action="document.upload.success",
+            document_record = Document(
+                id=UUID(document_id),
                 organization_id=current_user.organization_id,
-                user_id=current_user.id,
-                resource_type="document",
-                resource_id=UUID(document_id),
-                metadata={
-                    "filename": file_data["filename"],
-                    "file_size": file_data["size"],
-                    "mime_type": file_data["mime_type"],
-                    "bucket_id": bucket_id,
-                    "batch_size": len(file_data_list),
-                },
-                request=request,
+                file_name=file_data["filename"],
+                file_size=file_data["size"],
+                mime_type=file_data["mime_type"],
+                storage_key=storage_url,
+                bucket_id=UUID(bucket_id) if bucket_id else None,
+                uploaded_by=current_user.id,
             )
+            db.add(document_record)
 
-            logger.info(
-                "Document uploaded successfully in batch",
+            logger.debug(
+                "Document metadata added to database session",
                 extra={
                     "document_id": document_id,
-                    "user_id": str(current_user.id),
                     "organization_id": str(current_user.organization_id),
-                    "file_name": file_data["filename"],
-                    "storage_url": storage_url,
-                    "batch_size": len(file_data_list),
                 },
             )
 
@@ -709,6 +663,89 @@ async def upload_document(
                     uploaded_at=upload_timestamp,
                     uploaded_by=current_user.id,
                 )
+            )
+
+        # Commit all documents in a single transaction
+        # This is more performant than N commits for batch uploads
+        try:
+            db.commit()
+            logger.info(
+                "All document metadata committed to database",
+                extra={
+                    "user_id": str(current_user.id),
+                    "organization_id": str(current_user.organization_id),
+                    "file_count": len(document_responses),
+                },
+            )
+        except Exception as e:
+            # Database save failed - rollback and clean up all uploaded blobs
+            db.rollback()
+
+            # Clean up all blobs from this batch (best effort)
+            cleanup_errors = []
+            for blob_url in uploaded_blobs:
+                try:
+                    await BlobStorageService.delete_file(blob_url)
+                except Exception as cleanup_error:
+                    cleanup_errors.append(
+                        {"blob_url": blob_url, "error": str(cleanup_error)}
+                    )
+
+            if cleanup_errors:
+                logger.error(
+                    "Failed to clean up some orphaned blobs after database error",
+                    extra={"cleanup_errors": cleanup_errors},
+                    exc_info=True,
+                )
+
+            logger.error(
+                "Failed to save document metadata to database",
+                extra={
+                    "user_id": str(current_user.id),
+                    "file_count": len(file_data_list),
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+
+            # Fail the upload - don't return success when database save fails
+            raise create_error_response(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_code="DATABASE_ERROR",
+                message="Failed to save document metadata. Please try again.",
+                details={"file_count": len(file_data_list)},
+                request=request,
+            )
+
+        # Log successful upload for audit trail (SOC2 compliance)
+        for i, doc_response in enumerate(document_responses):
+            AuditService.log_event(
+                db=db,
+                action="document.upload.success",
+                organization_id=current_user.organization_id,
+                user_id=current_user.id,
+                resource_type="document",
+                resource_id=doc_response.id,
+                metadata={
+                    "filename": doc_response.file_name,
+                    "file_size": doc_response.file_size,
+                    "mime_type": doc_response.mime_type,
+                    "bucket_id": str(bucket_id) if bucket_id else None,
+                    "batch_size": len(file_data_list),
+                },
+                request=request,
+            )
+
+            logger.info(
+                "Document uploaded successfully in batch",
+                extra={
+                    "document_id": str(doc_response.id),
+                    "user_id": str(current_user.id),
+                    "organization_id": str(current_user.organization_id),
+                    "file_name": doc_response.file_name,
+                    "storage_url": doc_response.storage_key,
+                    "batch_size": len(file_data_list),
+                },
             )
 
         logger.info(
