@@ -54,9 +54,10 @@ export async function GET(
     if (!session || !session.user) {
       return NextResponse.json(
         {
-          detail: {
+          error: {
             code: "UNAUTHORIZED",
             message: "Authentication required",
+            request_id: randomUUID(),
           },
         },
         { status: 401 }
@@ -93,7 +94,7 @@ export async function GET(
     console.error("[API Proxy] Error fetching workflow:", { requestId, error })
     return NextResponse.json(
       {
-        detail: {
+        error: {
           code: "INTERNAL_ERROR",
           message: "Failed to fetch workflow",
           request_id: requestId,

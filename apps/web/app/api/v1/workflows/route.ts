@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { detail: { code: "UNAUTHORIZED", message: "Authentication required" } },
+        { error: { code: "UNAUTHORIZED", message: "Authentication required", request_id: randomUUID() } },
         { status: 401 }
       )
     }
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     console.error("[API Proxy] Error:", { requestId, error })
     return NextResponse.json(
       {
-        detail: {
-          code: "PROXY_ERROR",
+        error: {
+          code: "INTERNAL_ERROR",
           message: error instanceof Error ? error.message : "Internal server error",
           request_id: requestId,
         },
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { detail: { code: "UNAUTHORIZED", message: "Authentication required" } },
+        { error: { code: "UNAUTHORIZED", message: "Authentication required", request_id: randomUUID() } },
         { status: 401 }
       )
     }
@@ -106,8 +106,8 @@ export async function GET(request: NextRequest) {
     console.error("[API Proxy] Error:", { requestId, error })
     return NextResponse.json(
       {
-        detail: {
-          code: "PROXY_ERROR",
+        error: {
+          code: "INTERNAL_ERROR",
           message: error instanceof Error ? error.message : "Internal server error",
           request_id: requestId,
         },
