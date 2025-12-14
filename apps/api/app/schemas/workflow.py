@@ -198,7 +198,7 @@ class CriteriaResponse(BaseModel):
     id: UUID
     name: str
     description: Optional[str]
-    applies_to_bucket_ids: List[UUID]  # Converted from indexes to actual UUIDs
+    applies_to_bucket_ids: Optional[List[UUID]] = None  # None = applies to all buckets
     order_index: int
 
     class Config:
@@ -371,9 +371,9 @@ class CriteriaUpdate(BaseModel):
         max_length=2000,
         description="Detailed description of validation rule for AI context",
     )
-    applies_to_bucket_ids: List[UUID] = Field(
-        default_factory=list,
-        description="Bucket UUIDs this criteria applies to (empty = applies to all buckets)",
+    applies_to_bucket_ids: Optional[List[UUID]] = Field(
+        default=None,
+        description="Bucket UUIDs this criteria applies to (None = applies to all buckets)",
         examples=[],
     )
     order_index: int = Field(

@@ -348,7 +348,48 @@ class TestCreateWorkflow:
         assert response.status_code == 201
         data = response.json()
         # Empty list gets converted to None (applies to all buckets)
-        assert data["criteria"][0]["applies_to_bucket_ids"] == []
+        assert data["criteria"][0]["applies_to_bucket_ids"] is None
+
+    def test_create_workflow_criteria_applies_to_specific_buckets(
+        self,
+        client: TestClient,
+        process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Criteria with specific bucket indexes applies only to those buckets."""
+        payload = {
+            "name": "Test Workflow",
+            "buckets": [
+                {"name": "Bucket 1", "required": True, "order_index": 0},
+                {"name": "Bucket 2", "required": True, "order_index": 1},
+                {"name": "Bucket 3", "required": False, "order_index": 2},
+            ],
+            "criteria": [
+                {
+                    "name": "Specific criteria",
+                    "applies_to_bucket_ids": [0, 2],  # Applies to Bucket 1 and Bucket 3
+                }
+            ],
+        }
+
+        response = client.post(
+            "/v1/workflows",
+            json=payload,
+            headers={"Authorization": f"Bearer {process_manager_token}"},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+
+        # Criteria should reference specific bucket UUIDs
+        bucket_ids = [bucket["id"] for bucket in data["buckets"]]
+        criteria_bucket_ids = data["criteria"][0]["applies_to_bucket_ids"]
+
+        assert criteria_bucket_ids is not None
+        assert len(criteria_bucket_ids) == 2
+        assert bucket_ids[0] in criteria_bucket_ids  # Bucket 1
+        assert bucket_ids[2] in criteria_bucket_ids  # Bucket 3
+        assert bucket_ids[1] not in criteria_bucket_ids  # Bucket 2 not included
 
     def test_create_workflow_duplicate_bucket_names(
         self,
