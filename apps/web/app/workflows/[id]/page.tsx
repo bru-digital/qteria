@@ -7,19 +7,55 @@ import { TopNav } from "@/components/navigation/TopNav"
 import { Breadcrumb } from "@/components/navigation/Breadcrumb"
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton"
 import { useToast } from "@/components/ui/Toast"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { Workflow, Bucket, Criterion } from "@/types/app"
 
-// TODO(API Integration): Replace with React Query hook when backend is ready
-// Expected endpoint: GET /v1/workflows/:id
-// Returns: Single workflow with buckets and criteria
-// Implementation: Use @tanstack/react-query with proper auth headers
-// Reference: apps/api/app/api/v1/endpoints/workflows.py (when implemented)
+/**
+ * useWorkflowQuery Hook
+ *
+ * Fetches a single workflow by ID from the Next.js API proxy route.
+ * The proxy route handles authentication and forwards the request to FastAPI backend.
+ *
+ * Endpoint: GET /api/v1/workflows/:id
+ * Backend: GET /v1/workflows/:id (via proxy)
+ *
+ * States:
+ * - isLoading: true while fetching data
+ * - data: Workflow object when loaded, null if not found
+ * - error: Error message if request fails
+ */
 const useWorkflowQuery = (id: string) => {
-  const [isLoading] = useState(false)
-  const [workflow] = useState<Workflow | null>(null)
+  const [workflow, setWorkflow] = useState<Workflow | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  return { data: workflow, isLoading }
+  useEffect(() => {
+    const fetchWorkflow = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch(`/api/v1/workflows/${id}`)
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setWorkflow(null)
+            return
+          }
+          throw new Error("Failed to fetch workflow")
+        }
+
+        const data = await response.json()
+        setWorkflow(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchWorkflow()
+  }, [id])
+
+  return { data: workflow, isLoading, error }
 }
 
 interface Props {
@@ -69,7 +105,9 @@ export default function WorkflowDetailPage({ params }: Props) {
       <div className="min-h-screen bg-gray-50">
         <TopNav />
         <main className="max-w-7xl mx-auto px-8 py-6">
-          <CardSkeleton />
+          <div className="text-center py-12">
+            <p className="text-gray-600">Loading workflow...</p>
+          </div>
         </main>
       </div>
     )
