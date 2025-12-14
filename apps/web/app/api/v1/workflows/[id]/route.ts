@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { sign } from "jsonwebtoken"
+import { generateBackendJWT } from "@/lib/backend-jwt"
 import { randomUUID } from "crypto"
 
 /**
@@ -22,43 +22,6 @@ import { randomUUID } from "crypto"
 // Use API_URL environment variable (server-side only, not NEXT_PUBLIC_*)
 // Default to localhost for development
 const API_URL = process.env.API_URL || "http://localhost:8000"
-
-/**
- * Get JWT secret with runtime validation
- * This is checked at request time, not build time, to support Vercel deployments
- * where environment variables are only available at runtime.
- */
-function getJWTSecret(): string {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error("JWT_SECRET environment variable is required for API proxy")
-  }
-  return secret
-}
-
-/**
- * Generate a JWT token from Next Auth session data
- * Format matches what FastAPI backend expects (see apps/api/app/core/auth.py)
- *
- * Token Expiration: 30 minutes
- * - Tokens are regenerated on each request through this proxy
- * - Short expiration reduces risk if token is compromised
- * - User session is managed separately by NextAuth (typically 30 days)
- */
-function generateJWTFromSession(session: any): string {
-  const JWT_SECRET = getJWTSecret()
-  const payload = {
-    sub: session.user.id,
-    email: session.user.email || "",
-    role: session.user.role,
-    organizationId: session.user.organizationId,
-    name: session.user.name || null,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes
-  }
-
-  return sign(payload, JWT_SECRET, { algorithm: "HS256" })
-}
 
 /**
  * GET /api/v1/workflows/:id
@@ -91,8 +54,8 @@ export async function GET(
     if (!session || !session.user) {
       return NextResponse.json(
         {
-          error: {
-            code: "INVALID_TOKEN",
+          detail: {
+            code: "UNAUTHORIZED",
             message: "Authentication required",
           },
         },
@@ -104,7 +67,7 @@ export async function GET(
     const { id } = await params
 
     // Generate JWT token for FastAPI
-    const jwtToken = generateJWTFromSession(session)
+    const jwtToken = generateBackendJWT(session)
 
     // Forward request to FastAPI backend
     const response = await fetch(`${API_URL}/v1/workflows/${id}`, {
@@ -130,7 +93,7 @@ export async function GET(
     console.error("[API Proxy] Error fetching workflow:", { requestId, error })
     return NextResponse.json(
       {
-        error: {
+        detail: {
           code: "INTERNAL_ERROR",
           message: "Failed to fetch workflow",
           request_id: requestId,

@@ -30,10 +30,15 @@ const useWorkflowQuery = (id: string) => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
+
     const fetchWorkflow = async () => {
       try {
         setIsLoading(true)
+        setError(null)
         const response = await fetch(`/api/v1/workflows/${id}`)
+
+        if (cancelled) return
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -44,15 +49,26 @@ const useWorkflowQuery = (id: string) => {
         }
 
         const data = await response.json()
-        setWorkflow(data)
+
+        if (!cancelled) {
+          setWorkflow(data)
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error")
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Unknown error")
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchWorkflow()
+
+    return () => {
+      cancelled = true
+    }
   }, [id])
 
   return { data: workflow, isLoading, error }
@@ -66,7 +82,7 @@ export default function WorkflowDetailPage({ params }: Props) {
   const { id } = use(params)
   const router = useRouter()
   const { showToast } = useToast()
-  const { data: workflow, isLoading } = useWorkflowQuery(id)
+  const { data: workflow, isLoading, error } = useWorkflowQuery(id)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isArchiving, setIsArchiving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -107,6 +123,36 @@ export default function WorkflowDetailPage({ params }: Props) {
         <main className="max-w-7xl mx-auto px-8 py-6">
           <div className="text-center py-12">
             <p className="text-gray-600">Loading workflow...</p>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <TopNav />
+        <main className="max-w-7xl mx-auto px-8 py-6">
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold text-red-900">Error Loading Workflow</h2>
+            <p className="text-sm text-gray-600 mt-2">
+              {error}
+            </p>
+            <div className="flex items-center justify-center space-x-4 mt-4">
+              <button
+                onClick={() => router.push("/workflows")}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Back to Workflows
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         </main>
       </div>

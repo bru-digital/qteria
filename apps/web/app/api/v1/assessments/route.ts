@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { sign } from "jsonwebtoken"
+import { generateBackendJWT } from "@/lib/backend-jwt"
 import { randomUUID } from "crypto"
 
 /**
@@ -23,43 +23,6 @@ import { randomUUID } from "crypto"
 const API_URL = process.env.API_URL || "http://localhost:8000"
 
 /**
- * Get JWT secret with runtime validation
- * This is checked at request time, not build time, to support Vercel deployments
- * where environment variables are only available at runtime.
- */
-function getJWTSecret(): string {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error("JWT_SECRET environment variable is required for API proxy")
-  }
-  return secret
-}
-
-/**
- * Generate a JWT token from Next Auth session data
- * Format matches what FastAPI backend expects (see apps/api/app/core/auth.py)
- *
- * Token Expiration: 30 minutes
- * - Tokens are regenerated on each request through this proxy
- * - Short expiration reduces risk if token is compromised
- * - User session is managed separately by NextAuth (typically 30 days)
- */
-function generateJWTFromSession(session: any): string {
-  const JWT_SECRET = getJWTSecret()
-  const payload = {
-    sub: session.user.id,
-    email: session.user.email || "",
-    role: session.user.role,
-    organizationId: session.user.organizationId,
-    name: session.user.name || null,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes
-  }
-
-  return sign(payload, JWT_SECRET, { algorithm: "HS256" })
-}
-
-/**
  * POST /api/v1/assessments
  * Start a new assessment (validation run)
  *
@@ -79,10 +42,9 @@ export async function POST(request: NextRequest) {
     if (!session || !session.user) {
       return NextResponse.json(
         {
-          error: {
-            code: "INVALID_TOKEN",
+          detail: {
+            code: "UNAUTHORIZED",
             message: "Authentication required",
-            request_id: randomUUID()
           }
         },
         { status: 401 }
@@ -90,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate JWT token for FastAPI
-    const jwtToken = generateJWTFromSession(session)
+    const jwtToken = generateBackendJWT(session)
 
     // Get request body
     const body = await request.json()
@@ -115,8 +77,8 @@ export async function POST(request: NextRequest) {
     console.error("[API Proxy - Assessments] Error:", { requestId, error })
     return NextResponse.json(
       {
-        error: {
-          code: "PROXY_ERROR",
+        detail: {
+          code: "INTERNAL_ERROR",
           message: error instanceof Error ? error.message : "Internal server error",
           request_id: requestId,
         },
@@ -147,17 +109,16 @@ export async function GET(request: NextRequest) {
     if (!session || !session.user) {
       return NextResponse.json(
         {
-          error: {
-            code: "INVALID_TOKEN",
+          detail: {
+            code: "UNAUTHORIZED",
             message: "Authentication required",
-            request_id: randomUUID()
           }
         },
         { status: 401 }
       )
     }
 
-    const jwtToken = generateJWTFromSession(session)
+    const jwtToken = generateBackendJWT(session)
 
     // Get query params from URL
     const { searchParams } = new URL(request.url)
@@ -182,8 +143,8 @@ export async function GET(request: NextRequest) {
     console.error("[API Proxy - Assessments] Error:", { requestId, error })
     return NextResponse.json(
       {
-        error: {
-          code: "PROXY_ERROR",
+        detail: {
+          code: "INTERNAL_ERROR",
           message: error instanceof Error ? error.message : "Internal server error",
           request_id: requestId,
         },
