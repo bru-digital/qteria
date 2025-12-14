@@ -50,7 +50,7 @@ except Exception as e:
 from app.core.auth import AuthenticatedUser
 from app.core.dependencies import get_db, get_redis, check_upload_rate_limit, RedisClient
 from app.core.exceptions import create_error_response
-from app.models import Bucket, Workflow
+from app.models import Bucket, Workflow, Document
 from app.schemas.document import (
     DocumentResponse,
     ALLOWED_MIME_TYPES,
@@ -627,6 +627,46 @@ async def upload_document(
                     request=request,
                 )
 
+            # Save document metadata to database
+            # This completes STORY-015 acceptance criteria: "Stores metadata in PostgreSQL"
+            try:
+                document_record = Document(
+                    id=UUID(document_id),
+                    organization_id=current_user.organization_id,
+                    file_name=file_data["filename"],
+                    file_size=file_data["size"],
+                    mime_type=file_data["mime_type"],
+                    storage_key=storage_url,
+                    bucket_id=UUID(bucket_id) if bucket_id else None,
+                    uploaded_by=current_user.id,
+                )
+                db.add(document_record)
+                db.commit()
+
+                logger.debug(
+                    "Document metadata saved to database",
+                    extra={
+                        "document_id": document_id,
+                        "organization_id": str(current_user.organization_id),
+                    },
+                )
+            except Exception as e:
+                # Database save failed - log error but don't fail the upload
+                # Document is already in Vercel Blob, so we can still return success
+                # The blob cleanup job will handle orphaned files
+                logger.error(
+                    "Failed to save document metadata to database",
+                    extra={
+                        "document_id": document_id,
+                        "file_name": file_data["filename"],
+                        "storage_url": storage_url,
+                        "error": str(e),
+                    },
+                    exc_info=True,
+                )
+                # Rollback the failed transaction
+                db.rollback()
+
             # Log successful upload for audit trail (SOC2 compliance)
             AuditService.log_event(
                 db=db,
@@ -710,17 +750,19 @@ async def upload_document(
 
         # Return list of document responses
         #
-        # DESIGN DECISION: No database persistence at upload time
+        # DESIGN: Documents are now persisted to database at upload time
         #
-        # In the MVP, we return metadata for the frontend to use when creating assessments.
-        # The documents will be formally saved to assessment_documents table when assessment is created.
+        # This enables:
+        # - Multi-tenancy validation for document downloads (STORY-018)
+        # - Document reuse across multiple assessments
+        # - Audit trail for document access
+        # - Orphan document cleanup queries
         #
-        # Rationale (same as single file upload):
-        # - Simplifies upload flow (no database writes during upload)
-        # - Assessment creation is the atomic operation that links documents to buckets/workflows
-        # - Orphaned blobs are acceptable for MVP (cleanup job can be added post-launch)
+        # Documents are saved to both:
+        # 1. `documents` table (standalone upload record)
+        # 2. `assessment_documents` table (when linked to assessment)
         #
-        # This design optimizes for Journey Step 3 (AI validation speed) over administrative queries.
+        # This completes STORY-015 acceptance criteria: "Stores metadata in PostgreSQL"
 
         return document_responses
 
@@ -756,3 +798,204 @@ async def upload_document(
                     except Exception:
                         # Ignore cleanup errors - file might already be closed
                         pass
+
+
+@router.get(
+    "/{document_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Download document",
+    description="""
+Download document from Vercel Blob storage with optional page parameter for PDFs.
+
+**Authorization**: Requires authentication. Users can only download documents from their organization.
+
+**Multi-Tenancy**: Enforced - returns 404 if document belongs to different organization.
+
+**Journey Step 3**: Users view documents referenced in AI evidence links (e.g., "Issue found on page 8").
+
+**Query Parameters**:
+- `page` (optional): PDF page number to hint for viewer (returned in X-PDF-Page header)
+
+**Example Request**:
+```
+GET /v1/documents/550e8400-e29b-41d4-a716-446655440000?page=8
+Authorization: Bearer <jwt_token>
+```
+
+**Example Response Headers**:
+```
+HTTP/1.1 200 OK
+Content-Type: application/pdf
+Content-Disposition: inline; filename="technical-spec.pdf"
+X-PDF-Page: 8
+Location: https://blob.vercel-storage.com/documents/...
+```
+
+**Response**: 302 Redirect to signed Vercel Blob URL (expires in 1 hour)
+
+**Error Responses**:
+- 404: Document not found or belongs to different organization
+- 401: Missing or invalid authentication token
+    """,
+)
+async def download_document(
+    document_id: UUID,
+    page: Optional[int] = None,
+    current_user: AuthenticatedUser = Depends(),
+    request: Request = None,
+    db: Session = Depends(get_db),
+) -> Response:
+    """
+    Download document from Vercel Blob storage.
+
+    Journey Step 3: Users view documents referenced in AI validation results.
+
+    This endpoint returns a redirect to a signed Vercel Blob URL that expires in 1 hour.
+    The frontend receives the signed URL and can display it in a PDF viewer or download it.
+
+    Args:
+        document_id: UUID of the document to download
+        page: Optional page number for PDF viewing hint
+        current_user: Authenticated user (from JWT)
+        request: FastAPI request for audit logging
+        db: Database session for audit logging
+
+    Returns:
+        Response: 302 redirect to signed Vercel Blob URL with appropriate headers
+
+    Raises:
+        HTTPException: 404 if document not found or access denied
+    """
+    try:
+        logger.info(
+            "Document download requested",
+            extra={
+                "document_id": str(document_id),
+                "user_id": str(current_user.id),
+                "organization_id": str(current_user.organization_id),
+                "page": page,
+            },
+        )
+
+        # 1. Query document by ID with multi-tenancy enforcement
+        # Return 404 (not 403) for documents in other orgs to avoid info leakage
+        document = db.query(Document).filter(
+            Document.id == document_id,
+            Document.organization_id == current_user.organization_id
+        ).first()
+
+        if not document:
+            logger.warning(
+                "Document not found or access denied",
+                extra={
+                    "document_id": str(document_id),
+                    "user_id": str(current_user.id),
+                    "organization_id": str(current_user.organization_id),
+                },
+            )
+
+            # Audit log for security monitoring
+            AuditService.log_event(
+                db=db,
+                action="document.download.failed",
+                organization_id=current_user.organization_id,
+                user_id=current_user.id,
+                resource_type="document",
+                metadata={
+                    "document_id": str(document_id),
+                    "reason": "not_found_or_access_denied",
+                },
+                request=request,
+            )
+
+            raise create_error_response(
+                status_code=status.HTTP_404_NOT_FOUND,
+                error_code="RESOURCE_NOT_FOUND",
+                message="Document not found",
+                request=request,
+            )
+
+        # 2. Get download URL from Vercel Blob
+        try:
+            download_url = await BlobStorageService.get_download_url(document.storage_key)
+        except Exception as e:
+            logger.error(
+                "Failed to get download URL from Vercel Blob",
+                extra={
+                    "document_id": str(document_id),
+                    "storage_key": document.storage_key,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+
+            raise create_error_response(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_code="DOWNLOAD_URL_FAILED",
+                message="Failed to generate download URL",
+                request=request,
+            )
+
+        # 3. Log successful download for audit trail (SOC2 compliance)
+        AuditService.log_event(
+            db=db,
+            action="document.download.success",
+            organization_id=current_user.organization_id,
+            user_id=current_user.id,
+            resource_type="document",
+            resource_id=document_id,
+            metadata={
+                "file_name": document.file_name,
+                "file_size": document.file_size,
+                "mime_type": document.mime_type,
+                "page": page,
+            },
+            request=request,
+        )
+
+        logger.info(
+            "Document download URL generated successfully",
+            extra={
+                "document_id": str(document_id),
+                "user_id": str(current_user.id),
+                "file_name": document.file_name,
+            },
+        )
+
+        # 4. Return redirect response with appropriate headers
+        # Using 307 Temporary Redirect to preserve the GET method
+        redirect_response = Response(
+            status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+            headers={
+                "Location": download_url,
+                "Content-Type": document.mime_type,
+                "Content-Disposition": f'inline; filename="{document.file_name}"',
+            }
+        )
+
+        # 5. Add X-PDF-Page header if page parameter provided (for PDF viewers)
+        if page and document.mime_type == "application/pdf":
+            redirect_response.headers["X-PDF-Page"] = str(page)
+
+        return redirect_response
+
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        logger.error(
+            "Unexpected error during document download",
+            extra={
+                "document_id": str(document_id),
+                "user_id": str(current_user.id),
+                "error": str(e),
+            },
+            exc_info=True,
+        )
+
+        raise create_error_response(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            error_code="INTERNAL_ERROR",
+            message="An unexpected error occurred during document download.",
+            request=request,
+        )

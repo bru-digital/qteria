@@ -196,6 +196,41 @@ class BlobStorageService:
             raise Exception(f"Failed to upload file to Vercel Blob: {str(e)}")
 
     @staticmethod
+    async def get_download_url(storage_key: str) -> str:
+        """
+        Get download URL for a document from Vercel Blob storage.
+
+        Note: Vercel Blob URLs returned by put() are already signed URLs with
+        embedded tokens that provide access to private blobs. Unlike S3, there's
+        no separate "generate signed URL" operation - the URLs from put() remain
+        valid and can be used directly for downloads.
+
+        Args:
+            storage_key: The storage URL/key returned from upload
+
+        Returns:
+            str: Download URL (same as storage_key for Vercel Blob)
+
+        Raises:
+            ValueError: If storage_key is empty or invalid
+        """
+        if not storage_key:
+            raise ValueError("storage_key cannot be empty")
+
+        # Verify it's a Vercel Blob URL
+        if not storage_key.startswith("https://"):
+            raise ValueError(f"Invalid storage URL format: {storage_key}")
+
+        # For Vercel Blob, the storage URL IS the download URL
+        # The URL already contains authentication tokens
+        logger.debug(
+            "Retrieved download URL from Vercel Blob",
+            extra={"storage_key": storage_key}
+        )
+
+        return storage_key
+
+    @staticmethod
     async def delete_file(storage_url: str) -> bool:
         """
         Delete file from Vercel Blob storage.
