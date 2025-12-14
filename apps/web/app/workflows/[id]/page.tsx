@@ -7,19 +7,78 @@ import { TopNav } from "@/components/navigation/TopNav"
 import { Breadcrumb } from "@/components/navigation/Breadcrumb"
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton"
 import { useToast } from "@/components/ui/Toast"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { Workflow, Bucket, Criterion } from "@/types/app"
 
-// TODO(API Integration): Replace with React Query hook when backend is ready
-// Expected endpoint: GET /v1/workflows/:id
-// Returns: Single workflow with buckets and criteria
-// Implementation: Use @tanstack/react-query with proper auth headers
-// Reference: apps/api/app/api/v1/endpoints/workflows.py (when implemented)
+/**
+ * useWorkflowQuery Hook
+ *
+ * Fetches a single workflow by ID from the Next.js API proxy route.
+ * The proxy route handles authentication and forwards the request to FastAPI backend.
+ *
+ * Endpoint: GET /api/v1/workflows/:id
+ * Backend: GET /v1/workflows/:id (via proxy)
+ *
+ * States:
+ * - isLoading: true while fetching data
+ * - data: Workflow object when loaded, null if not found
+ * - error: Error message if request fails
+ */
 const useWorkflowQuery = (id: string) => {
-  const [isLoading] = useState(false)
-  const [workflow] = useState<Workflow | null>(null)
+  const [workflow, setWorkflow] = useState<Workflow | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  return { data: workflow, isLoading }
+  useEffect(() => {
+    let cancelled = false
+
+    const fetchWorkflow = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const response = await fetch(`/api/v1/workflows/${id}`)
+
+        if (cancelled) return
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            if (!cancelled) {
+              setWorkflow(null)
+              setIsLoading(false)
+            }
+            return
+          }
+          // Extract error message from backend response
+          const errorData = await response.json()
+
+          // Check cancelled after await before throwing
+          if (cancelled) return
+
+          throw new Error(errorData.error?.message || "Failed to fetch workflow")
+        }
+
+        const data = await response.json()
+
+        if (!cancelled) {
+          setWorkflow(data)
+          setIsLoading(false)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Unknown error")
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchWorkflow()
+
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  return { data: workflow, isLoading, error }
 }
 
 interface Props {
@@ -30,7 +89,7 @@ export default function WorkflowDetailPage({ params }: Props) {
   const { id } = use(params)
   const router = useRouter()
   const { showToast } = useToast()
-  const { data: workflow, isLoading } = useWorkflowQuery(id)
+  const { data: workflow, isLoading, error } = useWorkflowQuery(id)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isArchiving, setIsArchiving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -69,7 +128,39 @@ export default function WorkflowDetailPage({ params }: Props) {
       <div className="min-h-screen bg-gray-50">
         <TopNav />
         <main className="max-w-7xl mx-auto px-8 py-6">
-          <CardSkeleton />
+          <div className="text-center py-12">
+            <p className="text-gray-600">Loading workflow...</p>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <TopNav />
+        <main className="max-w-7xl mx-auto px-8 py-6">
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold text-red-900">Error Loading Workflow</h2>
+            <p className="text-sm text-gray-600 mt-2">
+              {error}
+            </p>
+            <div className="flex items-center justify-center space-x-4 mt-4">
+              <button
+                onClick={() => router.push("/workflows")}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Back to Workflows
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
         </main>
       </div>
     )

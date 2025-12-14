@@ -13,6 +13,30 @@ The issue MUST have an approved implementation plan (either in issue description
 - Everything you need is in the plan's "Product Context & Guidelines" section
 - Trust the plan - it contains the necessary standards, patterns, and references
 
+## Step 0: Sync with Main Branch
+
+**CRITICAL**: Always sync with main before starting to prevent lost changes.
+
+```bash
+# Check current branch and status
+git status
+
+# Stash any uncommitted changes
+git stash
+
+# Switch to main branch
+git checkout main
+
+# Pull latest changes from remote
+git pull origin main
+
+# If you were on a different branch, switch back
+# git checkout {previous-branch}
+# git stash pop
+```
+
+This ensures you start with the latest code and prevents merge conflicts from outdated branches.
+
 ## Step 1: Fetch Issue with Plan
 
 ```bash
@@ -100,7 +124,11 @@ If any criterion fails, implementation is incomplete.
 ## Step 5: Create Branch and Commit
 
 ```bash
-# Create feature branch
+# Ensure you're on main and up to date
+git checkout main
+git pull origin main
+
+# Create feature branch from main
 git checkout -b {issue-number}-{kebab-case-title}
 
 # Stage changes
