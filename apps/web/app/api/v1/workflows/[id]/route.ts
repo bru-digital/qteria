@@ -24,6 +24,13 @@ import { randomUUID } from "crypto"
 const API_URL = process.env.API_URL || "http://localhost:8000"
 
 /**
+ * UUID v4 validation regex
+ * Matches format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+ * where x is any hexadecimal digit and y is one of 8, 9, a, or b
+ */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/**
  * GET /api/v1/workflows/:id
  * Fetch a single workflow with buckets and criteria
  *
@@ -39,6 +46,7 @@ const API_URL = process.env.API_URL || "http://localhost:8000"
  * }
  *
  * Errors:
+ * - 400: Invalid UUID format
  * - 401: Authentication required
  * - 404: Workflow not found or not in user's organization
  * - 500: Internal server error
@@ -66,6 +74,21 @@ export async function GET(
 
     // Await the params to get the id
     const { id } = await params
+
+    // Validate UUID format before forwarding to backend
+    // This provides better error messages and prevents unnecessary backend calls
+    if (!UUID_REGEX.test(id)) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid workflow ID format. Expected UUID v4.",
+            request_id: randomUUID(),
+          },
+        },
+        { status: 400 }
+      )
+    }
 
     // Generate JWT token for FastAPI
     const jwtToken = generateBackendJWT(session)

@@ -112,13 +112,19 @@ export function generateBackendJWT(session: { user: SessionUser }): string {
 /**
  * Type guard to check if a session object has the required user fields.
  * Useful for validating session before calling generateBackendJWT.
+ *
+ * @param session - Unknown session object to validate
+ * @returns true if session has valid user fields, false otherwise
  */
-export function isValidSession(session: any): session is { user: SessionUser } {
+export function isValidSession(session: unknown): session is { user: SessionUser } {
   return (
-    session &&
-    session.user &&
-    typeof session.user.id === "string" &&
-    typeof session.user.role === "string" &&
-    typeof session.user.organizationId === "string"
+    typeof session === "object" &&
+    session !== null &&
+    "user" in session &&
+    typeof (session as any).user === "object" &&
+    (session as any).user !== null &&
+    typeof (session as any).user.id === "string" &&
+    typeof (session as any).user.role === "string" &&
+    typeof (session as any).user.organizationId === "string"
   )
 }
