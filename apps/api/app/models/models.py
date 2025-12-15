@@ -437,3 +437,35 @@ class AuditLog(Base):
         Index("idx_audit_created_at", "created_at"),
         Index("idx_audit_action", "action"),
     )
+
+
+class ParsedDocument(Base):
+    """
+    Cached parsed text from PDF documents.
+    Avoids re-parsing the same document multiple times.
+    Stores structured text with page boundaries and detected sections.
+    """
+
+    __tablename__ = "parsed_documents"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,  # One parsed result per document
+    )
+    parsed_data = Column(JSON, nullable=False)  # Array of {page, section, text}
+    parsing_method = Column(
+        String(50), nullable=False
+    )  # 'pypdf2' or 'pdfplumber'
+    parsed_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    # Relationships
+    document = relationship("Document", backref="parsed_version")
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_parsed_documents_document_id", "document_id"),
+        Index("idx_parsed_documents_parsed_at", "parsed_at"),
+    )
