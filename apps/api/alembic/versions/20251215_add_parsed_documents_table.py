@@ -27,10 +27,12 @@ def upgrade() -> None:
     op.create_table(
         'parsed_documents',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('organization_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('document_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('parsed_data', sa.JSON(), nullable=False),
         sa.Column('parsing_method', sa.String(length=50), nullable=False),
         sa.Column('parsed_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['document_id'], ['documents.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('document_id', name='uq_parsed_documents_document_id')
@@ -39,10 +41,12 @@ def upgrade() -> None:
     # Create indexes for efficient querying
     op.create_index('idx_parsed_documents_document_id', 'parsed_documents', ['document_id'], unique=False)
     op.create_index('idx_parsed_documents_parsed_at', 'parsed_documents', ['parsed_at'], unique=False)
+    op.create_index('idx_parsed_documents_organization_id', 'parsed_documents', ['organization_id'], unique=False)
 
 
 def downgrade() -> None:
     """Remove parsed_documents table and indexes."""
+    op.drop_index('idx_parsed_documents_organization_id', table_name='parsed_documents')
     op.drop_index('idx_parsed_documents_parsed_at', table_name='parsed_documents')
     op.drop_index('idx_parsed_documents_document_id', table_name='parsed_documents')
     op.drop_table('parsed_documents')

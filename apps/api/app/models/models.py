@@ -449,6 +449,12 @@ class ParsedDocument(Base):
     __tablename__ = "parsed_documents"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     document_id = Column(
         UUID(as_uuid=True),
         ForeignKey("documents.id", ondelete="CASCADE"),
@@ -468,4 +474,5 @@ class ParsedDocument(Base):
     __table_args__ = (
         Index("idx_parsed_documents_document_id", "document_id"),
         Index("idx_parsed_documents_parsed_at", "parsed_at"),
+        Index("idx_parsed_documents_organization_id", "organization_id"),
     )

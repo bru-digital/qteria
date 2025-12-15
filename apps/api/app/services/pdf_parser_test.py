@@ -48,6 +48,12 @@ def sample_document_id():
     return uuid4()
 
 
+@pytest.fixture
+def sample_organization_id():
+    """Sample organization UUID for testing."""
+    return uuid4()
+
+
 class TestPyPDF2Extraction:
     """Test PyPDF2 extraction functionality."""
 
@@ -399,6 +405,7 @@ class TestParsingMethodRecorded:
         mock_validate,
         pdf_parser,
         sample_document_id,
+        sample_organization_id,
     ):
         """Should record 'pypdf2' as parsing method when PyPDF2 succeeds."""
         # Arrange
@@ -407,12 +414,12 @@ class TestParsingMethodRecorded:
         mock_detect.return_value = [{"page": 1, "text": "Test", "section": None}]
 
         # Act
-        result = await pdf_parser.parse_document(sample_document_id, "/fake/path.pdf")
+        result = await pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
 
         # Assert
         assert result["method"] == "pypdf2"
         mock_cache_parse.assert_called_once()
-        assert mock_cache_parse.call_args[0][2] == "pypdf2"
+        assert mock_cache_parse.call_args[0][3] == "pypdf2"
 
     @pytest.mark.asyncio
     @patch("app.services.pdf_parser.PDFParserService._validate_pdf")
@@ -431,6 +438,7 @@ class TestParsingMethodRecorded:
         mock_validate,
         pdf_parser,
         sample_document_id,
+        sample_organization_id,
     ):
         """Should record 'pdfplumber' when PyPDF2 fails and pdfplumber succeeds."""
         # Arrange
@@ -440,12 +448,12 @@ class TestParsingMethodRecorded:
         mock_detect.return_value = [{"page": 1, "text": "Test", "section": None}]
 
         # Act
-        result = await pdf_parser.parse_document(sample_document_id, "/fake/path.pdf")
+        result = await pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
 
         # Assert
         assert result["method"] == "pdfplumber"
         mock_cache_parse.assert_called_once()
-        assert mock_cache_parse.call_args[0][2] == "pdfplumber"
+        assert mock_cache_parse.call_args[0][3] == "pdfplumber"
 
 
 class TestErrorHandling:
@@ -464,6 +472,7 @@ class TestErrorHandling:
         mock_validate,
         pdf_parser,
         sample_document_id,
+        sample_organization_id,
     ):
         """Should raise PDFParsingError if both PyPDF2 and pdfplumber fail."""
         # Arrange
@@ -473,4 +482,80 @@ class TestErrorHandling:
 
         # Act & Assert
         with pytest.raises(PDFParsingError, match="Both PyPDF2 and pdfplumber failed"):
-            await pdf_parser.parse_document(sample_document_id, "/fake/path.pdf")
+            await pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
+
+
+class TestMultiTenancy:
+    """Test multi-tenancy isolation for parsed documents."""
+
+    def test_get_cached_parse_filters_by_organization(
+        self, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should filter cached results by organization_id."""
+        # Arrange
+        other_org_id = uuid4()
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_query.filter.return_value = mock_filter
+        mock_filter.first.return_value = None
+        pdf_parser.db.query.return_value = mock_query
+
+        # Act
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert
+        assert result is None
+        pdf_parser.db.query.assert_called_once_with(ParsedDocument)
+        # Verify filter was called with both document_id AND organization_id
+        mock_query.filter.assert_called_once()
+        # The filter should have been called with both conditions
+        filter_call = mock_query.filter.call_args
+        assert filter_call is not None
+
+    def test_get_cached_parse_returns_none_for_different_org(
+        self, pdf_parser, sample_document_id
+    ):
+        """Should return None when cache exists but belongs to different organization."""
+        # Arrange
+        org_a = uuid4()
+        org_b = uuid4()
+
+        # Mock a cached document for org_a
+        cached_doc = Mock()
+        cached_doc.organization_id = org_a
+        cached_doc.document_id = sample_document_id
+        cached_doc.parsed_data = [{"page": 1, "text": "Test", "section": None}]
+        cached_doc.parsing_method = "pypdf2"
+
+        # Setup mock to return None when querying with org_b
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_query.filter.return_value = mock_filter
+        mock_filter.first.return_value = None  # Different org returns None
+        pdf_parser.db.query.return_value = mock_query
+
+        # Act - Query with org_b (different from cached org_a)
+        result = pdf_parser._get_cached_parse(sample_document_id, org_b)
+
+        # Assert
+        assert result is None  # Should not return cached data from different org
+
+    def test_cache_parse_stores_organization_id(
+        self, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should store organization_id when caching parsed document."""
+        # Arrange
+        parsed_data = [{"page": 1, "text": "Test", "section": None}]
+        method = "pypdf2"
+
+        # Act
+        pdf_parser._cache_parse(sample_document_id, sample_organization_id, parsed_data, method)
+
+        # Assert
+        pdf_parser.db.add.assert_called_once()
+        added_doc = pdf_parser.db.add.call_args[0][0]
+        assert isinstance(added_doc, ParsedDocument)
+        assert added_doc.document_id == sample_document_id
+        assert added_doc.organization_id == sample_organization_id
+        assert added_doc.parsed_data == parsed_data
+        assert added_doc.parsing_method == method

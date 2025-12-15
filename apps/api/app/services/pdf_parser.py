@@ -14,7 +14,7 @@ Features:
 """
 import re
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from uuid import UUID
 from datetime import datetime
 
@@ -61,8 +61,8 @@ class PDFParserService:
         self.db = db
 
     async def parse_document(
-        self, document_id: UUID, file_path: str
-    ) -> Dict[str, any]:
+        self, document_id: UUID, file_path: str, organization_id: UUID
+    ) -> Dict[str, Any]:
         """
         Parse PDF document and return structured text with page/section info.
 
@@ -72,6 +72,7 @@ class PDFParserService:
         Args:
             document_id: UUID of the document being parsed
             file_path: Absolute path to the PDF file
+            organization_id: UUID of the organization (for multi-tenancy)
 
         Returns:
             Dict with:
@@ -86,7 +87,7 @@ class PDFParserService:
             PDFParsingError: For other parsing failures
         """
         # 1. Check cache first
-        cached_result = await self._get_cached_parse(document_id)
+        cached_result = self._get_cached_parse(document_id, organization_id)
         if cached_result:
             return {
                 "document_id": document_id,
@@ -116,7 +117,7 @@ class PDFParserService:
         structured_pages = self._detect_sections(pages)
 
         # 6. Cache parsed result
-        await self._cache_parse(document_id, structured_pages, parsing_method)
+        self._cache_parse(document_id, organization_id, structured_pages, parsing_method)
 
         return {
             "document_id": document_id,
@@ -318,21 +319,25 @@ class PDFParserService:
 
         return pages
 
-    async def _get_cached_parse(
-        self, document_id: UUID
-    ) -> Optional[Dict[str, any]]:
+    def _get_cached_parse(
+        self, document_id: UUID, organization_id: UUID
+    ) -> Optional[Dict[str, Any]]:
         """
         Get cached parsed text from database.
 
         Args:
             document_id: UUID of the document
+            organization_id: UUID of the organization (for multi-tenancy)
 
         Returns:
             Dict with pages and method, or None if not cached
         """
         cached = (
             self.db.query(ParsedDocument)
-            .filter(ParsedDocument.document_id == document_id)
+            .filter(
+                ParsedDocument.document_id == document_id,
+                ParsedDocument.organization_id == organization_id,
+            )
             .first()
         )
 
@@ -344,19 +349,21 @@ class PDFParserService:
 
         return None
 
-    async def _cache_parse(
-        self, document_id: UUID, parsed_data: List[Dict], method: str
+    def _cache_parse(
+        self, document_id: UUID, organization_id: UUID, parsed_data: List[Dict], method: str
     ) -> None:
         """
         Store parsed text in database cache.
 
         Args:
             document_id: UUID of the document
+            organization_id: UUID of the organization (for multi-tenancy)
             parsed_data: List of page dictionaries
             method: Parsing method used ('pypdf2' or 'pdfplumber')
         """
         parsed_doc = ParsedDocument(
             document_id=document_id,
+            organization_id=organization_id,
             parsed_data=parsed_data,
             parsing_method=method,
             parsed_at=datetime.utcnow(),
