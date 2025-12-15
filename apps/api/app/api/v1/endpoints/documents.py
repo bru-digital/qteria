@@ -47,10 +47,11 @@ except Exception as e:
         "Install it using: brew install libmagic (macOS) or apt-get install libmagic1 (Ubuntu)"
     ) from e
 
+from app.constants import AssessmentStatus
 from app.core.auth import AuthenticatedUser
 from app.core.dependencies import get_db, get_redis, check_upload_rate_limit, RedisClient
 from app.core.exceptions import create_error_response
-from app.models import Bucket, Workflow, Document
+from app.models import Bucket, Workflow, Document, Assessment, AssessmentDocument
 from app.schemas.document import (
     DocumentResponse,
     ALLOWED_MIME_TYPES,
@@ -877,10 +878,10 @@ Location: https://blob.vercel-storage.com/documents/...
 )
 async def download_document(
     document_id: UUID,
-    current_user: AuthenticatedUser,
-    db: Session = Depends(get_db),
     page: Optional[int] = None,
     request: Request = None,
+    current_user: AuthenticatedUser = Depends(),
+    db: Session = Depends(get_db),
 ) -> Response:
     """
     Download document from Vercel Blob storage.
@@ -1144,17 +1145,26 @@ async def delete_document(
                 request=request,
             )
 
-        # 2. Check if document is in a completed or in_progress assessment
-        # We need to check AssessmentDocument table which links documents to assessments
-        # Note: AssessmentDocument stores storage_key, not document_id
-        # So we search by storage_key which matches between documents and assessment_documents
-        from app.models import AssessmentDocument
-
+        # 2. Check if document is in a completed or processing assessment
+        #
+        # DESIGN RATIONALE: Document-AssessmentDocument Relationship
+        # - AssessmentDocument table does NOT have a document_id foreign key (by design)
+        # - AssessmentDocument stores storage_key directly (the Vercel Blob URL)
+        # - This decouples assessment records from the standalone documents table
+        # - Allows documents to be deleted from documents table while preserving assessment history
+        # - We match by storage_key to check if this blob URL is referenced in any active assessment
+        #
+        # Why no foreign key?
+        # - Assessments are immutable once completed (audit trail requirement)
+        # - Even if document is deleted from documents table, assessment_documents preserves the history
+        # - storage_key is the source of truth for what blob was used in the assessment
+        #
+        # See: product-guidelines/07-database-schema-essentials.md for table relationships
         assessment_doc = db.query(AssessmentDocument).join(
             Assessment
         ).filter(
             AssessmentDocument.storage_key == document.storage_key,
-            Assessment.status.in_(["completed", "processing"])  # Note: using "processing" instead of "in_progress"
+            Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.PROCESSING])
         ).first()
 
         if assessment_doc:
@@ -1196,6 +1206,12 @@ async def delete_document(
             )
 
         # 3. Delete from Vercel Blob storage (graceful degradation if blob deletion fails)
+        #
+        # DESIGN RATIONALE: Fail-Safe Architecture (product-guidelines/04-architecture.md:199-206)
+        # - Database is source of truth (if DB says deleted, it's deleted)
+        # - Blob deletion failure is non-critical (blob can be cleaned up later)
+        # - User experience prioritized: deletion succeeds even if storage service unavailable
+        # - Failed deletions tracked in audit log with needs_cleanup flag for monitoring
         blob_deleted = False
         try:
             blob_deleted = await BlobStorageService.delete_file(document.storage_key)
@@ -1206,6 +1222,23 @@ async def delete_document(
                         "document_id": str(document_id),
                         "storage_key": document.storage_key,
                     },
+                )
+
+                # Track failed deletion for cleanup job monitoring
+                AuditService.log_event(
+                    db=db,
+                    action="document.delete.blob_failed",
+                    organization_id=current_user.organization_id,
+                    user_id=current_user.id,
+                    resource_type="document",
+                    resource_id=document_id,
+                    metadata={
+                        "storage_key": document.storage_key,
+                        "file_name": document.file_name,
+                        "reason": "blob_deletion_returned_false",
+                        "needs_cleanup": True,  # Flag for background cleanup job
+                    },
+                    request=request,
                 )
         except Exception as e:
             # Log error but continue (blob may already be deleted or storage service unavailable)
@@ -1218,6 +1251,24 @@ async def delete_document(
                     "error": str(e),
                 },
                 exc_info=True,
+            )
+
+            # Track failed deletion with error details for cleanup job and monitoring
+            AuditService.log_event(
+                db=db,
+                action="document.delete.blob_failed",
+                organization_id=current_user.organization_id,
+                user_id=current_user.id,
+                resource_type="document",
+                resource_id=document_id,
+                metadata={
+                    "storage_key": document.storage_key,
+                    "file_name": document.file_name,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "needs_cleanup": True,  # Flag for background cleanup job
+                },
+                request=request,
             )
 
         # 4. Delete from database

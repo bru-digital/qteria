@@ -281,12 +281,14 @@ All error codes use SCREAMING_SNAKE_CASE and map to appropriate HTTP status code
 - `INSUFFICIENT_PERMISSIONS` (403) - User role lacks required permissions for this action
 - `RESOURCE_NOT_FOUND` (404) - Resource doesn't exist or belongs to different organization
 - `ALREADY_ARCHIVED` (400) - Attempting to archive already archived resource
+- `DOCUMENT_IN_USE` (409) - Cannot delete document used in completed or processing assessment
 - `RESOURCE_HAS_DEPENDENCIES` (409) - Cannot delete resource due to foreign key dependencies
 - `INSUFFICIENT_CREDITS` (422) - Not enough credits to perform operation
 - `RATE_LIMIT_EXCEEDED` (429) - Too many requests, retry after rate limit window
 
 **Server Errors (5xx):**
 - `DATABASE_ERROR` (500) - Database constraint violation or integrity error
+- `DOWNLOAD_URL_FAILED` (500) - Failed to generate signed download URL from Vercel Blob
 - `WORKFLOW_CREATION_FAILED` (500) - Workflow creation failed due to unexpected error
 - `WORKFLOW_UPDATE_FAILED` (500) - Workflow update failed due to unexpected error
 - `INTERNAL_ERROR` (500) - Unexpected server error (catch-all for unhandled exceptions)
