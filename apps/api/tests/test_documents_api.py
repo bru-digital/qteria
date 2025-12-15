@@ -2285,3 +2285,412 @@ class TestDocumentDownload:
         assert response.status_code == 500
         data = response.json()
         assert data["error"]["code"] == "DOWNLOAD_URL_FAILED"
+
+
+class TestDocumentDeletion:
+    """Tests for DELETE /v1/documents/:id endpoint (STORY-019)."""
+
+    @pytest.fixture
+    def mock_blob_storage(self):
+        """Mock Vercel Blob storage service."""
+        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+            # Mock successful async delete
+            mock_service.delete_file = AsyncMock(return_value=True)
+            yield mock_service
+
+    @pytest.fixture
+    def mock_document_db(self):
+        """Mock database with test document."""
+        from uuid import uuid4
+        from app.models import Document
+
+        mock_db = MagicMock()
+        mock_query = MagicMock()
+
+        # Create mock document
+        test_document = MagicMock(spec=Document)
+        test_document.id = uuid4()
+        test_document.organization_id = TEST_ORG_A_ID
+        test_document.file_name = "test-document.pdf"
+        test_document.file_size = 1024000
+        test_document.mime_type = "application/pdf"
+        test_document.storage_key = "https://blob.vercel-storage.com/documents/test.pdf"
+
+        # Setup query mock chain
+        mock_db.query.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.first.return_value = test_document
+
+        return mock_db, test_document
+
+    def test_delete_document_not_in_assessment_success(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_document_db,
+        mock_audit_service,
+    ):
+        """
+        Test successful deletion of document not in any assessment.
+
+        Acceptance Criteria:
+        - Returns 204 No Content
+        - Document deleted from Vercel Blob storage
+        - Document deleted from database
+        - Audit log created
+        """
+        from app.models import Document, AssessmentDocument
+
+        mock_db, test_doc = mock_document_db
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Setup query chain for AssessmentDocument to return None (no assessment)
+        def mock_query_handler(model):
+            if model == Document:
+                # Return the mocked document query
+                return mock_document_db[0].query.return_value
+            elif model == AssessmentDocument:
+                # Return empty result for assessment documents
+                mock_assessment_query = MagicMock()
+                mock_join = MagicMock()
+                mock_filter = MagicMock()
+                mock_filter.first.return_value = None
+                mock_join.filter.return_value = mock_filter
+                mock_assessment_query.join.return_value = mock_join
+                return mock_assessment_query
+            else:
+                return MagicMock()
+
+        mock_db.query.side_effect = mock_query_handler
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.delete(
+                f"/v1/documents/{test_doc.id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        assert response.status_code == 204
+
+        # Verify blob storage delete called
+        assert mock_blob_storage.delete_file.called
+
+        # Verify database delete called
+        assert mock_db.delete.called
+        assert mock_db.commit.called
+
+        # Verify audit log
+        assert mock_audit_service['log_event'].called
+        success_logs = [
+            call for call in mock_audit_service['log_event'].call_args_list
+            if call[1].get("action") == "document.delete.success"
+        ]
+        assert len(success_logs) == 1
+
+    def test_delete_document_in_pending_assessment_allowed(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_document_db,
+        mock_audit_service,
+    ):
+        """
+        Test deletion of document in pending assessment is allowed.
+
+        Acceptance Criteria:
+        - Returns 204 No Content
+        - Safe to delete documents in pending assessments
+        """
+        mock_db, test_doc = mock_document_db
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock assessment_documents query to return document with pending status
+        from app.models import Assessment
+        mock_assessment_doc = MagicMock()
+        mock_assessment_doc.assessment = MagicMock(spec=Assessment)
+        mock_assessment_doc.assessment.status = "pending"
+
+        # First query is for document, second is for assessment_documents
+        mock_assessment_query = MagicMock()
+        mock_assessment_query.first.return_value = None  # No completed/processing assessment
+        mock_db.query.side_effect = [
+            mock_document_db[0].query.return_value,
+            mock_assessment_query
+        ]
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.delete(
+                f"/v1/documents/{test_doc.id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        assert response.status_code == 204
+
+    def test_delete_document_in_completed_assessment_conflict(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_document_db,
+        mock_audit_service,
+    ):
+        """
+        Test rejection of deleting document in completed assessment.
+
+        Acceptance Criteria:
+        - Returns 409 Conflict
+        - Error code DOCUMENT_IN_USE
+        - Error message indicates assessment status
+        - Audit log created
+        """
+        mock_db, test_doc = mock_document_db
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock assessment_documents query to return document in completed assessment
+        from uuid import uuid4
+        from app.models import Assessment, AssessmentDocument
+
+        mock_assessment = MagicMock(spec=Assessment)
+        mock_assessment.status = "completed"
+        mock_assessment.id = uuid4()
+
+        mock_assessment_doc = MagicMock(spec=AssessmentDocument)
+        mock_assessment_doc.assessment_id = mock_assessment.id
+        mock_assessment_doc.assessment = mock_assessment
+        mock_assessment_doc.storage_key = test_doc.storage_key
+
+        # Setup queries
+        mock_assessment_query = MagicMock()
+        mock_assessment_query.first.return_value = mock_assessment_doc
+        mock_db.query.side_effect = [
+            mock_document_db[0].query.return_value,  # Document query
+            mock_assessment_query  # AssessmentDocument query
+        ]
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.delete(
+                f"/v1/documents/{test_doc.id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        assert response.status_code == 409
+        data = response.json()
+        assert data["error"]["code"] == "DOCUMENT_IN_USE"
+        assert "completed" in data["error"]["message"]
+        assert data["error"]["details"]["assessment_status"] == "completed"
+
+        # Verify NO blob delete or database delete
+        assert not mock_blob_storage.delete_file.called
+        assert not mock_db.delete.called
+
+        # Verify audit log for failed deletion
+        assert mock_audit_service['log_event'].called
+        fail_logs = [
+            call for call in mock_audit_service['log_event'].call_args_list
+            if call[1].get("action") == "document.delete.failed"
+        ]
+        assert len(fail_logs) == 1
+
+    def test_delete_document_in_processing_assessment_conflict(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_document_db,
+        mock_audit_service,
+    ):
+        """
+        Test rejection of deleting document in processing assessment.
+
+        Acceptance Criteria:
+        - Returns 409 Conflict
+        - Error code DOCUMENT_IN_USE
+        - Error message indicates assessment is processing
+        """
+        mock_db, test_doc = mock_document_db
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock assessment_documents query to return document in processing assessment
+        from uuid import uuid4
+        from app.models import Assessment, AssessmentDocument
+
+        mock_assessment = MagicMock(spec=Assessment)
+        mock_assessment.status = "processing"
+        mock_assessment.id = uuid4()
+
+        mock_assessment_doc = MagicMock(spec=AssessmentDocument)
+        mock_assessment_doc.assessment_id = mock_assessment.id
+        mock_assessment_doc.assessment = mock_assessment
+        mock_assessment_doc.storage_key = test_doc.storage_key
+
+        # Setup queries
+        mock_assessment_query = MagicMock()
+        mock_assessment_query.first.return_value = mock_assessment_doc
+        mock_db.query.side_effect = [
+            mock_document_db[0].query.return_value,
+            mock_assessment_query
+        ]
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.delete(
+                f"/v1/documents/{test_doc.id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        assert response.status_code == 409
+        data = response.json()
+        assert data["error"]["code"] == "DOCUMENT_IN_USE"
+        assert "processing" in data["error"]["message"]
+
+    def test_delete_nonexistent_document_not_found(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_audit_service,
+    ):
+        """
+        Test deletion of non-existent document.
+
+        Acceptance Criteria:
+        - Returns 404 Not Found
+        - Error code RESOURCE_NOT_FOUND
+        - Audit log created for security monitoring
+        """
+        from uuid import uuid4
+
+        mock_db = MagicMock()
+        mock_query = MagicMock()
+        mock_db.query.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.first.return_value = None  # Document not found
+
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        nonexistent_id = uuid4()
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.delete(
+                f"/v1/documents/{nonexistent_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
+
+        # Verify audit log
+        assert mock_audit_service['log_event'].called
+        call_args = mock_audit_service['log_event'].call_args[1]
+        assert call_args["action"] == "document.delete.failed"
+
+    def test_delete_document_different_org_not_found(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+        mock_audit_service,
+    ):
+        """
+        Test multi-tenancy: User from Org A cannot delete Org B's document.
+
+        Acceptance Criteria:
+        - Returns 404 Not Found (not 403 to avoid info leakage)
+        - Error code RESOURCE_NOT_FOUND
+        - Audit log for security monitoring
+        """
+        from uuid import uuid4
+
+        mock_db = MagicMock()
+        mock_query = MagicMock()
+
+        # Setup query to return no document (multi-tenancy filter blocks it)
+        mock_db.query.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.first.return_value = None  # Filtered out
+
+        # User from Org A tries to delete Org B's document
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        org_b_doc_id = uuid4()
+
+        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            response = client.delete(
+                f"/v1/documents/{org_b_doc_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        # Should return 404 (not 403) to avoid leaking document existence
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
+
+    def test_delete_blob_failure_still_deletes_db(
+        self,
+        client: TestClient,
+        mock_document_db,
+        mock_audit_service,
+    ):
+        """
+        Test graceful degradation when blob deletion fails.
+
+        Acceptance Criteria:
+        - Returns 204 No Content
+        - Database record deleted even if blob fails
+        - Error logged but operation continues
+        - Audit log shows blob_deleted: false
+        """
+        mock_db, test_doc = mock_document_db
+        token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Mock blob storage failure
+        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+            async def delete_error(*args, **kwargs):
+                raise Exception("Blob storage connection timeout")
+
+            mock_service.delete_file = AsyncMock(side_effect=delete_error)
+
+            # Mock assessment query to return None
+            mock_assessment_query = MagicMock()
+            mock_assessment_query.first.return_value = None
+            mock_db.query.side_effect = [
+                mock_document_db[0].query.return_value,
+                mock_assessment_query
+            ]
+
+            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+                response = client.delete(
+                    f"/v1/documents/{test_doc.id}",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+
+        # Should still succeed despite blob deletion failure
+        assert response.status_code == 204
+
+        # Database delete should still be called
+        assert mock_db.delete.called
+        assert mock_db.commit.called
+
+        # Verify audit log shows blob deletion failed
+        success_logs = [
+            call for call in mock_audit_service['log_event'].call_args_list
+            if call[1].get("action") == "document.delete.success"
+        ]
+        assert len(success_logs) == 1
+        assert success_logs[0][1]["metadata"]["blob_deleted"] == False
+
+    def test_delete_unauthenticated_returns_401(
+        self,
+        client: TestClient,
+        mock_blob_storage,
+    ):
+        """
+        Test deletion without authentication token.
+
+        Acceptance Criteria:
+        - Returns 401 Unauthorized
+        - No deletion performed
+        """
+        from uuid import uuid4
+
+        response = client.delete(
+            f"/v1/documents/{uuid4()}",
+        )
+
+        assert response.status_code == 401
+
+        # Verify NO blob delete called
+        assert not mock_blob_storage.delete_file.called
