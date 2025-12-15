@@ -47,10 +47,11 @@ except Exception as e:
         "Install it using: brew install libmagic (macOS) or apt-get install libmagic1 (Ubuntu)"
     ) from e
 
+from app.constants import AssessmentStatus
 from app.core.auth import AuthenticatedUser
 from app.core.dependencies import get_db, get_redis, check_upload_rate_limit, RedisClient
 from app.core.exceptions import create_error_response
-from app.models import Bucket, Workflow, Document
+from app.models import Bucket, Workflow, Document, Assessment, AssessmentDocument
 from app.schemas.document import (
     DocumentResponse,
     ALLOWED_MIME_TYPES,
@@ -878,8 +879,8 @@ Location: https://blob.vercel-storage.com/documents/...
 async def download_document(
     document_id: UUID,
     page: Optional[int] = None,
-    current_user: AuthenticatedUser = Depends(),
     request: Request = None,
+    current_user: AuthenticatedUser = Depends(),
     db: Session = Depends(get_db),
 ) -> Response:
     """
@@ -1034,5 +1035,312 @@ async def download_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_code="INTERNAL_ERROR",
             message="An unexpected error occurred during document download.",
+            request=request,
+        )
+
+
+@router.delete(
+    "/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete document",
+    description="""
+Delete document from Vercel Blob storage and database.
+
+**Authorization**: Requires authentication. Users can only delete documents from their organization.
+
+**Multi-Tenancy**: Enforced - returns 404 if document belongs to different organization.
+
+**Business Rules**:
+- ✅ Can delete documents not in any assessment
+- ✅ Can delete documents in pending assessments
+- ❌ Cannot delete documents in completed or in_progress assessments (maintains data integrity)
+
+**Journey Step 2**: Users remove incorrect documents before or after upload.
+
+**Example Request**:
+```
+DELETE /v1/documents/550e8400-e29b-41d4-a716-446655440000
+Authorization: Bearer <jwt_token>
+```
+
+**Example Response**:
+```
+HTTP/1.1 204 No Content
+```
+
+**Error Responses**:
+- 404: Document not found or belongs to different organization
+- 409: Document is part of completed or in_progress assessment
+- 401: Missing or invalid authentication token
+    """,
+)
+async def delete_document(
+    document_id: UUID,
+    current_user: AuthenticatedUser,
+    db: Session = Depends(get_db),
+    request: Request = None,
+) -> Response:
+    """
+    Delete document from Vercel Blob storage and database.
+
+    Journey Step 2: Users manage uploaded documents before assessment.
+
+    Args:
+        document_id: UUID of the document to delete
+        current_user: Authenticated user (from JWT)
+        request: FastAPI request for audit logging
+        db: Database session
+
+    Returns:
+        Response: 204 No Content on successful deletion
+
+    Raises:
+        HTTPException: 404 if document not found, 409 if document in use by assessment
+    """
+    try:
+        logger.info(
+            "Document deletion requested",
+            extra={
+                "document_id": str(document_id),
+                "user_id": str(current_user.id),
+                "organization_id": str(current_user.organization_id),
+            },
+        )
+
+        # 1. Query document by ID with multi-tenancy enforcement
+        # Return 404 (not 403) for documents in other orgs to avoid info leakage
+        document = db.query(Document).filter(
+            Document.id == document_id,
+            Document.organization_id == current_user.organization_id
+        ).first()
+
+        if not document:
+            logger.warning(
+                "Document not found or access denied for deletion",
+                extra={
+                    "document_id": str(document_id),
+                    "user_id": str(current_user.id),
+                    "organization_id": str(current_user.organization_id),
+                },
+            )
+
+            # Audit log for security monitoring
+            AuditService.log_event(
+                db=db,
+                action="document.delete.failed",
+                organization_id=current_user.organization_id,
+                user_id=current_user.id,
+                resource_type="document",
+                metadata={
+                    "document_id": str(document_id),
+                    "reason": "not_found_or_access_denied",
+                },
+                request=request,
+            )
+
+            raise create_error_response(
+                status_code=status.HTTP_404_NOT_FOUND,
+                error_code="RESOURCE_NOT_FOUND",
+                message="Document not found",
+                request=request,
+            )
+
+        # 2. Check if document is in a completed or processing assessment
+        #
+        # DESIGN RATIONALE: Document-AssessmentDocument Relationship
+        # - AssessmentDocument table does NOT have a document_id foreign key (by design)
+        # - AssessmentDocument stores storage_key directly (the Vercel Blob URL)
+        # - This decouples assessment records from the standalone documents table
+        # - Allows documents to be deleted from documents table while preserving assessment history
+        # - We match by storage_key to check if this blob URL is referenced in any active assessment
+        #
+        # Why no foreign key?
+        # - Assessments are immutable once completed (audit trail requirement)
+        # - Even if document is deleted from documents table, assessment_documents preserves the history
+        # - storage_key is the source of truth for what blob was used in the assessment
+        #
+        # See: product-guidelines/07-database-schema-essentials.md for table relationships
+        assessment_doc = db.query(AssessmentDocument).join(
+            Assessment
+        ).filter(
+            AssessmentDocument.storage_key == document.storage_key,
+            Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.PROCESSING])
+        ).first()
+
+        if assessment_doc:
+            logger.warning(
+                "Cannot delete document - in use by assessment",
+                extra={
+                    "document_id": str(document_id),
+                    "user_id": str(current_user.id),
+                    "assessment_id": str(assessment_doc.assessment_id),
+                    "assessment_status": assessment_doc.assessment.status,
+                },
+            )
+
+            # Audit log for monitoring
+            AuditService.log_event(
+                db=db,
+                action="document.delete.failed",
+                organization_id=current_user.organization_id,
+                user_id=current_user.id,
+                resource_type="document",
+                resource_id=document_id,
+                metadata={
+                    "reason": "document_in_use_by_assessment",
+                    "assessment_id": str(assessment_doc.assessment_id),
+                    "assessment_status": assessment_doc.assessment.status,
+                },
+                request=request,
+            )
+
+            raise create_error_response(
+                status_code=status.HTTP_409_CONFLICT,
+                error_code="DOCUMENT_IN_USE",
+                message=f"Cannot delete document used in {assessment_doc.assessment.status} assessment. Assessment must be pending, failed, or cancelled.",
+                details={
+                    "assessment_id": str(assessment_doc.assessment_id),
+                    "assessment_status": assessment_doc.assessment.status,
+                },
+                request=request,
+            )
+
+        # 3. Delete from Vercel Blob storage (graceful degradation if blob deletion fails)
+        #
+        # DESIGN RATIONALE: Fail-Safe Architecture (product-guidelines/04-architecture.md:199-206)
+        # - Database is source of truth (if DB says deleted, it's deleted)
+        # - Blob deletion failure is non-critical (blob can be cleaned up later)
+        # - User experience prioritized: deletion succeeds even if storage service unavailable
+        # - Failed deletions tracked in audit log with needs_cleanup flag for monitoring
+        blob_deleted = False
+        try:
+            blob_deleted = await BlobStorageService.delete_file(document.storage_key)
+            if not blob_deleted:
+                logger.warning(
+                    "Blob deletion returned False but continuing with database deletion",
+                    extra={
+                        "document_id": str(document_id),
+                        "storage_key": document.storage_key,
+                    },
+                )
+
+                # Track failed deletion for cleanup job monitoring
+                AuditService.log_event(
+                    db=db,
+                    action="document.delete.blob_failed",
+                    organization_id=current_user.organization_id,
+                    user_id=current_user.id,
+                    resource_type="document",
+                    resource_id=document_id,
+                    metadata={
+                        "storage_key": document.storage_key,
+                        "file_name": document.file_name,
+                        "reason": "blob_deletion_returned_false",
+                        "needs_cleanup": True,  # Flag for background cleanup job
+                    },
+                    request=request,
+                )
+        except Exception as e:
+            # Log error but continue (blob may already be deleted or storage service unavailable)
+            # Database record will still be deleted (graceful degradation)
+            logger.error(
+                "Failed to delete blob but continuing with database deletion",
+                extra={
+                    "document_id": str(document_id),
+                    "storage_key": document.storage_key,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+
+            # Track failed deletion with error details for cleanup job and monitoring
+            AuditService.log_event(
+                db=db,
+                action="document.delete.blob_failed",
+                organization_id=current_user.organization_id,
+                user_id=current_user.id,
+                resource_type="document",
+                resource_id=document_id,
+                metadata={
+                    "storage_key": document.storage_key,
+                    "file_name": document.file_name,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "needs_cleanup": True,  # Flag for background cleanup job
+                },
+                request=request,
+            )
+
+        # 4. Delete from database
+        try:
+            db.delete(document)
+            db.commit()
+
+            logger.info(
+                "Document deleted successfully",
+                extra={
+                    "document_id": str(document_id),
+                    "user_id": str(current_user.id),
+                    "organization_id": str(current_user.organization_id),
+                    "file_name": document.file_name,
+                    "blob_deleted": blob_deleted,
+                },
+            )
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                "Failed to delete document from database",
+                extra={
+                    "document_id": str(document_id),
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+
+            raise create_error_response(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_code="DATABASE_ERROR",
+                message="Failed to delete document. Please try again.",
+                request=request,
+            )
+
+        # 5. Log successful deletion for audit trail (SOC2 compliance)
+        AuditService.log_event(
+            db=db,
+            action="document.delete.success",
+            organization_id=current_user.organization_id,
+            user_id=current_user.id,
+            resource_type="document",
+            resource_id=document_id,
+            metadata={
+                "file_name": document.file_name,
+                "file_size": document.file_size,
+                "mime_type": document.mime_type,
+                "blob_deleted": blob_deleted,
+            },
+            request=request,
+        )
+
+        # Return 204 No Content
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        logger.error(
+            "Unexpected error during document deletion",
+            extra={
+                "document_id": str(document_id),
+                "user_id": str(current_user.id),
+                "error": str(e),
+            },
+            exc_info=True,
+        )
+
+        raise create_error_response(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            error_code="INTERNAL_ERROR",
+            message="An unexpected error occurred during document deletion.",
             request=request,
         )
