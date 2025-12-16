@@ -141,6 +141,15 @@ class PDFParserService:
         if not isinstance(enable_parallel, bool):
             raise PDFParsingError(f"enable_parallel must be a boolean, got {type(enable_parallel).__name__}")
 
+        # Validate custom_patterns parameter
+        if custom_patterns is not None:
+            if not isinstance(custom_patterns, list):
+                raise PDFParsingError(
+                    f"custom_patterns must be a list, got {type(custom_patterns).__name__}"
+                )
+            if not all(isinstance(p, str) for p in custom_patterns):
+                raise PDFParsingError("custom_patterns must be a list of strings")
+
         # 1. Check cache first
         cached_result = self._get_cached_parse(document_id, organization_id)
         if cached_result:
@@ -606,6 +615,9 @@ class PDFParserService:
             for page_num in range(1, page_count + 1):
                 try:
                     # Convert single page to image
+                    # DPI=300 balances quality (readable text) vs memory (~5MB/page at 300 DPI)
+                    # Lower DPI (150-200) for memory-constrained environments (Railway 512MB free tier)
+                    # Higher DPI (600) for very small fonts or high-quality scans
                     images = convert_from_path(
                         file_path,
                         dpi=300,
@@ -636,7 +648,7 @@ class PDFParserService:
                     pages.append(
                         {
                             "page": page_num,
-                            "text": f"[OCR error on page {page_num}]",
+                            "text": f"[Error parsing page {page_num}: {str(page_error)}]",
                             "section": None,
                         }
                     )
@@ -677,23 +689,56 @@ class PDFParserService:
             return []
 
         try:
-            # Extract all tables from PDF (all pages)
-            # read_pdf returns list of DataFrames (one per table)
-            dfs = tabula.read_pdf(file_path, pages="all", multiple_tables=True)
+            # First, get the total number of pages to extract tables page by page
+            # This allows us to track which page each table came from
+            import PyPDF2
+
+            with open(file_path, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+                total_pages = len(reader.pages)
 
             tables = []
-            for idx, df in enumerate(dfs):
-                # Convert DataFrame to list of dictionaries (rows)
-                table_data = df.to_dict(orient="records")
+            table_index = 0
 
-                tables.append(
-                    {
-                        "table_index": idx,
-                        "data": table_data,
-                        "columns": list(df.columns),
-                        "row_count": len(df),
-                    }
-                )
+            # Extract tables page by page to track page numbers
+            for page_num in range(1, total_pages + 1):
+                try:
+                    # Extract tables from this page only
+                    dfs = tabula.read_pdf(
+                        file_path,
+                        pages=page_num,
+                        multiple_tables=True,
+                        silent=True  # Suppress Java warnings
+                    )
+
+                    # Process each table found on this page
+                    for df in dfs:
+                        if not df.empty:  # Skip empty tables
+                            # Convert DataFrame to list of dictionaries (rows)
+                            table_data = df.to_dict(orient="records")
+
+                            tables.append(
+                                {
+                                    "page": page_num,  # Add page number for evidence-based validation
+                                    "table_index": table_index,
+                                    "data": table_data,
+                                    "columns": list(df.columns),
+                                    "row_count": len(df),
+                                }
+                            )
+                            table_index += 1
+
+                except Exception as page_error:
+                    # Log error for this page but continue with other pages
+                    logger.warning(
+                        f"Failed to extract tables from page {page_num}",
+                        extra={
+                            "event": "table_extraction_page_error",
+                            "page": page_num,
+                            "error": str(page_error)
+                        }
+                    )
+                    continue
 
             return tables
 
@@ -733,12 +778,12 @@ class PDFParserService:
             version_match = re.search(r'version "(\d+)\.(\d+)', version_output)
 
             if not version_match:
-                # If we can't parse version, warn but allow (graceful degradation)
+                # If we can't parse version, disable table extraction (safer)
                 logger.warning(
-                    "Could not parse Java version, assuming compatible",
+                    "Could not parse Java version, disabling table extraction",
                     extra={"event": "java_version_unknown", "output": version_output}
                 )
-                return True
+                return False
 
             major_version = int(version_match.group(1))
             minor_version = int(version_match.group(2))
@@ -811,7 +856,7 @@ class PDFParserService:
                     pages.append(
                         {
                             "page": idx,
-                            "text": f"[Error: {str(result)}]",
+                            "text": f"[Error parsing page {idx}: {str(result)}]",
                             "section": None,
                         }
                     )
@@ -925,14 +970,11 @@ class PDFParserService:
         # This is a simplified check - catches obvious cases
         alternation_pattern = re.compile(r'\([^()]*\|[^()]*\)[+*]')
         if alternation_pattern.search(pattern_str):
-            # Further validate: check if alternations overlap
-            # Extract the alternation group
-            import warnings
-            warnings.warn(
-                f"Pattern contains alternation with quantifier - verify no overlapping branches: {pattern_str[:100]}",
-                UserWarning
+            # Block alternations with quantifiers due to potential ReDoS risk
+            # Note: Full overlap detection is complex, so we block all such patterns for safety
+            raise PDFParsingError(
+                f"Pattern contains alternation with quantifier (potential ReDoS risk): {pattern_str[:100]}..."
             )
-            # Note: Full overlap detection is complex, so we just warn
             # For production, consider using re2 library for guaranteed linear time
 
     def _cache_parse(
