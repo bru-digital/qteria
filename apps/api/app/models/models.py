@@ -26,7 +26,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 import uuid
 
 from .base import Base
@@ -468,11 +468,10 @@ class ParsedDocument(Base):
     parsed_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    document = relationship("Document", backref="parsed_version")
+    # Use selectin loading to prevent N+1 query issues when accessing document.parsed_version
+    document = relationship("Document", backref=backref("parsed_version", lazy="selectin"))
 
     # Indexes
-    __table_args__ = (
-        Index("idx_parsed_documents_document_id", "document_id"),
-        Index("idx_parsed_documents_parsed_at", "parsed_at"),
-        Index("idx_parsed_documents_organization_id", "organization_id"),
-    )
+    # Note: document_id index is created automatically by unique=True constraint
+    # Note: organization_id index is created automatically by index=True parameter
+    __table_args__ = (Index("idx_parsed_documents_parsed_at", "parsed_at"),)

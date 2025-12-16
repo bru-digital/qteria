@@ -39,7 +39,7 @@ def upgrade() -> None:
     )
 
     # Create indexes for efficient querying
-    op.create_index('idx_parsed_documents_document_id', 'parsed_documents', ['document_id'], unique=False)
+    # Note: document_id index is created automatically by the unique constraint above
     op.create_index('idx_parsed_documents_parsed_at', 'parsed_documents', ['parsed_at'], unique=False)
     op.create_index('idx_parsed_documents_organization_id', 'parsed_documents', ['organization_id'], unique=False)
 
@@ -48,5 +48,5 @@ def downgrade() -> None:
     """Remove parsed_documents table and indexes."""
     op.drop_index('idx_parsed_documents_organization_id', table_name='parsed_documents')
     op.drop_index('idx_parsed_documents_parsed_at', table_name='parsed_documents')
-    op.drop_index('idx_parsed_documents_document_id', table_name='parsed_documents')
+    # document_id index is dropped automatically by the unique constraint
     op.drop_table('parsed_documents')

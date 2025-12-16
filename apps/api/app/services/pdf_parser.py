@@ -335,8 +335,8 @@ class PDFParserService:
         Detect section headings across pages using regex patterns.
 
         Looks for numbered sections like:
-        - "1. Introduction"
-        - "2.3 Test Results"
+        - "1. Introduction" or "1. introduction" (case-insensitive)
+        - "2.3 Test Results" or "2.3 test results"
         - "3.2.1 Details"
         - "SECTION 1 - OVERVIEW" (uppercase headings)
 
@@ -352,8 +352,9 @@ class PDFParserService:
 
         # Regex patterns for section detection (in priority order)
         section_patterns = [
-            # Numbered sections: "1.", "2.3", "3.2.1"
-            re.compile(r"^(\d+(?:\.\d+)*\.?\s+[A-Z][^\n]{0,100})", re.MULTILINE),
+            # Numbered sections: "1.", "2.3", "3.2.1" (case-insensitive)
+            # Matches: "1. Introduction", "2.3 test results", "3.2.1 Details"
+            re.compile(r"^(\d+(?:\.\d+)*\.?\s+[a-zA-Z][^\n]{0,100})", re.MULTILINE),
             # Uppercase headings: "SECTION 1", "CHAPTER 2", "PART A"
             re.compile(r"^([A-Z][A-Z\s]{5,50})\n", re.MULTILINE),
             # Underlined headings (text followed by ===== or -----)
