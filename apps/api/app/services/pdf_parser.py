@@ -11,9 +11,15 @@ Features:
 - Fallback extraction (pdfplumber if PyPDF2 fails)
 - Database caching (stores parsed data in parsed_documents table)
 - Error handling (corrupt PDFs, encrypted PDFs)
+- OCR support (pytesseract for scanned PDFs)
+- Table extraction (tabula-py for structured data)
+- Parallel page processing (asyncio for performance)
+- Configurable section patterns (custom regex per workflow)
 """
 import re
 import logging
+import asyncio
+import subprocess
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 from uuid import UUID
@@ -26,6 +32,29 @@ from sqlalchemy.orm import Session
 from app.models.models import ParsedDocument
 
 logger = logging.getLogger(__name__)
+
+# Optional OCR dependencies (graceful degradation if not available)
+try:
+    import pytesseract
+    from pdf2image import convert_from_path
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+    logger.warning(
+        "OCR dependencies not available (pytesseract or pdf2image missing). "
+        "Scanned PDF support will be disabled."
+    )
+
+# Optional table extraction (graceful degradation if Java not available)
+try:
+    import tabula
+    TABLE_EXTRACTION_AVAILABLE = True
+except ImportError:
+    TABLE_EXTRACTION_AVAILABLE = False
+    logger.warning(
+        "Table extraction dependencies not available (tabula-py missing). "
+        "Table extraction will be disabled."
+    )
 
 
 class PDFParsingError(Exception):
@@ -64,7 +93,14 @@ class PDFParserService:
         self.db = db
 
     def parse_document(
-        self, document_id: UUID, file_path: str, organization_id: UUID
+        self,
+        document_id: UUID,
+        file_path: str,
+        organization_id: UUID,
+        custom_patterns: Optional[List[str]] = None,
+        enable_ocr: bool = True,
+        enable_tables: bool = True,
+        enable_parallel: bool = True,
     ) -> Dict[str, Any]:
         """
         Parse PDF document and return structured text with page/section info.
@@ -79,12 +115,17 @@ class PDFParserService:
             document_id: UUID of the document being parsed
             file_path: Absolute path to the PDF file
             organization_id: UUID of the organization (for multi-tenancy)
+            custom_patterns: Optional custom regex patterns for section detection
+            enable_ocr: Enable OCR fallback for scanned PDFs (default: True)
+            enable_tables: Enable table extraction (default: True)
+            enable_parallel: Enable parallel page processing (default: True)
 
         Returns:
             Dict with:
                 - document_id: UUID of the document
                 - pages: List of {page_number, section, text}
-                - method: Parsing method used ('pypdf2' or 'pdfplumber')
+                - tables: List of extracted tables (if enable_tables=True)
+                - method: Parsing method used ('pypdf2', 'pdfplumber', 'ocr')
                 - cached: Whether result came from cache
 
         Raises:
@@ -107,6 +148,7 @@ class PDFParserService:
             return {
                 "document_id": document_id,
                 "pages": cached_result["pages"],
+                "tables": cached_result["tables"],
                 "method": cached_result["method"],
                 "cached": True,
             }
@@ -122,13 +164,24 @@ class PDFParserService:
                 "document_id": str(document_id),
                 "organization_id": str(organization_id),
                 "file_path": file_path,
+                "enable_ocr": enable_ocr,
+                "enable_tables": enable_tables,
+                "enable_parallel": enable_parallel,
             },
         )
 
-        # 3. Extract text with PyPDF2 (primary)
+        # 3. Extract text with PyPDF2 (primary) or parallel extraction
+        pages = []
+        parsing_method = "pypdf2"
+
         try:
-            pages = self._extract_with_pypdf2(file_path)
-            parsing_method = "pypdf2"
+            if enable_parallel:
+                # Use asyncio for parallel page processing
+                pages = asyncio.run(self._parse_pdf_parallel(file_path))
+                parsing_method = "pypdf2_parallel"
+            else:
+                pages = self._extract_with_pypdf2(file_path)
+                parsing_method = "pypdf2"
         except Exception as e:
             # 4. Fallback to pdfplumber
             logger.warning(
@@ -158,15 +211,62 @@ class PDFParserService:
                     f"Both PyPDF2 and pdfplumber failed. PyPDF2: {str(e)}, pdfplumber: {str(fallback_error)}"
                 )
 
-        # 5. Detect sections across pages
-        structured_pages = self._detect_sections(pages)
+        # 5. Check if PDF is scanned (no extractable text) and use OCR if enabled
+        if enable_ocr and self._is_scanned_pdf(pages):
+            logger.info(
+                "Scanned PDF detected, falling back to OCR",
+                extra={
+                    "event": "ocr_fallback",
+                    "document_id": str(document_id),
+                    "organization_id": str(organization_id),
+                },
+            )
+            try:
+                pages = self._extract_with_ocr(file_path)
+                parsing_method = "ocr"
+            except Exception as ocr_error:
+                logger.warning(
+                    "OCR extraction failed",
+                    extra={
+                        "event": "ocr_failed",
+                        "document_id": str(document_id),
+                        "organization_id": str(organization_id),
+                        "error": str(ocr_error),
+                    },
+                )
+                # Continue with empty text (graceful degradation)
 
-        # 6. Cache parsed result
-        self._cache_parse(document_id, organization_id, structured_pages, parsing_method)
+        # 6. Extract tables if enabled
+        tables = []
+        if enable_tables:
+            try:
+                tables = self._extract_tables(file_path)
+            except Exception as table_error:
+                logger.warning(
+                    "Table extraction failed",
+                    extra={
+                        "event": "table_extraction_failed",
+                        "document_id": str(document_id),
+                        "organization_id": str(organization_id),
+                        "error": str(table_error),
+                    },
+                )
+                # Continue without tables (graceful degradation)
+
+        # 7. Detect sections across pages (with custom patterns if provided)
+        structured_pages = self._detect_sections(pages, custom_patterns)
+
+        # 8. Cache parsed result (including tables)
+        result_data = {
+            "pages": structured_pages,
+            "tables": tables,
+        }
+        self._cache_parse(document_id, organization_id, result_data, parsing_method)
 
         return {
             "document_id": document_id,
             "pages": structured_pages,
+            "tables": tables,
             "method": parsing_method,
             "cached": False,
         }
@@ -330,7 +430,9 @@ class PDFParserService:
 
         return pages
 
-    def _detect_sections(self, pages: List[Dict]) -> List[Dict]:
+    def _detect_sections(
+        self, pages: List[Dict], custom_patterns: Optional[List[str]] = None
+    ) -> List[Dict]:
         """
         Detect section headings across pages using regex patterns.
 
@@ -344,24 +446,30 @@ class PDFParserService:
 
         Args:
             pages: List of page dictionaries with text
+            custom_patterns: Optional custom regex patterns (overrides defaults if provided)
 
         Returns:
             Same list with "section" field populated
         """
         current_section = None
 
-        # Regex patterns for section detection (in priority order)
-        section_patterns = [
-            # Numbered sections: "1.", "2.3", "3.2.1" (case-insensitive)
-            # Matches: "1. Introduction", "2.3 test results", "3.2.1 Details"
-            re.compile(r"^(\d+(?:\.\d+)*\.?\s+[a-zA-Z][^\n]{0,100})", re.MULTILINE),
-            # Uppercase headings: "SECTION 1", "CHAPTER 2", "PART A"
-            re.compile(r"^([A-Z][A-Z\s]{5,50})\n", re.MULTILINE),
-            # Underlined headings (text followed by ===== or -----)
-            re.compile(
-                r"^([A-Z][^\n]{5,100})\n[=\-]{5,}$", re.MULTILINE
-            ),
-        ]
+        # Use custom patterns if provided, otherwise use default patterns
+        if custom_patterns:
+            # Validate and compile custom patterns
+            section_patterns = self._compile_section_patterns(custom_patterns)
+        else:
+            # Default regex patterns for section detection (in priority order)
+            section_patterns = [
+                # Numbered sections: "1.", "2.3", "3.2.1" (case-insensitive)
+                # Matches: "1. Introduction", "2.3 test results", "3.2.1 Details"
+                re.compile(r"^(\d+(?:\.\d+)*\.?\s+[a-zA-Z][^\n]{0,100})", re.MULTILINE),
+                # Uppercase headings: "SECTION 1", "CHAPTER 2", "PART A"
+                re.compile(r"^([A-Z][A-Z\s]{5,50})\n", re.MULTILINE),
+                # Underlined headings (text followed by ===== or -----)
+                re.compile(
+                    r"^([A-Z][^\n]{5,100})\n[=\-]{5,}$", re.MULTILINE
+                ),
+            ]
 
         for page in pages:
             text = page["text"]
@@ -395,7 +503,7 @@ class PDFParserService:
             organization_id: UUID of the organization (for multi-tenancy)
 
         Returns:
-            Dict with pages and method, or None if not cached
+            Dict with pages, tables and method, or None if not cached
         """
         cached = (
             self.db.query(ParsedDocument)
@@ -407,18 +515,312 @@ class PDFParserService:
         )
 
         if cached:
-            return {
-                "pages": cached.parsed_data,
-                "method": cached.parsing_method,
-            }
+            # Handle both old format (pages only) and new format (pages + tables)
+            if isinstance(cached.parsed_data, dict):
+                # New format: {pages: [...], tables: [...]}
+                return {
+                    "pages": cached.parsed_data.get("pages", []),
+                    "tables": cached.parsed_data.get("tables", []),
+                    "method": cached.parsing_method,
+                }
+            else:
+                # Old format: just list of pages
+                return {
+                    "pages": cached.parsed_data,
+                    "tables": [],
+                    "method": cached.parsing_method,
+                }
 
         return None
 
+    def _is_scanned_pdf(self, pages: List[Dict]) -> bool:
+        """
+        Detect if PDF contains scannel images (no extractable text).
+
+        Checks if total extractable text across all pages is below a threshold,
+        indicating the PDF is likely scanned/image-based.
+
+        Args:
+            pages: List of page dictionaries with extracted text
+
+        Returns:
+            True if PDF appears to be scanned, False otherwise
+        """
+        # Calculate total text length across all pages
+        total_text = "".join(page.get("text", "") for page in pages)
+        total_chars = len(total_text.strip())
+
+        # Threshold: < 100 characters for entire document = likely scanned
+        # This accounts for PDFs with only metadata/headers but no body text
+        if total_chars < 100:
+            return True
+
+        # Additional check: If most pages have very little text, likely scanned
+        pages_with_text = sum(
+            1 for page in pages if len(page.get("text", "").strip()) > 20
+        )
+        if pages_with_text < len(pages) * 0.5:  # Less than 50% of pages have text
+            return True
+
+        return False
+
+    def _extract_with_ocr(self, file_path: str) -> List[Dict]:
+        """
+        Extract text from scanned PDF using OCR (pytesseract).
+
+        Converts PDF pages to images and runs OCR on each image.
+
+        Args:
+            file_path: Path to PDF file
+
+        Returns:
+            List of page dictionaries with OCR-extracted text
+
+        Raises:
+            PDFParsingError: If OCR dependencies unavailable or extraction fails
+        """
+        if not OCR_AVAILABLE:
+            raise PDFParsingError(
+                "OCR dependencies not available (pytesseract or pdf2image missing). "
+                "Install with: pip install pytesseract pdf2image"
+            )
+
+        try:
+            # Convert PDF to images (one image per page)
+            images = convert_from_path(file_path, dpi=300)
+
+            pages = []
+            for page_num, image in enumerate(images, start=1):
+                try:
+                    # Run OCR on image
+                    text = pytesseract.image_to_string(image, lang="eng")
+                    pages.append(
+                        {
+                            "page": page_num,
+                            "text": text if text else "",
+                            "section": None,
+                        }
+                    )
+                except Exception as page_error:
+                    logger.warning(
+                        f"OCR failed for page {page_num}",
+                        extra={
+                            "event": "ocr_page_failed",
+                            "page": page_num,
+                            "error": str(page_error),
+                        },
+                    )
+                    pages.append(
+                        {
+                            "page": page_num,
+                            "text": f"[OCR error on page {page_num}]",
+                            "section": None,
+                        }
+                    )
+
+            return pages
+
+        except Exception as e:
+            raise PDFParsingError(f"OCR extraction failed: {str(e)}")
+
+    def _extract_tables(self, file_path: str) -> List[Dict[str, Any]]:
+        """
+        Extract tables from PDF using tabula-py.
+
+        Returns tables as list of dictionaries (one per table found).
+
+        Args:
+            file_path: Path to PDF file
+
+        Returns:
+            List of table dictionaries: [{"page": 1, "table_index": 0, "data": [...]}, ...]
+            Each table's data is a list of dictionaries (rows with column headers as keys)
+
+        Raises:
+            PDFParsingError: If table extraction dependencies unavailable or Java missing
+        """
+        if not TABLE_EXTRACTION_AVAILABLE:
+            raise PDFParsingError(
+                "Table extraction dependencies not available (tabula-py missing). "
+                "Install with: pip install tabula-py"
+            )
+
+        # Check if Java is available (required by tabula-py)
+        if not self._check_java_available():
+            logger.warning(
+                "Java runtime not available - table extraction disabled",
+                extra={"event": "java_missing"},
+            )
+            return []
+
+        try:
+            # Extract all tables from PDF (all pages)
+            # read_pdf returns list of DataFrames (one per table)
+            dfs = tabula.read_pdf(file_path, pages="all", multiple_tables=True)
+
+            tables = []
+            for idx, df in enumerate(dfs):
+                # Convert DataFrame to list of dictionaries (rows)
+                table_data = df.to_dict(orient="records")
+
+                tables.append(
+                    {
+                        "table_index": idx,
+                        "data": table_data,
+                        "columns": list(df.columns),
+                        "row_count": len(df),
+                    }
+                )
+
+            return tables
+
+        except Exception as e:
+            logger.warning(
+                "Table extraction failed",
+                extra={"event": "table_extraction_error", "error": str(e)},
+            )
+            return []
+
+    def _check_java_available(self) -> bool:
+        """
+        Check if Java runtime is available (required for tabula-py).
+
+        Returns:
+            True if Java is available, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["java", "-version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            return result.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
+
+    async def _parse_pdf_parallel(self, file_path: str) -> List[Dict]:
+        """
+        Parse PDF pages in parallel using asyncio.
+
+        Extracts text from all pages concurrently for faster processing.
+
+        Args:
+            file_path: Path to PDF file
+
+        Returns:
+            List of page dictionaries with text (order preserved)
+
+        Raises:
+            CorruptPDFError: If PDF parsing fails
+        """
+        try:
+            with open(file_path, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+
+                if reader.is_encrypted:
+                    raise EncryptedPDFError("PDF is encrypted")
+
+                # Create async tasks for each page
+                tasks = [
+                    self._parse_page_async(page_num, page)
+                    for page_num, page in enumerate(reader.pages, start=1)
+                ]
+
+                # Execute all tasks concurrently
+                page_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                # Filter out exceptions and return valid pages
+                pages = []
+                for result in page_results:
+                    if isinstance(result, Exception):
+                        logger.warning(
+                            "Parallel page parsing failed",
+                            extra={"event": "parallel_page_error", "error": str(result)},
+                        )
+                        # Continue with error placeholder
+                        pages.append(
+                            {
+                                "page": len(pages) + 1,
+                                "text": f"[Error: {str(result)}]",
+                                "section": None,
+                            }
+                        )
+                    else:
+                        pages.append(result)
+
+                return pages
+
+        except PyPDF2.errors.PdfReadError as e:
+            raise CorruptPDFError(f"PyPDF2 failed to read PDF: {str(e)}")
+        except Exception as e:
+            raise CorruptPDFError(f"Unexpected error in parallel parsing: {str(e)}")
+
+    async def _parse_page_async(
+        self, page_num: int, page: PyPDF2.PageObject
+    ) -> Dict:
+        """
+        Extract text from a single PDF page asynchronously.
+
+        Args:
+            page_num: Page number (1-indexed)
+            page: PyPDF2 page object
+
+        Returns:
+            Dictionary with page number and extracted text
+        """
+        # Run blocking I/O in thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        text = await loop.run_in_executor(None, page.extract_text)
+
+        return {
+            "page": page_num,
+            "text": text if text else "",
+            "section": None,
+        }
+
+    def _compile_section_patterns(
+        self, patterns: List[str]
+    ) -> List[re.Pattern]:
+        """
+        Compile and validate custom section detection patterns.
+
+        Validates patterns to prevent ReDoS (Regular Expression Denial of Service).
+
+        Args:
+            patterns: List of regex pattern strings
+
+        Returns:
+            List of compiled regex patterns
+
+        Raises:
+            PDFParsingError: If pattern is invalid or too long
+        """
+        compiled_patterns = []
+
+        for pattern_str in patterns:
+            # Validate pattern length (prevent ReDoS)
+            if len(pattern_str) > 1000:
+                raise PDFParsingError(
+                    f"Pattern too long (max 1000 chars): {pattern_str[:50]}..."
+                )
+
+            # Try to compile pattern
+            try:
+                pattern = re.compile(pattern_str, re.MULTILINE)
+                compiled_patterns.append(pattern)
+            except re.error as e:
+                raise PDFParsingError(
+                    f"Invalid regex pattern '{pattern_str}': {str(e)}"
+                )
+
+        return compiled_patterns
+
     def _cache_parse(
-        self, document_id: UUID, organization_id: UUID, parsed_data: List[Dict], method: str
+        self, document_id: UUID, organization_id: UUID, parsed_data: Dict[str, Any], method: str
     ) -> None:
         """
-        Store parsed text in database cache.
+        Store parsed text and tables in database cache.
 
         Note: This method uses flush() instead of commit() to allow the caller
         to manage the transaction. The caller should commit after all operations
@@ -427,8 +829,8 @@ class PDFParserService:
         Args:
             document_id: UUID of the document
             organization_id: UUID of the organization (for multi-tenancy)
-            parsed_data: List of page dictionaries
-            method: Parsing method used ('pypdf2' or 'pdfplumber')
+            parsed_data: Dictionary with 'pages' and 'tables' keys
+            method: Parsing method used ('pypdf2', 'pdfplumber', 'ocr', 'pypdf2_parallel')
 
         Raises:
             PDFParsingError: If database operation fails

@@ -7,10 +7,17 @@ FROM python:3.11-slim
 # libmagic1: Required by python-magic for MIME type detection
 # libpq-dev: Required by psycopg2 for PostgreSQL connections
 # gcc: Required for compiling some Python packages
+# tesseract-ocr: OCR engine for scanned PDF support
+# default-jre: Java runtime for tabula-py table extraction
+# poppler-utils: PDF to image conversion for OCR (used by pdf2image)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     libpq-dev \
     gcc \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    default-jre \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory

@@ -130,6 +130,11 @@ class Workflow(Base):
     )
     name = Column(String(255), nullable=False)
     description = Column(Text)
+    section_patterns = Column(
+        JSON,
+        nullable=True,
+        comment="Custom regex patterns for PDF section detection (array of strings)"
+    )
 
     # Workflow status fields:
     # - is_active: Workflow enabled/disabled (can be toggled by user)
