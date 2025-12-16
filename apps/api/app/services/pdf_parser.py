@@ -56,6 +56,28 @@ except ImportError:
         "Table extraction will be disabled."
     )
 
+# Optional memory monitoring (graceful degradation if not available)
+try:
+    import psutil
+    MEMORY_MONITORING_AVAILABLE = True
+except ImportError:
+    MEMORY_MONITORING_AVAILABLE = False
+    logger.info("psutil not available, OCR DPI optimization disabled")
+
+# Configuration constants
+# Cache format version
+CACHE_FORMAT_VERSION = 2  # Version 2: {version, pages, tables}
+
+# OCR configuration
+SCANNED_PDF_CHAR_THRESHOLD = 100  # Min chars to consider PDF as having text
+SCANNED_PDF_PAGE_TEXT_THRESHOLD = 20  # Min chars per page for text-based PDF
+OCR_DEFAULT_DPI = 300  # Standard DPI for OCR (balances quality vs memory)
+OCR_LOW_MEMORY_DPI = 150  # DPI for memory-constrained environments
+OCR_MEMORY_MB_PER_PAGE_AT_300DPI = 5  # Estimated memory usage per page at 300 DPI
+
+# Pattern validation
+MAX_PATTERN_LENGTH = 1000  # Maximum allowed regex pattern length
+
 
 class PDFParsingError(Exception):
     """Base exception for PDF parsing failures."""
@@ -273,8 +295,9 @@ class PDFParserService:
         # 7. Detect sections across pages (with custom patterns if provided)
         structured_pages = self._detect_sections(pages, custom_patterns)
 
-        # 8. Cache parsed result (including tables)
+        # 8. Cache parsed result (including tables and version)
         result_data = {
+            "version": CACHE_FORMAT_VERSION,
             "pages": structured_pages,
             "tables": tables,
         }
@@ -515,6 +538,10 @@ class PDFParserService:
         """
         Get cached parsed text from database.
 
+        Handles backward compatibility with old cache formats:
+        - Version 1: List of pages only
+        - Version 2: Dict with version, pages, tables
+
         Args:
             document_id: UUID of the document
             organization_id: UUID of the organization (for multi-tenancy)
@@ -532,16 +559,37 @@ class PDFParserService:
         )
 
         if cached:
-            # Handle both old format (pages only) and new format (pages + tables)
+            # Check cache format version
             if isinstance(cached.parsed_data, dict):
-                # New format: {pages: [...], tables: [...]}
-                return {
-                    "pages": cached.parsed_data.get("pages", []),
-                    "tables": cached.parsed_data.get("tables", []),
-                    "method": cached.parsing_method,
-                }
+                cache_version = cached.parsed_data.get("version", 1)
+
+                if cache_version == CACHE_FORMAT_VERSION:
+                    # Current format (v2): {version: 2, pages: [...], tables: [...]}
+                    return {
+                        "pages": cached.parsed_data.get("pages", []),
+                        "tables": cached.parsed_data.get("tables", []),
+                        "method": cached.parsing_method,
+                    }
+                elif cache_version == 1 or "pages" in cached.parsed_data:
+                    # Old dict format (v1): {pages: [...], tables: [...]} (no version field)
+                    return {
+                        "pages": cached.parsed_data.get("pages", []),
+                        "tables": cached.parsed_data.get("tables", []),
+                        "method": cached.parsing_method,
+                    }
+                else:
+                    # Unknown format, invalidate cache
+                    logger.warning(
+                        "Unknown cache format version, invalidating cache",
+                        extra={
+                            "event": "cache_version_unknown",
+                            "document_id": str(document_id),
+                            "cache_version": cache_version,
+                        }
+                    )
+                    return None
             else:
-                # Old format: just list of pages
+                # Very old format: just list of pages (no dict wrapper)
                 return {
                     "pages": cached.parsed_data,
                     "tables": [],
@@ -567,19 +615,63 @@ class PDFParserService:
         total_text = "".join(page.get("text", "") for page in pages)
         total_chars = len(total_text.strip())
 
-        # Threshold: < 100 characters for entire document = likely scanned
+        # Threshold: < SCANNED_PDF_CHAR_THRESHOLD characters for entire document = likely scanned
         # This accounts for PDFs with only metadata/headers but no body text
-        if total_chars < 100:
+        if total_chars < SCANNED_PDF_CHAR_THRESHOLD:
             return True
 
         # Additional check: If most pages have very little text, likely scanned
         pages_with_text = sum(
-            1 for page in pages if len(page.get("text", "").strip()) > 20
+            1 for page in pages if len(page.get("text", "").strip()) > SCANNED_PDF_PAGE_TEXT_THRESHOLD
         )
         if pages_with_text < len(pages) * 0.5:  # Less than 50% of pages have text
             return True
 
         return False
+
+    def _get_optimal_dpi(self, page_count: int) -> int:
+        """
+        Calculate optimal DPI for OCR based on available memory.
+
+        Args:
+            page_count: Number of pages to process
+
+        Returns:
+            Optimal DPI value (either OCR_DEFAULT_DPI or OCR_LOW_MEMORY_DPI)
+        """
+        if not MEMORY_MONITORING_AVAILABLE:
+            # If psutil not available, use default DPI
+            return OCR_DEFAULT_DPI
+
+        try:
+            # Get available memory in MB
+            available_mb = psutil.virtual_memory().available / (1024 * 1024)
+
+            # Calculate estimated memory usage at 300 DPI
+            estimated_memory_mb = page_count * OCR_MEMORY_MB_PER_PAGE_AT_300DPI
+
+            # If estimated usage exceeds available memory, use lower DPI
+            if estimated_memory_mb > available_mb:
+                logger.info(
+                    "Using low DPI for OCR due to memory constraints",
+                    extra={
+                        "event": "ocr_dpi_lowered",
+                        "page_count": page_count,
+                        "available_mb": int(available_mb),
+                        "estimated_mb": estimated_memory_mb,
+                        "dpi": OCR_LOW_MEMORY_DPI,
+                    }
+                )
+                return OCR_LOW_MEMORY_DPI
+
+            return OCR_DEFAULT_DPI
+
+        except Exception as e:
+            logger.warning(
+                f"Failed to calculate optimal DPI, using default: {e}",
+                extra={"event": "ocr_dpi_calculation_failed", "error": str(e)}
+            )
+            return OCR_DEFAULT_DPI
 
     def _extract_with_ocr(self, file_path: str) -> List[Dict]:
         """
@@ -609,18 +701,19 @@ class PDFParserService:
                 reader = PyPDF2.PdfReader(file)
                 page_count = len(reader.pages)
 
+            # Calculate optimal DPI based on available memory
+            optimal_dpi = self._get_optimal_dpi(page_count)
+
             # Process pages one at a time to avoid memory issues
             # Converting 50 pages at 300 DPI = ~2.5GB memory
             pages = []
             for page_num in range(1, page_count + 1):
                 try:
-                    # Convert single page to image
-                    # DPI=300 balances quality (readable text) vs memory (~5MB/page at 300 DPI)
-                    # Lower DPI (150-200) for memory-constrained environments (Railway 512MB free tier)
-                    # Higher DPI (600) for very small fonts or high-quality scans
+                    # Convert single page to image with optimal DPI
+                    # DPI is dynamically adjusted based on available memory
                     images = convert_from_path(
                         file_path,
-                        dpi=300,
+                        dpi=optimal_dpi,
                         first_page=page_num,
                         last_page=page_num
                     )
@@ -771,11 +864,25 @@ class PDFParserService:
             version_output = result.stderr
 
             # Parse Java version from output
-            # Examples:
-            # - Java 8: 'java version "1.8.0_XXX"'
-            # - Java 11+: 'openjdk version "11.0.XX"' or 'java version "17.0.XX"'
+            # Try multiple patterns to support different Java distributions:
+            # - Standard Java 8: 'java version "1.8.0_XXX"'
+            # - Standard Java 11+: 'openjdk version "11.0.XX"' or 'java version "17.0.XX"'
+            # - Azul Zulu: 'openjdk version "11.0.15" 2022-04-19 LTS'
+            # - GraalVM: 'openjdk version "17.0.3" 2022-04-19'
+            # - Without quotes: 'version 11.0.15'
             import re
-            version_match = re.search(r'version "(\d+)\.(\d+)', version_output)
+
+            version_patterns = [
+                r'version "(\d+)\.(\d+)',  # Standard: "11.0.1"
+                r'version (\d+)\.(\d+)',    # Without quotes: version 11.0
+                r'(\d+)\.(\d+)\.(\d+)',     # Simple version string: 11.0.15
+            ]
+
+            version_match = None
+            for pattern in version_patterns:
+                version_match = re.search(pattern, version_output)
+                if version_match:
+                    break
 
             if not version_match:
                 # If we can't parse version, disable table extraction (safer)
@@ -809,6 +916,8 @@ class PDFParserService:
         Parse PDF pages in parallel using asyncio.
 
         Extracts text from all pages concurrently for faster processing.
+        Keeps file open during parallel processing to ensure page objects
+        remain valid, especially for PDFs with embedded fonts or external references.
 
         Args:
             file_path: Path to PDF file
@@ -820,7 +929,11 @@ class PDFParserService:
             CorruptPDFError: If PDF parsing fails
         """
         try:
-            # Read all pages while file is open to avoid file handle issues
+            # Keep file open during parallel processing for safety
+            # This ensures page objects remain valid for PDFs with:
+            # - Embedded fonts
+            # - External references
+            # - Compressed object streams
             with open(file_path, "rb") as file:
                 reader = PyPDF2.PdfReader(file)
 
@@ -834,35 +947,37 @@ class PDFParserService:
                     for page_num, page in enumerate(reader.pages, start=1)
                 ]
 
-            # Now create async tasks with the extracted page objects
-            # File is safely closed, but page objects remain valid
-            tasks = [
-                self._parse_page_async(page_num, page)
-                for page_num, page in page_objects
-            ]
+                # Create async tasks with the extracted page objects
+                # File remains open during async processing
+                tasks = [
+                    self._parse_page_async(page_num, page)
+                    for page_num, page in page_objects
+                ]
 
-            # Execute all tasks concurrently
-            page_results = await asyncio.gather(*tasks, return_exceptions=True)
+                # Execute all tasks concurrently while file is still open
+                page_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            # Filter out exceptions and return valid pages
-            pages = []
-            for idx, result in enumerate(page_results, start=1):
-                if isinstance(result, Exception):
-                    logger.warning(
-                        "Parallel page parsing failed",
-                        extra={"event": "parallel_page_error", "error": str(result), "page": idx},
-                    )
-                    # Continue with error placeholder (use correct page number from iteration)
-                    pages.append(
-                        {
-                            "page": idx,
-                            "text": f"[Error parsing page {idx}: {str(result)}]",
-                            "section": None,
-                        }
-                    )
-                else:
-                    pages.append(result)
+                # Filter out exceptions and return valid pages
+                # Process results while file is still open
+                pages = []
+                for idx, result in enumerate(page_results, start=1):
+                    if isinstance(result, Exception):
+                        logger.warning(
+                            "Parallel page parsing failed",
+                            extra={"event": "parallel_page_error", "error": str(result), "page": idx},
+                        )
+                        # Continue with error placeholder (use correct page number from iteration)
+                        pages.append(
+                            {
+                                "page": idx,
+                                "text": f"[Error parsing page {idx}: {str(result)}]",
+                                "section": None,
+                            }
+                        )
+                    else:
+                        pages.append(result)
 
+            # File is now safely closed after all processing is complete
             return pages
 
         except PyPDF2.errors.PdfReadError as e:
@@ -914,9 +1029,9 @@ class PDFParserService:
 
         for pattern_str in patterns:
             # Validate pattern length (prevent ReDoS)
-            if len(pattern_str) > 1000:
+            if len(pattern_str) > MAX_PATTERN_LENGTH:
                 raise PDFParsingError(
-                    f"Pattern too long (max 1000 chars): {pattern_str[:50]}..."
+                    f"Pattern too long (max {MAX_PATTERN_LENGTH} chars): {pattern_str[:50]}..."
                 )
 
             # Check for dangerous ReDoS patterns (nested quantifiers)
@@ -950,9 +1065,10 @@ class PDFParserService:
         """
         # Check for nested quantifiers: (...)+ with quantifiers inside
         # Matches patterns like (a+)+, (x*)+, (y{2,5})*
+        # Use simpler pattern with length limit to avoid catastrophic backtracking
+        # Limit to 100 chars to prevent the validation pattern itself from causing ReDoS
         nested_quantifiers = re.compile(
-            r'\([^()]*[+*?]\)[+*?]'  # Simple case: (a+)+
-            r'|\([^()]*\{[0-9]+,[0-9]*\}\)[+*?]'  # With counted: (a{2,5})+
+            r'\([^)]{0,100}[+*?]\)[+*?]'  # Bounded: (a+)+ with max 100 chars inside parens
         )
         if nested_quantifiers.search(pattern_str):
             raise PDFParsingError(

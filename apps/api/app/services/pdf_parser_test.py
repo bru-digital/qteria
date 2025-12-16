@@ -555,3 +555,297 @@ class TestMultiTenancy:
         assert added_doc.organization_id == sample_organization_id
         assert added_doc.parsed_data == parsed_data
         assert added_doc.parsing_method == method
+
+
+class TestCacheBackwardCompatibility:
+    """Test cache format backward compatibility (Critical Issue #3)."""
+
+    def test_cache_v2_format_with_version(
+        self, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should correctly parse v2 cache format with version field."""
+        # Arrange - V2 format: {version: 2, pages: [...], tables: [...]}
+        cached_doc = Mock()
+        cached_doc.parsed_data = {
+            "version": 2,
+            "pages": [{"page": 1, "text": "Test", "section": None}],
+            "tables": [{"page": 1, "data": []}],
+        }
+        cached_doc.parsing_method = "pypdf2"
+
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_query.filter.return_value = mock_filter
+        mock_filter.first.return_value = cached_doc
+        pdf_parser.db.query.return_value = mock_query
+
+        # Act
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert
+        assert result is not None
+        assert result["pages"] == cached_doc.parsed_data["pages"]
+        assert result["tables"] == cached_doc.parsed_data["tables"]
+        assert result["method"] == "pypdf2"
+
+    def test_cache_v1_format_dict_without_version(
+        self, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should correctly parse v1 cache format (dict without version field)."""
+        # Arrange - V1 format: {pages: [...], tables: [...]} (no version field)
+        cached_doc = Mock()
+        cached_doc.parsed_data = {
+            "pages": [{"page": 1, "text": "Test", "section": None}],
+            "tables": [],
+        }
+        cached_doc.parsing_method = "pdfplumber"
+
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_query.filter.return_value = mock_filter
+        mock_filter.first.return_value = cached_doc
+        pdf_parser.db.query.return_value = mock_query
+
+        # Act
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert
+        assert result is not None
+        assert result["pages"] == cached_doc.parsed_data["pages"]
+        assert result["tables"] == []
+        assert result["method"] == "pdfplumber"
+
+    def test_cache_legacy_format_list_only(
+        self, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should correctly parse legacy cache format (list of pages only)."""
+        # Arrange - Legacy format: just a list of pages
+        cached_doc = Mock()
+        cached_doc.parsed_data = [{"page": 1, "text": "Test", "section": None}]
+        cached_doc.parsing_method = "pypdf2"
+
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_query.filter.return_value = mock_filter
+        mock_filter.first.return_value = cached_doc
+        pdf_parser.db.query.return_value = mock_query
+
+        # Act
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert
+        assert result is not None
+        assert result["pages"] == cached_doc.parsed_data
+        assert result["tables"] == []  # Empty for old format
+        assert result["method"] == "pypdf2"
+
+    def test_cache_unknown_version_invalidates(
+        self, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should invalidate cache with unknown version number."""
+        # Arrange - Future version that doesn't exist yet
+        cached_doc = Mock()
+        cached_doc.parsed_data = {
+            "version": 999,
+            "pages": [{"page": 1, "text": "Test"}],
+        }
+        cached_doc.parsing_method = "pypdf2"
+
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_query.filter.return_value = mock_filter
+        mock_filter.first.return_value = cached_doc
+        pdf_parser.db.query.return_value = mock_query
+
+        # Act
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert
+        assert result is None  # Should invalidate unknown version
+
+
+class TestReDoSValidation:
+    """Test ReDoS pattern validation (Critical Issue #2)."""
+
+    def test_nested_quantifiers_rejected(self, pdf_parser):
+        """Should reject patterns with nested quantifiers (ReDoS risk)."""
+        evil_patterns = [
+            r"(a+)+",  # Classic ReDoS pattern
+            r"(x*)*",  # Nested star quantifiers
+            r"(y+)?",  # Optional nested quantifier
+        ]
+
+        for pattern in evil_patterns:
+            with pytest.raises(PDFParsingError, match="nested quantifiers"):
+                pdf_parser._compile_section_patterns([pattern])
+
+    def test_multiple_consecutive_quantifiers_rejected(self, pdf_parser):
+        """Should reject patterns with multiple consecutive quantifiers."""
+        evil_patterns = [
+            r"a++",  # Double plus
+            r"b**",  # Double star
+            r"c+*",  # Plus then star
+        ]
+
+        for pattern in evil_patterns:
+            with pytest.raises(PDFParsingError, match="multiple consecutive quantifiers"):
+                pdf_parser._compile_section_patterns([pattern])
+
+    def test_safe_patterns_accepted(self, pdf_parser):
+        """Should accept safe patterns without ReDoS risk."""
+        safe_patterns = [
+            r"\d+\.\d+",  # Section numbers: 1.2
+            r"Chapter \d+",  # Chapter headings
+            r"[A-Z][a-z]+",  # Capitalized words
+        ]
+
+        # Should not raise any exceptions
+        compiled = pdf_parser._compile_section_patterns(safe_patterns)
+        assert len(compiled) == len(safe_patterns)
+
+    def test_pattern_length_limit_enforced(self, pdf_parser):
+        """Should reject patterns exceeding MAX_PATTERN_LENGTH."""
+        # Create a pattern longer than MAX_PATTERN_LENGTH (1000 chars)
+        long_pattern = "a" * 1001
+
+        with pytest.raises(PDFParsingError, match="Pattern too long"):
+            pdf_parser._compile_section_patterns([long_pattern])
+
+
+class TestOCRMemoryOptimization:
+    """Test OCR DPI optimization based on memory (High Priority Issue #6)."""
+
+    @patch("app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE", True)
+    @patch("app.services.pdf_parser.psutil")
+    def test_high_memory_uses_default_dpi(self, mock_psutil, pdf_parser):
+        """Should use default DPI when sufficient memory available."""
+        # Arrange - 4GB available memory
+        mock_psutil.virtual_memory.return_value = Mock(available=4 * 1024 * 1024 * 1024)
+
+        # Act
+        dpi = pdf_parser._get_optimal_dpi(page_count=50)
+
+        # Assert
+        assert dpi == 300  # OCR_DEFAULT_DPI
+
+    @patch("app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE", True)
+    @patch("app.services.pdf_parser.psutil")
+    def test_low_memory_uses_reduced_dpi(self, mock_psutil, pdf_parser):
+        """Should use reduced DPI when memory is constrained."""
+        # Arrange - 512MB available memory (Railway free tier)
+        mock_psutil.virtual_memory.return_value = Mock(available=512 * 1024 * 1024)
+
+        # Act
+        dpi = pdf_parser._get_optimal_dpi(page_count=50)
+
+        # Assert
+        assert dpi == 150  # OCR_LOW_MEMORY_DPI
+
+    @patch("app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE", False)
+    def test_no_psutil_uses_default_dpi(self, pdf_parser):
+        """Should use default DPI when psutil not available."""
+        # Act
+        dpi = pdf_parser._get_optimal_dpi(page_count=50)
+
+        # Assert
+        assert dpi == 300  # OCR_DEFAULT_DPI
+
+
+class TestJavaVersionParsing:
+    """Test improved Java version parsing (High Priority Issue #7)."""
+
+    def test_standard_java_8_format(self, pdf_parser):
+        """Should parse standard Java 8 version format."""
+        # Arrange
+        version_output = 'java version "1.8.0_XXX"'
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(
+                returncode=0, stderr=version_output, stdout=""
+            )
+
+            # Act
+            result = pdf_parser._check_java_available()
+
+            # Assert
+            assert result is True
+
+    def test_standard_java_11_format(self, pdf_parser):
+        """Should parse standard Java 11+ version format."""
+        # Arrange
+        version_output = 'openjdk version "11.0.15"'
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(
+                returncode=0, stderr=version_output, stdout=""
+            )
+
+            # Act
+            result = pdf_parser._check_java_available()
+
+            # Assert
+            assert result is True
+
+    def test_azul_zulu_format(self, pdf_parser):
+        """Should parse Azul Zulu Java version format."""
+        # Arrange
+        version_output = 'openjdk version "11.0.15" 2022-04-19 LTS'
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(
+                returncode=0, stderr=version_output, stdout=""
+            )
+
+            # Act
+            result = pdf_parser._check_java_available()
+
+            # Assert
+            assert result is True
+
+    def test_graalvm_format(self, pdf_parser):
+        """Should parse GraalVM Java version format."""
+        # Arrange
+        version_output = 'openjdk version "17.0.3" 2022-04-19'
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(
+                returncode=0, stderr=version_output, stdout=""
+            )
+
+            # Act
+            result = pdf_parser._check_java_available()
+
+            # Assert
+            assert result is True
+
+    def test_version_without_quotes(self, pdf_parser):
+        """Should parse Java version format without quotes."""
+        # Arrange
+        version_output = 'version 11.0.15'
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(
+                returncode=0, stderr=version_output, stdout=""
+            )
+
+            # Act
+            result = pdf_parser._check_java_available()
+
+            # Assert
+            assert result is True
+
+    def test_unparseable_version_returns_false(self, pdf_parser):
+        """Should return False when version cannot be parsed."""
+        # Arrange
+        version_output = 'some random output without version'
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(
+                returncode=0, stderr=version_output, stdout=""
+            )
+
+            # Act
+            result = pdf_parser._check_java_available()
+
+            # Assert
+            assert result is False
