@@ -26,7 +26,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 import uuid
 
 from .base import Base
@@ -437,3 +437,41 @@ class AuditLog(Base):
         Index("idx_audit_created_at", "created_at"),
         Index("idx_audit_action", "action"),
     )
+
+
+class ParsedDocument(Base):
+    """
+    Cached parsed text from PDF documents.
+    Avoids re-parsing the same document multiple times.
+    Stores structured text with page boundaries and detected sections.
+    """
+
+    __tablename__ = "parsed_documents"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    document_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,  # One parsed result per document
+    )
+    parsed_data = Column(JSON, nullable=False)  # Array of {page, section, text}
+    parsing_method = Column(
+        String(50), nullable=False
+    )  # 'pypdf2' or 'pdfplumber'
+    parsed_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    # Relationships
+    # Use selectin loading to prevent N+1 query issues when accessing document.parsed_version
+    document = relationship("Document", backref=backref("parsed_version", lazy="selectin"))
+
+    # Indexes
+    # Note: document_id index is created automatically by unique=True constraint
+    # Note: organization_id index is created automatically by index=True parameter
+    __table_args__ = (Index("idx_parsed_documents_parsed_at", "parsed_at"),)
