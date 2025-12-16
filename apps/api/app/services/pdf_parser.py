@@ -13,6 +13,7 @@ Features:
 - Error handling (corrupt PDFs, encrypted PDFs)
 """
 import re
+import logging
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 from uuid import UUID
@@ -23,6 +24,8 @@ import pdfplumber
 from sqlalchemy.orm import Session
 
 from app.models.models import ParsedDocument
+
+logger = logging.getLogger(__name__)
 
 
 class PDFParsingError(Exception):
@@ -89,6 +92,15 @@ class PDFParserService:
         # 1. Check cache first
         cached_result = self._get_cached_parse(document_id, organization_id)
         if cached_result:
+            logger.info(
+                "PDF parsing cache hit",
+                extra={
+                    "event": "cache_hit",
+                    "document_id": str(document_id),
+                    "organization_id": str(organization_id),
+                    "method": cached_result["method"],
+                },
+            )
             return {
                 "document_id": document_id,
                 "pages": cached_result["pages"],
@@ -99,16 +111,46 @@ class PDFParserService:
         # 2. Validate PDF file
         self._validate_pdf(file_path)
 
+        # Log parsing start (cache miss)
+        logger.info(
+            "Parsing PDF document",
+            extra={
+                "event": "pdf_parsing_start",
+                "document_id": str(document_id),
+                "organization_id": str(organization_id),
+                "file_path": file_path,
+            },
+        )
+
         # 3. Extract text with PyPDF2 (primary)
         try:
             pages = self._extract_with_pypdf2(file_path)
             parsing_method = "pypdf2"
         except Exception as e:
             # 4. Fallback to pdfplumber
+            logger.warning(
+                "PyPDF2 failed, falling back to pdfplumber",
+                extra={
+                    "event": "parser_fallback",
+                    "document_id": str(document_id),
+                    "organization_id": str(organization_id),
+                    "pypdf2_error": str(e),
+                },
+            )
             try:
                 pages = self._extract_with_pdfplumber(file_path)
                 parsing_method = "pdfplumber"
             except Exception as fallback_error:
+                logger.error(
+                    "Both PyPDF2 and pdfplumber failed",
+                    extra={
+                        "event": "pdf_parsing_failed",
+                        "document_id": str(document_id),
+                        "organization_id": str(organization_id),
+                        "pypdf2_error": str(e),
+                        "pdfplumber_error": str(fallback_error),
+                    },
+                )
                 raise PDFParsingError(
                     f"Both PyPDF2 and pdfplumber failed. PyPDF2: {str(e)}, pdfplumber: {str(fallback_error)}"
                 )
@@ -131,15 +173,34 @@ class PDFParserService:
         Validate that PDF file exists, is readable, and not encrypted.
 
         Args:
-            file_path: Path to PDF file
+            file_path: Path to PDF file (should be from Vercel Blob download,
+                      not user-controlled input)
 
         Raises:
-            CorruptPDFError: If file doesn't exist or isn't readable
+            CorruptPDFError: If file doesn't exist, isn't readable, or path traversal detected
             EncryptedPDFError: If PDF is password-protected
         """
-        path = Path(file_path)
+        # Resolve path to absolute path (prevents symlink/relative path attacks)
+        try:
+            path = Path(file_path).resolve(strict=True)
+        except (OSError, RuntimeError) as e:
+            raise CorruptPDFError(f"Invalid file path: {file_path} - {str(e)}")
 
-        # Check file exists
+        # Additional security: Ensure path doesn't contain suspicious patterns
+        # This prevents path traversal attacks if file_path is ever user-controlled
+        path_str = str(path)
+        if ".." in file_path or path_str.startswith(("/etc", "/sys", "/proc")):
+            logger.warning(
+                "Suspicious file path detected",
+                extra={
+                    "event": "path_traversal_attempt",
+                    "file_path": file_path,
+                    "resolved_path": path_str,
+                },
+            )
+            raise CorruptPDFError(f"Invalid file path: {file_path}")
+
+        # Check file exists (should already be true if resolve(strict=True) succeeded)
         if not path.exists():
             raise CorruptPDFError(f"PDF file not found: {file_path}")
 
@@ -148,7 +209,7 @@ class PDFParserService:
             raise CorruptPDFError(f"Path is not a file: {file_path}")
 
         # Check if encrypted
-        if self._is_encrypted(file_path):
+        if self._is_encrypted(str(path)):
             raise EncryptedPDFError(
                 f"PDF is password-protected or encrypted: {file_path}"
             )
@@ -378,4 +439,13 @@ class PDFParserService:
             self.db.refresh(parsed_doc)
         except Exception as e:
             self.db.rollback()
+            logger.error(
+                "Failed to cache parsed document",
+                extra={
+                    "event": "cache_write_failed",
+                    "document_id": str(document_id),
+                    "organization_id": str(organization_id),
+                    "error": str(e),
+                },
+            )
             raise PDFParsingError(f"Failed to cache parsed document: {str(e)}")
