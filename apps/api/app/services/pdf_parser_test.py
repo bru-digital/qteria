@@ -849,3 +849,76 @@ class TestJavaVersionParsing:
 
             # Assert
             assert result is False
+
+
+class TestParallelProcessingInAsyncContext:
+    """Test parallel processing behavior in async context (Critical Issue #1)."""
+
+    @pytest.mark.asyncio
+    async def test_parallel_in_async_context_raises_error(
+        self, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should raise error when enable_parallel=True in async context."""
+        # Arrange
+        test_file = "/fake/test.pdf"
+
+        # Mock file validation to pass
+        with patch.object(pdf_parser, "_validate_pdf"):
+            # Mock cache to return None (cache miss)
+            with patch.object(pdf_parser, "_get_cached_parse", return_value=None):
+                # Act & Assert
+                with pytest.raises(PDFParsingError) as exc_info:
+                    pdf_parser.parse_document(
+                        document_id=sample_document_id,
+                        file_path=test_file,
+                        organization_id=sample_organization_id,
+                        enable_parallel=True,  # This should raise error in async context
+                    )
+
+                # Verify error message is clear and actionable
+                assert "not supported when called from an async context" in str(exc_info.value)
+                assert "enable_parallel=False" in str(exc_info.value)
+                assert "background task" in str(exc_info.value)
+
+    @patch("app.services.pdf_parser.PyPDF2.PdfReader")
+    @patch("builtins.open", create=True)
+    def test_parallel_disabled_works_in_async_context(
+        self, mock_open, mock_reader, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should work with enable_parallel=False in async context (sync fallback)."""
+        # Arrange
+        test_file = "/fake/test.pdf"
+        mock_page = Mock()
+        mock_page.extract_text.return_value = "Test content"
+        mock_reader_instance = Mock()
+        mock_reader_instance.pages = [mock_page]
+        mock_reader_instance.is_encrypted = False
+        mock_reader.return_value = mock_reader_instance
+
+        # Mock cache to return None (cache miss)
+        with patch.object(pdf_parser, "_get_cached_parse", return_value=None):
+            # Mock path validation
+            with patch("pathlib.Path.resolve") as mock_resolve:
+                mock_path = Mock()
+                mock_path.exists.return_value = True
+                mock_path.is_file.return_value = True
+                mock_resolve.return_value = mock_path
+
+                # Mock asyncio.get_running_loop to simulate async context
+                import asyncio
+                with patch("asyncio.get_running_loop") as mock_get_loop:
+                    # Simulate being in async context
+                    mock_get_loop.return_value = Mock()
+
+                    # Act & Assert - Should work with enable_parallel=False
+                    result = pdf_parser.parse_document(
+                        document_id=sample_document_id,
+                        file_path=test_file,
+                        organization_id=sample_organization_id,
+                        enable_parallel=False,  # Explicit sync extraction
+                    )
+
+                    # Verify sync extraction was used
+                    assert result["method"] == "pypdf2"
+                    assert len(result["pages"]) == 1
+                    assert result["cached"] is False

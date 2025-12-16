@@ -77,6 +77,7 @@ OCR_MEMORY_MB_PER_PAGE_AT_300DPI = 5  # Estimated memory usage per page at 300 D
 
 # Pattern validation
 MAX_PATTERN_LENGTH = 1000  # Maximum allowed regex pattern length
+MAX_CUSTOM_PATTERNS = 100  # Maximum number of custom patterns allowed
 
 # Page count validation
 MAX_PAGE_COUNT = 10000  # Maximum allowed page count (prevents integer overflow attacks)
@@ -126,6 +127,7 @@ class PDFParserService:
         enable_ocr: bool = True,
         enable_tables: bool = True,
         enable_parallel: bool = True,
+        ocr_language: str = "eng",
     ) -> Dict[str, Any]:
         """
         Parse PDF document and return structured text with page/section info.
@@ -144,6 +146,7 @@ class PDFParserService:
             enable_ocr: Enable OCR fallback for scanned PDFs (default: True)
             enable_tables: Enable table extraction (default: True)
             enable_parallel: Enable parallel page processing (default: True)
+            ocr_language: Tesseract language code for OCR (default: "eng", e.g., "deu" for German, "fra" for French)
 
         Returns:
             Dict with:
@@ -172,8 +175,21 @@ class PDFParserService:
                 raise PDFParsingError(
                     f"custom_patterns must be a list, got {type(custom_patterns).__name__}"
                 )
-            if not all(isinstance(p, str) for p in custom_patterns):
-                raise PDFParsingError("custom_patterns must be a list of strings")
+            # Check for empty list (would skip default patterns entirely)
+            if not custom_patterns:
+                raise PDFParsingError(
+                    "custom_patterns cannot be empty. Omit parameter to use defaults."
+                )
+            # Check list size limit (prevent memory issues)
+            if len(custom_patterns) > MAX_CUSTOM_PATTERNS:
+                raise PDFParsingError(
+                    f"Too many patterns: {len(custom_patterns)} (max {MAX_CUSTOM_PATTERNS})"
+                )
+            # Validate each pattern is a non-empty string
+            if not all(isinstance(p, str) and p.strip() for p in custom_patterns):
+                raise PDFParsingError(
+                    "custom_patterns must contain non-empty strings"
+                )
 
         # 1. Check cache first
         cached_result = self._get_cached_parse(document_id, organization_id)
@@ -221,17 +237,13 @@ class PDFParserService:
                 # Check if we're already in an async context
                 try:
                     loop = asyncio.get_running_loop()
-                    # Already in async context - fall back to sync extraction
-                    logger.warning(
-                        "Parallel processing not supported in async context, using sync extraction",
-                        extra={
-                            "event": "parallel_disabled_async_context",
-                            "document_id": str(document_id),
-                            "organization_id": str(organization_id),
-                        },
+                    # Already in async context - cannot use asyncio.run()
+                    # Raise explicit error to make behavior predictable
+                    raise PDFParsingError(
+                        "Parallel processing (enable_parallel=True) is not supported when called "
+                        "from an async context (e.g., FastAPI endpoint). Either set enable_parallel=False "
+                        "or process documents in a background task (Celery) outside the async request context."
                     )
-                    pages = self._extract_with_pypdf2(file_path)
-                    parsing_method = "pypdf2"
                 except RuntimeError:
                     # No running loop - safe to use asyncio.run()
                     pages = asyncio.run(self._parse_pdf_parallel(file_path))
@@ -276,10 +288,11 @@ class PDFParserService:
                     "event": "ocr_fallback",
                     "document_id": str(document_id),
                     "organization_id": str(organization_id),
+                    "ocr_language": ocr_language,
                 },
             )
             try:
-                pages = self._extract_with_ocr(file_path)
+                pages = self._extract_with_ocr(file_path, language=ocr_language)
                 parsing_method = "ocr"
             except Exception as ocr_error:
                 logger.warning(
@@ -293,9 +306,9 @@ class PDFParserService:
                 )
                 # Continue with empty text (graceful degradation)
 
-        # 6. Extract tables if enabled
+        # 6. Extract tables if enabled (with pre-flight check)
         tables = []
-        if enable_tables:
+        if enable_tables and self._likely_has_tables(pages):
             try:
                 tables = self._extract_tables(file_path)
             except Exception as table_error:
@@ -309,6 +322,15 @@ class PDFParserService:
                     },
                 )
                 # Continue without tables (graceful degradation)
+        elif enable_tables and not self._likely_has_tables(pages):
+            logger.debug(
+                "Skipping table extraction - no table indicators found",
+                extra={
+                    "event": "table_extraction_skipped",
+                    "document_id": str(document_id),
+                    "organization_id": str(organization_id),
+                },
+            )
 
         # 7. Detect sections across pages (with custom patterns if provided)
         structured_pages = self._detect_sections(pages, custom_patterns)
@@ -606,11 +628,12 @@ class PDFParserService:
                         }
                     )
                     # Delete the invalid cache entry to prevent repeated warnings
+                    # Use commit() for immediate persistence (atomic operation)
                     self.db.query(ParsedDocument).filter(
                         ParsedDocument.document_id == document_id,
                         ParsedDocument.organization_id == organization_id
                     ).delete()
-                    self.db.flush()
+                    self.db.commit()
                     return None
             else:
                 # Very old format: just list of pages (no dict wrapper)
@@ -653,11 +676,17 @@ class PDFParserService:
 
         return False
 
-    def _get_optimal_dpi(self, page_count: int) -> int:
+    def _get_optimal_dpi(self, file_path: str, page_count: int) -> int:
         """
-        Calculate optimal DPI for OCR based on available memory.
+        Calculate optimal DPI for OCR based on available memory and page dimensions.
+
+        Memory varies by page size:
+        - A4 at 300 DPI: ~25 MB uncompressed
+        - Legal at 300 DPI: ~30 MB
+        - A3 at 300 DPI: ~50 MB
 
         Args:
+            file_path: Path to PDF file (to read page dimensions)
             page_count: Number of pages to process
 
         Returns:
@@ -668,11 +697,31 @@ class PDFParserService:
             return OCR_DEFAULT_DPI
 
         try:
+            # Read first page dimensions to estimate memory accurately
+            with open(file_path, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+                if len(reader.pages) == 0:
+                    return OCR_DEFAULT_DPI
+
+                first_page = reader.pages[0]
+                # Get page dimensions in points (1/72 inch)
+                width = float(first_page.mediabox.width)
+                height = float(first_page.mediabox.height)
+
+            # Convert to inches (PDF units are points: 1/72 inch)
+            width_inches = width / 72
+            height_inches = height / 72
+
+            # Calculate memory per page: width * height * DPI² * 3 bytes (RGB) / 1MB
+            memory_mb_per_page = (
+                width_inches * height_inches * OCR_DEFAULT_DPI * OCR_DEFAULT_DPI * 3
+            ) / (1024 * 1024)
+
             # Get available memory in MB
             available_mb = psutil.virtual_memory().available / (1024 * 1024)
 
             # Calculate estimated memory usage at 300 DPI
-            estimated_memory_mb = page_count * OCR_MEMORY_MB_PER_PAGE_AT_300DPI
+            estimated_memory_mb = page_count * memory_mb_per_page
 
             # If estimated usage exceeds available memory, use lower DPI
             if estimated_memory_mb > available_mb:
@@ -681,8 +730,10 @@ class PDFParserService:
                     extra={
                         "event": "ocr_dpi_lowered",
                         "page_count": page_count,
+                        "page_size_inches": f"{width_inches:.1f}x{height_inches:.1f}",
+                        "memory_per_page_mb": round(memory_mb_per_page, 1),
                         "available_mb": int(available_mb),
-                        "estimated_mb": estimated_memory_mb,
+                        "estimated_mb": int(estimated_memory_mb),
                         "dpi": OCR_LOW_MEMORY_DPI,
                     }
                 )
@@ -697,7 +748,7 @@ class PDFParserService:
             )
             return OCR_DEFAULT_DPI
 
-    def _extract_with_ocr(self, file_path: str) -> List[Dict]:
+    def _extract_with_ocr(self, file_path: str, language: str = "eng") -> List[Dict]:
         """
         Extract text from scanned PDF using OCR (pytesseract).
 
@@ -706,6 +757,7 @@ class PDFParserService:
 
         Args:
             file_path: Path to PDF file
+            language: Tesseract language code (default: "eng", e.g., "deu", "fra")
 
         Returns:
             List of page dictionaries with OCR-extracted text
@@ -732,8 +784,8 @@ class PDFParserService:
                     "This may be a malicious PDF attempting to cause resource exhaustion."
                 )
 
-            # Calculate optimal DPI based on available memory
-            optimal_dpi = self._get_optimal_dpi(page_count)
+            # Calculate optimal DPI based on available memory and page dimensions
+            optimal_dpi = self._get_optimal_dpi(file_path, page_count)
 
             # Process pages one at a time to avoid memory issues
             # Converting 50 pages at 300 DPI = ~2.5GB memory
@@ -749,8 +801,8 @@ class PDFParserService:
                         last_page=page_num
                     )
 
-                    # Run OCR on the single page image
-                    text = pytesseract.image_to_string(images[0], lang="eng")
+                    # Run OCR on the single page image with specified language
+                    text = pytesseract.image_to_string(images[0], lang=language)
                     pages.append(
                         {
                             "page": page_num,
@@ -781,6 +833,38 @@ class PDFParserService:
 
         except Exception as e:
             raise PDFParsingError(f"OCR extraction failed: {str(e)}")
+
+    def _likely_has_tables(self, pages: List[Dict]) -> bool:
+        """
+        Quick heuristic to check if text contains table-like patterns.
+
+        Checks first 5 pages for common table indicators to avoid expensive
+        tabula-py extraction on text-only PDFs.
+
+        Args:
+            pages: List of page dictionaries with extracted text
+
+        Returns:
+            True if tables are likely present, False otherwise
+        """
+        for page in pages[:5]:  # Check first 5 pages only
+            text = page.get("text", "")
+
+            # Look for common table indicators:
+            # - Tab characters (common in copy-pasted tables)
+            if "\t" in text:
+                return True
+
+            # - Pipe characters (markdown-style tables)
+            if "|" in text:
+                return True
+
+            # - Multiple consecutive spaces (aligned columns)
+            # 3+ consecutive spaces indicate columnar alignment
+            if re.search(r"  {3,}", text):
+                return True
+
+        return False
 
     def _extract_tables(self, file_path: str) -> List[Dict[str, Any]]:
         """
@@ -923,12 +1007,13 @@ class PDFParserService:
                     break
 
             if not version_match:
-                # If we can't parse version, disable table extraction (safer)
+                # Fallback: If we can't parse version but java -version succeeded,
+                # assume Java is available (some distributions may use non-standard format)
                 logger.warning(
-                    "Could not parse Java version, disabling table extraction",
-                    extra={"event": "java_version_unknown", "output": version_output}
+                    "Could not parse Java version format, but Java is available. Enabling table extraction.",
+                    extra={"event": "java_version_unparsed_but_available", "output": version_output}
                 )
-                return False
+                return True  # Accept any Java version if command succeeded
 
             major_version = int(version_match.group(1))
             minor_version = int(version_match.group(2))
