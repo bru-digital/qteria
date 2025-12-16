@@ -63,7 +63,7 @@ class PDFParserService:
         """
         self.db = db
 
-    async def parse_document(
+    def parse_document(
         self, document_id: UUID, file_path: str, organization_id: UUID
     ) -> Dict[str, Any]:
         """
@@ -71,6 +71,9 @@ class PDFParserService:
 
         This is the main entry point. It checks the cache first, then parses
         if needed, and stores the result in the database.
+
+        Note: This method is synchronous. For background processing, wrap in
+        a Celery task (see STORY-021).
 
         Args:
             document_id: UUID of the document being parsed
@@ -416,6 +419,10 @@ class PDFParserService:
         """
         Store parsed text in database cache.
 
+        Note: This method uses flush() instead of commit() to allow the caller
+        to manage the transaction. The caller should commit after all operations
+        are complete.
+
         Args:
             document_id: UUID of the document
             organization_id: UUID of the organization (for multi-tenancy)
@@ -435,10 +442,10 @@ class PDFParserService:
 
         try:
             self.db.add(parsed_doc)
-            self.db.commit()
+            self.db.flush()  # Flush to DB but don't commit
             self.db.refresh(parsed_doc)
         except Exception as e:
-            self.db.rollback()
+            # Don't rollback - let caller manage transaction
             logger.error(
                 "Failed to cache parsed document",
                 extra={

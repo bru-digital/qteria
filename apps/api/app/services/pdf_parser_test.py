@@ -32,6 +32,7 @@ def mock_db():
     db.query = Mock(return_value=Mock())
     db.add = Mock()
     db.commit = Mock()
+    db.flush = Mock()
     db.refresh = Mock()
     return db
 
@@ -283,7 +284,7 @@ class TestCaching:
 
         # Assert
         mock_db.add.assert_called_once()
-        mock_db.commit.assert_called_once()
+        mock_db.flush.assert_called_once()  # Changed from commit to flush
         called_with = mock_db.add.call_args[0][0]
         assert isinstance(called_with, ParsedDocument)
         assert called_with.document_id == sample_document_id
@@ -388,13 +389,12 @@ class TestEncryptionCheck:
 class TestParsingMethodRecorded:
     """Test that parsing method is correctly recorded."""
 
-    @pytest.mark.asyncio
     @patch("app.services.pdf_parser.PDFParserService._validate_pdf")
     @patch("app.services.pdf_parser.PDFParserService._extract_with_pypdf2")
     @patch("app.services.pdf_parser.PDFParserService._detect_sections")
     @patch("app.services.pdf_parser.PDFParserService._get_cached_parse")
     @patch("app.services.pdf_parser.PDFParserService._cache_parse")
-    async def test_pypdf2_method_recorded(
+    def test_pypdf2_method_recorded(
         self,
         mock_cache_parse,
         mock_get_cached,
@@ -412,21 +412,20 @@ class TestParsingMethodRecorded:
         mock_detect.return_value = [{"page": 1, "text": "Test", "section": None}]
 
         # Act
-        result = await pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
+        result = pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
 
         # Assert
         assert result["method"] == "pypdf2"
         mock_cache_parse.assert_called_once()
         assert mock_cache_parse.call_args[0][3] == "pypdf2"
 
-    @pytest.mark.asyncio
     @patch("app.services.pdf_parser.PDFParserService._validate_pdf")
     @patch("app.services.pdf_parser.PDFParserService._extract_with_pypdf2")
     @patch("app.services.pdf_parser.PDFParserService._extract_with_pdfplumber")
     @patch("app.services.pdf_parser.PDFParserService._detect_sections")
     @patch("app.services.pdf_parser.PDFParserService._get_cached_parse")
     @patch("app.services.pdf_parser.PDFParserService._cache_parse")
-    async def test_pdfplumber_method_recorded_on_fallback(
+    def test_pdfplumber_method_recorded_on_fallback(
         self,
         mock_cache_parse,
         mock_get_cached,
@@ -446,7 +445,7 @@ class TestParsingMethodRecorded:
         mock_detect.return_value = [{"page": 1, "text": "Test", "section": None}]
 
         # Act
-        result = await pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
+        result = pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
 
         # Assert
         assert result["method"] == "pdfplumber"
@@ -457,12 +456,11 @@ class TestParsingMethodRecorded:
 class TestErrorHandling:
     """Test comprehensive error handling."""
 
-    @pytest.mark.asyncio
     @patch("app.services.pdf_parser.PDFParserService._validate_pdf")
     @patch("app.services.pdf_parser.PDFParserService._extract_with_pypdf2")
     @patch("app.services.pdf_parser.PDFParserService._extract_with_pdfplumber")
     @patch("app.services.pdf_parser.PDFParserService._get_cached_parse")
-    async def test_both_parsers_fail_raises_error(
+    def test_both_parsers_fail_raises_error(
         self,
         mock_get_cached,
         mock_pdfplumber,
@@ -480,7 +478,7 @@ class TestErrorHandling:
 
         # Act & Assert
         with pytest.raises(PDFParsingError, match="Both PyPDF2 and pdfplumber failed"):
-            await pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
+            pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
 
 
 class TestMultiTenancy:

@@ -19,8 +19,7 @@ from app.models.models import ParsedDocument, Document
 
 
 @pytest.mark.integration
-@pytest.mark.asyncio
-async def test_parse_and_cache_document(db_session, test_organization, test_user):
+def test_parse_and_cache_document(db_session, test_organization, test_user):
     """
     Integration test: Parse document and verify it's cached in database.
 
@@ -40,8 +39,7 @@ async def test_parse_and_cache_document(db_session, test_organization, test_user
 
 
 @pytest.mark.integration
-@pytest.mark.asyncio
-async def test_cache_hit_returns_stored_result(db_session):
+def test_cache_hit_returns_stored_result(db_session):
     """
     Integration test: Verify cache returns stored parsed data.
 
@@ -52,8 +50,7 @@ async def test_cache_hit_returns_stored_result(db_session):
 
 
 @pytest.mark.integration
-@pytest.mark.asyncio
-async def test_concurrent_parsing_same_document(db_session):
+def test_concurrent_parsing_same_document(db_session):
     """
     Integration test: Verify no race condition when two workers parse same document.
 

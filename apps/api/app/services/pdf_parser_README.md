@@ -29,10 +29,11 @@ from app.database import get_db
 db = next(get_db())
 parser = PDFParserService(db=db)
 
-# Parse document
-result = await parser.parse_document(
+# Parse document (synchronous - wrap in Celery task for background processing)
+result = parser.parse_document(
     document_id=uuid4(),
-    file_path="/path/to/document.pdf"
+    file_path="/path/to/document.pdf",
+    organization_id=uuid4()
 )
 
 # Access parsed pages
@@ -122,7 +123,7 @@ PDFParsingError (base)
 
 ```python
 try:
-    result = await parser.parse_document(doc_id, file_path)
+    result = parser.parse_document(doc_id, file_path, organization_id)
 except EncryptedPDFError:
     # PDF is password-protected
     return {"error": "Document is encrypted"}
