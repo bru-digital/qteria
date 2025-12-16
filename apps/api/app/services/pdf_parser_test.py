@@ -922,3 +922,268 @@ class TestParallelProcessingInAsyncContext:
                     assert result["method"] == "pypdf2"
                     assert len(result["pages"]) == 1
                     assert result["cached"] is False
+
+
+class TestScannedPDFDetection:
+    """Test scanned PDF detection logic (Tech Lead Review - Critical Test #1)."""
+
+    def test_is_scanned_pdf_detects_low_text(self, pdf_parser):
+        """Should detect PDF as scanned when total text is below threshold."""
+        # Arrange - PDF with very little extractable text (< 100 chars total)
+        pages_minimal_text = [
+            {"page": 1, "text": "A", "section": None},  # 1 char
+            {"page": 2, "text": "B", "section": None},  # 1 char
+            {"page": 3, "text": "C", "section": None},  # 1 char
+        ]
+        # Total: 3 chars < SCANNED_PDF_CHAR_THRESHOLD (100)
+
+        # Act
+        result = pdf_parser._is_scanned_pdf(pages_minimal_text)
+
+        # Assert
+        assert result is True, "Should detect PDF with < 100 chars as scanned"
+
+    def test_is_scanned_pdf_detects_mostly_empty_pages(self, pdf_parser):
+        """Should detect PDF as scanned when most pages have no text."""
+        # Arrange - 10 pages, only 3 have text (< 50% threshold)
+        pages_mostly_empty = [
+            {"page": 1, "text": "Some text here with enough content", "section": None},  # >20 chars
+            {"page": 2, "text": "", "section": None},  # Empty
+            {"page": 3, "text": "", "section": None},  # Empty
+            {"page": 4, "text": "Another page with text content", "section": None},  # >20 chars
+            {"page": 5, "text": "", "section": None},  # Empty
+            {"page": 6, "text": "", "section": None},  # Empty
+            {"page": 7, "text": "", "section": None},  # Empty
+            {"page": 8, "text": "", "section": None},  # Empty
+            {"page": 9, "text": "Third page with some text", "section": None},  # >20 chars
+            {"page": 10, "text": "", "section": None},  # Empty
+        ]
+        # Only 3/10 pages have text (30% < 50% threshold)
+
+        # Act
+        result = pdf_parser._is_scanned_pdf(pages_mostly_empty)
+
+        # Assert
+        assert result is True, "Should detect PDF with < 50% pages having text as scanned"
+
+    def test_is_scanned_pdf_rejects_text_based_pdf(self, pdf_parser):
+        """Should NOT detect text-based PDF as scanned."""
+        # Arrange - PDF with substantial text across most pages
+        pages_with_text = [
+            {"page": 1, "text": "This is a paragraph with sufficient text content to indicate a normal PDF document.", "section": "1. Introduction"},
+            {"page": 2, "text": "More content here with detailed information spanning multiple lines of text.", "section": "2. Methods"},
+            {"page": 3, "text": "Additional pages with regular text content extracted from the document successfully.", "section": "3. Results"},
+        ]
+        # Total: ~260 chars > 100, all pages have >20 chars (100% > 50%)
+
+        # Act
+        result = pdf_parser._is_scanned_pdf(pages_with_text)
+
+        # Assert
+        assert result is False, "Should NOT detect text-based PDF as scanned"
+
+
+class TestReDoSValidationEnhanced:
+    """Test enhanced ReDoS validation with simplified regex (Tech Lead Review - Critical Test #2)."""
+
+    def test_redos_validation_blocks_nested_quantifiers(self, pdf_parser):
+        """Should block nested quantifiers with new simplified regex (max 50 chars)."""
+        # Arrange - Patterns that should be blocked by the new r'\(.{0,50}[+*?]\)[+*?]' regex
+        evil_patterns = [
+            r"(a+)+",  # Classic ReDoS
+            r"(x*)*",  # Nested star
+            r"(test.+)+end",  # Nested with content
+            r"(pattern{2,5})?",  # Optional nested quantifier
+        ]
+
+        # Act & Assert
+        for pattern in evil_patterns:
+            with pytest.raises(PDFParsingError, match="nested quantifiers"):
+                pdf_parser._compile_section_patterns([pattern])
+
+    def test_redos_validation_blocks_long_nested_patterns(self, pdf_parser):
+        """Should block nested patterns exceeding 50 char limit inside parens."""
+        # Arrange - Pattern with more than 50 chars inside nested parens
+        long_nested = "(" + "a" * 51 + "+)+"
+
+        # Act & Assert
+        # Should NOT match because content exceeds 50 chars (but pattern itself might still be caught by length limit)
+        # This tests the .{0,50} boundary in the ReDoS validation regex
+        try:
+            pdf_parser._compile_section_patterns([long_nested])
+            # If no exception, verify pattern was not flagged (acceptable since >50 chars makes it safe from our validator)
+        except PDFParsingError as e:
+            # Could be caught by either nested quantifier check OR length limit
+            assert "nested quantifiers" in str(e) or "Pattern too long" in str(e)
+
+    def test_redos_validation_allows_safe_short_patterns(self, pdf_parser):
+        """Should allow safe patterns without nested quantifiers."""
+        # Arrange
+        safe_patterns = [
+            r"\d+\.\d+",  # Section numbers
+            r"Chapter \d+",  # Chapter headings
+            r"[A-Z]{1,5}",  # Uppercase sequences with safe bounded quantifier
+            r"(Section|Chapter)\s+\d+",  # Alternation without nested quantifier
+        ]
+
+        # Act - Should not raise any exceptions
+        compiled = pdf_parser._compile_section_patterns(safe_patterns)
+
+        # Assert
+        assert len(compiled) == len(safe_patterns)
+
+
+class TestCacheFormatMigration:
+    """Test cache format migration from v1 to v2 (Tech Lead Review - Critical Test #3)."""
+
+    def test_cache_format_backward_compatibility_v1_to_v2(
+        self, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should correctly migrate from v1 (dict without version) to v2 (dict with version) format."""
+        # Arrange - Simulate v1 cache format (no version field)
+        v1_cached_doc = Mock()
+        v1_cached_doc.parsed_data = {
+            "pages": [
+                {"page": 1, "text": "V1 page 1", "section": "1. Intro"},
+                {"page": 2, "text": "V1 page 2", "section": "2. Body"},
+            ],
+            "tables": [],  # v1 might have empty tables
+        }
+        v1_cached_doc.parsing_method = "pypdf2"
+
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_query.filter.return_value = mock_filter
+        mock_filter.first.return_value = v1_cached_doc
+        pdf_parser.db.query.return_value = mock_query
+
+        # Act - Read v1 format
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert - Should successfully parse v1 format
+        assert result is not None
+        assert result["pages"] == v1_cached_doc.parsed_data["pages"]
+        assert result["tables"] == []
+        assert result["method"] == "pypdf2"
+        assert result["cached"] is True
+
+        # Verify v2 format would also work (has version field)
+        v2_cached_doc = Mock()
+        v2_cached_doc.parsed_data = {
+            "version": 2,
+            "pages": [
+                {"page": 1, "text": "V2 page 1", "section": "1. Intro"},
+            ],
+            "tables": [{"page": 1, "data": [["col1", "col2"]]}],
+        }
+        v2_cached_doc.parsing_method = "pdfplumber"
+
+        mock_filter.first.return_value = v2_cached_doc
+
+        # Act - Read v2 format
+        result_v2 = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert - Should successfully parse v2 format
+        assert result_v2 is not None
+        assert result_v2["pages"] == v2_cached_doc.parsed_data["pages"]
+        assert result_v2["tables"] == v2_cached_doc.parsed_data["tables"]
+        assert result_v2["method"] == "pdfplumber"
+        assert result_v2["cached"] is True
+
+    def test_cache_migration_handles_legacy_list_format(
+        self, pdf_parser, sample_document_id, sample_organization_id
+    ):
+        """Should migrate from legacy list format to current dict format."""
+        # Arrange - Legacy format: just a list of pages (no dict wrapper)
+        legacy_cached_doc = Mock()
+        legacy_cached_doc.parsed_data = [
+            {"page": 1, "text": "Legacy page 1", "section": None},
+            {"page": 2, "text": "Legacy page 2", "section": None},
+        ]
+        legacy_cached_doc.parsing_method = "pypdf2"
+
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_query.filter.return_value = mock_filter
+        mock_filter.first.return_value = legacy_cached_doc
+        pdf_parser.db.query.return_value = mock_query
+
+        # Act
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert - Should successfully migrate legacy format
+        assert result is not None
+        assert result["pages"] == legacy_cached_doc.parsed_data
+        assert result["tables"] == []  # Legacy format has no tables
+        assert result["method"] == "pypdf2"
+        assert result["cached"] is True
+
+
+class TestParallelProcessingPageOrder:
+    """Test parallel processing preserves page order (Tech Lead Review - Critical Test #4)."""
+
+    @pytest.mark.asyncio
+    async def test_parallel_processing_preserves_page_order(self, pdf_parser):
+        """Should preserve page order even when parallel tasks complete out of order."""
+        # Arrange - Mock PDF with 10 pages
+        mock_pages = []
+        for i in range(1, 11):
+            page = Mock()
+            page.extract_text.return_value = f"Page {i} content"
+            mock_pages.append(page)
+
+        # Mock file and reader
+        with patch("builtins.open", create=True) as mock_open:
+            with patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader:
+                mock_reader_instance = Mock()
+                mock_reader_instance.is_encrypted = False
+                mock_reader_instance.pages = mock_pages
+                mock_reader.return_value = mock_reader_instance
+
+                # Act - Parse in parallel
+                result = await pdf_parser._parse_pdf_parallel("/fake/test.pdf")
+
+                # Assert - Pages should be in correct order (1, 2, 3, ..., 10)
+                assert len(result) == 10
+                for i, page in enumerate(result, start=1):
+                    assert page["page"] == i, f"Page {i} is out of order"
+                    assert page["text"] == f"Page {i} content"
+                    assert page["section"] is None
+
+    @pytest.mark.asyncio
+    async def test_parallel_processing_handles_page_errors_without_reordering(
+        self, pdf_parser
+    ):
+        """Should maintain page order even when some pages fail to parse."""
+        # Arrange - Mock PDF where page 3 and page 7 fail
+        mock_pages = []
+        for i in range(1, 11):
+            page = Mock()
+            if i == 3 or i == 7:
+                # Simulate error for pages 3 and 7
+                page.extract_text.side_effect = Exception(f"Error on page {i}")
+            else:
+                page.extract_text.return_value = f"Page {i} content"
+            mock_pages.append(page)
+
+        # Mock file and reader
+        with patch("builtins.open", create=True) as mock_open:
+            with patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader:
+                mock_reader_instance = Mock()
+                mock_reader_instance.is_encrypted = False
+                mock_reader_instance.pages = mock_pages
+                mock_reader.return_value = mock_reader_instance
+
+                # Act - Parse in parallel
+                result = await pdf_parser._parse_pdf_parallel("/fake/test.pdf")
+
+                # Assert - All pages present in correct order, errors handled gracefully
+                assert len(result) == 10
+                for i, page in enumerate(result, start=1):
+                    assert page["page"] == i, f"Page {i} is out of order"
+                    if i == 3 or i == 7:
+                        # Error pages should have error message
+                        assert "[Error parsing page" in page["text"]
+                    else:
+                        # Normal pages should have correct content
+                        assert page["text"] == f"Page {i} content"

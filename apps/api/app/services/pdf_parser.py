@@ -138,6 +138,9 @@ class PDFParserService:
         Note: This method is synchronous. For background processing, wrap in
         a Celery task (see STORY-021).
 
+        Note: Parallel processing cannot be used from async context (FastAPI endpoints).
+        Either set enable_parallel=False or use Celery background tasks.
+
         Args:
             document_id: UUID of the document being parsed
             file_path: Absolute path to the PDF file
@@ -1189,9 +1192,9 @@ class PDFParserService:
         # Check for nested quantifiers: (...)+ with quantifiers inside
         # Matches patterns like (a+)+, (x*)+, (y{2,5})*
         # Use simpler pattern with length limit to avoid catastrophic backtracking
-        # Limit to 100 chars to prevent the validation pattern itself from causing ReDoS
+        # Limit to 50 chars to prevent the validation pattern itself from causing ReDoS
         nested_quantifiers = re.compile(
-            r'\([^)]{0,100}[+*?]\)[+*?]'  # Bounded: (a+)+ with max 100 chars inside parens
+            r'\(.{0,50}[+*?]\)[+*?]'  # Bounded: (a+)+ with max 50 chars inside parens
         )
         if nested_quantifiers.search(pattern_str):
             raise PDFParsingError(
