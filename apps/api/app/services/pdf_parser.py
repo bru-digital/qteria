@@ -458,7 +458,7 @@ class PDFParserService:
                         pages.append(
                             {
                                 "page": page_num,
-                                "text": f"[Error extracting page {page_num}: {str(page_error)}]",
+                                "text": f"[Error parsing page {page_num}: {str(page_error)}]",
                                 "section": None,
                             }
                         )
@@ -503,7 +503,7 @@ class PDFParserService:
                         pages.append(
                             {
                                 "page": page_num,
-                                "text": f"[Error extracting page {page_num}: {str(page_error)}]",
+                                "text": f"[Error parsing page {page_num}: {str(page_error)}]",
                                 "section": None,
                             }
                         )
@@ -796,7 +796,9 @@ class PDFParserService:
             for page_num in range(1, page_count + 1):
                 try:
                     # Convert single page to image with optimal DPI
-                    # DPI is dynamically adjusted based on available memory
+                    # DPI choice: 300 DPI (default) balances quality (readable text) vs memory (~5-25MB/page)
+                    # Automatically lowered to 150 DPI in memory-constrained environments (Railway/Render 512MB tier)
+                    # Lower DPI reduces quality but prevents OOM errors on large PDFs
                     images = convert_from_path(
                         file_path,
                         dpi=optimal_dpi,
@@ -1010,13 +1012,13 @@ class PDFParserService:
                     break
 
             if not version_match:
-                # Fallback: If we can't parse version but java -version succeeded,
-                # assume Java is available (some distributions may use non-standard format)
+                # Safer: Disable table extraction if version format is unparseable
+                # This prevents potential errors from incompatible/broken Java installations
                 logger.warning(
-                    "Could not parse Java version format, but Java is available. Enabling table extraction.",
-                    extra={"event": "java_version_unparsed_but_available", "output": version_output}
+                    "Could not parse Java version format, disabling table extraction for safety.",
+                    extra={"event": "java_version_unparsed", "output": version_output}
                 )
-                return True  # Accept any Java version if command succeeded
+                return False  # Disable feature if uncertain about Java version
 
             major_version = int(version_match.group(1))
             minor_version = int(version_match.group(2))
