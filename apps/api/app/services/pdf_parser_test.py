@@ -238,8 +238,7 @@ class TestSectionDetection:
 class TestCaching:
     """Test database caching logic."""
 
-    @pytest.mark.asyncio
-    async def test_cache_hit_skips_parsing(self, pdf_parser, mock_db, sample_document_id):
+    def test_cache_hit_skips_parsing(self, pdf_parser, mock_db, sample_document_id, sample_organization_id):
         """Should return cached result without parsing if cache hit."""
         # Arrange
         cached_doc = ParsedDocument(
@@ -253,15 +252,14 @@ class TestCaching:
         mock_db.query.return_value = mock_query
 
         # Act
-        result = await pdf_parser._get_cached_parse(sample_document_id)
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
 
         # Assert
         assert result is not None
         assert result["pages"][0]["text"] == "Cached text"
         assert result["method"] == "pypdf2"
 
-    @pytest.mark.asyncio
-    async def test_cache_miss_returns_none(self, pdf_parser, mock_db, sample_document_id):
+    def test_cache_miss_returns_none(self, pdf_parser, mock_db, sample_document_id, sample_organization_id):
         """Should return None if no cached result found."""
         # Arrange
         mock_query = Mock()
@@ -269,20 +267,19 @@ class TestCaching:
         mock_db.query.return_value = mock_query
 
         # Act
-        result = await pdf_parser._get_cached_parse(sample_document_id)
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
 
         # Assert
         assert result is None
 
-    @pytest.mark.asyncio
-    async def test_cache_stores_parsed_data(self, pdf_parser, mock_db, sample_document_id):
+    def test_cache_stores_parsed_data(self, pdf_parser, mock_db, sample_document_id, sample_organization_id):
         """Should store parsed data in database."""
         # Arrange
         parsed_data = [{"page": 1, "text": "New text", "section": "1. Intro"}]
         method = "pypdf2"
 
         # Act
-        await pdf_parser._cache_parse(sample_document_id, parsed_data, method)
+        pdf_parser._cache_parse(sample_document_id, sample_organization_id, parsed_data, method)
 
         # Assert
         mock_db.add.assert_called_once()
@@ -290,6 +287,7 @@ class TestCaching:
         called_with = mock_db.add.call_args[0][0]
         assert isinstance(called_with, ParsedDocument)
         assert called_with.document_id == sample_document_id
+        assert called_with.organization_id == sample_organization_id
         assert called_with.parsed_data == parsed_data
         assert called_with.parsing_method == method
 
