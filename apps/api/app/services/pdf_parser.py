@@ -360,6 +360,9 @@ class PDFParserService:
             organization_id: UUID of the organization (for multi-tenancy)
             parsed_data: List of page dictionaries
             method: Parsing method used ('pypdf2' or 'pdfplumber')
+
+        Raises:
+            PDFParsingError: If database operation fails
         """
         parsed_doc = ParsedDocument(
             document_id=document_id,
@@ -369,6 +372,10 @@ class PDFParserService:
             parsed_at=datetime.utcnow(),
         )
 
-        self.db.add(parsed_doc)
-        self.db.commit()
-        self.db.refresh(parsed_doc)
+        try:
+            self.db.add(parsed_doc)
+            self.db.commit()
+            self.db.refresh(parsed_doc)
+        except Exception as e:
+            self.db.rollback()
+            raise PDFParsingError(f"Failed to cache parsed document: {str(e)}")
