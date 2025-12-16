@@ -133,6 +133,14 @@ class PDFParserService:
             CorruptPDFError: If PDF is corrupt or malformed
             PDFParsingError: For other parsing failures
         """
+        # Validate boolean parameters
+        if not isinstance(enable_ocr, bool):
+            raise PDFParsingError(f"enable_ocr must be a boolean, got {type(enable_ocr).__name__}")
+        if not isinstance(enable_tables, bool):
+            raise PDFParsingError(f"enable_tables must be a boolean, got {type(enable_tables).__name__}")
+        if not isinstance(enable_parallel, bool):
+            raise PDFParsingError(f"enable_parallel must be a boolean, got {type(enable_parallel).__name__}")
+
         # 1. Check cache first
         cached_result = self._get_cached_parse(document_id, organization_id)
         if cached_result:
@@ -535,7 +543,7 @@ class PDFParserService:
 
     def _is_scanned_pdf(self, pages: List[Dict]) -> bool:
         """
-        Detect if PDF contains scannel images (no extractable text).
+        Detect if PDF contains scanned images (no extractable text).
 
         Checks if total extractable text across all pages is below a threshold,
         indicating the PDF is likely scanned/image-based.
@@ -569,6 +577,7 @@ class PDFParserService:
         Extract text from scanned PDF using OCR (pytesseract).
 
         Converts PDF pages to images and runs OCR on each image.
+        Processes pages one at a time to avoid memory issues.
 
         Args:
             file_path: Path to PDF file
@@ -586,14 +595,26 @@ class PDFParserService:
             )
 
         try:
-            # Convert PDF to images (one image per page)
-            images = convert_from_path(file_path, dpi=300)
+            # Get page count first to avoid loading all pages into memory
+            with open(file_path, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+                page_count = len(reader.pages)
 
+            # Process pages one at a time to avoid memory issues
+            # Converting 50 pages at 300 DPI = ~2.5GB memory
             pages = []
-            for page_num, image in enumerate(images, start=1):
+            for page_num in range(1, page_count + 1):
                 try:
-                    # Run OCR on image
-                    text = pytesseract.image_to_string(image, lang="eng")
+                    # Convert single page to image
+                    images = convert_from_path(
+                        file_path,
+                        dpi=300,
+                        first_page=page_num,
+                        last_page=page_num
+                    )
+
+                    # Run OCR on the single page image
+                    text = pytesseract.image_to_string(images[0], lang="eng")
                     pages.append(
                         {
                             "page": page_num,
@@ -601,6 +622,8 @@ class PDFParserService:
                             "section": None,
                         }
                     )
+                    # Image is automatically freed after each iteration
+
                 except Exception as page_error:
                     logger.warning(
                         f"OCR failed for page {page_num}",
@@ -683,10 +706,10 @@ class PDFParserService:
 
     def _check_java_available(self) -> bool:
         """
-        Check if Java runtime is available (required for tabula-py).
+        Check if Java runtime is available and version is 8+ (required for tabula-py).
 
         Returns:
-            True if Java is available, False otherwise
+            True if Java 8+ is available, False otherwise
         """
         try:
             result = subprocess.run(
@@ -695,7 +718,44 @@ class PDFParserService:
                 text=True,
                 timeout=5,
             )
-            return result.returncode == 0
+
+            if result.returncode != 0:
+                return False
+
+            # Java prints version to stderr
+            version_output = result.stderr
+
+            # Parse Java version from output
+            # Examples:
+            # - Java 8: 'java version "1.8.0_XXX"'
+            # - Java 11+: 'openjdk version "11.0.XX"' or 'java version "17.0.XX"'
+            import re
+            version_match = re.search(r'version "(\d+)\.(\d+)', version_output)
+
+            if not version_match:
+                # If we can't parse version, warn but allow (graceful degradation)
+                logger.warning(
+                    "Could not parse Java version, assuming compatible",
+                    extra={"event": "java_version_unknown", "output": version_output}
+                )
+                return True
+
+            major_version = int(version_match.group(1))
+            minor_version = int(version_match.group(2))
+
+            # Java 8 is reported as "1.8", Java 9+ as "9", "11", "17", etc.
+            if major_version == 1 and minor_version >= 8:
+                return True  # Java 8 (reported as 1.8)
+            elif major_version >= 9:
+                return True  # Java 9+
+
+            # Java version too old
+            logger.warning(
+                f"Java version {major_version}.{minor_version} is too old (need 8+)",
+                extra={"event": "java_version_too_old", "version": f"{major_version}.{minor_version}"}
+            )
+            return False
+
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
 
@@ -715,41 +775,50 @@ class PDFParserService:
             CorruptPDFError: If PDF parsing fails
         """
         try:
+            # Read all pages while file is open to avoid file handle issues
             with open(file_path, "rb") as file:
                 reader = PyPDF2.PdfReader(file)
 
                 if reader.is_encrypted:
                     raise EncryptedPDFError("PDF is encrypted")
 
-                # Create async tasks for each page
-                tasks = [
-                    self._parse_page_async(page_num, page)
+                # Extract page objects while file is open
+                # Store tuples of (page_num, page_object) for processing
+                page_objects = [
+                    (page_num, page)
                     for page_num, page in enumerate(reader.pages, start=1)
                 ]
 
-                # Execute all tasks concurrently
-                page_results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Now create async tasks with the extracted page objects
+            # File is safely closed, but page objects remain valid
+            tasks = [
+                self._parse_page_async(page_num, page)
+                for page_num, page in page_objects
+            ]
 
-                # Filter out exceptions and return valid pages
-                pages = []
-                for result in page_results:
-                    if isinstance(result, Exception):
-                        logger.warning(
-                            "Parallel page parsing failed",
-                            extra={"event": "parallel_page_error", "error": str(result)},
-                        )
-                        # Continue with error placeholder
-                        pages.append(
-                            {
-                                "page": len(pages) + 1,
-                                "text": f"[Error: {str(result)}]",
-                                "section": None,
-                            }
-                        )
-                    else:
-                        pages.append(result)
+            # Execute all tasks concurrently
+            page_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-                return pages
+            # Filter out exceptions and return valid pages
+            pages = []
+            for idx, result in enumerate(page_results, start=1):
+                if isinstance(result, Exception):
+                    logger.warning(
+                        "Parallel page parsing failed",
+                        extra={"event": "parallel_page_error", "error": str(result), "page": idx},
+                    )
+                    # Continue with error placeholder (use correct page number from iteration)
+                    pages.append(
+                        {
+                            "page": idx,
+                            "text": f"[Error: {str(result)}]",
+                            "section": None,
+                        }
+                    )
+                else:
+                    pages.append(result)
+
+            return pages
 
         except PyPDF2.errors.PdfReadError as e:
             raise CorruptPDFError(f"PyPDF2 failed to read PDF: {str(e)}")
@@ -805,6 +874,9 @@ class PDFParserService:
                     f"Pattern too long (max 1000 chars): {pattern_str[:50]}..."
                 )
 
+            # Check for dangerous ReDoS patterns (nested quantifiers)
+            self._validate_redos_safety(pattern_str)
+
             # Try to compile pattern
             try:
                 pattern = re.compile(pattern_str, re.MULTILINE)
@@ -815,6 +887,53 @@ class PDFParserService:
                 )
 
         return compiled_patterns
+
+    def _validate_redos_safety(self, pattern_str: str) -> None:
+        """
+        Validate regex pattern for ReDoS vulnerabilities.
+
+        Checks for dangerous patterns that can cause exponential backtracking:
+        - Nested quantifiers: (a+)+, (a*)*
+        - Overlapping alternations: (a|a)*
+        - Multiple quantifiers in sequence: a+*
+
+        Args:
+            pattern_str: Regex pattern string to validate
+
+        Raises:
+            PDFParsingError: If pattern contains dangerous constructs
+        """
+        # Check for nested quantifiers: (...)+ with quantifiers inside
+        # Matches patterns like (a+)+, (x*)+, (y{2,5})*
+        nested_quantifiers = re.compile(
+            r'\([^()]*[+*?]\)[+*?]'  # Simple case: (a+)+
+            r'|\([^()]*\{[0-9]+,[0-9]*\}\)[+*?]'  # With counted: (a{2,5})+
+        )
+        if nested_quantifiers.search(pattern_str):
+            raise PDFParsingError(
+                f"Pattern contains nested quantifiers (ReDoS risk): {pattern_str[:100]}..."
+            )
+
+        # Check for multiple quantifiers in sequence: a++, a**, a+*
+        multiple_quantifiers = re.compile(r'[+*?]{2,}')
+        if multiple_quantifiers.search(pattern_str):
+            raise PDFParsingError(
+                f"Pattern contains multiple consecutive quantifiers (ReDoS risk): {pattern_str[:100]}..."
+            )
+
+        # Check for overlapping alternations with quantifiers: (a|a)*, (ab|a)*
+        # This is a simplified check - catches obvious cases
+        alternation_pattern = re.compile(r'\([^()]*\|[^()]*\)[+*]')
+        if alternation_pattern.search(pattern_str):
+            # Further validate: check if alternations overlap
+            # Extract the alternation group
+            import warnings
+            warnings.warn(
+                f"Pattern contains alternation with quantifier - verify no overlapping branches: {pattern_str[:100]}",
+                UserWarning
+            )
+            # Note: Full overlap detection is complex, so we just warn
+            # For production, consider using re2 library for guaranteed linear time
 
     def _cache_parse(
         self, document_id: UUID, organization_id: UUID, parsed_data: Dict[str, Any], method: str
