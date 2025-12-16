@@ -78,6 +78,9 @@ OCR_MEMORY_MB_PER_PAGE_AT_300DPI = 5  # Estimated memory usage per page at 300 D
 # Pattern validation
 MAX_PATTERN_LENGTH = 1000  # Maximum allowed regex pattern length
 
+# Page count validation
+MAX_PAGE_COUNT = 10000  # Maximum allowed page count (prevents integer overflow attacks)
+
 
 class PDFParsingError(Exception):
     """Base exception for PDF parsing failures."""
@@ -215,9 +218,24 @@ class PDFParserService:
 
         try:
             if enable_parallel:
-                # Use asyncio for parallel page processing
-                pages = asyncio.run(self._parse_pdf_parallel(file_path))
-                parsing_method = "pypdf2_parallel"
+                # Check if we're already in an async context
+                try:
+                    loop = asyncio.get_running_loop()
+                    # Already in async context - fall back to sync extraction
+                    logger.warning(
+                        "Parallel processing not supported in async context, using sync extraction",
+                        extra={
+                            "event": "parallel_disabled_async_context",
+                            "document_id": str(document_id),
+                            "organization_id": str(organization_id),
+                        },
+                    )
+                    pages = self._extract_with_pypdf2(file_path)
+                    parsing_method = "pypdf2"
+                except RuntimeError:
+                    # No running loop - safe to use asyncio.run()
+                    pages = asyncio.run(self._parse_pdf_parallel(file_path))
+                    parsing_method = "pypdf2_parallel"
             else:
                 pages = self._extract_with_pypdf2(file_path)
                 parsing_method = "pypdf2"
@@ -587,6 +605,12 @@ class PDFParserService:
                             "cache_version": cache_version,
                         }
                     )
+                    # Delete the invalid cache entry to prevent repeated warnings
+                    self.db.query(ParsedDocument).filter(
+                        ParsedDocument.document_id == document_id,
+                        ParsedDocument.organization_id == organization_id
+                    ).delete()
+                    self.db.flush()
                     return None
             else:
                 # Very old format: just list of pages (no dict wrapper)
@@ -701,6 +725,13 @@ class PDFParserService:
                 reader = PyPDF2.PdfReader(file)
                 page_count = len(reader.pages)
 
+            # Validate page count to prevent integer overflow attacks
+            if page_count > MAX_PAGE_COUNT:
+                raise PDFParsingError(
+                    f"PDF too large: {page_count} pages (max {MAX_PAGE_COUNT}). "
+                    "This may be a malicious PDF attempting to cause resource exhaustion."
+                )
+
             # Calculate optimal DPI based on available memory
             optimal_dpi = self._get_optimal_dpi(page_count)
 
@@ -789,6 +820,13 @@ class PDFParserService:
             with open(file_path, "rb") as file:
                 reader = PyPDF2.PdfReader(file)
                 total_pages = len(reader.pages)
+
+            # Validate page count to prevent integer overflow attacks
+            if total_pages > MAX_PAGE_COUNT:
+                raise PDFParsingError(
+                    f"PDF too large: {total_pages} pages (max {MAX_PAGE_COUNT}). "
+                    "This may be a malicious PDF attempting to cause resource exhaustion."
+                )
 
             tables = []
             table_index = 0
