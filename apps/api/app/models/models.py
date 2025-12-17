@@ -130,6 +130,7 @@ class Workflow(Base):
     )
     name = Column(String(255), nullable=False)
     description = Column(Text)
+    section_patterns = Column(JSON, nullable=True)  # Custom regex patterns for section detection
 
     # Workflow status fields:
     # - is_active: Workflow enabled/disabled (can be toggled by user)

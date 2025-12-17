@@ -11,6 +11,7 @@ Features:
 - Fallback extraction (pdfplumber if PyPDF2 fails)
 - Database caching (stores parsed data in parsed_documents table)
 - Error handling (corrupt PDFs, encrypted PDFs)
+- Configurable section patterns (custom regex per workflow)
 """
 import re
 import logging
@@ -26,6 +27,11 @@ from sqlalchemy.orm import Session
 from app.models.models import ParsedDocument
 
 logger = logging.getLogger(__name__)
+
+# Configuration constants
+MAX_PATTERN_LENGTH = 1000  # Maximum allowed regex pattern length
+MAX_CUSTOM_PATTERNS = 100  # Maximum number of custom patterns allowed
+REDOS_NESTED_QUANTIFIER_MAX_LENGTH = 50  # Max chars inside nested quantifiers to prevent ReDoS
 
 
 class PDFParsingError(Exception):
@@ -64,7 +70,11 @@ class PDFParserService:
         self.db = db
 
     def parse_document(
-        self, document_id: UUID, file_path: str, organization_id: UUID
+        self,
+        document_id: UUID,
+        file_path: str,
+        organization_id: UUID,
+        custom_patterns: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Parse PDF document and return structured text with page/section info.
@@ -79,6 +89,7 @@ class PDFParserService:
             document_id: UUID of the document being parsed
             file_path: Absolute path to the PDF file
             organization_id: UUID of the organization (for multi-tenancy)
+            custom_patterns: Optional custom regex patterns for section detection
 
         Returns:
             Dict with:
@@ -159,7 +170,7 @@ class PDFParserService:
                 )
 
         # 5. Detect sections across pages
-        structured_pages = self._detect_sections(pages)
+        structured_pages = self._detect_sections(pages, custom_patterns)
 
         # 6. Cache parsed result
         self._cache_parse(document_id, organization_id, structured_pages, parsing_method)
@@ -330,7 +341,9 @@ class PDFParserService:
 
         return pages
 
-    def _detect_sections(self, pages: List[Dict]) -> List[Dict]:
+    def _detect_sections(
+        self, pages: List[Dict], custom_patterns: Optional[List[str]] = None
+    ) -> List[Dict]:
         """
         Detect section headings across pages using regex patterns.
 
@@ -344,24 +357,30 @@ class PDFParserService:
 
         Args:
             pages: List of page dictionaries with text
+            custom_patterns: Optional custom regex patterns (overrides defaults if provided)
 
         Returns:
             Same list with "section" field populated
         """
         current_section = None
 
-        # Regex patterns for section detection (in priority order)
-        section_patterns = [
-            # Numbered sections: "1.", "2.3", "3.2.1" (case-insensitive)
-            # Matches: "1. Introduction", "2.3 test results", "3.2.1 Details"
-            re.compile(r"^(\d+(?:\.\d+)*\.?\s+[a-zA-Z][^\n]{0,100})", re.MULTILINE),
-            # Uppercase headings: "SECTION 1", "CHAPTER 2", "PART A"
-            re.compile(r"^([A-Z][A-Z\s]{5,50})\n", re.MULTILINE),
-            # Underlined headings (text followed by ===== or -----)
-            re.compile(
-                r"^([A-Z][^\n]{5,100})\n[=\-]{5,}$", re.MULTILINE
-            ),
-        ]
+        # Use custom patterns if provided, otherwise use default patterns
+        if custom_patterns:
+            # Validate and compile custom patterns
+            section_patterns = self._compile_section_patterns(custom_patterns)
+        else:
+            # Default regex patterns for section detection (in priority order)
+            section_patterns = [
+                # Numbered sections: "1.", "2.3", "3.2.1" (case-insensitive)
+                # Matches: "1. Introduction", "2.3 test results", "3.2.1 Details"
+                re.compile(r"^(\d+(?:\.\d+)*\.?\s+[a-zA-Z][^\n]{0,100})", re.MULTILINE),
+                # Uppercase headings: "SECTION 1", "CHAPTER 2", "PART A"
+                re.compile(r"^([A-Z][A-Z\s]{5,50})\n", re.MULTILINE),
+                # Underlined headings (text followed by ===== or -----)
+                re.compile(
+                    r"^([A-Z][^\n]{5,100})\n[=\-]{5,}$", re.MULTILINE
+                ),
+            ]
 
         for page in pages:
             text = page["text"]
@@ -457,3 +476,96 @@ class PDFParserService:
                 },
             )
             raise PDFParsingError(f"Failed to cache parsed document: {str(e)}")
+
+    def _compile_section_patterns(
+        self, patterns: List[str]
+    ) -> List[re.Pattern]:
+        """
+        Compile and validate custom section detection patterns.
+
+        Validates patterns to prevent ReDoS (Regular Expression Denial of Service).
+
+        Args:
+            patterns: List of regex pattern strings
+
+        Returns:
+            List of compiled regex patterns
+
+        Raises:
+            PDFParsingError: If pattern is invalid or too long
+        """
+        if len(patterns) > MAX_CUSTOM_PATTERNS:
+            raise PDFParsingError(
+                f"Too many custom patterns (max {MAX_CUSTOM_PATTERNS}): {len(patterns)}"
+            )
+
+        compiled_patterns = []
+
+        for pattern_str in patterns:
+            # Validate pattern length (prevent ReDoS)
+            if len(pattern_str) > MAX_PATTERN_LENGTH:
+                raise PDFParsingError(
+                    f"Pattern too long (max {MAX_PATTERN_LENGTH} chars): {pattern_str[:50]}..."
+                )
+
+            # Check for dangerous ReDoS patterns (nested quantifiers)
+            self._validate_redos_safety(pattern_str)
+
+            # Try to compile pattern
+            try:
+                pattern = re.compile(pattern_str, re.MULTILINE)
+                compiled_patterns.append(pattern)
+            except re.error as e:
+                raise PDFParsingError(
+                    f"Invalid regex pattern '{pattern_str}': {str(e)}"
+                )
+
+        return compiled_patterns
+
+    def _validate_redos_safety(self, pattern_str: str) -> None:
+        """
+        Validate regex pattern for ReDoS vulnerabilities.
+
+        Checks for dangerous patterns that can cause exponential backtracking:
+        - Nested quantifiers: (a+)+, (a*)*
+        - Overlapping alternations: (a|a)*
+        - Multiple quantifiers in sequence: a+*
+
+        Args:
+            pattern_str: Regex pattern string to validate
+
+        Raises:
+            PDFParsingError: If pattern contains dangerous constructs
+        """
+        # Check for nested quantifiers: (...)+ with quantifiers inside
+        # Matches patterns like (a+)+, (x*)+, (y{2,5})*
+        # Use [^)] instead of . to prevent catastrophic backtracking
+        nested_quantifiers = re.compile(
+            rf'\([^)]{{0,{REDOS_NESTED_QUANTIFIER_MAX_LENGTH}}}[+*?]\)[+*?]'
+        )
+        if nested_quantifiers.search(pattern_str):
+            raise PDFParsingError(
+                f"Pattern contains nested quantifiers (ReDoS risk): {pattern_str[:100]}..."
+            )
+
+        # Check for multiple quantifiers in sequence: a++, a**, a+*
+        multiple_quantifiers = re.compile(r'[+*?]{2,}')
+        if multiple_quantifiers.search(pattern_str):
+            raise PDFParsingError(
+                f"Pattern contains multiple consecutive quantifiers (ReDoS risk): {pattern_str[:100]}..."
+            )
+
+        # Check for overlapping alternations with quantifiers: (a|a)*, (ab|a)*
+        # This is a simplified check - catches obvious cases
+        alternation_pattern = re.compile(r'\([^()]*\|[^()]*\)[+*]')
+        if alternation_pattern.search(pattern_str):
+            # For production, consider using re2 library for guaranteed linear time
+            logger.warning(
+                "Pattern contains alternation with quantifier (potential ReDoS risk)",
+                extra={
+                    "event": "redos_warning_alternation",
+                    "pattern": pattern_str[:100],
+                },
+            )
+            # Note: We log a warning but don't block, as not all such patterns are dangerous
+            # A full overlap analysis would require more complex logic

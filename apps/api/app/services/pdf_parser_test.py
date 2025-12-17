@@ -555,3 +555,193 @@ class TestMultiTenancy:
         assert added_doc.organization_id == sample_organization_id
         assert added_doc.parsed_data == parsed_data
         assert added_doc.parsing_method == method
+
+
+class TestCustomSectionPatterns:
+    """Tests for custom section pattern functionality."""
+
+    def test_compile_valid_custom_patterns(self, pdf_parser):
+        """Should compile valid custom regex patterns successfully."""
+        # Arrange
+        patterns = [
+            r"^SECTION\s+\d+",
+            r"^Article\s+\d+\.",
+            r"^Chapter\s+[IVXLCDM]+",
+        ]
+
+        # Act
+        compiled = pdf_parser._compile_section_patterns(patterns)
+
+        # Assert
+        assert len(compiled) == 3
+        assert all(hasattr(p, 'search') for p in compiled)  # All are compiled regex
+
+    def test_custom_patterns_used_in_section_detection(self, pdf_parser):
+        """Should use custom patterns for section detection when provided."""
+        # Arrange
+        pages = [
+            {"page": 1, "text": "SECTION 1: Introduction\nSome text here"},
+            {"page": 2, "text": "More content\nSECTION 2: Methods"},
+        ]
+        custom_patterns = [r"^SECTION\s+\d+:\s+([^\n]+)"]
+
+        # Act
+        result = pdf_parser._detect_sections(pages, custom_patterns)
+
+        # Assert
+        assert result[0]["section"] == "SECTION 1: Introduction"
+        assert result[1]["section"] == "SECTION 2: Methods"
+
+    def test_default_patterns_when_no_custom_patterns(self, pdf_parser):
+        """Should use default patterns when no custom patterns provided."""
+        # Arrange
+        pages = [
+            {"page": 1, "text": "1. Introduction\nSome text here"},
+            {"page": 2, "text": "2. Methods\nMore text"},
+        ]
+
+        # Act
+        result = pdf_parser._detect_sections(pages, custom_patterns=None)
+
+        # Assert
+        assert result[0]["section"] == "1. Introduction"
+        assert result[1]["section"] == "2. Methods"
+
+    def test_pattern_too_long_raises_error(self, pdf_parser):
+        """Should reject patterns exceeding MAX_PATTERN_LENGTH."""
+        # Arrange - Pattern longer than 1000 chars
+        long_pattern = "a" * 1001
+
+        # Act & Assert
+        with pytest.raises(PDFParsingError, match="Pattern too long"):
+            pdf_parser._compile_section_patterns([long_pattern])
+
+    def test_too_many_patterns_raises_error(self, pdf_parser):
+        """Should reject more than MAX_CUSTOM_PATTERNS."""
+        # Arrange - 101 patterns (max is 100)
+        patterns = [r"^test\d+" for _ in range(101)]
+
+        # Act & Assert
+        with pytest.raises(PDFParsingError, match="Too many custom patterns"):
+            pdf_parser._compile_section_patterns(patterns)
+
+    def test_invalid_regex_raises_error(self, pdf_parser):
+        """Should reject invalid regex patterns."""
+        # Arrange - Invalid regex (unmatched parenthesis)
+        invalid_pattern = r"^test(unclosed"
+
+        # Act & Assert
+        with pytest.raises(PDFParsingError, match="Invalid regex pattern"):
+            pdf_parser._compile_section_patterns([invalid_pattern])
+
+    def test_redos_nested_quantifiers_blocked(self, pdf_parser):
+        """Should block nested quantifiers to prevent ReDoS attacks."""
+        # Arrange - Dangerous nested quantifiers
+        dangerous_patterns = [
+            r"(a+)+",      # Classic ReDoS
+            r"(x*)*",      # Another nested quantifier
+            r"(y{2,5})*",  # Bounded nested quantifier
+        ]
+
+        # Act & Assert
+        for pattern in dangerous_patterns:
+            with pytest.raises(PDFParsingError, match="nested quantifiers"):
+                pdf_parser._validate_redos_safety(pattern)
+
+    def test_redos_multiple_quantifiers_blocked(self, pdf_parser):
+        """Should block multiple consecutive quantifiers."""
+        # Arrange
+        dangerous_patterns = [
+            r"a++",
+            r"b**",
+            r"c+*",
+        ]
+
+        # Act & Assert
+        for pattern in dangerous_patterns:
+            with pytest.raises(PDFParsingError, match="multiple consecutive quantifiers"):
+                pdf_parser._validate_redos_safety(pattern)
+
+    def test_redos_alternation_with_quantifier_warning(self, pdf_parser):
+        """Should warn (not block) alternations with quantifiers."""
+        # Arrange - Potentially dangerous but not always
+        pattern = r"(a|ab)*"
+
+        # Act & Assert
+        # Should NOT raise an error, just log a warning
+        # (The code logs a warning but doesn't block these patterns)
+        try:
+            pdf_parser._validate_redos_safety(pattern)
+        except PDFParsingError:
+            pytest.fail("Should not block alternation patterns, only warn")
+
+    def test_safe_patterns_pass_validation(self, pdf_parser):
+        """Should allow safe regex patterns."""
+        # Arrange - Safe patterns
+        safe_patterns = [
+            r"^SECTION\s+\d+",
+            r"^Article\s+\d+\.",
+            r"^Chapter\s+[IVXLCDM]+",
+            r"^\d+\.\d+",
+            r"^[A-Z]+\s+[A-Z]+",
+        ]
+
+        # Act & Assert - Should not raise any errors
+        compiled = pdf_parser._compile_section_patterns(safe_patterns)
+        assert len(compiled) == 5
+
+    def test_redos_validation_with_max_length_constraint(self, pdf_parser):
+        """Should enforce REDOS_NESTED_QUANTIFIER_MAX_LENGTH correctly."""
+        # Arrange - Pattern with nested quantifiers within length limit (should block)
+        pattern_within_limit = r"(a{1,10}){1,5}+"  # Within 50 chars
+
+        # Act & Assert
+        with pytest.raises(PDFParsingError, match="nested quantifiers"):
+            pdf_parser._validate_redos_safety(pattern_within_limit)
+
+    def test_custom_patterns_empty_list(self, pdf_parser):
+        """Should handle empty custom patterns list gracefully."""
+        # Arrange
+        pages = [{"page": 1, "text": "1. Introduction\nText"}]
+        empty_patterns = []
+
+        # Act
+        compiled = pdf_parser._compile_section_patterns(empty_patterns)
+
+        # Assert
+        assert len(compiled) == 0
+
+    def test_custom_patterns_integration_parse_document(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
+    ):
+        """Should pass custom_patterns through parse_document flow."""
+        # Arrange - Create a real PDF file (mocked)
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4\n")
+        custom_patterns = [r"^CUSTOM\s+\d+"]
+
+        # Mock cache miss
+        pdf_parser._get_cached_parse = Mock(return_value=None)
+
+        # Mock PDF extraction
+        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+            mock_pdf = Mock()
+            mock_page = Mock()
+            mock_page.extract_text.return_value = "CUSTOM 1: Title\nSome text"
+            mock_pdf.pages = [mock_page]
+            mock_pdf.is_encrypted = False
+            mock_reader.return_value = mock_pdf
+
+            with patch('pathlib.Path.exists', return_value=True), \
+                 patch('pathlib.Path.is_file', return_value=True):
+
+                # Act
+                result = pdf_parser.parse_document(
+                    document_id=sample_document_id,
+                    file_path=str(pdf_file),
+                    organization_id=sample_organization_id,
+                    custom_patterns=custom_patterns,
+                )
+
+                # Assert - Custom pattern should have been used
+                assert result["pages"][0]["section"] == "CUSTOM 1: Title"
