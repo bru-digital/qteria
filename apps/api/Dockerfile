@@ -8,12 +8,17 @@ FROM python:3.11-slim
 # libpq-dev: Required by psycopg2 for PostgreSQL connections
 # gcc: Required for compiling some Python packages
 # tesseract-ocr: Required for OCR support (pytesseract)
+# tesseract-ocr-*: Language data packs for multi-language OCR support
 # poppler-utils: Required for PDF to image conversion (pdf2image)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     libpq-dev \
     gcc \
     tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-deu \
+    tesseract-ocr-fra \
+    tesseract-ocr-spa \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
