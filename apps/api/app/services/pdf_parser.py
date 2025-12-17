@@ -140,8 +140,16 @@ class PDFParserService:
         Raises:
             EncryptedPDFError: If PDF is password-protected
             CorruptPDFError: If PDF is corrupt or malformed
-            PDFParsingError: For other parsing failures
+            PDFParsingError: For other parsing failures (including invalid OCR language code)
         """
+        # 0. Validate OCR language early (fail fast principle)
+        # Even if OCR might not be used, validate input immediately for consistency
+        if enable_ocr and not re.match(r'^[a-z]{3}(\+[a-z]{3})*$', ocr_language):
+            raise PDFParsingError(
+                f"Invalid OCR language code: {ocr_language}. "
+                "Must be 3-letter ISO 639-2 code (e.g., 'eng', 'deu', 'fra') or combined (e.g., 'eng+deu')"
+            )
+
         # 1. Check cache first
         cached_result = self._get_cached_parse(document_id, organization_id)
         if cached_result:
@@ -823,17 +831,28 @@ class PDFParserService:
                         # pytesseract raises RuntimeError for timeouts (not a specific exception type)
                         # We use string matching as pytesseract doesn't provide a dedicated timeout exception
                         # This is the recommended approach from pytesseract documentation
-                        if "timeout" in str(timeout_error).lower() or "timed out" in str(timeout_error).lower():
+                        error_msg = str(timeout_error).lower()
+                        # Check for known timeout message patterns from pytesseract
+                        is_timeout = (
+                            "timeout" in error_msg
+                            or "timed out" in error_msg
+                            or "tesseract process timeout" in error_msg
+                        )
+
+                        if is_timeout:
                             logger.warning(
                                 f"OCR timeout on page {page_num}",
                                 extra={
                                     "event": "ocr_timeout",
                                     "page": page_num,
                                     "timeout_seconds": OCR_TIMEOUT_SECONDS,
+                                    "error_message": str(timeout_error),
                                 },
                             )
                             text = f"[OCR timeout on page {page_num}]"
                         else:
+                            # Re-raise non-timeout RuntimeErrors (e.g., tesseract not installed, corrupt image)
+                            # This ensures we don't silently swallow serious errors
                             raise
 
                     pages.append(

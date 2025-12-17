@@ -760,10 +760,11 @@ class TestOCRSupport:
         ]
 
         # Act
-        result = pdf_parser._is_scanned_pdf(pages)
+        is_scanned, reason = pdf_parser._is_scanned_pdf(pages)
 
         # Assert
-        assert result is True
+        assert is_scanned is True
+        assert "total_chars=" in reason  # Verify reason provided for debugging
 
     def test_is_scanned_pdf_sufficient_text(self, pdf_parser):
         """Should NOT detect as scanned when PDF has sufficient text."""
@@ -774,10 +775,11 @@ class TestOCRSupport:
         ]
 
         # Act
-        result = pdf_parser._is_scanned_pdf(pages)
+        is_scanned, reason = pdf_parser._is_scanned_pdf(pages)
 
         # Assert
-        assert result is False
+        assert is_scanned is False
+        assert reason == "sufficient_text"  # Verify reason indicates non-scanned
 
     def test_is_scanned_pdf_most_pages_empty(self, pdf_parser):
         """Should detect scanned PDF when >50% of pages lack text."""
@@ -790,10 +792,11 @@ class TestOCRSupport:
         ]
 
         # Act
-        result = pdf_parser._is_scanned_pdf(pages)
+        is_scanned, reason = pdf_parser._is_scanned_pdf(pages)
 
         # Assert
-        assert result is True  # >50% pages lack text
+        assert is_scanned is True  # >50% pages lack text
+        assert "pages have text" in reason  # Verify reason indicates page-based detection
 
     def test_ocr_language_validation_valid(self, pdf_parser):
         """Should accept valid 3-letter language codes."""
