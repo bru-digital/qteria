@@ -144,11 +144,8 @@ class PDFParserService:
         """
         # 0. Validate OCR language early (fail fast principle)
         # Even if OCR might not be used, validate input immediately for consistency
-        if enable_ocr and not re.match(r'^[a-z]{3}(\+[a-z]{3})*$', ocr_language):
-            raise PDFParsingError(
-                f"Invalid OCR language code: {ocr_language}. "
-                "Must be 3-letter ISO 639-2 code (e.g., 'eng', 'deu', 'fra') or combined (e.g., 'eng+deu')"
-            )
+        if enable_ocr:
+            self._validate_ocr_language(ocr_language)
 
         # 1. Check cache first
         cached_result = self._get_cached_parse(document_id, organization_id)
@@ -645,6 +642,31 @@ class PDFParserService:
             # Note: We log a warning but don't block, as not all such patterns are dangerous
             # A full overlap analysis would require more complex logic
 
+    def _validate_ocr_language(self, language: str) -> None:
+        """
+        Validate OCR language code to prevent command injection.
+
+        Tesseract language codes must be 3-letter ISO 639-2 codes (e.g., "eng", "deu", "fra")
+        or combined languages (e.g., "eng+deu"). This validation prevents command injection
+        attacks via the language parameter.
+
+        Args:
+            language: OCR language code to validate
+
+        Raises:
+            PDFParsingError: If language code format is invalid
+
+        Examples:
+            >>> _validate_ocr_language("eng")  # Valid
+            >>> _validate_ocr_language("eng+deu")  # Valid (combined)
+            >>> _validate_ocr_language("eng; rm -rf /")  # Raises PDFParsingError
+        """
+        if not re.match(r'^[a-z]{3}(\+[a-z]{3})*$', language):
+            raise PDFParsingError(
+                f"Invalid OCR language code: {language}. "
+                "Must be 3-letter ISO 639-2 code (e.g., 'eng', 'deu', 'fra') or combined (e.g., 'eng+deu')"
+            )
+
     def _is_scanned_pdf(self, pages: List[Dict]) -> Tuple[bool, str]:
         """
         Detect if PDF contains scanned images (no extractable text).
@@ -777,13 +799,7 @@ class PDFParserService:
             )
 
         # Validate language parameter to prevent command injection
-        # Tesseract language codes are 3-letter ISO 639-2 codes (e.g., "eng", "deu", "fra")
-        # Allow alphanumeric and underscore (for combined languages like "eng+deu")
-        if not re.match(r'^[a-z]{3}(\+[a-z]{3})*$', language):
-            raise PDFParsingError(
-                f"Invalid OCR language code: {language}. "
-                "Must be 3-letter ISO 639-2 code (e.g., 'eng', 'deu', 'fra') or combined (e.g., 'eng+deu')"
-            )
+        self._validate_ocr_language(language)
 
         try:
             # Get page count first to avoid loading all pages into memory
