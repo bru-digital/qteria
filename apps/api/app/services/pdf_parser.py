@@ -17,7 +17,7 @@ Features:
 import re
 import logging
 from pathlib import Path
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 from uuid import UUID
 from datetime import datetime
 
@@ -57,6 +57,8 @@ OCR_DEFAULT_DPI = 300  # Standard DPI for OCR (balances quality vs memory)
 OCR_LOW_MEMORY_DPI = 150  # DPI for memory-constrained environments
 OCR_MEMORY_MB_PER_PAGE_AT_300DPI = 5  # Estimated memory usage per page at 300 DPI
 OCR_TIMEOUT_SECONDS = 60  # Timeout per page for OCR processing (prevents hung processes)
+OCR_BYTES_PER_PIXEL_RGBA = 4  # RGBA color format uses 4 bytes per pixel
+OCR_MEMORY_SAFETY_MARGIN = 1.2  # 20% safety margin for temporary buffers and processing overhead
 
 # Pattern validation
 MAX_PATTERN_LENGTH = 1000  # Maximum allowed regex pattern length
@@ -635,7 +637,7 @@ class PDFParserService:
             # Note: We log a warning but don't block, as not all such patterns are dangerous
             # A full overlap analysis would require more complex logic
 
-    def _is_scanned_pdf(self, pages: List[Dict]) -> tuple[bool, str]:
+    def _is_scanned_pdf(self, pages: List[Dict]) -> Tuple[bool, str]:
         """
         Detect if PDF contains scanned images (no extractable text).
 
@@ -705,12 +707,12 @@ class PDFParserService:
             width_inches = width / 72
             height_inches = height / 72
 
-            # Calculate memory per page: width * height * DPI² * 4 bytes (RGBA) / 1MB
+            # Calculate memory per page: width * height * DPI² * bytes_per_pixel / 1MB
             # Use RGBA (4 bytes) instead of RGB (3 bytes) as pytesseract may use alpha channel
             # Add 20% safety margin for temporary buffers and processing overhead
             memory_mb_per_page = (
-                width_inches * height_inches * OCR_DEFAULT_DPI * OCR_DEFAULT_DPI * 4
-            ) / (1024 * 1024) * 1.2
+                width_inches * height_inches * OCR_DEFAULT_DPI * OCR_DEFAULT_DPI * OCR_BYTES_PER_PIXEL_RGBA
+            ) / (1024 * 1024) * OCR_MEMORY_SAFETY_MARGIN
 
             # Get available memory in MB
             available_mb = psutil.virtual_memory().available / (1024 * 1024)
@@ -818,7 +820,9 @@ class PDFParserService:
                             timeout=OCR_TIMEOUT_SECONDS
                         )
                     except RuntimeError as timeout_error:
-                        # pytesseract raises RuntimeError for timeouts
+                        # pytesseract raises RuntimeError for timeouts (not a specific exception type)
+                        # We use string matching as pytesseract doesn't provide a dedicated timeout exception
+                        # This is the recommended approach from pytesseract documentation
                         if "timeout" in str(timeout_error).lower() or "timed out" in str(timeout_error).lower():
                             logger.warning(
                                 f"OCR timeout on page {page_num}",
