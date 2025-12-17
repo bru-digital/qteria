@@ -78,6 +78,7 @@ OCR_MEMORY_MB_PER_PAGE_AT_300DPI = 5  # Estimated memory usage per page at 300 D
 # Pattern validation
 MAX_PATTERN_LENGTH = 1000  # Maximum allowed regex pattern length
 MAX_CUSTOM_PATTERNS = 100  # Maximum number of custom patterns allowed
+REDOS_NESTED_QUANTIFIER_MAX_LENGTH = 50  # Max chars inside nested quantifiers to prevent ReDoS
 
 # Page count validation
 MAX_PAGE_COUNT = 10000  # Maximum allowed page count (prevents integer overflow attacks)
@@ -631,12 +632,12 @@ class PDFParserService:
                         }
                     )
                     # Delete the invalid cache entry to prevent repeated warnings
-                    # Use commit() for immediate persistence (atomic operation)
+                    # Use flush() to respect transaction boundaries (caller controls commit)
                     self.db.query(ParsedDocument).filter(
                         ParsedDocument.document_id == document_id,
                         ParsedDocument.organization_id == organization_id
                     ).delete()
-                    self.db.commit()
+                    self.db.flush()
                     return None
             else:
                 # Very old format: just list of pages (no dict wrapper)
@@ -701,6 +702,8 @@ class PDFParserService:
 
         try:
             # Read first page dimensions to estimate memory accurately
+            # Note: PyPDF2 loads page metadata eagerly but page content lazily,
+            # so accessing .pages[0].mediabox is fast and doesn't load full content
             with open(file_path, "rb") as file:
                 reader = PyPDF2.PdfReader(file)
                 if len(reader.pages) == 0:
@@ -1194,9 +1197,9 @@ class PDFParserService:
         # Check for nested quantifiers: (...)+ with quantifiers inside
         # Matches patterns like (a+)+, (x*)+, (y{2,5})*
         # Use simpler pattern with length limit to avoid catastrophic backtracking
-        # Limit to 50 chars to prevent the validation pattern itself from causing ReDoS
+        # Limit chars to prevent the validation pattern itself from causing ReDoS
         nested_quantifiers = re.compile(
-            r'\(.{0,50}[+*?]\)[+*?]'  # Bounded: (a+)+ with max 50 chars inside parens
+            rf'\(.{{0,{REDOS_NESTED_QUANTIFIER_MAX_LENGTH}}}[+*?]\)[+*?]'  # Bounded: (a+)+ with max length inside parens
         )
         if nested_quantifiers.search(pattern_str):
             raise PDFParsingError(

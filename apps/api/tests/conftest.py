@@ -17,6 +17,17 @@ from app.services.audit import AuditService
 
 
 @pytest.fixture
+def test_database_url() -> str:
+    """
+    Provide the test database URL for migration testing.
+
+    Returns the DATABASE_URL from settings, which should point to the
+    qteria_test database when running tests.
+    """
+    return settings.DATABASE_URL
+
+
+@pytest.fixture
 def mock_audit_service():
     """
     Mock AuditService for unit tests to avoid database dependencies.

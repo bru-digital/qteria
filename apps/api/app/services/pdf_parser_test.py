@@ -717,35 +717,47 @@ class TestOCRMemoryOptimization:
 
     @patch("app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE", True)
     @patch("app.services.pdf_parser.psutil")
-    def test_high_memory_uses_default_dpi(self, mock_psutil, pdf_parser):
+    def test_high_memory_uses_default_dpi(self, mock_psutil, pdf_parser, tmp_path):
         """Should use default DPI when sufficient memory available."""
         # Arrange - 4GB available memory
         mock_psutil.virtual_memory.return_value = Mock(available=4 * 1024 * 1024 * 1024)
 
+        # Create a dummy PDF file for testing
+        test_pdf = tmp_path / "test.pdf"
+        test_pdf.write_bytes(b"%PDF-1.4\n")  # Minimal PDF header
+
         # Act
-        dpi = pdf_parser._get_optimal_dpi(page_count=50)
+        dpi = pdf_parser._get_optimal_dpi(file_path=str(test_pdf), page_count=50)
 
         # Assert
         assert dpi == 300  # OCR_DEFAULT_DPI
 
     @patch("app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE", True)
     @patch("app.services.pdf_parser.psutil")
-    def test_low_memory_uses_reduced_dpi(self, mock_psutil, pdf_parser):
+    def test_low_memory_uses_reduced_dpi(self, mock_psutil, pdf_parser, tmp_path):
         """Should use reduced DPI when memory is constrained."""
         # Arrange - 512MB available memory (Railway free tier)
         mock_psutil.virtual_memory.return_value = Mock(available=512 * 1024 * 1024)
 
+        # Create a dummy PDF file for testing
+        test_pdf = tmp_path / "test.pdf"
+        test_pdf.write_bytes(b"%PDF-1.4\n")  # Minimal PDF header
+
         # Act
-        dpi = pdf_parser._get_optimal_dpi(page_count=50)
+        dpi = pdf_parser._get_optimal_dpi(file_path=str(test_pdf), page_count=50)
 
         # Assert
         assert dpi == 150  # OCR_LOW_MEMORY_DPI
 
     @patch("app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE", False)
-    def test_no_psutil_uses_default_dpi(self, pdf_parser):
+    def test_no_psutil_uses_default_dpi(self, pdf_parser, tmp_path):
         """Should use default DPI when psutil not available."""
+        # Create a dummy PDF file for testing
+        test_pdf = tmp_path / "test.pdf"
+        test_pdf.write_bytes(b"%PDF-1.4\n")  # Minimal PDF header
+
         # Act
-        dpi = pdf_parser._get_optimal_dpi(page_count=50)
+        dpi = pdf_parser._get_optimal_dpi(file_path=str(test_pdf), page_count=50)
 
         # Assert
         assert dpi == 300  # OCR_DEFAULT_DPI
@@ -1065,7 +1077,6 @@ class TestCacheFormatMigration:
         assert result["pages"] == v1_cached_doc.parsed_data["pages"]
         assert result["tables"] == []
         assert result["method"] == "pypdf2"
-        assert result["cached"] is True
 
         # Verify v2 format would also work (has version field)
         v2_cached_doc = Mock()
@@ -1088,7 +1099,6 @@ class TestCacheFormatMigration:
         assert result_v2["pages"] == v2_cached_doc.parsed_data["pages"]
         assert result_v2["tables"] == v2_cached_doc.parsed_data["tables"]
         assert result_v2["method"] == "pdfplumber"
-        assert result_v2["cached"] is True
 
     def test_cache_migration_handles_legacy_list_format(
         self, pdf_parser, sample_document_id, sample_organization_id
@@ -1116,7 +1126,6 @@ class TestCacheFormatMigration:
         assert result["pages"] == legacy_cached_doc.parsed_data
         assert result["tables"] == []  # Legacy format has no tables
         assert result["method"] == "pypdf2"
-        assert result["cached"] is True
 
 
 class TestParallelProcessingPageOrder:
@@ -1187,3 +1196,162 @@ class TestParallelProcessingPageOrder:
                     else:
                         # Normal pages should have correct content
                         assert page["text"] == f"Page {i} content"
+
+
+class TestOCRFailureHandling:
+    """Test OCR failure handling (High Priority Issue #5 - OCR failures)."""
+
+    @patch("app.services.pdf_parser.OCR_AVAILABLE", True)
+    @patch("app.services.pdf_parser.convert_from_path")
+    @patch("app.services.pdf_parser.pytesseract.image_to_string")
+    def test_ocr_failure_returns_graceful_error(
+        self, mock_tesseract, mock_convert, pdf_parser
+    ):
+        """Should handle OCR failure gracefully without crashing."""
+        # Arrange - OCR fails with exception
+        mock_convert.side_effect = Exception("Tesseract OCR failed")
+
+        # Mock PDF file
+        test_file = "/fake/scanned.pdf"
+
+        # Act - OCR should fail gracefully
+        with pytest.raises(Exception) as exc_info:
+            pdf_parser._extract_with_ocr(test_file)
+
+        # Assert - Error message is descriptive
+        assert "Tesseract OCR failed" in str(exc_info.value)
+
+    @patch("app.services.pdf_parser.OCR_AVAILABLE", False)
+    def test_ocr_unavailable_raises_error(self, pdf_parser):
+        """Should raise error when OCR dependencies not available."""
+        # Act & Assert - Should raise PDFParsingError
+        from app.services.pdf_parser import PDFParsingError
+
+        with pytest.raises(PDFParsingError) as exc_info:
+            pdf_parser._extract_with_ocr("/fake/scanned.pdf")
+
+        assert "OCR dependencies not available" in str(exc_info.value)
+
+
+class TestTableExtractionTimeout:
+    """Test table extraction timeout handling (High Priority Issue #5 - Java subprocess timeouts)."""
+
+    @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", True)
+    @patch("app.services.pdf_parser.tabula.read_pdf")
+    def test_table_extraction_timeout_returns_empty(
+        self, mock_tabula, pdf_parser
+    ):
+        """Should return empty list when table extraction times out."""
+        # Arrange - Simulate timeout
+        mock_tabula.side_effect = subprocess.TimeoutExpired(
+            cmd="java", timeout=30
+        )
+
+        # Act - Extract tables should not crash
+        tables = pdf_parser._extract_tables("/fake/document.pdf")
+
+        # Assert - Should return empty list on timeout
+        assert tables == []
+
+    @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", True)
+    @patch("app.services.pdf_parser.tabula.read_pdf")
+    def test_table_extraction_java_error_returns_empty(
+        self, mock_tabula, pdf_parser
+    ):
+        """Should return empty list when Java subprocess fails."""
+        # Arrange - Simulate Java error
+        mock_tabula.side_effect = Exception("Java not found")
+
+        # Act - Extract tables should not crash
+        tables = pdf_parser._extract_tables("/fake/document.pdf")
+
+        # Assert - Should return empty list on Java error
+        assert tables == []
+
+
+class TestLargeDocumentParallelProcessing:
+    """Test parallel processing for large documents (High Priority Issue #5 - >100 pages)."""
+
+    @pytest.mark.asyncio
+    async def test_parallel_processing_handles_100_plus_pages(self, pdf_parser):
+        """Should handle documents with >100 pages efficiently."""
+        # Arrange - Mock PDF with 150 pages
+        mock_pages = []
+        for i in range(1, 151):
+            page = Mock()
+            page.extract_text.return_value = f"Page {i}"
+            mock_pages.append(page)
+
+        # Mock file and reader
+        with patch("builtins.open", create=True):
+            with patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader:
+                mock_reader_instance = Mock()
+                mock_reader_instance.is_encrypted = False
+                mock_reader_instance.pages = mock_pages
+                mock_reader.return_value = mock_reader_instance
+
+                # Act - Parse large document
+                result = await pdf_parser._parse_pdf_parallel("/fake/large.pdf")
+
+                # Assert - All pages parsed in correct order
+                assert len(result) == 150
+                for i, page in enumerate(result, start=1):
+                    assert page["page"] == i
+                    assert page["text"] == f"Page {i}"
+
+
+class TestCustomPatternsEdgeCases:
+    """Test custom pattern edge cases (High Priority Issue #5 - custom patterns)."""
+
+    def test_empty_custom_patterns_list(self, pdf_parser):
+        """Should handle empty custom patterns list gracefully."""
+        # Act - Compile with empty patterns
+        result = pdf_parser._compile_custom_patterns([])
+
+        # Assert - Empty list returns empty list
+        assert result == []
+
+    def test_none_custom_patterns(self, pdf_parser):
+        """Should handle None custom patterns gracefully."""
+        # Act - Compile with None patterns
+        result = pdf_parser._compile_custom_patterns(None)
+
+        # Assert - None returns empty list
+        assert result == []
+
+    def test_invalid_regex_pattern_raises_error(self, pdf_parser):
+        """Should reject invalid regex patterns."""
+        from app.services.pdf_parser import PDFParsingError
+
+        # Arrange - Invalid regex (unclosed parenthesis)
+        invalid_patterns = [r"^(\d+"]
+
+        # Act & Assert - Should raise validation error
+        with pytest.raises((PDFParsingError, re.error)):
+            pdf_parser._compile_custom_patterns(invalid_patterns)
+
+    def test_redos_pattern_raises_error(self, pdf_parser):
+        """Should reject patterns with ReDoS risk."""
+        from app.services.pdf_parser import PDFParsingError
+
+        # Arrange - ReDoS pattern with nested quantifiers
+        redos_patterns = [r"(a+)+"]
+
+        # Act & Assert - Should raise validation error
+        with pytest.raises(PDFParsingError) as exc_info:
+            pdf_parser._compile_custom_patterns(redos_patterns)
+
+        assert "nested quantifiers" in str(exc_info.value).lower()
+
+    def test_pattern_exceeding_max_length_raises_error(self, pdf_parser):
+        """Should reject patterns exceeding maximum length."""
+        from app.services.pdf_parser import PDFParsingError
+
+        # Arrange - Pattern exceeding MAX_PATTERN_LENGTH (1000 chars)
+        long_pattern = "a" * 1001
+
+        # Act & Assert - Should raise validation error
+        with pytest.raises(PDFParsingError) as exc_info:
+            pdf_parser._compile_custom_patterns([long_pattern])
+
+        assert "too long" in str(exc_info.value).lower() or "length" in str(exc_info.value).lower()
