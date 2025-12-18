@@ -199,8 +199,8 @@ class Criteria(Base):
     )
     name = Column(String(255), nullable=False)
     description = Column(Text)  # Made nullable to match API schema
-    applies_to_bucket_ids: Mapped[Optional[list[uuid.UUID]]] = Column(
-        ARRAY(UUID(as_uuid=True))
+    applies_to_bucket_ids: Mapped[Optional[list[uuid.UUID]]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=True
     )  # Array of bucket UUIDs
     example_text = Column(Text)
     order_index = Column(Integer, default=0)  # Added for UI sorting
