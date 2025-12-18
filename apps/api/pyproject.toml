@@ -140,6 +140,11 @@ module = [
 ]
 ignore_missing_imports = true
 
+# SQLAlchemy models - Base class typing requires plugin (disabled for now)
+[[tool.mypy.overrides]]
+module = "app.models.models"
+disable_error_code = ["misc"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
