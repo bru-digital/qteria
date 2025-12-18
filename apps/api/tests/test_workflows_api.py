@@ -12,17 +12,14 @@ Required Security Tests (per product guidelines lines 177-197):
 - Multi-tenancy: 404 for other org's workflow
 - Multi-tenancy: Only returns user's org data
 """
+
 import pytest
 from uuid import uuid4
 from unittest.mock import patch, MagicMock
 
 from fastapi.testclient import TestClient
 
-from tests.conftest import (
-    create_test_token,
-    TEST_ORG_A_ID,
-    TEST_ORG_B_ID
-)
+from tests.conftest import create_test_token, TEST_ORG_A_ID, TEST_ORG_B_ID
 
 
 # Test data
@@ -39,7 +36,7 @@ def create_mock_workflow(
     name: str = "Test Workflow",
     description: str = "Test Description",
     buckets: list = None,
-    criteria: list = None
+    criteria: list = None,
 ):
     """Create a mock workflow object for testing."""
     workflow = MagicMock()
@@ -90,12 +87,7 @@ class TestGetWorkflowDetails:
         query_mock.filter.return_value = query_mock
         return db_mock, query_mock
 
-    def test_get_workflow_success(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
-    ):
+    def test_get_workflow_success(self, client: TestClient, mock_db, mock_audit_service):
         """
         Test successful workflow retrieval with complete details.
 
@@ -111,14 +103,14 @@ class TestGetWorkflowDetails:
         # Create test data
         buckets = [
             create_mock_bucket(TEST_BUCKET_1_ID, "Technical Documentation", 0, True),
-            create_mock_bucket(TEST_BUCKET_2_ID, "Test Reports", 1, True)
+            create_mock_bucket(TEST_BUCKET_2_ID, "Test Reports", 1, True),
         ]
         criteria = [
             create_mock_criteria(
                 TEST_CRITERIA_1_ID,
                 "All documents must be signed",
                 "Each document should have authorized signature",
-                [TEST_BUCKET_1_ID, TEST_BUCKET_2_ID]
+                [TEST_BUCKET_1_ID, TEST_BUCKET_2_ID],
             )
         ]
 
@@ -128,7 +120,7 @@ class TestGetWorkflowDetails:
             name="Medical Device - Class II",
             description="Validation workflow for Class II devices",
             buckets=buckets,
-            criteria=criteria
+            criteria=criteria,
         )
 
         # Mock database query to return workflow
@@ -138,10 +130,9 @@ class TestGetWorkflowDetails:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock database dependency
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 200
@@ -165,7 +156,9 @@ class TestGetWorkflowDetails:
         # Verify criteria
         assert len(data["criteria"]) == 1
         assert data["criteria"][0]["name"] == "All documents must be signed"
-        assert data["criteria"][0]["description"] == "Each document should have authorized signature"
+        assert (
+            data["criteria"][0]["description"] == "Each document should have authorized signature"
+        )
         assert len(data["criteria"][0]["applies_to_bucket_ids"]) == 2
 
         # Verify stats
@@ -173,10 +166,7 @@ class TestGetWorkflowDetails:
         assert data["stats"]["criteria_count"] == 1
 
     def test_get_workflow_with_empty_buckets_and_criteria(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
+        self, client: TestClient, mock_db, mock_audit_service
     ):
         """
         Test workflow with no buckets or criteria returns empty arrays.
@@ -189,19 +179,15 @@ class TestGetWorkflowDetails:
         db_mock, query_mock = mock_db
 
         workflow = create_mock_workflow(
-            TEST_WORKFLOW_ID,
-            TEST_ORG_A_ID,
-            buckets=[],  # Empty
-            criteria=[]  # Empty
+            TEST_WORKFLOW_ID, TEST_ORG_A_ID, buckets=[], criteria=[]  # Empty  # Empty
         )
 
         query_mock.first.return_value = workflow
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 200
@@ -212,12 +198,7 @@ class TestGetWorkflowDetails:
         assert data["stats"]["bucket_count"] == 0
         assert data["stats"]["criteria_count"] == 0
 
-    def test_get_workflow_not_found(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
-    ):
+    def test_get_workflow_not_found(self, client: TestClient, mock_db, mock_audit_service):
         """
         Test 404 response when workflow doesn't exist.
 
@@ -232,10 +213,9 @@ class TestGetWorkflowDetails:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 404
@@ -246,10 +226,7 @@ class TestGetWorkflowDetails:
         assert "request_id" in error
 
     def test_get_workflow_different_organization(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
+        self, client: TestClient, mock_db, mock_audit_service
     ):
         """
         Test multi-tenancy: workflow from different org returns 404.
@@ -267,10 +244,9 @@ class TestGetWorkflowDetails:
         # User from org B trying to access org A's workflow
         token = create_test_token(organization_id=TEST_ORG_B_ID)
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         # Should return 404 (not 403) to avoid leaking existence
@@ -279,11 +255,7 @@ class TestGetWorkflowDetails:
         assert error["code"] == "WORKFLOW_NOT_FOUND"
         assert "request_id" in error
 
-    def test_get_workflow_requires_authentication(
-        self,
-        client: TestClient,
-        mock_audit_service
-    ):
+    def test_get_workflow_requires_authentication(self, client: TestClient, mock_audit_service):
         """
         Test that endpoint requires valid authentication.
 
@@ -296,10 +268,7 @@ class TestGetWorkflowDetails:
         assert "detail" in response.json()
 
     def test_get_workflow_with_expired_token(
-        self,
-        client: TestClient,
-        expired_token: str,
-        mock_audit_service
+        self, client: TestClient, expired_token: str, mock_audit_service
     ):
         """
         Test that expired tokens are rejected.
@@ -309,7 +278,7 @@ class TestGetWorkflowDetails:
         """
         response = client.get(
             f"/v1/workflows/{TEST_WORKFLOW_ID}",
-            headers={"Authorization": f"Bearer {expired_token}"}
+            headers={"Authorization": f"Bearer {expired_token}"},
         )
 
         assert response.status_code == 401
@@ -318,10 +287,7 @@ class TestGetWorkflowDetails:
         assert "request_id" in error
 
     def test_get_workflow_with_invalid_token(
-        self,
-        client: TestClient,
-        invalid_token: str,
-        mock_audit_service
+        self, client: TestClient, invalid_token: str, mock_audit_service
     ):
         """
         Test that invalid tokens are rejected.
@@ -331,7 +297,7 @@ class TestGetWorkflowDetails:
         """
         response = client.get(
             f"/v1/workflows/{TEST_WORKFLOW_ID}",
-            headers={"Authorization": f"Bearer {invalid_token}"}
+            headers={"Authorization": f"Bearer {invalid_token}"},
         )
 
         assert response.status_code == 401
@@ -340,10 +306,7 @@ class TestGetWorkflowDetails:
         assert "request_id" in error
 
     def test_get_workflow_with_malformed_token(
-        self,
-        client: TestClient,
-        malformed_token: str,
-        mock_audit_service
+        self, client: TestClient, malformed_token: str, mock_audit_service
     ):
         """
         Test that malformed tokens are rejected.
@@ -353,16 +316,13 @@ class TestGetWorkflowDetails:
         """
         response = client.get(
             f"/v1/workflows/{TEST_WORKFLOW_ID}",
-            headers={"Authorization": f"Bearer {malformed_token}"}
+            headers={"Authorization": f"Bearer {malformed_token}"},
         )
 
         assert response.status_code == 401
 
     def test_get_workflow_verifies_organization_filter(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
+        self, client: TestClient, mock_db, mock_audit_service
     ):
         """
         Test that database query includes organization_id filter.
@@ -377,10 +337,9 @@ class TestGetWorkflowDetails:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         # Verify response is successful
@@ -390,12 +349,7 @@ class TestGetWorkflowDetails:
         # The filter should include both workflow_id and organization_id
         assert query_mock.filter.called
 
-    def test_get_workflow_uses_eager_loading(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
-    ):
+    def test_get_workflow_uses_eager_loading(self, client: TestClient, mock_db, mock_audit_service):
         """
         Test that endpoint uses eager loading to prevent N+1 queries.
 
@@ -410,10 +364,9 @@ class TestGetWorkflowDetails:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 200
@@ -439,12 +392,7 @@ class TestUpdateWorkflow:
         query_mock.filter.return_value = query_mock
         return db_mock, query_mock
 
-    def test_update_workflow_name_success(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
-    ):
+    def test_update_workflow_name_success(self, client: TestClient, mock_db, mock_audit_service):
         """
         Test updating workflow name and description.
 
@@ -464,7 +412,7 @@ class TestUpdateWorkflow:
                 TEST_CRITERIA_1_ID,
                 "All documents must be signed",
                 "Each document should have authorized signature",
-                [TEST_BUCKET_1_ID]
+                [TEST_BUCKET_1_ID],
             )
         ]
 
@@ -474,7 +422,7 @@ class TestUpdateWorkflow:
             name="Medical Device - Class II",
             description="Validation workflow for Class II devices",
             buckets=buckets,
-            criteria=criteria
+            criteria=criteria,
         )
 
         query_mock.first.return_value = workflow
@@ -489,7 +437,7 @@ class TestUpdateWorkflow:
                     "id": TEST_BUCKET_1_ID,
                     "name": "Technical Documentation",
                     "required": True,
-                    "order_index": 0
+                    "order_index": 0,
                 }
             ],
             "criteria": [
@@ -498,16 +446,16 @@ class TestUpdateWorkflow:
                     "name": "All documents must be signed",
                     "description": "Each document should have authorized signature",
                     "applies_to_bucket_ids": [TEST_BUCKET_1_ID],
-                    "order_index": 0
+                    "order_index": 0,
                 }
-            ]
+            ],
         }
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.put(
                 f"/v1/workflows/{TEST_WORKFLOW_ID}",
                 json=update_data,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         assert response.status_code == 200
@@ -518,12 +466,7 @@ class TestUpdateWorkflow:
         # Verify audit log was called
         mock_audit_service.log_workflow_updated.assert_called_once()
 
-    def test_update_workflow_add_bucket(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
-    ):
+    def test_update_workflow_add_bucket(self, client: TestClient, mock_db, mock_audit_service):
         """
         Test adding a new bucket to workflow.
 
@@ -542,15 +485,12 @@ class TestUpdateWorkflow:
                 TEST_CRITERIA_1_ID,
                 "All documents must be signed",
                 "Description",
-                [TEST_BUCKET_1_ID]
+                [TEST_BUCKET_1_ID],
             )
         ]
 
         workflow = create_mock_workflow(
-            TEST_WORKFLOW_ID,
-            TEST_ORG_A_ID,
-            buckets=buckets,
-            criteria=criteria
+            TEST_WORKFLOW_ID, TEST_ORG_A_ID, buckets=buckets, criteria=criteria
         )
 
         query_mock.first.return_value = workflow
@@ -565,14 +505,14 @@ class TestUpdateWorkflow:
                     "id": TEST_BUCKET_1_ID,
                     "name": "Technical Documentation",
                     "required": True,
-                    "order_index": 0
+                    "order_index": 0,
                 },
                 {
                     # New bucket (no ID)
                     "name": "Test Reports",
                     "required": False,
-                    "order_index": 1
-                }
+                    "order_index": 1,
+                },
             ],
             "criteria": [
                 {
@@ -580,16 +520,16 @@ class TestUpdateWorkflow:
                     "name": "All documents must be signed",
                     "description": "Description",
                     "applies_to_bucket_ids": [TEST_BUCKET_1_ID],
-                    "order_index": 0
+                    "order_index": 0,
                 }
-            ]
+            ],
         }
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.put(
                 f"/v1/workflows/{TEST_WORKFLOW_ID}",
                 json=update_data,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         assert response.status_code == 200
@@ -602,8 +542,9 @@ class TestUpdateWorkflow:
 
         # Find the bucket object in the add calls
         added_buckets = [
-            call[0][0] for call in add_calls
-            if hasattr(call[0][0], '__class__') and call[0][0].__class__.__name__ == 'Bucket'
+            call[0][0]
+            for call in add_calls
+            if hasattr(call[0][0], "__class__") and call[0][0].__class__.__name__ == "Bucket"
         ]
         assert len(added_buckets) >= 1
 
@@ -614,12 +555,7 @@ class TestUpdateWorkflow:
         assert new_bucket.order_index == 1
         assert new_bucket.workflow_id == workflow.id
 
-    def test_update_workflow_delete_bucket(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
-    ):
+    def test_update_workflow_delete_bucket(self, client: TestClient, mock_db, mock_audit_service):
         """
         Test deleting a bucket from workflow.
 
@@ -639,15 +575,12 @@ class TestUpdateWorkflow:
                 TEST_CRITERIA_1_ID,
                 "All documents must be signed",
                 "Description",
-                [TEST_BUCKET_1_ID]
+                [TEST_BUCKET_1_ID],
             )
         ]
 
         workflow = create_mock_workflow(
-            TEST_WORKFLOW_ID,
-            TEST_ORG_A_ID,
-            buckets=buckets,
-            criteria=criteria
+            TEST_WORKFLOW_ID, TEST_ORG_A_ID, buckets=buckets, criteria=criteria
         )
 
         query_mock.first.return_value = workflow
@@ -662,7 +595,7 @@ class TestUpdateWorkflow:
                     "id": TEST_BUCKET_1_ID,
                     "name": "Technical Documentation",
                     "required": True,
-                    "order_index": 0
+                    "order_index": 0,
                 }
                 # TEST_BUCKET_2 omitted - should be deleted
             ],
@@ -672,26 +605,21 @@ class TestUpdateWorkflow:
                     "name": "All documents must be signed",
                     "description": "Description",
                     "applies_to_bucket_ids": [TEST_BUCKET_1_ID],
-                    "order_index": 0
+                    "order_index": 0,
                 }
-            ]
+            ],
         }
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.put(
                 f"/v1/workflows/{TEST_WORKFLOW_ID}",
                 json=update_data,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         assert response.status_code == 200
 
-    def test_update_workflow_not_found(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
-    ):
+    def test_update_workflow_not_found(self, client: TestClient, mock_db, mock_audit_service):
         """
         Test updating non-existent workflow returns 404.
 
@@ -710,28 +638,22 @@ class TestUpdateWorkflow:
         update_data = {
             "name": "Test Workflow",
             "description": "Test Description",
-            "buckets": [
-                {
-                    "name": "Technical Documentation",
-                    "required": True,
-                    "order_index": 0
-                }
-            ],
+            "buckets": [{"name": "Technical Documentation", "required": True, "order_index": 0}],
             "criteria": [
                 {
                     "name": "All documents must be signed",
                     "description": "Description",
                     "applies_to_bucket_ids": [],
-                    "order_index": 0
+                    "order_index": 0,
                 }
-            ]
+            ],
         }
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.put(
                 f"/v1/workflows/{TEST_WORKFLOW_ID}",
                 json=update_data,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         assert response.status_code == 404
@@ -740,10 +662,7 @@ class TestUpdateWorkflow:
         assert "request_id" in error
 
     def test_update_workflow_multi_tenancy_isolation(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
+        self, client: TestClient, mock_db, mock_audit_service
     ):
         """
         Test user from org A cannot update workflow from org B.
@@ -768,37 +687,28 @@ class TestUpdateWorkflow:
         update_data = {
             "name": "Test Workflow",
             "description": "Test Description",
-            "buckets": [
-                {
-                    "name": "Technical Documentation",
-                    "required": True,
-                    "order_index": 0
-                }
-            ],
+            "buckets": [{"name": "Technical Documentation", "required": True, "order_index": 0}],
             "criteria": [
                 {
                     "name": "All documents must be signed",
                     "description": "Description",
                     "applies_to_bucket_ids": [],
-                    "order_index": 0
+                    "order_index": 0,
                 }
-            ]
+            ],
         }
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.put(
                 f"/v1/workflows/{TEST_WORKFLOW_ID}",
                 json=update_data,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         assert response.status_code == 404
 
     def test_update_workflow_project_handler_forbidden(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
+        self, client: TestClient, mock_db, mock_audit_service
     ):
         """
         Test project_handler role cannot update workflow.
@@ -811,44 +721,34 @@ class TestUpdateWorkflow:
 
         # User with project_handler role (insufficient permissions)
         token = create_test_token(
-            organization_id=TEST_ORG_A_ID,
-            role="project_handler"  # Not process_manager or admin
+            organization_id=TEST_ORG_A_ID, role="project_handler"  # Not process_manager or admin
         )
 
         update_data = {
             "name": "Test Workflow",
             "description": "Test Description",
-            "buckets": [
-                {
-                    "name": "Technical Documentation",
-                    "required": True,
-                    "order_index": 0
-                }
-            ],
+            "buckets": [{"name": "Technical Documentation", "required": True, "order_index": 0}],
             "criteria": [
                 {
                     "name": "All documents must be signed",
                     "description": "Description",
                     "applies_to_bucket_ids": [],
-                    "order_index": 0
+                    "order_index": 0,
                 }
-            ]
+            ],
         }
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.put(
                 f"/v1/workflows/{TEST_WORKFLOW_ID}",
                 json=update_data,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         assert response.status_code == 403
 
     def test_update_workflow_invalid_bucket_reference(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
+        self, client: TestClient, mock_db, mock_audit_service
     ):
         """
         Test criteria referencing non-existent bucket triggers IntegrityError.
@@ -872,15 +772,12 @@ class TestUpdateWorkflow:
                 TEST_CRITERIA_1_ID,
                 "All documents must be signed",
                 "Description",
-                [TEST_BUCKET_1_ID]
+                [TEST_BUCKET_1_ID],
             )
         ]
 
         workflow = create_mock_workflow(
-            TEST_WORKFLOW_ID,
-            TEST_ORG_A_ID,
-            buckets=buckets,
-            criteria=criteria
+            TEST_WORKFLOW_ID, TEST_ORG_A_ID, buckets=buckets, criteria=criteria
         )
 
         query_mock.first.return_value = workflow
@@ -889,7 +786,7 @@ class TestUpdateWorkflow:
         db_mock.commit.side_effect = IntegrityError(
             "violates foreign key constraint",
             params=None,
-            orig=Exception("invalid bucket reference")
+            orig=Exception("invalid bucket reference"),
         )
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
@@ -905,7 +802,7 @@ class TestUpdateWorkflow:
                     "id": TEST_BUCKET_1_ID,
                     "name": "Technical Documentation",
                     "required": True,
-                    "order_index": 0
+                    "order_index": 0,
                 }
             ],
             "criteria": [
@@ -913,16 +810,16 @@ class TestUpdateWorkflow:
                     "name": "All documents must be signed",
                     "description": "Description",
                     "applies_to_bucket_ids": [invalid_bucket_id],  # Invalid reference
-                    "order_index": 0
+                    "order_index": 0,
                 }
-            ]
+            ],
         }
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.put(
                 f"/v1/workflows/{TEST_WORKFLOW_ID}",
                 json=update_data,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         # Database IntegrityError is caught and returns 400
@@ -932,10 +829,7 @@ class TestUpdateWorkflow:
         assert "request_id" in error
 
     def test_update_workflow_generic_exception(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
+        self, client: TestClient, mock_db, mock_audit_service
     ):
         """
         Test generic exception handling returns 500.
@@ -956,15 +850,12 @@ class TestUpdateWorkflow:
                 TEST_CRITERIA_1_ID,
                 "All documents must be signed",
                 "Description",
-                [TEST_BUCKET_1_ID]
+                [TEST_BUCKET_1_ID],
             )
         ]
 
         workflow = create_mock_workflow(
-            TEST_WORKFLOW_ID,
-            TEST_ORG_A_ID,
-            buckets=buckets,
-            criteria=criteria
+            TEST_WORKFLOW_ID, TEST_ORG_A_ID, buckets=buckets, criteria=criteria
         )
 
         query_mock.first.return_value = workflow
@@ -982,7 +873,7 @@ class TestUpdateWorkflow:
                     "id": TEST_BUCKET_1_ID,
                     "name": "Technical Documentation",
                     "required": True,
-                    "order_index": 0
+                    "order_index": 0,
                 }
             ],
             "criteria": [
@@ -991,16 +882,16 @@ class TestUpdateWorkflow:
                     "name": "All documents must be signed",
                     "description": "Description",
                     "applies_to_bucket_ids": [TEST_BUCKET_1_ID],
-                    "order_index": 0
+                    "order_index": 0,
                 }
-            ]
+            ],
         }
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.put(
                 f"/v1/workflows/{TEST_WORKFLOW_ID}",
                 json=update_data,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         # Generic exception is caught and returns 500
@@ -1026,12 +917,7 @@ class TestArchiveWorkflow:
         query_mock.filter.return_value = query_mock
         return db_mock, query_mock
 
-    def test_archive_workflow_success(
-        self,
-        client: TestClient,
-        mock_db,
-        mock_audit_service
-    ):
+    def test_archive_workflow_success(self, client: TestClient, mock_db, mock_audit_service):
         """
         Test successful workflow archival (soft delete).
 
@@ -1055,10 +941,9 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 204
@@ -1068,10 +953,7 @@ class TestArchiveWorkflow:
         # Verify database commit was called
         assert db_mock.commit.called
 
-    def test_archive_workflow_unauthorized_no_token(
-        self,
-        client: TestClient
-    ):
+    def test_archive_workflow_unauthorized_no_token(self, client: TestClient):
         """
         Test archiving workflow without authentication token returns 401.
 
@@ -1082,11 +964,7 @@ class TestArchiveWorkflow:
         response = client.delete(f"/v1/workflows/{TEST_WORKFLOW_ID}")
         assert response.status_code == 401
 
-    def test_archive_workflow_forbidden_project_handler(
-        self,
-        client: TestClient,
-        mock_db
-    ):
+    def test_archive_workflow_forbidden_project_handler(self, client: TestClient, mock_db):
         """
         Test project_handler role cannot archive workflow.
 
@@ -1097,24 +975,16 @@ class TestArchiveWorkflow:
         db_mock, query_mock = mock_db
 
         # User with project_handler role (insufficient permissions)
-        token = create_test_token(
-            organization_id=TEST_ORG_A_ID,
-            role="project_handler"
-        )
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="project_handler")
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 403
 
-    def test_archive_workflow_not_found(
-        self,
-        client: TestClient,
-        mock_db
-    ):
+    def test_archive_workflow_not_found(self, client: TestClient, mock_db):
         """
         Test archiving non-existent workflow returns 404.
 
@@ -1127,10 +997,9 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 404
@@ -1138,11 +1007,7 @@ class TestArchiveWorkflow:
         assert error["code"] == "RESOURCE_NOT_FOUND"
         assert "request_id" in error
 
-    def test_archive_workflow_wrong_organization(
-        self,
-        client: TestClient,
-        mock_db
-    ):
+    def test_archive_workflow_wrong_organization(self, client: TestClient, mock_db):
         """
         Test archiving workflow from different organization returns 404.
 
@@ -1156,19 +1021,14 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 404
 
-    def test_archive_workflow_with_assessments_conflict(
-        self,
-        client: TestClient,
-        mock_db
-    ):
+    def test_archive_workflow_with_assessments_conflict(self, client: TestClient, mock_db):
         """
         Test cannot archive workflow with existing assessments (409 Conflict).
 
@@ -1192,10 +1052,9 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 409
@@ -1205,11 +1064,7 @@ class TestArchiveWorkflow:
         assert f"{MOCK_ASSESSMENT_COUNT} existing assessments" in error["message"]
         assert "request_id" in error
 
-    def test_archive_already_archived_workflow(
-        self,
-        client: TestClient,
-        mock_db
-    ):
+    def test_archive_already_archived_workflow(self, client: TestClient, mock_db):
         """
         Test cannot re-archive already archived workflow (400 Bad Request).
 
@@ -1229,10 +1084,9 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 400
@@ -1258,11 +1112,7 @@ class TestListWorkflowsWithArchived:
         query_mock.limit.return_value = query_mock
         return db_mock, query_mock
 
-    def test_list_workflows_excludes_archived_by_default(
-        self,
-        client: TestClient,
-        mock_db
-    ):
+    def test_list_workflows_excludes_archived_by_default(self, client: TestClient, mock_db):
         """
         Test list workflows excludes archived workflows by default.
 
@@ -1296,22 +1146,15 @@ class TestListWorkflowsWithArchived:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
-            response = client.get(
-                "/v1/workflows",
-                headers={"Authorization": f"Bearer {token}"}
-            )
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
+            response = client.get("/v1/workflows", headers={"Authorization": f"Bearer {token}"})
 
         assert response.status_code == 200
         data = response.json()
         assert len(data["workflows"]) == 1
         assert data["workflows"][0]["archived"] is False
 
-    def test_list_workflows_includes_archived_when_requested(
-        self,
-        client: TestClient,
-        mock_db
-    ):
+    def test_list_workflows_includes_archived_when_requested(self, client: TestClient, mock_db):
         """
         Test list workflows includes archived workflows when include_archived=true.
 
@@ -1356,10 +1199,9 @@ class TestListWorkflowsWithArchived:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.get(
-                "/v1/workflows?include_archived=true",
-                headers={"Authorization": f"Bearer {token}"}
+                "/v1/workflows?include_archived=true", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 200
@@ -1368,8 +1210,7 @@ class TestListWorkflowsWithArchived:
 
         # Find archived workflow in response
         archived_workflow_data = next(
-            (wf for wf in data["workflows"] if wf["archived"] is True),
-            None
+            (wf for wf in data["workflows"] if wf["archived"] is True), None
         )
         assert archived_workflow_data is not None
         assert archived_workflow_data["name"] == "Archived Workflow"
@@ -1389,11 +1230,7 @@ class TestGetArchivedWorkflow:
         query_mock.filter.return_value = query_mock
         return db_mock, query_mock
 
-    def test_get_archived_workflow_by_id(
-        self,
-        client: TestClient,
-        mock_db
-    ):
+    def test_get_archived_workflow_by_id(self, client: TestClient, mock_db):
         """
         Test archived workflow is still accessible via direct GET (audit trail).
 
@@ -1408,9 +1245,7 @@ class TestGetArchivedWorkflow:
 
         # Mock archived workflow
         archived_workflow = create_mock_workflow(
-            TEST_WORKFLOW_ID,
-            TEST_ORG_A_ID,
-            name="Archived Workflow"
+            TEST_WORKFLOW_ID, TEST_ORG_A_ID, name="Archived Workflow"
         )
         archived_workflow.archived = True
         archived_workflow.archived_at = datetime(2025, 11, 20, 10, 0, 0, tzinfo=timezone.utc)
@@ -1418,10 +1253,9 @@ class TestGetArchivedWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch('app.api.v1.endpoints.workflows.get_db', return_value=iter([db_mock])):
+        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
             response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                headers={"Authorization": f"Bearer {token}"}
+                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
             )
 
         assert response.status_code == 200

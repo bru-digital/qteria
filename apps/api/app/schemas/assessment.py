@@ -7,6 +7,7 @@ against workflow criteria.
 
 Journey Step 2→3: Project Handler starts assessment → AI validates documents.
 """
+
 from datetime import datetime
 from typing import List
 from uuid import UUID
@@ -25,27 +26,11 @@ class DocumentMapping(BaseModel):
     returned by the document upload API.
     """
 
-    bucket_id: UUID = Field(
-        ...,
-        description="Bucket UUID to assign document to"
-    )
-    document_id: UUID = Field(
-        ...,
-        description="Document UUID from document upload API"
-    )
-    file_name: str = Field(
-        ...,
-        description="Original filename from upload response"
-    )
-    storage_key: str = Field(
-        ...,
-        description="Vercel Blob storage URL from upload response"
-    )
-    file_size: int = Field(
-        ...,
-        gt=0,
-        description="File size in bytes from upload response"
-    )
+    bucket_id: UUID = Field(..., description="Bucket UUID to assign document to")
+    document_id: UUID = Field(..., description="Document UUID from document upload API")
+    file_name: str = Field(..., description="Original filename from upload response")
+    storage_key: str = Field(..., description="Vercel Blob storage URL from upload response")
+    file_size: int = Field(..., gt=0, description="File size in bytes from upload response")
 
 
 class AssessmentCreate(BaseModel):
@@ -64,28 +49,30 @@ class AssessmentCreate(BaseModel):
     workflow_id: UUID = Field(
         ...,
         description="Workflow UUID to run assessment against",
-        examples=["550e8400-e29b-41d4-a716-446655440000"]
+        examples=["550e8400-e29b-41d4-a716-446655440000"],
     )
     documents: List[DocumentMapping] = Field(
         ...,
         min_length=1,
         description="Document-to-bucket mappings (at least one document required)",
-        examples=[[
-            {
-                "bucket_id": "660e8400-e29b-41d4-a716-446655440001",
-                "document_id": "770e8400-e29b-41d4-a716-446655440002",
-                "file_name": "technical-spec.pdf",
-                "storage_key": "https://blob.vercel-storage.com/...",
-                "file_size": 2048576
-            },
-            {
-                "bucket_id": "660e8400-e29b-41d4-a716-446655440003",
-                "document_id": "880e8400-e29b-41d4-a716-446655440004",
-                "file_name": "test-report.pdf",
-                "storage_key": "https://blob.vercel-storage.com/...",
-                "file_size": 1536000
-            }
-        ]]
+        examples=[
+            [
+                {
+                    "bucket_id": "660e8400-e29b-41d4-a716-446655440001",
+                    "document_id": "770e8400-e29b-41d4-a716-446655440002",
+                    "file_name": "technical-spec.pdf",
+                    "storage_key": "https://blob.vercel-storage.com/...",
+                    "file_size": 2048576,
+                },
+                {
+                    "bucket_id": "660e8400-e29b-41d4-a716-446655440003",
+                    "document_id": "880e8400-e29b-41d4-a716-446655440004",
+                    "file_name": "test-report.pdf",
+                    "storage_key": "https://blob.vercel-storage.com/...",
+                    "file_size": 1536000,
+                },
+            ]
+        ],
     )
 
     @field_validator("documents")
@@ -127,19 +114,11 @@ class AssessmentResponse(BaseModel):
     id: UUID = Field(..., description="Assessment unique identifier")
     workflow_id: UUID = Field(..., description="Workflow being assessed")
     status: str = Field(
-        ...,
-        description="Processing status: pending, processing, completed, failed"
+        ..., description="Processing status: pending, processing, completed, failed"
     )
     started_at: datetime = Field(..., description="Assessment creation timestamp (UTC)")
-    estimated_completion_at: datetime = Field(
-        ...,
-        description="Estimated completion time (UTC)"
-    )
-    document_count: int = Field(
-        ...,
-        ge=0,
-        description="Number of documents in this assessment"
-    )
+    estimated_completion_at: datetime = Field(..., description="Estimated completion time (UTC)")
+    document_count: int = Field(..., ge=0, description="Number of documents in this assessment")
 
     class Config:
         from_attributes = True
@@ -150,6 +129,6 @@ class AssessmentResponse(BaseModel):
                 "status": "pending",
                 "started_at": "2024-11-17T14:45:00Z",
                 "estimated_completion_at": "2024-11-17T14:55:00Z",
-                "document_count": 3
+                "document_count": 3,
             }
         }

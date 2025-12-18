@@ -53,6 +53,7 @@ This command READS previous outputs to ground your brand in reality:
    - Brand purpose should express WHY you keep this promise
 
 4. **Read the metrics** (optional):
+
    ```bash
    Read product-guidelines/04-metrics.md
    ```

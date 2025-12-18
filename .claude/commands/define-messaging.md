@@ -57,6 +57,7 @@ This command READS previous outputs to create journey-grounded messaging:
    - Brand personality (tone characteristics)
 
 4. **Read the brand name** (if available):
+
    ```bash
    Read product-guidelines/brand-naming.md  # If naming was done
    ```

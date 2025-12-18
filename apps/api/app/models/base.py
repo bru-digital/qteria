@@ -1,6 +1,7 @@
 """
 SQLAlchemy base configuration for Qteria database.
 """
+
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -15,8 +16,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     raise ValueError(
-        "DATABASE_URL environment variable is not set. "
-        "Please configure it in your .env file."
+        "DATABASE_URL environment variable is not set. " "Please configure it in your .env file."
     )
 
 # Create SQLAlchemy engine

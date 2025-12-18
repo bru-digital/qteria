@@ -28,6 +28,7 @@ Security Note:
     All queries through these mixins are automatically filtered by organization_id.
     Never bypass these methods for user-facing queries.
 """
+
 from typing import Generic, List, Optional, Type, TypeVar
 from uuid import UUID
 
@@ -170,13 +171,7 @@ class OrganizationScopedMixin(Generic[T]):
                 limit=50
             )
         """
-        return (
-            db.query(cls)
-            .filter(cls.organization_id == org_id)
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        return db.query(cls).filter(cls.organization_id == org_id).offset(skip).limit(limit).all()
 
     @classmethod
     def count_scoped(
@@ -379,9 +374,7 @@ def get_scoped_or_404(
         if audit_on_not_found and user_id:
             # Only fetch organization_id column to minimize data transfer
             exists_elsewhere = (
-                db.query(model_class.organization_id)
-                .filter(model_class.id == record_id)
-                .first()
+                db.query(model_class.organization_id).filter(model_class.id == record_id).first()
             )
 
             if exists_elsewhere:

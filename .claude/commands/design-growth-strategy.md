@@ -91,6 +91,7 @@ This command READS previous outputs to ground growth strategy in reality:
    - What's the value metric? (expansion strategy)
 
 5. **Read analytics plan** (if available):
+
    ```bash
    Read product-guidelines/17-analytics-plan.md
    ```

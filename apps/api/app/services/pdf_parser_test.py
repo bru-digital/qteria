@@ -11,6 +11,7 @@ Tests cover:
 
 Target: 95% code coverage
 """
+
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
@@ -81,9 +82,7 @@ class TestPyPDF2Extraction:
 
     @patch("app.services.pdf_parser.PyPDF2.PdfReader")
     @patch("builtins.open", create=True)
-    def test_extract_multi_page_pdf_preserves_boundaries(
-        self, mock_open, mock_reader, pdf_parser
-    ):
+    def test_extract_multi_page_pdf_preserves_boundaries(self, mock_open, mock_reader, pdf_parser):
         """Should preserve page boundaries across multiple pages."""
         # Arrange
         mock_pages = []
@@ -239,7 +238,9 @@ class TestSectionDetection:
 class TestCaching:
     """Test database caching logic."""
 
-    def test_cache_hit_skips_parsing(self, pdf_parser, mock_db, sample_document_id, sample_organization_id):
+    def test_cache_hit_skips_parsing(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
+    ):
         """Should return cached result without parsing if cache hit."""
         # Arrange
         cached_doc = ParsedDocument(
@@ -260,7 +261,9 @@ class TestCaching:
         assert result["pages"][0]["text"] == "Cached text"
         assert result["method"] == "pypdf2"
 
-    def test_cache_miss_returns_none(self, pdf_parser, mock_db, sample_document_id, sample_organization_id):
+    def test_cache_miss_returns_none(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
+    ):
         """Should return None if no cached result found."""
         # Arrange
         mock_query = Mock()
@@ -273,7 +276,9 @@ class TestCaching:
         # Assert
         assert result is None
 
-    def test_cache_stores_parsed_data(self, pdf_parser, mock_db, sample_document_id, sample_organization_id):
+    def test_cache_stores_parsed_data(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
+    ):
         """Should store parsed data in database."""
         # Arrange
         parsed_data = [{"page": 1, "text": "New text", "section": "1. Intro"}]
@@ -372,9 +377,7 @@ class TestEncryptionCheck:
 
     @patch("app.services.pdf_parser.PyPDF2.PdfReader")
     @patch("builtins.open", create=True)
-    def test_is_encrypted_handles_errors_gracefully(
-        self, mock_open, mock_reader, pdf_parser
-    ):
+    def test_is_encrypted_handles_errors_gracefully(self, mock_open, mock_reader, pdf_parser):
         """Should return False if encryption check fails (assume not encrypted)."""
         # Arrange
         mock_reader.side_effect = Exception("Cannot read PDF")
@@ -412,7 +415,9 @@ class TestParsingMethodRecorded:
         mock_detect.return_value = [{"page": 1, "text": "Test", "section": None}]
 
         # Act
-        result = pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
+        result = pdf_parser.parse_document(
+            sample_document_id, "/fake/path.pdf", sample_organization_id
+        )
 
         # Assert
         assert result["method"] == "pypdf2"
@@ -445,7 +450,9 @@ class TestParsingMethodRecorded:
         mock_detect.return_value = [{"page": 1, "text": "Test", "section": None}]
 
         # Act
-        result = pdf_parser.parse_document(sample_document_id, "/fake/path.pdf", sample_organization_id)
+        result = pdf_parser.parse_document(
+            sample_document_id, "/fake/path.pdf", sample_organization_id
+        )
 
         # Assert
         assert result["method"] == "pdfplumber"
@@ -508,9 +515,7 @@ class TestMultiTenancy:
         filter_call = mock_query.filter.call_args
         assert filter_call is not None
 
-    def test_get_cached_parse_returns_none_for_different_org(
-        self, pdf_parser, sample_document_id
-    ):
+    def test_get_cached_parse_returns_none_for_different_org(self, pdf_parser, sample_document_id):
         """Should return None when cache exists but belongs to different organization."""
         # Arrange
         org_a = uuid4()
@@ -574,7 +579,7 @@ class TestCustomSectionPatterns:
 
         # Assert
         assert len(compiled) == 3
-        assert all(hasattr(p, 'search') for p in compiled)  # All are compiled regex
+        assert all(hasattr(p, "search") for p in compiled)  # All are compiled regex
 
     def test_custom_patterns_used_in_section_detection(self, pdf_parser):
         """Should use custom patterns for section detection when provided."""
@@ -638,8 +643,8 @@ class TestCustomSectionPatterns:
         """Should block nested quantifiers to prevent ReDoS attacks."""
         # Arrange - Dangerous nested quantifiers
         dangerous_patterns = [
-            r"(a+)+",      # Classic ReDoS
-            r"(x*)*",      # Another nested quantifier
+            r"(a+)+",  # Classic ReDoS
+            r"(x*)*",  # Another nested quantifier
             r"(y{2,5})*",  # Bounded nested quantifier
         ]
 
@@ -724,7 +729,7 @@ class TestCustomSectionPatterns:
         pdf_parser._get_cached_parse = Mock(return_value=None)
 
         # Mock PDF extraction
-        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+        with patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader:
             mock_pdf = Mock()
             mock_page = Mock()
             mock_page.extract_text.return_value = "CUSTOM 1: Title\nSome text"
@@ -732,8 +737,10 @@ class TestCustomSectionPatterns:
             mock_pdf.is_encrypted = False
             mock_reader.return_value = mock_pdf
 
-            with patch('pathlib.Path.exists', return_value=True), \
-                 patch('pathlib.Path.is_file', return_value=True):
+            with (
+                patch("pathlib.Path.exists", return_value=True),
+                patch("pathlib.Path.is_file", return_value=True),
+            ):
 
                 # Act
                 result = pdf_parser.parse_document(
@@ -755,7 +762,7 @@ class TestOCRSupport:
         # Arrange - PDF with very little text (< 100 chars total)
         pages = [
             {"page": 1, "text": "   "},  # Whitespace only
-            {"page": 2, "text": ""},     # Empty
+            {"page": 2, "text": ""},  # Empty
             {"page": 3, "text": "Page 3"},  # Minimal text
         ]
 
@@ -771,7 +778,10 @@ class TestOCRSupport:
         # Arrange - PDF with plenty of text (> 100 chars)
         pages = [
             {"page": 1, "text": "This is a normal PDF with plenty of extractable text content."},
-            {"page": 2, "text": "More text here on page 2 with enough characters to exceed threshold."},
+            {
+                "page": 2,
+                "text": "More text here on page 2 with enough characters to exceed threshold.",
+            },
         ]
 
         # Act
@@ -787,8 +797,8 @@ class TestOCRSupport:
         pages = [
             {"page": 1, "text": "Some text on first page with enough characters here."},
             {"page": 2, "text": "   "},  # Whitespace
-            {"page": 3, "text": ""},      # Empty
-            {"page": 4, "text": ""},      # Empty
+            {"page": 3, "text": ""},  # Empty
+            {"page": 4, "text": ""},  # Empty
         ]
 
         # Act
@@ -806,11 +816,13 @@ class TestOCRSupport:
         # Act & Assert - Should not raise
         for lang in valid_languages:
             # Use a mock to avoid actually running OCR
-            with patch('app.services.pdf_parser.OCR_AVAILABLE', True), \
-                 patch('app.services.pdf_parser.convert_from_path') as mock_convert, \
-                 patch('app.services.pdf_parser.pytesseract.image_to_string') as mock_ocr, \
-                 patch('builtins.open', create=True) as mock_open, \
-                 patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+            with (
+                patch("app.services.pdf_parser.OCR_AVAILABLE", True),
+                patch("app.services.pdf_parser.convert_from_path") as mock_convert,
+                patch("app.services.pdf_parser.pytesseract.image_to_string") as mock_ocr,
+                patch("builtins.open", create=True) as mock_open,
+                patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader,
+            ):
 
                 # Setup mocks
                 mock_pdf = Mock()
@@ -829,11 +841,13 @@ class TestOCRSupport:
         combined_lang = "eng+deu"
 
         # Act & Assert - Should not raise
-        with patch('app.services.pdf_parser.OCR_AVAILABLE', True), \
-             patch('app.services.pdf_parser.convert_from_path') as mock_convert, \
-             patch('app.services.pdf_parser.pytesseract.image_to_string') as mock_ocr, \
-             patch('builtins.open', create=True) as mock_open, \
-             patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+        with (
+            patch("app.services.pdf_parser.OCR_AVAILABLE", True),
+            patch("app.services.pdf_parser.convert_from_path") as mock_convert,
+            patch("app.services.pdf_parser.pytesseract.image_to_string") as mock_ocr,
+            patch("builtins.open", create=True) as mock_open,
+            patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader,
+        ):
 
             # Setup mocks
             mock_pdf = Mock()
@@ -862,13 +876,13 @@ class TestOCRSupport:
         # Act & Assert
         for invalid_lang in invalid_languages:
             with pytest.raises(PDFParsingError, match="Invalid OCR language code"):
-                with patch('app.services.pdf_parser.OCR_AVAILABLE', True):
+                with patch("app.services.pdf_parser.OCR_AVAILABLE", True):
                     pdf_parser._extract_with_ocr("/fake/path.pdf", language=invalid_lang)
 
     def test_ocr_unavailable_raises_error(self, pdf_parser):
         """Should raise error when OCR dependencies not available."""
         # Arrange
-        with patch('app.services.pdf_parser.OCR_AVAILABLE', False):
+        with patch("app.services.pdf_parser.OCR_AVAILABLE", False):
             # Act & Assert
             with pytest.raises(PDFParsingError, match="OCR dependencies not available"):
                 pdf_parser._extract_with_ocr("/fake/path.pdf")
@@ -876,9 +890,11 @@ class TestOCRSupport:
     def test_ocr_page_count_validation(self, pdf_parser):
         """Should reject PDFs exceeding MAX_PAGE_COUNT."""
         # Arrange - Mock PDF with too many pages
-        with patch('app.services.pdf_parser.OCR_AVAILABLE', True), \
-             patch('builtins.open', create=True) as mock_open, \
-             patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+        with (
+            patch("app.services.pdf_parser.OCR_AVAILABLE", True),
+            patch("builtins.open", create=True) as mock_open,
+            patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader,
+        ):
 
             mock_pdf = Mock()
             mock_pdf.pages = [Mock()] * 10001  # Exceeds MAX_PAGE_COUNT (10000)
@@ -891,10 +907,12 @@ class TestOCRSupport:
     def test_get_optimal_dpi_low_memory(self, pdf_parser):
         """Should return low DPI when memory is constrained."""
         # Arrange - Mock low available memory
-        with patch('app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE', True), \
-             patch('app.services.pdf_parser.psutil.virtual_memory') as mock_memory, \
-             patch('builtins.open', create=True) as mock_open, \
-             patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+        with (
+            patch("app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE", True),
+            patch("app.services.pdf_parser.psutil.virtual_memory") as mock_memory,
+            patch("builtins.open", create=True) as mock_open,
+            patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader,
+        ):
 
             # Setup mocks
             mock_memory.return_value.available = 100 * 1024 * 1024  # 100 MB available
@@ -914,10 +932,12 @@ class TestOCRSupport:
     def test_get_optimal_dpi_sufficient_memory(self, pdf_parser):
         """Should return default DPI when memory is sufficient."""
         # Arrange - Mock high available memory
-        with patch('app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE', True), \
-             patch('app.services.pdf_parser.psutil.virtual_memory') as mock_memory, \
-             patch('builtins.open', create=True) as mock_open, \
-             patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+        with (
+            patch("app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE", True),
+            patch("app.services.pdf_parser.psutil.virtual_memory") as mock_memory,
+            patch("builtins.open", create=True) as mock_open,
+            patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader,
+        ):
 
             # Setup mocks
             mock_memory.return_value.available = 8 * 1024 * 1024 * 1024  # 8 GB available
@@ -946,10 +966,12 @@ class TestOCRSupport:
         pdf_parser._get_cached_parse = Mock(return_value=None)
 
         # Mock PyPDF2 returning empty text (scanned PDF)
-        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader, \
-             patch('pathlib.Path.exists', return_value=True), \
-             patch('pathlib.Path.is_file', return_value=True), \
-             patch.object(pdf_parser, '_extract_with_ocr') as mock_ocr:
+        with (
+            patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader,
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.is_file", return_value=True),
+            patch.object(pdf_parser, "_extract_with_ocr") as mock_ocr,
+        ):
 
             mock_pdf = Mock()
             mock_page = Mock()
@@ -984,10 +1006,12 @@ class TestOCRSupport:
 
         pdf_parser._get_cached_parse = Mock(return_value=None)
 
-        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader, \
-             patch('pathlib.Path.exists', return_value=True), \
-             patch('pathlib.Path.is_file', return_value=True), \
-             patch.object(pdf_parser, '_extract_with_ocr') as mock_ocr:
+        with (
+            patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader,
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.is_file", return_value=True),
+            patch.object(pdf_parser, "_extract_with_ocr") as mock_ocr,
+        ):
 
             mock_pdf = Mock()
             mock_page = Mock()
@@ -1020,14 +1044,8 @@ class TestTableExtraction:
         import pandas as pd
 
         # Mock tabula returning 2 tables
-        df1 = pd.DataFrame({
-            'Name': ['Alice', 'Bob'],
-            'Score': [95, 87]
-        })
-        df2 = pd.DataFrame({
-            'Product': ['Widget', 'Gadget'],
-            'Price': [10.99, 15.49]
-        })
+        df1 = pd.DataFrame({"Name": ["Alice", "Bob"], "Score": [95, 87]})
+        df2 = pd.DataFrame({"Product": ["Widget", "Gadget"], "Price": [10.99, 15.49]})
         mock_tabula.read_pdf.return_value = [df1, df2]
 
         # Act
@@ -1036,11 +1054,11 @@ class TestTableExtraction:
         # Assert
         assert len(tables) == 2
         assert tables[0]["page"] == 1
-        assert tables[0]["columns"] == ['Name', 'Score']
+        assert tables[0]["columns"] == ["Name", "Score"]
         assert len(tables[0]["data"]) == 2
         assert tables[0]["data"][0]["Name"] == "Alice"
         assert tables[1]["page"] == 2
-        assert tables[1]["columns"] == ['Product', 'Price']
+        assert tables[1]["columns"] == ["Product", "Price"]
 
     @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", False)
     def test_extract_tables_unavailable(self, pdf_parser):
@@ -1072,7 +1090,7 @@ class TestTableExtraction:
         import pandas as pd
 
         df_empty = pd.DataFrame()
-        df_valid = pd.DataFrame({'Col': ['value']})
+        df_valid = pd.DataFrame({"Col": ["value"]})
         mock_tabula.read_pdf.return_value = [df_empty, df_valid, df_empty]
 
         # Act
@@ -1080,7 +1098,7 @@ class TestTableExtraction:
 
         # Assert - only 1 valid table
         assert len(tables) == 1
-        assert tables[0]["columns"] == ['Col']
+        assert tables[0]["columns"] == ["Col"]
 
     def test_parse_document_includes_tables(
         self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
@@ -1092,10 +1110,12 @@ class TestTableExtraction:
 
         pdf_parser._get_cached_parse = Mock(return_value=None)
 
-        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader, \
-             patch('pathlib.Path.exists', return_value=True), \
-             patch('pathlib.Path.is_file', return_value=True), \
-             patch.object(pdf_parser, '_extract_tables') as mock_extract_tables:
+        with (
+            patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader,
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.is_file", return_value=True),
+            patch.object(pdf_parser, "_extract_tables") as mock_extract_tables,
+        ):
 
             mock_pdf = Mock()
             mock_page = Mock()
@@ -1133,10 +1153,12 @@ class TestTableExtraction:
 
         pdf_parser._get_cached_parse = Mock(return_value=None)
 
-        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader, \
-             patch('pathlib.Path.exists', return_value=True), \
-             patch('pathlib.Path.is_file', return_value=True), \
-             patch.object(pdf_parser, '_extract_tables') as mock_extract_tables:
+        with (
+            patch("app.services.pdf_parser.PyPDF2.PdfReader") as mock_reader,
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.is_file", return_value=True),
+            patch.object(pdf_parser, "_extract_tables") as mock_extract_tables,
+        ):
 
             mock_pdf = Mock()
             mock_page = Mock()
@@ -1166,13 +1188,7 @@ class TestTableExtraction:
         tables = [{"page": 1, "columns": ["A"], "data": [{"A": "1"}]}]
 
         # Act
-        pdf_parser._cache_parse(
-            sample_document_id,
-            sample_organization_id,
-            pages,
-            "pypdf2",
-            tables
-        )
+        pdf_parser._cache_parse(sample_document_id, sample_organization_id, pages, "pypdf2", tables)
 
         # Assert
         mock_db.add.assert_called_once()
@@ -1187,7 +1203,7 @@ class TestTableExtraction:
         # Arrange
         cached_data = {
             "pages": [{"page": 1, "text": "text", "section": None}],
-            "tables": [{"page": 1, "columns": ["A"], "data": [{"A": "1"}]}]
+            "tables": [{"page": 1, "columns": ["A"], "data": [{"A": "1"}]}],
         }
 
         mock_cached = Mock()
@@ -1238,6 +1254,7 @@ class TestJavaAvailabilityCheck:
         """Should return True when Java is available."""
         # Arrange
         from app.services.pdf_parser import _check_java_availability
+
         mock_run.return_value = Mock(returncode=0)
 
         # Act
@@ -1252,6 +1269,7 @@ class TestJavaAvailabilityCheck:
         """Should return False when Java is not installed."""
         # Arrange
         from app.services.pdf_parser import _check_java_availability
+
         mock_run.side_effect = FileNotFoundError()
 
         # Act
@@ -1266,7 +1284,8 @@ class TestJavaAvailabilityCheck:
         # Arrange
         import subprocess
         from app.services.pdf_parser import _check_java_availability
-        mock_run.side_effect = subprocess.TimeoutExpired(cmd='java', timeout=5)
+
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="java", timeout=5)
 
         # Act
         result = _check_java_availability()

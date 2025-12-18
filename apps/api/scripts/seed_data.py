@@ -478,6 +478,7 @@ def main():
         session.rollback()
         print(f"\n❌ Error seeding database: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

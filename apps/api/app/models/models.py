@@ -12,6 +12,7 @@ This module defines all 9 core tables:
 - assessment_results: Per-criteria pass/fail with evidence
 - audit_logs: Immutable audit trail (SOC2/ISO 27001)
 """
+
 from sqlalchemy import (
     Column,
     String,
@@ -61,9 +62,7 @@ class Organization(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    users = relationship(
-        "User", back_populates="organization", cascade="all, delete-orphan"
-    )
+    users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
     workflows = relationship("Workflow", back_populates="organization")
     assessments = relationship("Assessment", back_populates="organization")
     documents = relationship("Document", back_populates="organization")
@@ -122,12 +121,8 @@ class Workflow(Base):
     __tablename__ = "workflows"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id = Column(
-        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False
-    )
-    created_by = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
-    )
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     name = Column(String(255), nullable=False)
     description = Column(Text)
     section_patterns = Column(JSON, nullable=True)  # Custom regex patterns for section detection
@@ -139,28 +134,22 @@ class Workflow(Base):
     archived = Column(Boolean, default=False, nullable=False)
     archived_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at = Column(
-        TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     organization = relationship("Organization", back_populates="workflows")
-    creator = relationship(
-        "User", back_populates="created_workflows", foreign_keys=[created_by]
-    )
-    buckets = relationship(
-        "Bucket", back_populates="workflow", cascade="all, delete-orphan"
-    )
-    criteria = relationship(
-        "Criteria", back_populates="workflow", cascade="all, delete-orphan"
-    )
+    creator = relationship("User", back_populates="created_workflows", foreign_keys=[created_by])
+    buckets = relationship("Bucket", back_populates="workflow", cascade="all, delete-orphan")
+    criteria = relationship("Criteria", back_populates="workflow", cascade="all, delete-orphan")
     assessments = relationship("Assessment", back_populates="workflow")
 
     # Indexes
     __table_args__ = (
         Index("idx_workflow_organization", "organization_id"),
         Index("idx_workflow_active", "is_active"),
-        Index("idx_workflow_org_archived", "organization_id", "archived"),  # Composite index for list queries
+        Index(
+            "idx_workflow_org_archived", "organization_id", "archived"
+        ),  # Composite index for list queries
     )
 
 
@@ -186,9 +175,7 @@ class Bucket(Base):
     # Relationships
     workflow = relationship("Workflow", back_populates="buckets")
     documents = relationship("Document", back_populates="bucket")
-    assessment_documents = relationship(
-        "AssessmentDocument", back_populates="bucket"
-    )
+    assessment_documents = relationship("AssessmentDocument", back_populates="bucket")
 
     # Indexes
     __table_args__ = (Index("idx_bucket_workflow", "workflow_id"),)
@@ -210,18 +197,14 @@ class Criteria(Base):
     )
     name = Column(String(255), nullable=False)
     description = Column(Text)  # Made nullable to match API schema
-    applies_to_bucket_ids = Column(
-        ARRAY(UUID(as_uuid=True))
-    )  # Array of bucket UUIDs
+    applies_to_bucket_ids = Column(ARRAY(UUID(as_uuid=True)))  # Array of bucket UUIDs
     example_text = Column(Text)
     order_index = Column(Integer, default=0)  # Added for UI sorting
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
     workflow = relationship("Workflow", back_populates="criteria")
-    assessment_results = relationship(
-        "AssessmentResult", back_populates="criteria"
-    )
+    assessment_results = relationship("AssessmentResult", back_populates="criteria")
 
     # Indexes
     __table_args__ = (Index("idx_criteria_workflow", "workflow_id"),)
@@ -236,15 +219,9 @@ class Assessment(Base):
     __tablename__ = "assessments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id = Column(
-        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False
-    )
-    workflow_id = Column(
-        UUID(as_uuid=True), ForeignKey("workflows.id"), nullable=False
-    )
-    created_by = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
-    )
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id"), nullable=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     status = Column(
         String(50),
         CheckConstraint(
@@ -261,9 +238,7 @@ class Assessment(Base):
     # Relationships
     organization = relationship("Organization", back_populates="assessments")
     workflow = relationship("Workflow", back_populates="assessments")
-    creator = relationship(
-        "User", back_populates="created_assessments", foreign_keys=[created_by]
-    )
+    creator = relationship("User", back_populates="created_assessments", foreign_keys=[created_by])
     assessment_documents = relationship(
         "AssessmentDocument",
         back_populates="assessment",
@@ -313,9 +288,7 @@ class Document(Base):
         ForeignKey("buckets.id", ondelete="SET NULL"),
         nullable=True,  # Optional - document may not be associated with bucket yet
     )
-    uploaded_by = Column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
-    )
+    uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     uploaded_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
@@ -373,17 +346,11 @@ class AssessmentResult(Base):
         ForeignKey("assessments.id", ondelete="CASCADE"),
         nullable=False,
     )
-    criteria_id = Column(
-        UUID(as_uuid=True), ForeignKey("criteria.id"), nullable=False
-    )
-    pass_status = Column(
-        Boolean, nullable=False
-    )  # Renamed from 'pass' (reserved keyword)
+    criteria_id = Column(UUID(as_uuid=True), ForeignKey("criteria.id"), nullable=False)
+    pass_status = Column(Boolean, nullable=False)  # Renamed from 'pass' (reserved keyword)
     confidence = Column(
         String(50),
-        CheckConstraint(
-            "confidence IN ('high', 'medium', 'low')", name="check_confidence_level"
-        ),
+        CheckConstraint("confidence IN ('high', 'medium', 'low')", name="check_confidence_level"),
     )
     evidence_page = Column(Integer)
     evidence_section = Column(Text)
@@ -416,9 +383,7 @@ class AuditLog(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # Nullable to support logging auth failures before org context is known
-    organization_id = Column(
-        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True
-    )
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     action = Column(String(100), nullable=False)
     resource_type = Column(String(50))
@@ -463,9 +428,7 @@ class ParsedDocument(Base):
         unique=True,  # One parsed result per document
     )
     parsed_data = Column(JSON, nullable=False)  # Array of {page, section, text}
-    parsing_method = Column(
-        String(50), nullable=False
-    )  # 'pypdf2' or 'pdfplumber'
+    parsing_method = Column(String(50), nullable=False)  # 'pypdf2' or 'pdfplumber'
     parsed_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships

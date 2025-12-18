@@ -109,18 +109,13 @@ def check_redis_connection(base_url: str) -> bool:
 
 def main():
     """Main entry point for deployment verification."""
-    parser = argparse.ArgumentParser(
-        description="Verify Qteria API deployment on Railway"
-    )
+    parser = argparse.ArgumentParser(description="Verify Qteria API deployment on Railway")
     parser.add_argument(
         "url",
-        help="Base URL of the deployed API (e.g., https://qteria-api-production.up.railway.app)"
+        help="Base URL of the deployed API (e.g., https://qteria-api-production.up.railway.app)",
     )
     parser.add_argument(
-        "--timeout",
-        type=int,
-        default=90,
-        help="Timeout in seconds for health check (default: 90)"
+        "--timeout", type=int, default=90, help="Timeout in seconds for health check (default: 90)"
     )
 
     args = parser.parse_args()

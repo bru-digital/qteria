@@ -32,6 +32,7 @@ You are a product strategist creating market-validated strategy. Your job is to:
 This command READS previous outputs to ground product strategy in reality:
 
 1. **Read the user journey**:
+
    ```bash
    Read product-guidelines/00-user-journey.md
    ```

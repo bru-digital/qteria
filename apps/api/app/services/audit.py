@@ -19,6 +19,7 @@ Usage:
             metadata={"method": "password"}
         )
 """
+
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional
@@ -42,6 +43,7 @@ class AuditEventType(str, Enum):
     - AUTHZ_*: Authorization events (permission checks, role enforcement)
     - SECURITY_*: Security-related events (suspicious activity, rate limits)
     """
+
     # Authentication events
     AUTH_LOGIN_SUCCESS = "auth.login.success"
     AUTH_LOGIN_FAILURE = "auth.login.failure"
@@ -148,7 +150,7 @@ class AuditService:
                 "resource_id": str(resource_id) if resource_id else None,
                 "ip_address": ip_address,
                 "metadata": metadata,
-            }
+            },
         )
 
         return audit_entry
@@ -342,7 +344,7 @@ class AuditService:
                 "attempted_org": str(attempted_organization_id),
                 "resource_type": resource_type,
                 "resource_id": str(resource_id) if resource_id else None,
-            }
+            },
         )
 
         return AuditService.log_event(

@@ -10,6 +10,7 @@ Endpoints:
 
 Documents are uploaded to Vercel Blob storage with encryption at rest and multi-tenant isolation.
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -97,14 +98,12 @@ def calculate_rate_limit_headers(
             # This is acceptable as enforcement (INCRBY in check_upload_rate_limit) is atomic.
             # Headers provide best-effort information, not enforcement.
             now_for_headers = datetime.now(timezone.utc)
-            uploads_remaining = max(
-                0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count
-            )
+            uploads_remaining = max(0, settings.UPLOAD_RATE_LIMIT_PER_HOUR - new_upload_count)
 
             # Calculate reset timestamp (next hour)
-            reset_time = now_for_headers.replace(
-                minute=0, second=0, microsecond=0
-            ) + timedelta(hours=1)
+            reset_time = now_for_headers.replace(minute=0, second=0, microsecond=0) + timedelta(
+                hours=1
+            )
             reset_timestamp = int(reset_time.timestamp())
 
             # Store header values for later addition to response
@@ -225,10 +224,10 @@ async def upload_document(
     current_user: AuthenticatedUser,
     response: Response,
     redis: RedisClient,
-    files: list[UploadFile] = File(..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"),
-    bucket_id: Optional[str] = Form(
-        None, description="Optional bucket ID for validation"
+    files: list[UploadFile] = File(
+        ..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"
     ),
+    bucket_id: Optional[str] = Form(None, description="Optional bucket ID for validation"),
     request: Request = None,
     db: Session = Depends(get_db),
 ) -> list[DocumentResponse]:
@@ -354,10 +353,15 @@ async def upload_document(
                 )
 
             # Query bucket and join with workflow to check organization_id
-            bucket = db.query(Bucket).join(Workflow).filter(
-                Bucket.id == bucket_uuid,
-                Workflow.organization_id == current_user.organization_id
-            ).first()
+            bucket = (
+                db.query(Bucket)
+                .join(Workflow)
+                .filter(
+                    Bucket.id == bucket_uuid,
+                    Workflow.organization_id == current_user.organization_id,
+                )
+                .first()
+            )
 
             if not bucket:
                 logger.warning(
@@ -559,12 +563,14 @@ async def upload_document(
                 )
 
             # Store validated file data for upload phase
-            file_data_list.append({
-                "filename": file.filename,
-                "content": file_content,
-                "size": file_size,
-                "mime_type": mime_type,
-            })
+            file_data_list.append(
+                {
+                    "filename": file.filename,
+                    "content": file_content,
+                    "size": file_size,
+                    "mime_type": mime_type,
+                }
+            )
 
         # 5. ALL files validated successfully - now upload to Vercel Blob storage
         #
@@ -688,9 +694,7 @@ async def upload_document(
                 try:
                     await BlobStorageService.delete_file(blob_url)
                 except Exception as cleanup_error:
-                    cleanup_errors.append(
-                        {"blob_url": blob_url, "error": str(cleanup_error)}
-                    )
+                    cleanup_errors.append({"blob_url": blob_url, "error": str(cleanup_error)})
 
             if cleanup_errors:
                 logger.error(
@@ -830,7 +834,7 @@ async def upload_document(
         # Ensure all file handles are closed (defensive cleanup)
         if files:
             for file in files:
-                if file and hasattr(file, 'file') and hasattr(file.file, "close"):
+                if file and hasattr(file, "file") and hasattr(file.file, "close"):
                     try:
                         file.file.close()
                     except Exception:
@@ -878,10 +882,10 @@ Location: https://blob.vercel-storage.com/documents/...
 )
 async def download_document(
     document_id: UUID,
+    current_user: AuthenticatedUser,
+    db: Session = Depends(get_db),
     page: Optional[int] = None,
     request: Request = None,
-    current_user: AuthenticatedUser = Depends(),
-    db: Session = Depends(get_db),
 ) -> Response:
     """
     Download document from Vercel Blob storage.
@@ -917,10 +921,13 @@ async def download_document(
 
         # 1. Query document by ID with multi-tenancy enforcement
         # Return 404 (not 403) for documents in other orgs to avoid info leakage
-        document = db.query(Document).filter(
-            Document.id == document_id,
-            Document.organization_id == current_user.organization_id
-        ).first()
+        document = (
+            db.query(Document)
+            .filter(
+                Document.id == document_id, Document.organization_id == current_user.organization_id
+            )
+            .first()
+        )
 
         if not document:
             logger.warning(
@@ -1008,7 +1015,7 @@ async def download_document(
                 "Location": download_url,
                 "Content-Type": document.mime_type,
                 "Content-Disposition": f'inline; filename="{document.file_name}"',
-            }
+            },
         )
 
         # 5. Add X-PDF-Page header if page parameter provided (for PDF viewers)
@@ -1109,10 +1116,13 @@ async def delete_document(
 
         # 1. Query document by ID with multi-tenancy enforcement
         # Return 404 (not 403) for documents in other orgs to avoid info leakage
-        document = db.query(Document).filter(
-            Document.id == document_id,
-            Document.organization_id == current_user.organization_id
-        ).first()
+        document = (
+            db.query(Document)
+            .filter(
+                Document.id == document_id, Document.organization_id == current_user.organization_id
+            )
+            .first()
+        )
 
         if not document:
             logger.warning(
@@ -1160,12 +1170,15 @@ async def delete_document(
         # - storage_key is the source of truth for what blob was used in the assessment
         #
         # See: product-guidelines/07-database-schema-essentials.md for table relationships
-        assessment_doc = db.query(AssessmentDocument).join(
-            Assessment
-        ).filter(
-            AssessmentDocument.storage_key == document.storage_key,
-            Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.PROCESSING])
-        ).first()
+        assessment_doc = (
+            db.query(AssessmentDocument)
+            .join(Assessment)
+            .filter(
+                AssessmentDocument.storage_key == document.storage_key,
+                Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.PROCESSING]),
+            )
+            .first()
+        )
 
         if assessment_doc:
             logger.warning(

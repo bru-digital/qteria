@@ -9,6 +9,7 @@ Endpoints:
 Assessments represent the AI validation process where uploaded documents are checked
 against workflow criteria.
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
@@ -182,9 +183,7 @@ async def start_assessment(
     missing_buckets = required_bucket_ids - provided_bucket_ids
     if missing_buckets:
         # Get bucket names for better error message
-        missing_bucket_names = [
-            b.name for b in required_buckets if b.id in missing_buckets
-        ]
+        missing_bucket_names = [b.name for b in required_buckets if b.id in missing_buckets]
 
         logger.warning(
             "Assessment creation failed - missing required buckets",

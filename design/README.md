@@ -16,7 +16,6 @@ To use the logo in the app:
 
 ```tsx
 import Image from 'next/image'
-
 ;<Image src="/logo.png" alt="Qteria" width={200} height={50} />
 ```
 

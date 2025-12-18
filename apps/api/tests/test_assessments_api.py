@@ -11,6 +11,7 @@ Tests POST /v1/assessments endpoint for:
 
 Journey Step 2→3: Project Handler starts AI validation assessment.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
@@ -114,8 +115,8 @@ class TestStartAssessment:
     ):
         """Assessment creation fails when required bucket has no documents."""
         # Create workflow
-        workflow_id, required_bucket_id, optional_bucket_id = (
-            create_test_workflow_with_buckets(client, org_a_process_manager_token)
+        workflow_id, required_bucket_id, optional_bucket_id = create_test_workflow_with_buckets(
+            client, org_a_process_manager_token
         )
 
         # Try to start assessment WITHOUT required bucket document (only optional bucket)
@@ -392,8 +393,8 @@ class TestAssessmentMultiTenancy:
     ):
         """Same document cannot be assigned to multiple buckets."""
         # Create workflow
-        workflow_id, required_bucket_id, optional_bucket_id = (
-            create_test_workflow_with_buckets(client, org_a_process_manager_token)
+        workflow_id, required_bucket_id, optional_bucket_id = create_test_workflow_with_buckets(
+            client, org_a_process_manager_token
         )
 
         # Try to assign same document to two buckets

@@ -1,6 +1,7 @@
 """
 Pydantic schemas for request/response validation.
 """
+
 from .organization import (
     OrganizationBase,
     OrganizationCreate,

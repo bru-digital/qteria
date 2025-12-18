@@ -15,6 +15,7 @@ Usage:
         organization_id="org_123"
     )
 """
+
 import os
 import re
 from datetime import datetime, timezone
@@ -59,14 +60,14 @@ class BlobStorageService:
         safe_name = safe_name.replace("\0", "")
 
         # Remove control characters (ASCII 0-31 and 127)
-        safe_name = re.sub(r'[\x00-\x1f\x7f]', '', safe_name)
+        safe_name = re.sub(r"[\x00-\x1f\x7f]", "", safe_name)
 
         # Replace problematic characters with underscore
         # Keep only alphanumeric, dash, underscore, dot
-        safe_name = re.sub(r'[^\w\-.]', '_', safe_name)
+        safe_name = re.sub(r"[^\w\-.]", "_", safe_name)
 
         # Remove leading/trailing dots and underscores
-        safe_name = safe_name.strip('._')
+        safe_name = safe_name.strip("._")
 
         # Ensure filename is not empty after sanitization
         if not safe_name:
@@ -76,9 +77,7 @@ class BlobStorageService:
 
     @staticmethod
     def _generate_storage_key(
-        filename: str,
-        organization_id: UUID,
-        document_id: Optional[str] = None
+        filename: str, organization_id: UUID, document_id: Optional[str] = None
     ) -> str:
         """
         Generate unique storage key for document.
@@ -108,7 +107,7 @@ class BlobStorageService:
         filename: str,
         content_type: str,
         organization_id: UUID,
-        document_id: Optional[str] = None
+        document_id: Optional[str] = None,
     ) -> str:
         """
         Upload file to Vercel Blob storage.
@@ -131,22 +130,16 @@ class BlobStorageService:
             from vercel_blob import put
         except ImportError:
             logger.error("vercel-blob package not installed")
-            raise ImportError(
-                "vercel-blob package required. Install with: pip install vercel-blob"
-            )
+            raise ImportError("vercel-blob package required. Install with: pip install vercel-blob")
 
         blob_token = os.getenv("BLOB_READ_WRITE_TOKEN")
         if not blob_token:
             logger.error("BLOB_READ_WRITE_TOKEN environment variable not set")
-            raise ValueError(
-                "BLOB_READ_WRITE_TOKEN environment variable is required"
-            )
+            raise ValueError("BLOB_READ_WRITE_TOKEN environment variable is required")
 
         # Generate unique storage key
         storage_key = BlobStorageService._generate_storage_key(
-            filename=filename,
-            organization_id=organization_id,
-            document_id=document_id
+            filename=filename, organization_id=organization_id, document_id=document_id
         )
 
         try:
@@ -159,7 +152,7 @@ class BlobStorageService:
                     "contentType": content_type,
                     "addRandomSuffix": True,  # Additional collision prevention
                 },
-                token=blob_token
+                token=blob_token,
             )
 
             logger.info(
@@ -170,7 +163,7 @@ class BlobStorageService:
                     "organization_id": str(organization_id),
                     "file_size": len(file_content),
                     "content_type": content_type,
-                }
+                },
             )
 
             # Validate response contains URL (defensive coding)
@@ -191,7 +184,7 @@ class BlobStorageService:
                     "organization_id": str(organization_id),
                     "error": str(e),
                 },
-                exc_info=True
+                exc_info=True,
             )
             raise Exception(f"Failed to upload file to Vercel Blob: {str(e)}")
 
@@ -223,10 +216,7 @@ class BlobStorageService:
 
         # For Vercel Blob, the storage URL IS the download URL
         # The URL already contains authentication tokens
-        logger.debug(
-            "Retrieved download URL from Vercel Blob",
-            extra={"storage_key": storage_key}
-        )
+        logger.debug("Retrieved download URL from Vercel Blob", extra={"storage_key": storage_key})
 
         return storage_key
 
@@ -245,28 +235,21 @@ class BlobStorageService:
             from vercel_blob import delete
         except ImportError:
             logger.error("vercel-blob package not installed")
-            raise ImportError(
-                "vercel-blob package required. Install with: pip install vercel-blob"
-            )
+            raise ImportError("vercel-blob package required. Install with: pip install vercel-blob")
 
         blob_token = os.getenv("BLOB_READ_WRITE_TOKEN")
         if not blob_token:
             logger.error("BLOB_READ_WRITE_TOKEN environment variable not set")
-            raise ValueError(
-                "BLOB_READ_WRITE_TOKEN environment variable is required"
-            )
+            raise ValueError("BLOB_READ_WRITE_TOKEN environment variable is required")
 
         try:
             await delete(storage_url, token=blob_token)
-            logger.info(
-                "File deleted from Vercel Blob",
-                extra={"storage_url": storage_url}
-            )
+            logger.info("File deleted from Vercel Blob", extra={"storage_url": storage_url})
             return True
         except Exception as e:
             logger.error(
                 "Failed to delete file from Vercel Blob",
                 extra={"storage_url": storage_url, "error": str(e)},
-                exc_info=True
+                exc_info=True,
             )
             return False

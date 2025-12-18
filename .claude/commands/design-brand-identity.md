@@ -59,6 +59,7 @@ This command READS previous outputs to create journey-grounded visual identity:
    - Design philosophy (visual principles)
 
 4. **Read the brand name** (if exists):
+
    ```bash
    Read product-guidelines/brand-naming.md
    ```

@@ -14,6 +14,7 @@ For integration tests with real database, see test_rbac_integration.py.
 
 Coverage target: 100% for security-critical code
 """
+
 import pytest
 from uuid import uuid4
 from datetime import datetime, timedelta, timezone
@@ -253,9 +254,7 @@ class TestRoleEnforcement:
         )
         assert response.status_code == 200
 
-    def test_admin_can_update_organization(
-        self, client: TestClient, org_a_admin_token: str
-    ):
+    def test_admin_can_update_organization(self, client: TestClient, org_a_admin_token: str):
         """Admin can update their own organization."""
         response = client.patch(
             f"/v1/organizations/{TEST_ORG_A_ID}",
@@ -276,9 +275,7 @@ class TestRoleEnforcement:
         )
         assert response.status_code == 403
 
-    def test_admin_can_delete_organization(
-        self, client: TestClient, org_a_admin_token: str
-    ):
+    def test_admin_can_delete_organization(self, client: TestClient, org_a_admin_token: str):
         """Admin can delete their own organization."""
         response = client.delete(
             f"/v1/organizations/{TEST_ORG_A_ID}",
@@ -321,9 +318,7 @@ class TestMultiTenancy:
         data = response.json()
         assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
 
-    def test_admin_cannot_update_other_org(
-        self, client: TestClient, org_a_admin_token: str
-    ):
+    def test_admin_cannot_update_other_org(self, client: TestClient, org_a_admin_token: str):
         """Admin cannot update another organization.
 
         Returns 404 to prevent info leakage (don't reveal org exists).
@@ -338,9 +333,7 @@ class TestMultiTenancy:
         data = response.json()
         assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
 
-    def test_admin_cannot_delete_other_org(
-        self, client: TestClient, org_a_admin_token: str
-    ):
+    def test_admin_cannot_delete_other_org(self, client: TestClient, org_a_admin_token: str):
         """Admin cannot delete another organization.
 
         Returns 404 to prevent info leakage (don't reveal org exists).
@@ -434,9 +427,7 @@ class TestErrorResponses:
         assert "code" in data["error"]
         assert "message" in data["error"]
 
-    def test_403_response_format(
-        self, client: TestClient, project_handler_token: str
-    ):
+    def test_403_response_format(self, client: TestClient, project_handler_token: str):
         """403 errors have correct format with role info."""
         response = client.post(
             "/v1/organizations",

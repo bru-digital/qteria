@@ -50,9 +50,7 @@ def create_error_response(
         ... )
     """
     # Extract request_id from request state, or generate new UUID
-    request_id = (
-        getattr(request.state, "request_id", None) if request else None
-    ) or str(uuid4())
+    request_id = (getattr(request.state, "request_id", None) if request else None) or str(uuid4())
 
     error_body: dict[str, Any] = {
         "error": {

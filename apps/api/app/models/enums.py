@@ -37,6 +37,7 @@ Never trust frontend-only checks for authorization.
 @see apps/web/lib/rbac.ts - Frontend mirror (TypeScript)
 @see apps/api/app/core/auth.py - Backend enforcement
 """
+
 from enum import Enum
 from typing import Set
 
@@ -52,6 +53,7 @@ class UserRole(str, Enum):
 
     @sync apps/web/lib/rbac.ts:UserRole
     """
+
     PROCESS_MANAGER = "process_manager"
     PROJECT_HANDLER = "project_handler"
     ADMIN = "admin"
@@ -65,6 +67,7 @@ class Permission(str, Enum):
 
     @sync apps/web/lib/rbac.ts:Permission
     """
+
     # Workflow permissions
     WORKFLOWS_CREATE = "workflows:create"
     WORKFLOWS_READ = "workflows:read"

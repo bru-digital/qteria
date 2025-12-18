@@ -17,6 +17,7 @@ Security Notes:
 - Multi-tenancy violations are logged for audit (SOC2 compliance)
 - No super-admin access to all organizations in MVP
 """
+
 import pytest
 from uuid import uuid4, UUID
 from unittest.mock import patch, MagicMock
@@ -47,6 +48,7 @@ from tests.conftest import (
 # ============================================================================
 # Unit Tests: Multi-Tenant Middleware
 # ============================================================================
+
 
 class TestOrganizationContext:
     """Test OrganizationContext dataclass."""
@@ -147,7 +149,7 @@ class TestValidateOrganizationAccess:
         user_id = UUID(TEST_USER_A_ID)
         resource_id = uuid4()
 
-        with patch('app.middleware.multi_tenant.AuditService') as mock_audit:
+        with patch("app.middleware.multi_tenant.AuditService") as mock_audit:
             with pytest.raises(HTTPException):
                 validate_organization_access(
                     resource_organization_id=UUID(TEST_ORG_A_ID),
@@ -165,6 +167,7 @@ class TestValidateOrganizationAccess:
 # ============================================================================
 # Unit Tests: Organization Scoped Mixin
 # ============================================================================
+
 
 class MockModel:
     """Mock SQLAlchemy model for testing mixins."""
@@ -191,11 +194,7 @@ class TestOrganizationScopedMixin:
 
         # Can't directly test the classmethod without a real model,
         # so we'll test the pattern used in the mixin
-        result = (
-            mock_db.query(MockModel)
-            .filter()
-            .first()
-        )
+        result = mock_db.query(MockModel).filter().first()
 
         assert result == mock_record
 
@@ -206,11 +205,7 @@ class TestOrganizationScopedMixin:
         mock_query.filter.return_value.first.return_value = None
         mock_db.query.return_value = mock_query
 
-        result = (
-            mock_db.query(MockModel)
-            .filter()
-            .first()
-        )
+        result = mock_db.query(MockModel).filter().first()
 
         assert result is None
 
@@ -278,6 +273,7 @@ class TestGetScopedOr404:
 # ============================================================================
 # Integration Tests: API Endpoint Multi-Tenancy
 # ============================================================================
+
 
 class TestOrganizationEndpointMultiTenancy:
     """Test multi-tenancy enforcement on organization endpoints."""
@@ -381,7 +377,7 @@ class TestMultiTenancyViolationAuditLogging:
         )
 
         # Verify audit log was called for violation
-        mock_audit_service['log_multi_tenancy_violation'].assert_called_once()
+        mock_audit_service["log_multi_tenancy_violation"].assert_called_once()
 
 
 class TestCrossOrganizationAccessDenial:
@@ -455,12 +451,11 @@ class TestMultiTenancyErrorResponses:
 # Edge Cases
 # ============================================================================
 
+
 class TestMultiTenancyEdgeCases:
     """Test edge cases in multi-tenancy enforcement."""
 
-    def test_uuid_case_sensitivity(
-        self, client: TestClient, mock_audit_service
-    ):
+    def test_uuid_case_sensitivity(self, client: TestClient, mock_audit_service):
         """UUIDs should be case-insensitive."""
         # Create token with lowercase UUID
         org_id_lower = TEST_ORG_A_ID.lower()
@@ -481,9 +476,7 @@ class TestMultiTenancyEdgeCases:
         assert response.status_code != 401
         assert response.status_code != 403
 
-    def test_empty_organization_id_in_token_rejected(
-        self, client: TestClient, mock_audit_service
-    ):
+    def test_empty_organization_id_in_token_rejected(self, client: TestClient, mock_audit_service):
         """Empty organization_id in token should be rejected."""
         token = create_test_token(missing_fields=["org_id"])
 
@@ -499,6 +492,7 @@ class TestMultiTenancyEdgeCases:
 # ============================================================================
 # Security Regression Tests
 # ============================================================================
+
 
 class TestSecurityRegressionMultiTenancy:
     """Regression tests for multi-tenancy security issues."""
@@ -524,9 +518,7 @@ class TestSecurityRegressionMultiTenancy:
         # (or verify it fails appropriately)
         assert response.status_code in [201, 400, 403]
 
-    def test_sequential_requests_isolated(
-        self, client: TestClient, mock_audit_service
-    ):
+    def test_sequential_requests_isolated(self, client: TestClient, mock_audit_service):
         """Sequential requests should have isolated organization context."""
         # Request 1: User from org A
         token_a = create_test_token(
@@ -558,6 +550,7 @@ class TestSecurityRegressionMultiTenancy:
 # Performance Tests
 # ============================================================================
 
+
 class TestMultiTenancyPerformance:
     """Test that multi-tenancy filtering doesn't add significant overhead."""
 
@@ -586,6 +579,7 @@ class TestMultiTenancyPerformance:
 # Integration Tests: Nested Table Multi-Tenancy
 # ============================================================================
 
+
 class TestNestedTableMultiTenancy:
     """
     Test multi-tenancy enforcement on nested tables via parent relationships.
@@ -605,9 +599,7 @@ class TestNestedTableMultiTenancy:
     information leakage about resource existence.
     """
 
-    def test_bucket_access_through_wrong_org_workflow_returns_404(
-        self, client: TestClient
-    ):
+    def test_bucket_access_through_wrong_org_workflow_returns_404(self, client: TestClient):
         """User from org A cannot access buckets belonging to org B's workflow."""
         from sqlalchemy.orm import Session
         from app.core.dependencies import get_db
@@ -677,9 +669,7 @@ class TestNestedTableMultiTenancy:
             db.rollback()
             db.close()
 
-    def test_criteria_access_through_wrong_org_workflow_returns_404(
-        self, client: TestClient
-    ):
+    def test_criteria_access_through_wrong_org_workflow_returns_404(self, client: TestClient):
         """User from org A cannot access criteria belonging to org B's workflow."""
         from sqlalchemy.orm import Session
         from app.core.dependencies import get_db
@@ -1080,7 +1070,14 @@ class TestNestedTableMultiTenancy:
         """Unit test: Verify nested queries properly join through parent org_id."""
         from sqlalchemy.orm import Session
         from app.core.dependencies import get_db
-        from app.models.models import Workflow, Bucket, Criteria, Assessment, AssessmentDocument, AssessmentResult
+        from app.models.models import (
+            Workflow,
+            Bucket,
+            Criteria,
+            Assessment,
+            AssessmentDocument,
+            AssessmentResult,
+        )
 
         # Get database session
         db: Session = next(get_db())

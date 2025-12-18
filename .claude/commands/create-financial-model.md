@@ -104,6 +104,7 @@ This command READS previous outputs to ground financial projections in reality:
    - What's the expected ARPU? (Average Revenue Per User)
 
 6. **Read the growth strategy** (if available):
+
    ```bash
    Read product-guidelines/growth-strategy.md
    ```

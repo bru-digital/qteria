@@ -10,6 +10,7 @@ Security Notes:
 - Admin users are also organization-scoped (no super-admin in MVP)
 - Returns 404 (not 403) when accessing other org's data to prevent info leakage
 """
+
 from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -118,9 +119,7 @@ def list_organizations(
     # Note: Changed from previous behavior where admins could see all orgs
     # This follows the plan: "Admin from org A cannot see org B's data"
     organizations = (
-        db.query(Organization)
-        .filter(Organization.id == current_user.organization_id)
-        .all()
+        db.query(Organization).filter(Organization.id == current_user.organization_id).all()
     )
     return organizations
 

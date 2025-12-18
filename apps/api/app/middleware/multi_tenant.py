@@ -38,6 +38,7 @@ Security Notes:
 - Returns 404 (not 403) for resources in other organizations to prevent info leakage
 - Admins are also organization-scoped (no super-admin access to all orgs in MVP)
 """
+
 from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Annotated, Optional
@@ -76,6 +77,7 @@ class OrganizationContext:
         user_id: UUID of the authenticated user
         user_role: Role of the authenticated user
     """
+
     organization_id: UUID
     user_id: UUID
     user_role: str
@@ -111,7 +113,7 @@ async def get_organization_context(
             "organization_id": str(current_user.organization_id),
             "user_id": str(current_user.id),
             "role": current_user.role.value,
-        }
+        },
     )
 
     return OrganizationContext(
@@ -196,7 +198,7 @@ def validate_organization_access(
                 "resource_org_id": str(resource_organization_id),
                 "resource_type": resource_type,
                 "resource_id": str(resource_id) if resource_id else None,
-            }
+            },
         )
 
         # Return 404 to prevent info leakage (don't reveal resource exists)

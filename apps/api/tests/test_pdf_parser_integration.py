@@ -6,6 +6,7 @@ Note: Real PDF fixtures should be added to tests/fixtures/ for complete testing.
 
 For now, this provides a stub for future integration tests with real PDF files.
 """
+
 import pytest
 from uuid import uuid4
 from pathlib import Path
@@ -25,6 +26,7 @@ try:
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib import colors
+
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
@@ -97,56 +99,64 @@ def _create_pdf_with_tables(pdf_path: Path) -> None:
     story = []
 
     # Page 1: Heading + Table 1
-    story.append(Paragraph("Test Document with Tables", styles['Title']))
-    story.append(Paragraph("Page 1 - First Table", styles['Heading2']))
+    story.append(Paragraph("Test Document with Tables", styles["Title"]))
+    story.append(Paragraph("Page 1 - First Table", styles["Heading2"]))
 
     # Table 1 on page 1
     table1_data = [
-        ['Product', 'Quantity', 'Price'],
-        ['Widget A', '10', '$50.00'],
-        ['Widget B', '5', '$25.00'],
-        ['Widget C', '15', '$75.00'],
+        ["Product", "Quantity", "Price"],
+        ["Widget A", "10", "$50.00"],
+        ["Widget B", "5", "$25.00"],
+        ["Widget C", "15", "$75.00"],
     ]
     table1 = Table(table1_data)
-    table1.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
+    table1.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 14),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+            ]
+        )
+    )
     story.append(table1)
 
     # Page 2: Just text (no table)
     story.append(PageBreak())
-    story.append(Paragraph("Page 2 - No Tables", styles['Heading2']))
-    story.append(Paragraph("This page contains only text and no tables.", styles['Normal']))
+    story.append(Paragraph("Page 2 - No Tables", styles["Heading2"]))
+    story.append(Paragraph("This page contains only text and no tables.", styles["Normal"]))
 
     # Page 3: Table 2
     story.append(PageBreak())
-    story.append(Paragraph("Page 3 - Second Table", styles['Heading2']))
+    story.append(Paragraph("Page 3 - Second Table", styles["Heading2"]))
 
     # Table 2 on page 3
     table2_data = [
-        ['Test ID', 'Result', 'Status'],
-        ['TEST-001', '98.5%', 'PASS'],
-        ['TEST-002', '95.2%', 'PASS'],
-        ['TEST-003', '88.1%', 'FAIL'],
+        ["Test ID", "Result", "Status"],
+        ["TEST-001", "98.5%", "PASS"],
+        ["TEST-002", "95.2%", "PASS"],
+        ["TEST-003", "88.1%", "FAIL"],
     ]
     table2 = Table(table2_data)
-    table2.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.lightblue),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
+    table2.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 14),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.lightblue),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+            ]
+        )
+    )
     story.append(table2)
 
     # Build PDF
@@ -156,7 +166,7 @@ def _create_pdf_with_tables(pdf_path: Path) -> None:
 @pytest.mark.integration
 @pytest.mark.skipif(
     not TABLE_EXTRACTION_AVAILABLE or not REPORTLAB_AVAILABLE,
-    reason="Java or ReportLab not available"
+    reason="Java or ReportLab not available",
 )
 def test_extract_tables_integration(db_session, tmp_path):
     """
@@ -210,7 +220,10 @@ def test_extract_tables_integration(db_session, tmp_path):
         # tabula may not detect all tables depending on PDF layout complexity
         # Log a warning but don't fail the test
         import logging
-        logging.warning("tabula did not detect table on page 3 - this is acceptable for complex layouts")
+
+        logging.warning(
+            "tabula did not detect table on page 3 - this is acceptable for complex layouts"
+        )
 
     # Verify specific table content from page 1
     page1_tables = [t for t in tables if t["page"] == 1]

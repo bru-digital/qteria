@@ -46,6 +46,7 @@ This command READS previous outputs to create journey-aligned names:
    - What outcome do users achieve?
 
 3. **Read the brand strategy**:
+
    ```bash
    Read product-guidelines/05-brand-strategy.md
    ```
