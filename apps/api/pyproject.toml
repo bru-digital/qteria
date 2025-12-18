@@ -119,6 +119,8 @@ warn_no_return = true
 check_untyped_defs = true
 strict_equality = true
 plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+# Exclude test files from strict type checking (focus on production code quality)
+exclude = [".*_test\\.py$", "tests/.*"]
 
 # Libraries without type stubs or py.typed marker
 # These libraries don't provide type information, so MyPy cannot type-check them
