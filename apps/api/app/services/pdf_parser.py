@@ -49,17 +49,54 @@ except ImportError:
     MEMORY_MONITORING_AVAILABLE = False
     logger.info("psutil not available, OCR DPI optimization disabled")
 
-# TODO [PR 3/4]: Add table extraction dependencies (tabula-py)
-# This will be implemented as part of PR #3 for table extraction support
+# Helper function for Java availability check (must be defined before use)
+def _check_java_availability() -> bool:
+    """
+    Check if Java Runtime Environment is available.
+
+    Required for tabula-py table extraction.
+
+    Returns:
+        True if Java is available, False otherwise
+    """
+    import subprocess
+    try:
+        # Run 'java -version' to check if Java is installed
+        result = subprocess.run(
+            ['java', '-version'],
+            capture_output=True,
+            timeout=5,
+            check=False
+        )
+        # Java prints version to stderr (not stdout)
+        return result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+    except Exception as e:
+        logger.warning(
+            f"Failed to check Java availability: {e}",
+            extra={"event": "java_check_failed", "error": str(e)}
+        )
+        return False
+
+
 # Optional table extraction dependencies (graceful degradation if not available)
-# try:
-#     import tabula
-#     import subprocess
-#     JAVA_AVAILABLE = _check_java_availability()
-#     TABLE_EXTRACTION_AVAILABLE = JAVA_AVAILABLE
-# except ImportError:
-#     TABLE_EXTRACTION_AVAILABLE = False
-#     logger.warning("tabula-py not available. Table extraction will be disabled.")
+try:
+    import tabula
+    JAVA_AVAILABLE = _check_java_availability()
+    TABLE_EXTRACTION_AVAILABLE = JAVA_AVAILABLE
+    if not JAVA_AVAILABLE:
+        logger.warning(
+            "Java Runtime Environment not available. "
+            "Table extraction will be disabled. "
+            "Install with: apt-get install default-jre (Linux) or brew install openjdk (macOS)"
+        )
+except ImportError:
+    TABLE_EXTRACTION_AVAILABLE = False
+    logger.warning(
+        "tabula-py not available. Table extraction will be disabled. "
+        "Install with: pip install tabula-py"
+    )
 
 # Configuration constants
 # OCR configuration
@@ -124,6 +161,7 @@ class PDFParserService:
         custom_patterns: Optional[List[str]] = None,
         enable_ocr: bool = True,
         ocr_language: str = "eng",
+        enable_tables: bool = True,
     ) -> Dict[str, Any]:
         """
         Parse PDF document and return structured text with page/section info.
@@ -141,11 +179,13 @@ class PDFParserService:
             custom_patterns: Optional custom regex patterns for section detection
             enable_ocr: Enable OCR fallback for scanned PDFs (default: True)
             ocr_language: Tesseract language code for OCR (default: "eng", e.g., "deu" for German, "fra" for French)
+            enable_tables: Enable table extraction (default: True)
 
         Returns:
             Dict with:
                 - document_id: UUID of the document
                 - pages: List of {page_number, section, text}
+                - tables: List of {page, columns, data} (empty if enable_tables=False or extraction fails)
                 - method: Parsing method used ('pypdf2', 'pdfplumber', or 'ocr')
                 - cached: Whether result came from cache
 
@@ -174,6 +214,7 @@ class PDFParserService:
             return {
                 "document_id": document_id,
                 "pages": cached_result["pages"],
+                "tables": cached_result.get("tables", []),  # Backward compatible
                 "method": cached_result["method"],
                 "cached": True,
             }
@@ -256,12 +297,18 @@ class PDFParserService:
         # 6. Detect sections across pages
         structured_pages = self._detect_sections(pages, custom_patterns)
 
-        # 7. Cache parsed result
-        self._cache_parse(document_id, organization_id, structured_pages, parsing_method)
+        # 7. Extract tables if enabled
+        tables = []
+        if enable_tables:
+            tables = self._extract_tables(file_path)
+
+        # 8. Cache parsed result (including tables)
+        self._cache_parse(document_id, organization_id, structured_pages, parsing_method, tables)
 
         return {
             "document_id": document_id,
             "pages": structured_pages,
+            "tables": tables,
             "method": parsing_method,
             "cached": False,
         }
@@ -498,7 +545,7 @@ class PDFParserService:
             organization_id: UUID of the organization (for multi-tenancy)
 
         Returns:
-            Dict with pages and method, or None if not cached
+            Dict with pages, tables (if available), and method, or None if not cached
         """
         cached = (
             self.db.query(ParsedDocument)
@@ -510,15 +557,36 @@ class PDFParserService:
         )
 
         if cached:
-            return {
-                "pages": cached.parsed_data,
-                "method": cached.parsing_method,
-            }
+            # parsed_data can be either:
+            # - Old format: List[Dict] (just pages)
+            # - New format: Dict with "pages" and "tables" keys
+            parsed_data = cached.parsed_data
+
+            # Handle backward compatibility
+            if isinstance(parsed_data, list):
+                # Old format: just pages
+                return {
+                    "pages": parsed_data,
+                    "tables": [],
+                    "method": cached.parsing_method,
+                }
+            elif isinstance(parsed_data, dict):
+                # New format: includes pages and tables
+                return {
+                    "pages": parsed_data.get("pages", []),
+                    "tables": parsed_data.get("tables", []),
+                    "method": cached.parsing_method,
+                }
 
         return None
 
     def _cache_parse(
-        self, document_id: UUID, organization_id: UUID, parsed_data: List[Dict], method: str
+        self,
+        document_id: UUID,
+        organization_id: UUID,
+        parsed_data: List[Dict],
+        method: str,
+        tables: Optional[List[Dict[str, Any]]] = None
     ) -> None:
         """
         Store parsed text in database cache.
@@ -531,15 +599,22 @@ class PDFParserService:
             document_id: UUID of the document
             organization_id: UUID of the organization (for multi-tenancy)
             parsed_data: List of page dictionaries
-            method: Parsing method used ('pypdf2' or 'pdfplumber')
+            method: Parsing method used ('pypdf2', 'pdfplumber', or 'ocr')
+            tables: Optional list of table dictionaries (default: None)
 
         Raises:
             PDFParsingError: If database operation fails
         """
+        # Store in new format: Dict with pages and tables
+        cache_data = {
+            "pages": parsed_data,
+            "tables": tables if tables is not None else []
+        }
+
         parsed_doc = ParsedDocument(
             document_id=document_id,
             organization_id=organization_id,
-            parsed_data=parsed_data,
+            parsed_data=cache_data,
             parsing_method=method,
             parsed_at=datetime.utcnow(),
         )
@@ -913,3 +988,91 @@ class PDFParserService:
 
         except Exception as e:
             raise PDFParsingError(f"OCR extraction failed: {str(e)}")
+
+    def _extract_tables(self, file_path: str) -> List[Dict[str, Any]]:
+        """
+        Extract tables from PDF using tabula-py.
+
+        Returns structured table data with columns, rows, and page numbers.
+
+        Args:
+            file_path: Path to PDF file
+
+        Returns:
+            List of table dictionaries:
+            [
+                {
+                    "page": 1,
+                    "columns": ["Column1", "Column2"],
+                    "data": [{"Column1": "value1", "Column2": "value2"}, ...]
+                },
+                ...
+            ]
+
+        Raises:
+            PDFParsingError: If table extraction is unavailable or fails
+        """
+        if not TABLE_EXTRACTION_AVAILABLE:
+            logger.warning(
+                "Table extraction unavailable",
+                extra={
+                    "event": "table_extraction_unavailable",
+                    "file_path": file_path,
+                }
+            )
+            return []
+
+        try:
+            # Extract tables from all pages
+            # pages='all' extracts from every page
+            # pandas_options={'header': 'infer'} tries to detect column headers
+            tables_df = tabula.read_pdf(
+                file_path,
+                pages='all',
+                multiple_tables=True,
+                pandas_options={'header': 'infer'}
+            )
+
+            # Convert pandas DataFrames to structured dictionaries
+            structured_tables = []
+            for i, df in enumerate(tables_df):
+                if df.empty:
+                    continue
+
+                # Get page number from tabula metadata (if available)
+                # Note: tabula doesn't always provide page numbers reliably,
+                # so we track by index
+                page_num = i + 1  # Simple sequential numbering
+
+                # Convert DataFrame to list of dictionaries
+                columns = df.columns.tolist()
+                data = df.to_dict('records')
+
+                structured_tables.append({
+                    "page": page_num,
+                    "columns": columns,
+                    "data": data
+                })
+
+            logger.info(
+                "Table extraction completed",
+                extra={
+                    "event": "table_extraction_success",
+                    "file_path": file_path,
+                    "table_count": len(structured_tables),
+                }
+            )
+
+            return structured_tables
+
+        except Exception as e:
+            # Don't raise - gracefully degrade
+            logger.warning(
+                "Table extraction failed",
+                extra={
+                    "event": "table_extraction_failed",
+                    "file_path": file_path,
+                    "error": str(e),
+                }
+            )
+            return []
