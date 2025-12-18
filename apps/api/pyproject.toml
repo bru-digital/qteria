@@ -120,16 +120,18 @@ check_untyped_defs = true
 strict_equality = true
 plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
 
+# Libraries without type stubs or py.typed marker
+# These libraries don't provide type information, so MyPy cannot type-check them
 [[tool.mypy.overrides]]
 module = [
-    "celery.*",
-    "PyPDF2.*",
-    "pdfplumber.*",
-    "reportlab.*",
-    "vercel_blob.*",
-    "pytesseract.*",
-    "python_magic.*",
-    "tabula.*",
+    "celery.*",        # Task queue - no official type stubs
+    "PyPDF2.*",        # PDF parsing - no official type stubs
+    "pdfplumber.*",    # PDF table extraction - no official type stubs
+    "reportlab.*",     # PDF generation - no official type stubs
+    "vercel_blob.*",   # Vercel Blob storage - no type stubs available
+    "pytesseract.*",   # OCR wrapper - no type stubs available
+    "python_magic.*",  # File type detection - no type stubs available
+    "tabula.*",        # PDF table extraction - no type stubs available
 ]
 ignore_missing_imports = true
 
