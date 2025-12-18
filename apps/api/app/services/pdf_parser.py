@@ -300,7 +300,7 @@ class PDFParserService:
         # 7. Extract tables if enabled
         tables = []
         if enable_tables:
-            tables = self._extract_tables(file_path)
+            tables = self._extract_tables(file_path, page_count=len(pages))
 
         # 8. Cache parsed result (including tables)
         self._cache_parse(document_id, organization_id, structured_pages, parsing_method, tables)
@@ -577,6 +577,18 @@ class PDFParserService:
                     "tables": parsed_data.get("tables", []),
                     "method": cached.parsing_method,
                 }
+            else:
+                # Invalid cache format - log and return None to trigger re-parsing
+                logger.warning(
+                    f"Invalid cache format: expected list or dict, got {type(parsed_data).__name__}",
+                    extra={
+                        "event": "cache_format_invalid",
+                        "document_id": str(document_id),
+                        "organization_id": str(organization_id),
+                        "type": type(parsed_data).__name__,
+                    },
+                )
+                return None
 
         return None
 
@@ -989,7 +1001,7 @@ class PDFParserService:
         except Exception as e:
             raise PDFParsingError(f"OCR extraction failed: {str(e)}")
 
-    def _extract_tables(self, file_path: str) -> List[Dict[str, Any]]:
+    def _extract_tables(self, file_path: str, page_count: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Extract tables from PDF using tabula-py.
 
@@ -997,9 +1009,10 @@ class PDFParserService:
 
         Args:
             file_path: Path to PDF file
+            page_count: Total page count (optional, will be extracted if not provided)
 
         Returns:
-            List of table dictionaries:
+            List of table dictionaries, or empty list if extraction unavailable/fails:
             [
                 {
                     "page": 1,
@@ -1008,9 +1021,6 @@ class PDFParserService:
                 },
                 ...
             ]
-
-        Raises:
-            PDFParsingError: If table extraction is unavailable or fails
         """
         if not TABLE_EXTRACTION_AVAILABLE:
             logger.warning(
@@ -1023,10 +1033,11 @@ class PDFParserService:
             return []
 
         try:
-            # Get total page count from PDF
-            with open(file_path, "rb") as file:
-                reader = PyPDF2.PdfReader(file)
-                page_count = len(reader.pages)
+            # Get total page count from PDF (if not provided)
+            if page_count is None:
+                with open(file_path, "rb") as file:
+                    reader = PyPDF2.PdfReader(file)
+                    page_count = len(reader.pages)
 
             # Extract tables page by page to maintain accurate page association
             # This ensures each table is correctly linked to its source page

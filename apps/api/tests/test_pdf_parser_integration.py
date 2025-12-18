@@ -191,11 +191,12 @@ def test_extract_tables_integration(db_session, tmp_path):
         assert len(table["data"]) > 0, "Table should have at least one row"
 
     # Verify page numbers are accurate (not just sequential)
-    # We created tables on pages 1 and 3, so we should see those page numbers
+    # We created tables on pages 1 and 3 (page 2 has no tables)
     page_numbers = [table["page"] for table in tables]
     assert 1 in page_numbers, "Should find table on page 1"
-    # Note: Page 3 table might not be detected depending on PDF layout and tabula's detection
-    # At minimum, we verify page numbers are not just [1, 2, 3, ...]
+    assert 2 not in page_numbers, "Page 2 has no tables, should not appear in results"
+    # Note: Page 3 table detection depends on tabula's PDF layout analysis
+    # If detected, it should have correct page number (3), not sequential (2)
 
     # Verify specific table content from page 1
     page1_tables = [t for t in tables if t["page"] == 1]
