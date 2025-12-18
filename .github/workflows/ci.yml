@@ -178,6 +178,9 @@ jobs:
           cd apps/api
           pip install -r requirements-dev.txt
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libmagic1
+
       - name: Run database migrations
         run: |
           cd apps/api
@@ -254,6 +257,9 @@ jobs:
         run: |
           npm ci
           cd apps/api && pip install -r requirements-dev.txt
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libmagic1
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
