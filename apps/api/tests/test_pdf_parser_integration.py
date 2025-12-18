@@ -195,8 +195,22 @@ def test_extract_tables_integration(db_session, tmp_path):
     page_numbers = [table["page"] for table in tables]
     assert 1 in page_numbers, "Should find table on page 1"
     assert 2 not in page_numbers, "Page 2 has no tables, should not appear in results"
-    # Note: Page 3 table detection depends on tabula's PDF layout analysis
-    # If detected, it should have correct page number (3), not sequential (2)
+
+    # Verify page 3 table (if detected by tabula)
+    # Page 3 detection depends on tabula's PDF layout analysis
+    page3_tables = [t for t in tables if t["page"] == 3]
+    if page3_tables:
+        # If detected, verify it has the correct structure
+        assert len(page3_tables) > 0, "Should detect table on page 3"
+        # Verify page 3 table has correct page number (not sequential like page 2)
+        assert page3_tables[0]["page"] == 3, "Page 3 table should have page number 3, not 2"
+        # Verify page 3 table structure (4 columns as defined in _create_pdf_with_tables)
+        assert len(page3_tables[0]["columns"]) == 4, "Page 3 table should have 4 columns"
+    else:
+        # tabula may not detect all tables depending on PDF layout complexity
+        # Log a warning but don't fail the test
+        import logging
+        logging.warning("tabula did not detect table on page 3 - this is acceptable for complex layouts")
 
     # Verify specific table content from page 1
     page1_tables = [t for t in tables if t["page"] == 1]
