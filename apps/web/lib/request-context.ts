@@ -46,8 +46,10 @@ export function getUserAgent(headers: Headers): string | null {
  * Returns null values if called outside of request context.
  */
 export function getRequestContext(): RequestContext {
-  return requestContext.getStore() || {
-    ipAddress: null,
-    userAgent: null
-  }
+  return (
+    requestContext.getStore() || {
+      ipAddress: null,
+      userAgent: null,
+    }
+  )
 }

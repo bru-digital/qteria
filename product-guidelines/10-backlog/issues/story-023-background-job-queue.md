@@ -35,6 +35,7 @@
 ## Technical Approach
 
 **Setup Celery Worker**:
+
 ```python
 # app/tasks.py
 from celery import Celery

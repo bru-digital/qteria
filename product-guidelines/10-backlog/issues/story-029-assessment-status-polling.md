@@ -31,11 +31,13 @@
 ## Technical Details
 
 **Tech Stack**:
+
 - Frontend: React useEffect hook + setInterval
 - API: `GET /v1/assessments/:id`
 - State Management: React Query (automatic polling)
 
 **Polling Flow**:
+
 1. User submits assessment → status: "pending"
 2. Frontend starts polling every 30 seconds
 3. Status transitions: pending → processing → completed
@@ -43,50 +45,52 @@
 5. If status = "failed", show error message
 
 **API Response**:
+
 ```json
 {
   "assessment_id": "assess_123",
-  "status": "processing",  // pending | processing | completed | failed
-  "progress_percent": 40,  // optional: 0-100
-  "estimated_completion_seconds": 300,  // optional: time remaining
+  "status": "processing", // pending | processing | completed | failed
+  "progress_percent": 40, // optional: 0-100
+  "estimated_completion_seconds": 300, // optional: time remaining
   "started_at": "2026-01-15T14:30:00Z",
   "updated_at": "2026-01-15T14:32:00Z"
 }
 ```
 
 **Frontend Implementation** (React Query):
+
 ```tsx
 // hooks/useAssessmentStatus.ts
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query'
 
 export function useAssessmentStatus(assessmentId: string) {
   return useQuery({
     queryKey: ['assessment', assessmentId],
     queryFn: () => fetchAssessmentStatus(assessmentId),
-    refetchInterval: (data) => {
+    refetchInterval: data => {
       // Poll every 30s if still processing
       if (data?.status === 'pending' || data?.status === 'processing') {
-        return 30000; // 30 seconds
+        return 30000 // 30 seconds
       }
-      return false; // Stop polling when completed/failed
+      return false // Stop polling when completed/failed
     },
     refetchIntervalInBackground: false,
-  });
+  })
 }
 
 // components/AssessmentStatusPage.tsx
 
 export function AssessmentStatusPage({ assessmentId }: { assessmentId: string }) {
-  const { data: assessment, isLoading } = useAssessmentStatus(assessmentId);
-  const router = useRouter();
+  const { data: assessment, isLoading } = useAssessmentStatus(assessmentId)
+  const router = useRouter()
 
   useEffect(() => {
     if (assessment?.status === 'completed') {
       // Redirect to results page
-      router.push(`/assessments/${assessmentId}/results`);
+      router.push(`/assessments/${assessmentId}/results`)
     }
-  }, [assessment?.status]);
+  }, [assessment?.status])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
@@ -102,49 +106,50 @@ export function AssessmentStatusPage({ assessmentId }: { assessmentId: string })
 
       {assessment?.estimated_completion_seconds && (
         <p className="text-gray-600 mt-2">
-          Estimated time remaining: {Math.ceil(assessment.estimated_completion_seconds / 60)} minutes
+          Estimated time remaining: {Math.ceil(assessment.estimated_completion_seconds / 60)}{' '}
+          minutes
         </p>
       )}
 
       {assessment?.status === 'failed' && (
-        <ErrorMessage>
-          Assessment failed. Please try again or contact support.
-        </ErrorMessage>
+        <ErrorMessage>Assessment failed. Please try again or contact support.</ErrorMessage>
       )}
     </div>
-  );
+  )
 }
 ```
 
 **Alternative Implementation** (Manual useEffect):
+
 ```tsx
 useEffect(() => {
-  let interval: NodeJS.Timeout;
+  let interval: NodeJS.Timeout
 
   const poll = async () => {
-    const status = await fetchAssessmentStatus(assessmentId);
-    setAssessment(status);
+    const status = await fetchAssessmentStatus(assessmentId)
+    setAssessment(status)
 
     if (status.status === 'completed') {
-      clearInterval(interval);
-      router.push(`/assessments/${assessmentId}/results`);
+      clearInterval(interval)
+      router.push(`/assessments/${assessmentId}/results`)
     } else if (status.status === 'failed') {
-      clearInterval(interval);
-      setError('Assessment failed');
+      clearInterval(interval)
+      setError('Assessment failed')
     }
-  };
+  }
 
   // Initial poll
-  poll();
+  poll()
 
   // Start polling
-  interval = setInterval(poll, 30000); // 30 seconds
+  interval = setInterval(poll, 30000) // 30 seconds
 
-  return () => clearInterval(interval);
-}, [assessmentId]);
+  return () => clearInterval(interval)
+}, [assessmentId])
 ```
 
 **Backend API**:
+
 ```python
 # backend/app/api/v1/assessments.py
 
@@ -174,9 +179,11 @@ async def get_assessment_status(
 ## Dependencies
 
 **Blocks**:
+
 - None (improves UX but not strictly required)
 
 **Blocked By**:
+
 - STORY-023: Background job queue (needs assessment status updates)
 - STORY-016: Start assessment API (needs assessment creation)
 
@@ -185,16 +192,19 @@ async def get_assessment_status(
 ## Testing Requirements
 
 **Unit Tests** (50% coverage):
+
 - [ ] useAssessmentStatus hook polls correctly
 - [ ] Polling stops when status = completed
 - [ ] Redirect triggered on completion
 - [ ] Error handling for failed assessments
 
 **Integration Tests**:
+
 - [ ] GET /v1/assessments/:id returns status
 - [ ] Status transitions correctly (pending → processing → completed)
 
 **E2E Tests** (critical):
+
 - [ ] Submit assessment → See "queued" message
 - [ ] Status updates to "processing" after 30s poll
 - [ ] Auto-redirect to results when completed
@@ -205,6 +215,7 @@ async def get_assessment_status(
 ## Design Reference
 
 **Status Page Layout**:
+
 ```
 ┌────────────────────────────────────┐
 │                                    │
@@ -220,6 +231,7 @@ async def get_assessment_status(
 ```
 
 **Status Messages**:
+
 - pending: "Assessment queued..."
 - processing: "Validating documents..."
 - completed: (redirect to results)
@@ -258,12 +270,15 @@ async def get_assessment_status(
 ## Risks & Mitigations
 
 **Risk**: Polling too frequent (overloads backend)
+
 - **Mitigation**: 30 second interval, exponential backoff if needed
 
 **Risk**: Polling never stops (memory leak)
+
 - **Mitigation**: Always clear interval on unmount or completion
 
 **Risk**: User closes tab and misses completion
+
 - **Mitigation**: Email notification (STORY-030)
 
 ---

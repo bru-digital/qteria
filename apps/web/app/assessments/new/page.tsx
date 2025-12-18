@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useState, useCallback, useEffect } from "react"
-import { useDropzone } from "react-dropzone"
-import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { useState, useCallback, useEffect } from 'react'
+import { useDropzone } from 'react-dropzone'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import type {
   Workflow,
   Bucket,
@@ -11,7 +11,7 @@ import type {
   UploadedDocumentsByBucket,
   UploadStatesByBucket,
   AssessmentDocumentMapping,
-} from "@/lib/types/assessment"
+} from '@/lib/types/assessment'
 
 /**
  * Document Upload Page
@@ -31,8 +31,8 @@ import type {
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 const ALLOWED_TYPES = {
-  "application/pdf": [".pdf"],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+  'application/pdf': ['.pdf'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
 }
 
 export default function NewAssessmentPage() {
@@ -47,19 +47,19 @@ export default function NewAssessmentPage() {
   // Upload state
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDocumentsByBucket>({})
   const [uploadStates, setUploadStates] = useState<UploadStatesByBucket>({})
-  const [error, setError] = useState("")
+  const [error, setError] = useState('')
   const [isStarting, setIsStarting] = useState(false)
 
   // Handle authentication redirects
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login")
+    if (status === 'unauthenticated') {
+      router.push('/login')
     }
   }, [status, router])
 
   // Fetch workflows on mount
   useEffect(() => {
-    if (status === "authenticated") {
+    if (status === 'authenticated') {
       fetchWorkflows()
     }
   }, [status])
@@ -68,16 +68,16 @@ export default function NewAssessmentPage() {
   const fetchWorkflows = async () => {
     try {
       setLoadingWorkflows(true)
-      const response = await fetch("/api/v1/workflows")
+      const response = await fetch('/api/v1/workflows')
 
       if (!response.ok) {
-        throw new Error("Failed to fetch workflows")
+        throw new Error('Failed to fetch workflows')
       }
 
       const data = await response.json()
       setWorkflows(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load workflows")
+      setError(err instanceof Error ? err.message : 'Failed to load workflows')
     } finally {
       setLoadingWorkflows(false)
     }
@@ -87,65 +87,61 @@ export default function NewAssessmentPage() {
   const isValidDocumentMetadata = (obj: any): obj is DocumentMetadata => {
     return (
       obj &&
-      typeof obj.id === "string" &&
-      typeof obj.file_name === "string" &&
-      typeof obj.storage_key === "string" &&
-      typeof obj.file_size_bytes === "number"
+      typeof obj.id === 'string' &&
+      typeof obj.file_name === 'string' &&
+      typeof obj.storage_key === 'string' &&
+      typeof obj.file_size_bytes === 'number'
     )
   }
 
   // Upload document to bucket
   const uploadDocument = async (file: File, bucketId: string) => {
-    setUploadStates((prev) => ({
+    setUploadStates(prev => ({
       ...prev,
       [bucketId]: { isUploading: true },
     }))
-    setError("")
+    setError('')
 
     try {
       const formData = new FormData()
-      formData.append("file", file)
-      formData.append("bucket_id", bucketId)
+      formData.append('file', file)
+      formData.append('bucket_id', bucketId)
 
-      const response = await fetch("/api/v1/documents", {
-        method: "POST",
+      const response = await fetch('/api/v1/documents', {
+        method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({
-          error: { message: "Upload failed" },
+          error: { message: 'Upload failed' },
         }))
-        throw new Error(errorData.error?.message || "Upload failed")
+        throw new Error(errorData.error?.message || 'Upload failed')
       }
 
       const data = await response.json()
 
       // Validate response structure and type
-      if (
-        !Array.isArray(data) ||
-        data.length === 0 ||
-        !isValidDocumentMetadata(data[0])
-      ) {
-        throw new Error("Invalid document data returned from upload")
+      if (!Array.isArray(data) || data.length === 0 || !isValidDocumentMetadata(data[0])) {
+        throw new Error('Invalid document data returned from upload')
       }
 
       const document = data[0]
 
       // Add uploaded document to state
-      setUploadedDocs((prev) => ({
+      setUploadedDocs(prev => ({
         ...prev,
         [bucketId]: [...(prev[bucketId] || []), document],
       }))
 
-      setUploadStates((prev) => ({
+      setUploadStates(prev => ({
         ...prev,
         [bucketId]: { isUploading: false },
       }))
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Upload failed"
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed'
       setError(errorMessage)
-      setUploadStates((prev) => ({
+      setUploadStates(prev => ({
         ...prev,
         [bucketId]: { isUploading: false, error: errorMessage },
       }))
@@ -154,9 +150,9 @@ export default function NewAssessmentPage() {
 
   // Remove document from bucket
   const removeDocument = (bucketId: string, documentId: string) => {
-    setUploadedDocs((prev) => ({
+    setUploadedDocs(prev => ({
       ...prev,
-      [bucketId]: (prev[bucketId] || []).filter((doc) => doc.id !== documentId),
+      [bucketId]: (prev[bucketId] || []).filter(doc => doc.id !== documentId),
     }))
   }
 
@@ -164,8 +160,8 @@ export default function NewAssessmentPage() {
   const canStartAssessment = (): boolean => {
     if (!selectedWorkflow) return false
 
-    const requiredBuckets = selectedWorkflow.buckets.filter((b) => b.required)
-    return requiredBuckets.every((bucket) => uploadedDocs[bucket.id]?.length > 0)
+    const requiredBuckets = selectedWorkflow.buckets.filter(b => b.required)
+    return requiredBuckets.every(bucket => uploadedDocs[bucket.id]?.length > 0)
   }
 
   // Start assessment
@@ -173,13 +169,13 @@ export default function NewAssessmentPage() {
     if (!selectedWorkflow) return
 
     setIsStarting(true)
-    setError("")
+    setError('')
 
     try {
       // Build document-bucket mappings
       const documents: AssessmentDocumentMapping[] = []
       Object.entries(uploadedDocs).forEach(([bucketId, docs]) => {
-        docs.forEach((doc) => {
+        docs.forEach(doc => {
           documents.push({
             bucket_id: bucketId,
             document_id: doc.id,
@@ -190,10 +186,10 @@ export default function NewAssessmentPage() {
         })
       })
 
-      const response = await fetch("/api/v1/assessments", {
-        method: "POST",
+      const response = await fetch('/api/v1/assessments', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           workflow_id: selectedWorkflow.id,
@@ -203,21 +199,21 @@ export default function NewAssessmentPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({
-          error: { message: "Failed to start assessment" },
+          error: { message: 'Failed to start assessment' },
         }))
-        throw new Error(errorData.error?.message || "Failed to start assessment")
+        throw new Error(errorData.error?.message || 'Failed to start assessment')
       }
 
       const assessment = await response.json()
       router.push(`/assessments/${assessment.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start assessment")
+      setError(err instanceof Error ? err.message : 'Failed to start assessment')
       setIsStarting(false)
     }
   }
 
   // Loading state
-  if (status === "loading" || loadingWorkflows) {
+  if (status === 'loading' || loadingWorkflows) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -233,7 +229,7 @@ export default function NewAssessmentPage() {
   }
 
   // Unauthenticated state (will redirect)
-  if (status === "unauthenticated") {
+  if (status === 'unauthenticated') {
     return null
   }
 
@@ -245,7 +241,7 @@ export default function NewAssessmentPage() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <button
-                onClick={() => router.push("/dashboard")}
+                onClick={() => router.push('/dashboard')}
                 className="text-gray-600 hover:text-gray-900 mr-4"
               >
                 ← Back
@@ -260,9 +256,7 @@ export default function NewAssessmentPage() {
       <main className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Workflow Selector */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Select Workflow
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Workflow</h2>
           <WorkflowSelector
             workflows={workflows}
             selectedWorkflow={selectedWorkflow}
@@ -274,24 +268,22 @@ export default function NewAssessmentPage() {
         {selectedWorkflow && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Upload Documents
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload Documents</h2>
               <p className="text-sm text-gray-600 mb-6">
-                Upload documents to each bucket. Required buckets are marked with{" "}
+                Upload documents to each bucket. Required buckets are marked with{' '}
                 <span className="text-red-500">*</span>
               </p>
 
               {selectedWorkflow.buckets
                 .sort((a, b) => a.order_index - b.order_index)
-                .map((bucket) => (
+                .map(bucket => (
                   <BucketUploadZone
                     key={bucket.id}
                     bucket={bucket}
                     uploadedDocs={uploadedDocs[bucket.id] || []}
                     uploadState={uploadStates[bucket.id]}
-                    onUpload={(file) => uploadDocument(file, bucket.id)}
-                    onRemove={(documentId) => removeDocument(bucket.id, documentId)}
+                    onUpload={file => uploadDocument(file, bucket.id)}
+                    onRemove={documentId => removeDocument(bucket.id, documentId)}
                   />
                 ))}
             </div>
@@ -303,11 +295,7 @@ export default function NewAssessmentPage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-6">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fillRule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -338,7 +326,7 @@ export default function NewAssessmentPage() {
                   aria-label="Starting assessment"
                 ></div>
               )}
-              {isStarting ? "Starting..." : "Start Assessment"}
+              {isStarting ? 'Starting...' : 'Start Assessment'}
             </button>
           </div>
         )}
@@ -357,11 +345,7 @@ interface WorkflowSelectorProps {
   onSelect: (workflow: Workflow | null) => void
 }
 
-function WorkflowSelector({
-  workflows,
-  selectedWorkflow,
-  onSelect,
-}: WorkflowSelectorProps) {
+function WorkflowSelector({ workflows, selectedWorkflow, onSelect }: WorkflowSelectorProps) {
   if (workflows.length === 0) {
     return (
       <div className="text-gray-500 text-sm">
@@ -373,15 +357,15 @@ function WorkflowSelector({
   return (
     <div>
       <select
-        value={selectedWorkflow?.id || ""}
-        onChange={(e) => {
-          const workflow = workflows.find((w) => w.id === e.target.value)
+        value={selectedWorkflow?.id || ''}
+        onChange={e => {
+          const workflow = workflows.find(w => w.id === e.target.value)
           onSelect(workflow || null)
         }}
         className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
       >
         <option value="">Select a workflow...</option>
-        {workflows.map((workflow) => (
+        {workflows.map(workflow => (
           <option key={workflow.id} value={workflow.id}>
             {workflow.name}
             {workflow.description && ` - ${workflow.description}`}
@@ -411,20 +395,20 @@ function BucketUploadZone({
   onUpload,
   onRemove,
 }: BucketUploadZoneProps) {
-  const [validationError, setValidationError] = useState<string>("")
+  const [validationError, setValidationError] = useState<string>('')
 
   const onDrop = useCallback(
     (acceptedFiles: File[], rejectedFiles: any[]) => {
-      setValidationError("")
+      setValidationError('')
 
       if (rejectedFiles.length > 0) {
         const rejection = rejectedFiles[0]
-        if (rejection.errors[0].code === "file-too-large") {
-          setValidationError("File too large. Maximum 50MB.")
-        } else if (rejection.errors[0].code === "file-invalid-type") {
-          setValidationError("Invalid file type. Only PDF and DOCX allowed.")
+        if (rejection.errors[0].code === 'file-too-large') {
+          setValidationError('File too large. Maximum 50MB.')
+        } else if (rejection.errors[0].code === 'file-invalid-type') {
+          setValidationError('Invalid file type. Only PDF and DOCX allowed.')
         } else {
-          setValidationError("File validation failed. Please try again.")
+          setValidationError('File validation failed. Please try again.')
         }
         return
       }
@@ -455,10 +439,10 @@ function BucketUploadZone({
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition ${
           isDragActive
-            ? "border-blue-500 bg-blue-50"
+            ? 'border-blue-500 bg-blue-50'
             : uploadState?.isUploading
-            ? "border-gray-300 bg-gray-50 cursor-not-allowed"
-            : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"
+              ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
+              : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
         }`}
       >
         <input {...getInputProps()} disabled={uploadState?.isUploading} />
@@ -492,23 +476,16 @@ function BucketUploadZone({
       </div>
 
       {/* Validation Error */}
-      {validationError && (
-        <p className="text-red-500 text-sm mt-2">{validationError}</p>
-      )}
+      {validationError && <p className="text-red-500 text-sm mt-2">{validationError}</p>}
 
       {/* Upload State Error */}
-      {uploadState?.error && (
-        <p className="text-red-500 text-sm mt-2">{uploadState.error}</p>
-      )}
+      {uploadState?.error && <p className="text-red-500 text-sm mt-2">{uploadState.error}</p>}
 
       {/* Uploaded Documents */}
       {uploadedDocs.length > 0 && (
         <div className="mt-4 space-y-2">
-          {uploadedDocs.map((doc) => (
-            <div
-              key={doc.id}
-              className="flex items-center gap-2 p-2 bg-green-50 rounded"
-            >
+          {uploadedDocs.map(doc => (
+            <div key={doc.id} className="flex items-center gap-2 p-2 bg-green-50 rounded">
               <span className="text-green-600 font-bold">✓</span>
               <span className="flex-1 text-sm text-gray-900">{doc.file_name}</span>
               <span className="text-xs text-gray-500">

@@ -1,6 +1,7 @@
 """
 API v1 router aggregating all endpoint routers.
 """
+
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import assessments, documents, health, organizations, workflows

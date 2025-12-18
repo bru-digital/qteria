@@ -19,12 +19,14 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 ### Foundation Epics (Enable Everything)
 
 **Epic 01: Database & Infrastructure Setup** [P0]
+
 - **Stories**: 4 (database schema, migrations, seed data, infrastructure)
 - **Estimated Effort**: 5 days
 - **Purpose**: PostgreSQL schema, API infrastructure, deployment pipeline foundation
 - **Journey Impact**: Enables all other epics - no stories can start without database
 
 **Epic 02: Authentication & Authorization** [P0]
+
 - **Stories**: 4 (login, JWT, RBAC, multi-tenancy)
 - **Estimated Effort**: 6 days
 - **Purpose**: Secure access control with roles (Process Manager, Project Handler, Admin)
@@ -35,6 +37,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 ### Journey-Driven Epics (User Value)
 
 **Epic 03: Workflow Management** [P0] → **Journey Step 1**
+
 - **Stories**: 6 (create, edit, delete, list, share workflows)
 - **Estimated Effort**: 10 days
 - **Purpose**: Process Managers define validation workflows (buckets + criteria)
@@ -42,6 +45,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 - **Key Metric**: Time to create first workflow (<30 min target)
 
 **Epic 04: Document Processing** [P0] → **Journey Step 2**
+
 - **Stories**: 5 (upload, validate, store, retrieve, delete documents)
 - **Estimated Effort**: 8 days
 - **Purpose**: Project Handlers drag-drop PDFs into document buckets
@@ -49,6 +53,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 - **Key Metric**: Upload success rate (>95% target)
 
 **Epic 05: AI Validation Engine** [P0] → **Journey Step 3** ⭐ **CRITICAL**
+
 - **Stories**: 8 (PDF parsing, AI integration, evidence extraction, background jobs, confidence scoring)
 - **Estimated Effort**: 20 days
 - **Purpose**: Core AI validation with evidence-based pass/fail results in <10 min
@@ -56,6 +61,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 - **Key Metric**: Assessment completion time (<10 min), AI accuracy (>95%)
 
 **Epic 06: Results & Evidence Display** [P0] → **Journey Step 3 (Visual)**
+
 - **Stories**: 4 (results page, evidence links, status polling, notifications)
 - **Estimated Effort**: 7 days
 - **Purpose**: Beautiful display of pass/fail results with clickable evidence links to exact pages
@@ -63,6 +69,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 - **Key Metric**: User trust score (>95% confidence in AI results)
 
 **Epic 07: Re-assessment & Iteration** [P1] → **Journey Step 4**
+
 - **Stories**: 3 (replace document, re-run assessment, version tracking)
 - **Estimated Effort**: 5 days
 - **Purpose**: Project Handlers fix issues and re-validate without re-uploading everything
@@ -70,6 +77,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 - **Key Metric**: Re-assessment rate, time to fix issues
 
 **Epic 08: Reporting & Export** [P1] → **Journey Step 5**
+
 - **Stories**: 3 (generate PDF report, download, share links)
 - **Estimated Effort**: 4 days
 - **Purpose**: Export validation reports for handoff to Certification Person
@@ -81,6 +89,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 ### Polish & Scale Epics (Post-MVP)
 
 **Epic 09: Performance Optimization** [P1]
+
 - **Stories**: 3 (caching, parallel processing, query optimization)
 - **Estimated Effort**: 6 days
 - **Purpose**: Reduce assessment time from <10 min to <5 min, improve responsiveness
@@ -88,6 +97,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 - **Key Metric**: P95 assessment time (<5 min stretch goal)
 
 **Epic 10: Testing & Quality Assurance** [P0/P1]
+
 - **Stories**: 2 (E2E test suite, CI/CD pipeline)
 - **Estimated Effort**: 5 days
 - **Purpose**: Comprehensive testing ensures reliability ("it just works" principle)
@@ -98,11 +108,11 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 
 ## Priority Distribution
 
-| Priority | Count | Purpose | Timeline |
-|----------|-------|---------|----------|
-| **P0** | 28 stories | Critical for MVP - TÜV SÜD pilot | Q1 2026 (12 weeks) |
-| **P1** | 12 stories | Important for production launch | Q2 2026 (8 weeks) |
-| **P2** | 2 stories | Nice-to-have, defer to Year 2 | 2027+ |
+| Priority | Count      | Purpose                          | Timeline           |
+| -------- | ---------- | -------------------------------- | ------------------ |
+| **P0**   | 28 stories | Critical for MVP - TÜV SÜD pilot | Q1 2026 (12 weeks) |
+| **P1**   | 12 stories | Important for production launch  | Q2 2026 (8 weeks)  |
+| **P2**   | 2 stories  | Nice-to-have, defer to Year 2    | 2027+              |
 
 **Total**: 42 stories
 
@@ -110,15 +120,15 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 
 ## Journey Mapping (Stories by User Journey Step)
 
-| Journey Step | Epic | Story Count | Estimated Effort |
-|--------------|------|-------------|------------------|
-| **Foundation** (Prerequisite) | Epic 01, 02 | 8 stories | 11 days |
-| **Step 1**: Process Manager Creates Workflow | Epic 03 | 6 stories | 10 days |
-| **Step 2**: Project Handler Uploads Documents | Epic 04 | 5 stories | 8 days |
-| **Step 3**: AI Validates & Returns Results ⭐ | Epic 05, 06 | 12 stories | 27 days |
-| **Step 4**: Re-Run Assessment | Epic 07 | 3 stories | 5 days |
-| **Step 5**: Export Report | Epic 08 | 3 stories | 4 days |
-| **Cross-Cutting** (Performance, Testing) | Epic 09, 10 | 5 stories | 11 days |
+| Journey Step                                  | Epic        | Story Count | Estimated Effort |
+| --------------------------------------------- | ----------- | ----------- | ---------------- |
+| **Foundation** (Prerequisite)                 | Epic 01, 02 | 8 stories   | 11 days          |
+| **Step 1**: Process Manager Creates Workflow  | Epic 03     | 6 stories   | 10 days          |
+| **Step 2**: Project Handler Uploads Documents | Epic 04     | 5 stories   | 8 days           |
+| **Step 3**: AI Validates & Returns Results ⭐ | Epic 05, 06 | 12 stories  | 27 days          |
+| **Step 4**: Re-Run Assessment                 | Epic 07     | 3 stories   | 5 days           |
+| **Step 5**: Export Report                     | Epic 08     | 3 stories   | 4 days           |
+| **Cross-Cutting** (Performance, Testing)      | Epic 09, 10 | 5 stories   | 11 days          |
 
 **Total Estimated Effort**: 76 person-days (~15 weeks for solo founder, ~8 weeks with 1 helper)
 
@@ -127,33 +137,43 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 ## MVP Timeline Estimate
 
 ### Phase 1: Foundation (Weeks 1-2)
+
 **Focus**: Database, auth, infrastructure
+
 - Epic 01: Database & Infrastructure (5 days)
 - Epic 02: Authentication & Authorization (6 days)
-**Deliverable**: Can log in, database ready
+  **Deliverable**: Can log in, database ready
 
 ### Phase 2: Workflow Creation (Weeks 3-4)
+
 **Focus**: Process Manager can create workflows
+
 - Epic 03: Workflow Management (10 days)
-**Deliverable**: Process Manager creates workflow with buckets + criteria in <30 min
+  **Deliverable**: Process Manager creates workflow with buckets + criteria in <30 min
 
 ### Phase 3: Document Upload (Week 5)
+
 **Focus**: Project Handler can upload documents
+
 - Epic 04: Document Processing (8 days)
-**Deliverable**: Drag-drop PDFs, upload to secure storage
+  **Deliverable**: Drag-drop PDFs, upload to secure storage
 
 ### Phase 4: AI Validation (Weeks 6-9) ⭐ **CRITICAL PATH**
+
 **Focus**: Core AI engine - validate documents with evidence
+
 - Epic 05: AI Validation Engine (20 days)
 - Epic 06: Results Display (7 days)
-**Deliverable**: Assessment completes in <10 min, shows evidence-based pass/fail
+  **Deliverable**: Assessment completes in <10 min, shows evidence-based pass/fail
 
 ### Phase 5: Polish & Launch Prep (Weeks 10-12)
+
 **Focus**: Re-assessment, reporting, testing
+
 - Epic 07: Re-assessment (5 days)
 - Epic 08: Reporting (4 days)
 - Epic 10: Testing & E2E suite (5 days)
-**Deliverable**: Complete end-to-end flow ready for TÜV SÜD pilot
+  **Deliverable**: Complete end-to-end flow ready for TÜV SÜD pilot
 
 **MVP Launch Target**: Week 12 (Q1 2026)
 
@@ -183,10 +203,12 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 ## Success Metrics Tracking
 
 **North Star Metric**: Active Assessments Per Month
+
 - **Target (Q2 2026)**: 100 assessments/month (TÜV SÜD pilot)
 - **Tracked In**: PostgreSQL (assessments table)
 
 **Input Metrics** (Backlog Coverage):
+
 - ✅ **Active Customers**: Epic 02 (auth + multi-tenancy)
 - ✅ **Assessments Per Customer**: Epic 03-06 (workflow → validation flow)
 - ✅ **Assessment Completion Rate**: Epic 05, 06 (reliability)
@@ -194,6 +216,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 - ✅ **Assessment Success Rate (AI Accuracy)**: Epic 05 (confidence scoring, feedback loop)
 
 **Counter-Metrics** (Protected):
+
 - ✅ **Assessment Accuracy**: Epic 05 (AI validation, evidence extraction)
 - ✅ **Data Privacy**: Epic 02 (multi-tenancy), Epic 04 (encryption)
 - ✅ **UX Simplicity**: Epic 03 (workflow creation <30 min)
@@ -206,18 +229,22 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 ### Critical Path Dependencies
 
 **Phase 1 (Foundation) BLOCKS everything**:
+
 - STORY-001 (Database schema) blocks ALL data stories
 - STORY-005 (Authentication) blocks ALL authenticated endpoints
 
 **Phase 2 (Workflows) BLOCKS assessments**:
+
 - STORY-009 (Create workflow) blocks STORY-020 (Start assessment)
 - Workflows must exist before assessments can reference them
 
 **Phase 3 (Documents) BLOCKS AI validation**:
+
 - STORY-015 (Upload documents) blocks STORY-021 (AI validation)
 - Documents must be stored before AI can process them
 
 **No Parallel Work** (Solo Founder):
+
 - Must complete Foundation → Workflows → Documents → AI sequentially
 - Can't parallelize until Phase 4 (AI + Results can be split if 2 people)
 
@@ -235,14 +262,17 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 ### High-Risk Stories (Technical Complexity)
 
 **STORY-021**: Claude AI integration for validation [P0, 5 days]
+
 - **Risk**: AI accuracy <95% (false positives/negatives)
 - **Mitigation**: Extensive prompt engineering, test with real TÜV SÜD documents, feedback loop
 
 **STORY-022**: Evidence extraction (page/section links) [P0, 4 days]
+
 - **Risk**: PDF parsing unreliable (section detection fails)
 - **Mitigation**: Use multiple libraries (PyPDF2 + pdfplumber), fallback to page-only if sections unclear
 
 **STORY-023**: Background job queue (Celery + Redis) [P0, 3 days]
+
 - **Risk**: Jobs fail silently, user waits indefinitely
 - **Mitigation**: Retry logic, timeout handling, clear error messages
 
@@ -257,6 +287,7 @@ This backlog transforms the Qteria user journey into a prioritized implementatio
 ## What's NOT in This Backlog (Scope Boundaries)
 
 **Not Building** (Aligns with "Simplicity Over Features" principle):
+
 - ❌ **Batch processing** (50+ assessments at once) - adds complexity, violates simplicity
 - ❌ **Custom reporting dashboards** - use basic PDF export, not analytics
 - ❌ **In-app chat** / collaboration - focus on validation, not project management

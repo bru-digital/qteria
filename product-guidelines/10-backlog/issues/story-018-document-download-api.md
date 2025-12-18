@@ -35,10 +35,12 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI (streaming response)
 - Storage: Vercel Blob (retrieve with signed URL)
 
 **API Endpoint** (`app/api/v1/documents.py`):
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -99,6 +101,7 @@ async def download_document(
 ```
 
 **Vercel Blob Service** (`app/services/blob_storage.py`):
+
 ```python
 from vercel_blob import get_download_url
 import os
@@ -118,6 +121,7 @@ async def get_from_vercel_blob(storage_key: str) -> str:
 ```
 
 **Frontend Usage** (Evidence Link):
+
 ```typescript
 // Evidence link with page anchor
 function EvidenceLink({ documentId, page }) {
@@ -132,12 +136,14 @@ function EvidenceLink({ documentId, page }) {
 ```
 
 **Example Request**:
+
 ```
 GET /v1/documents/doc_abc123?page=8
 Authorization: Bearer <jwt_token>
 ```
 
 **Example Response**:
+
 ```
 HTTP/1.1 200 OK
 Content-Type: application/pdf
@@ -163,6 +169,7 @@ X-PDF-Page: 8
 **Effort**: 1 person-day
 
 **Breakdown**:
+
 - API endpoint: 0.5 days (streaming, headers)
 - Vercel Blob signed URL: 0.25 days (get_download_url)
 - Testing: 0.25 days (download scenarios, streaming)
@@ -187,6 +194,7 @@ X-PDF-Page: 8
 ## Testing Requirements
 
 **Integration Tests**:
+
 - [ ] Download existing document → 200 OK, correct content
 - [ ] Download with ?page=8 → X-PDF-Page header present
 - [ ] Download non-existent document → 404 Not Found
@@ -194,6 +202,7 @@ X-PDF-Page: 8
 - [ ] Download 50MB PDF → succeeds without memory issues
 
 **Performance Tests**:
+
 - [ ] Download 10MB PDF → <3 seconds
 - [ ] Download 5 documents concurrently → all succeed
 
@@ -202,9 +211,11 @@ X-PDF-Page: 8
 ## Risks & Mitigations
 
 **Risk**: Large file downloads exhaust memory
+
 - **Mitigation**: Stream response (don't load entire file into memory)
 
 **Risk**: Vercel Blob signed URLs expire mid-download
+
 - **Mitigation**: Set expiration to 1 hour, sufficient for any download
 
 ---

@@ -36,11 +36,13 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI + SQLAlchemy (async)
 - Database: PostgreSQL (workflows, buckets, criteria tables)
 - Validation: Pydantic models
 
 **API Endpoint** (`app/api/v1/workflows.py`):
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -115,6 +117,7 @@ async def create_workflow(
 ```
 
 **Pydantic Schemas** (`app/schemas/workflow.py`):
+
 ```python
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -147,6 +150,7 @@ class WorkflowResponse(BaseModel):
 ```
 
 **Example Request**:
+
 ```json
 POST /v1/workflows
 Authorization: Bearer <jwt_token>
@@ -183,6 +187,7 @@ Content-Type: application/json
 ```
 
 **Example Response**:
+
 ```json
 {
   "id": "wf_abc123",
@@ -235,6 +240,7 @@ Content-Type: application/json
 **Effort**: 2 person-days
 
 **Breakdown**:
+
 - API endpoint: 0.5 days (route, handler)
 - Pydantic schemas: 0.5 days (validation models)
 - Transaction logic: 0.5 days (workflow + buckets + criteria insert)
@@ -261,6 +267,7 @@ Content-Type: application/json
 ## Testing Requirements
 
 **Integration Tests** (100% coverage required):
+
 - [ ] Valid workflow → 201 Created with all IDs
 - [ ] Missing workflow name → 400 Bad Request
 - [ ] Empty buckets array → 400 Bad Request
@@ -271,6 +278,7 @@ Content-Type: application/json
 - [ ] Criteria with applies_to_bucket_ids=["all"] → valid
 
 **Edge Cases**:
+
 - [ ] Workflow with 10 buckets, 20 criteria → succeeds
 - [ ] Bucket order_index not sequential → allowed
 - [ ] Criteria with empty description → allowed (optional field)
@@ -280,12 +288,15 @@ Content-Type: application/json
 ## Risks & Mitigations
 
 **Risk**: Transaction fails halfway (workflow created, buckets fail) → orphaned workflow
+
 - **Mitigation**: Use database transaction with rollback, test thoroughly
 
 **Risk**: applies_to_bucket_ids references non-existent bucket
+
 - **Mitigation**: For MVP, allow any string (validated later when assessments run); post-MVP add foreign key constraint
 
 **Risk**: Concurrent workflow creation causes ID collisions
+
 - **Mitigation**: Use UUID primary keys (guaranteed unique)
 
 ---

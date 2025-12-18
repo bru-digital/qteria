@@ -9,11 +9,13 @@ You are helping the user create a comprehensive database schema including entity
 ## When to Use This
 
 **This is Session 7** in the core Stack-Driven cascade. Run it:
+
 - After Session 6 (`/create-design` - design system)
 - Before Session 10 (`/generate-backlog` - implementation planning)
 - When you need to define your data model based on journey and architecture
 
 **Skip this** if:
+
 - You're using a no-code/low-code platform
 - Your product doesn't require a database
 - You prefer to evolve schema incrementally during development
@@ -21,6 +23,7 @@ You are helping the user create a comprehensive database schema including entity
 ## Your Task
 
 Create a comprehensive database schema design including:
+
 - Entity relationship diagram (ERD)
 - Detailed table definitions with all columns, types, constraints
 - Indexes optimized for query patterns
@@ -50,28 +53,33 @@ Read: product-guidelines/12-project-scaffold.md (if exists - scaffold comes afte
 ```
 
 **Extract from Journey**:
+
 - What entities exist in the user's world?
 - What data needs to persist across sessions?
 - What relationships exist between entities?
 
 **Extract from Tech Stack**:
+
 - Database choice (PostgreSQL, MongoDB, MySQL, etc.)
 - ORM/migration tool (Prisma, Alembic, TypeORM, Sequelize, etc.)
 - Programming language (affects migration syntax)
 
 **Extract from Architecture**:
+
 - Existing schema decisions (if any)
 - Data access patterns
 - Performance requirements
 - Multi-tenancy strategy
 
 **Extract from Backlog (if available)**:
+
 - What features need what data?
 - What queries will be common?
 - What relationships are needed?
 - Note: Backlog is generated AFTER this session, so focus on journey and architecture if backlog doesn't exist yet
 
 **Example (from compliance-saas):**
+
 - Journey entities: Users, Documents, Assessments, Frameworks, Teams
 - Database: PostgreSQL (from tech stack)
 - ORM: Prisma (TypeScript) or Alembic (Python)
@@ -124,6 +132,7 @@ Journey Step 4: User reviews and shares report
 ```
 
 **Core entities identified:**
+
 - User (authentication, profile)
 - Team (multi-tenancy)
 - Document (uploaded files)
@@ -138,6 +147,7 @@ Journey Step 4: User reviews and shares report
 **Relationship Patterns:**
 
 **One-to-Many:**
+
 ```
 User has many Documents
 Team has many Users
@@ -145,6 +155,7 @@ User has many Assessments
 ```
 
 **Many-to-Many:**
+
 ```
 Assessment → Many Frameworks
 Framework → Many Assessments
@@ -152,6 +163,7 @@ Framework → Many Assessments
 ```
 
 **One-to-One:**
+
 ```
 User has one UserProfile (optional, for extended attributes)
 ```
@@ -197,6 +209,7 @@ User has one UserProfile (optional, for extended attributes)
 ### Step 4: Define Table Schemas
 
 For EACH entity, define:
+
 - **Primary key** (UUID recommended for distributed systems)
 - **Columns** with types, nullability, defaults
 - **Foreign keys** with referential integrity
@@ -260,6 +273,7 @@ CREATE TABLE assessments (
 ```
 
 **Why these choices:**
+
 - UUID: Non-guessable, distributed-safe
 - JSONB: Flexible results structure (Claude output evolves)
 - CHECK constraint: Enforce valid status values at database level
@@ -313,6 +327,7 @@ Query: "Calculate monthly usage for billing"
 ```
 
 **Index Guidelines:**
+
 - **DO index**: Foreign keys, frequently queried columns, sort columns
 - **DON'T index**: Small tables (<1000 rows), columns rarely queried, frequently updated columns (index maintenance cost)
 - **Composite indexes**: Order matters - most selective column first
@@ -354,23 +369,27 @@ CREATE INDEX idx_usage_team_month ON usage_events(
 **Types of Constraints:**
 
 1. **NOT NULL**: Column must have a value
+
    ```sql
    email TEXT NOT NULL
    ```
 
 2. **UNIQUE**: No duplicate values
+
    ```sql
    email TEXT UNIQUE
    clerk_id TEXT UNIQUE NOT NULL
    ```
 
 3. **CHECK**: Custom validation
+
    ```sql
    status TEXT CHECK (status IN ('pending', 'processing', 'completed', 'failed'))
    price_cents INTEGER CHECK (price_cents >= 0)
    ```
 
 4. **FOREIGN KEY**: Reference another table
+
    ```sql
    user_id UUID REFERENCES users(id) ON DELETE CASCADE
    ```
@@ -601,6 +620,7 @@ def downgrade():
 ### Step 8: Document Design Decisions
 
 Create comprehensive documentation explaining:
+
 - Why each table exists (traces to journey)
 - Why this schema structure (alternatives considered)
 - Why these data types (trade-offs)
@@ -613,9 +633,11 @@ Create comprehensive documentation explaining:
 # Database Schema Design
 
 ## Overview
+
 [High-level description, entity count, key relationships]
 
 ## Entity Relationship Diagram
+
 [Visual ERD using Mermaid or ASCII art]
 
 ## Table Definitions
@@ -631,24 +653,30 @@ Create comprehensive documentation explaining:
 | ... | ... | ... | ... |
 
 **Indexes**:
+
 - `idx_[name]`: [Why - query pattern served]
 
 **Relationships**:
+
 - Belongs to: [Parent table]
 - Has many: [Child tables]
 
 **Design Decisions**:
+
 - [Why UUID vs BIGINT]
 - [Why JSONB for results]
 - [Why soft delete vs hard delete]
 
 ## Migration Files
+
 [Instructions for applying migrations]
 
 ## Query Examples
+
 [Common queries with EXPLAIN ANALYZE notes]
 
 ## Scaling Considerations
+
 [Partitioning, sharding, read replicas]
 ```
 
@@ -659,34 +687,40 @@ Create comprehensive documentation explaining:
 **Quality Checklist:**
 
 **Journey Alignment:**
+
 - [ ] All entities from journey steps are represented
 - [ ] Critical path (Steps 1-3) fully supported by schema
 - [ ] No tables that don't serve journey steps
 
 **Completeness:**
+
 - [ ] All backlog features have necessary tables
 - [ ] Audit columns (created_at, updated_at) on mutable tables
 - [ ] Foreign keys defined with proper CASCADE/RESTRICT
 - [ ] Unique constraints on business keys (email, etc.)
 
 **Performance:**
+
 - [ ] Indexes on all foreign keys
 - [ ] Indexes on frequently queried columns
 - [ ] Indexes on sort columns (created_at, etc.)
 - [ ] No over-indexing (updates are slowed)
 
 **Data Integrity:**
+
 - [ ] NOT NULL on required columns
 - [ ] CHECK constraints for enum-like fields
 - [ ] Foreign keys prevent orphaned records
 - [ ] Defaults for status fields
 
 **Tech Stack Alignment:**
+
 - [ ] Migration format matches ORM choice
 - [ ] Data types supported by chosen database
 - [ ] Naming convention matches tech stack (snake_case for SQL, camelCase for Prisma)
 
 **Scalability:**
+
 - [ ] UUID primary keys (if distributed future)
 - [ ] Partitioning strategy for large tables (if needed)
 - [ ] No many-to-many without join table
@@ -701,6 +735,7 @@ Create comprehensive documentation explaining:
 **What it is**: Schema-less database storing JSON documents, flexible structure
 
 **Why not (for this journey)**:
+
 - Journey has **stable entities** (users, documents, assessments) - structure won't change rapidly
 - **Relationships matter** (user → documents → assessments) - relational model is clearer
 - **ACID transactions needed** for billing (can't lose usage events)
@@ -708,6 +743,7 @@ Create comprehensive documentation explaining:
 - **Team expertise** (from tech stack) - team comfortable with SQL
 
 **When to reconsider**:
+
 - IF schema changes weekly (rapid product iteration with unstable entities)
 - IF documents have highly variable structure (e.g., each compliance framework = different schema)
 - IF horizontal scaling needed immediately (MongoDB shards more easily)
@@ -722,12 +758,14 @@ Create comprehensive documentation explaining:
 **What it is**: Using GraphQL global object IDs (`Base64(typename:id)`) instead of database UUIDs
 
 **Why not (for this journey)**:
+
 - **API pattern is REST** (from architecture) - GraphQL adds complexity without clear benefit
 - **Global IDs obscure database relationships** - harder to debug, harder to write raw SQL
 - **Team expertise** (from tech stack) - team familiar with REST + UUIDs
 - **Simpler is better** for MVP - UUIDs work perfectly fine
 
 **When to reconsider**:
+
 - IF switching to GraphQL API (then global IDs are idiomatic)
 - IF building public API where obscuring database IDs matters for security
 - IF need to refactor without breaking API (global IDs allow moving entities between tables)
@@ -741,12 +779,14 @@ Create comprehensive documentation explaining:
 **What it is**: Store all changes as events (AssessmentCreated, AssessmentCompleted), rebuild state from event log
 
 **Why not (for this journey)**:
+
 - **Journey is straightforward CRUD** - assessments have simple lifecycle (created → processing → completed)
 - **Complexity is massive** - event store, event handlers, projections, eventual consistency
 - **Team size is small** (1-3 engineers) - can't maintain complex architecture
 - **No audit requirement** justifies event sourcing complexity (simple audit log suffices)
 
 **When to reconsider**:
+
 - IF regulatory requirement for complete audit trail (every field change)
 - IF need to replay history (e.g., "what would assessment look like with old AI model?")
 - IF doing complex analytics on state changes over time
@@ -761,12 +801,14 @@ Create comprehensive documentation explaining:
 **What it is**: Documents table with type discriminator + separate tables for each type (ComplianceDocument, ContractDocument, etc.)
 
 **Why not (for this journey)**:
+
 - **All documents are similar** - compliance documents have same attributes (file, size, status)
 - **No type-specific logic** - assessment process is same regardless of document type
 - **Queries become complex** - JOINs across multiple tables, NULL fields everywhere
 - **Simpler to add JSONB metadata** column if documents need type-specific fields
 
 **When to reconsider**:
+
 - IF document types have radically different attributes (e.g., video vs PDF vs audio)
 - IF type-specific validation logic (each type has different required fields)
 - IF querying specific type frequently ("show me only contract documents")
@@ -780,12 +822,14 @@ Create comprehensive documentation explaining:
 **What it is**: Instead of `DELETE`, set `deleted_at = NOW()` and filter in queries
 
 **Why not (for this journey)**:
+
 - **GDPR compliance** - users have "right to be forgotten" (must actually delete data)
 - **Query complexity** - every query needs `WHERE deleted_at IS NULL`
 - **Index bloat** - indexes grow with soft-deleted records
 - **Billing accuracy** - don't want to accidentally count deleted records
 
 **When to reconsider**:
+
 - IF undo feature required ("restore deleted document")
 - IF legal requirement to retain deleted data for N days
 - IF analytics need historical deleted records
@@ -848,6 +892,7 @@ mysql -u user -p database_name < schema.sql
 This command generates:
 
 **1. Full Documentation** (`product-guidelines/07-database-schema.md`):
+
 - Entity relationship diagram
 - Design decisions and rationale
 - Table definitions with detailed explanations (columns, types, constraints)
@@ -859,6 +904,7 @@ This command generates:
 - "What We DIDN'T Choose" alternatives (3+ options)
 
 **2. Essentials Documentation** (`product-guidelines/07-database-schema-essentials.md`):
+
 - **Purpose**: Condensed version for Session 10 (backlog generation) - 56% smaller
 - Database technology choices (DB, ORM, ID strategy, multi-tenancy)
 - Table list with journey mapping
@@ -869,12 +915,14 @@ This command generates:
 - **Context savings**: ~900 tokens per backlog generation
 
 **3. Migration Files** (`product-guidelines/07-database-schema/migrations/`):
+
 - Prisma schema (if TypeScript)
 - Alembic migration (if Python)
 - Raw SQL (as fallback)
 - Seed data (optional)
 
 **4. Type Definitions** (if applicable):
+
 - TypeScript types generated from Prisma
 - Python SQLAlchemy models
 - Database documentation
@@ -886,18 +934,21 @@ This command generates:
 Before completing this session, verify:
 
 **Journey Alignment:**
+
 - [ ] All entities from user journey are represented in schema
 - [ ] Critical path (journey steps 1-3) fully supported
 - [ ] No tables exist that don't serve a journey step
 - [ ] Data relationships match journey flow
 
 **Completeness:**
+
 - [ ] All backlog features have necessary database support
 - [ ] Audit columns (created_at, updated_at) on all tables
 - [ ] Foreign keys defined with appropriate CASCADE/RESTRICT
 - [ ] Unique constraints on natural keys (email, external IDs)
 
 **Technical Quality:**
+
 - [ ] Primary keys are UUIDs (or appropriate for scale)
 - [ ] Indexes on all foreign keys
 - [ ] Indexes on frequently filtered/sorted columns
@@ -906,18 +957,21 @@ Before completing this session, verify:
 - [ ] Timestamps are timezone-aware (TIMESTAMPTZ)
 
 **Performance:**
+
 - [ ] Query patterns from backlog have appropriate indexes
 - [ ] No over-indexing (every index has clear purpose)
 - [ ] Composite indexes ordered correctly (most selective first)
 - [ ] Partial indexes for common filtered queries
 
 **Tech Stack Alignment:**
+
 - [ ] Migration format matches ORM choice from tech stack
 - [ ] Data types supported by database choice
 - [ ] Naming conventions match team standards
 - [ ] ORM patterns follow tech stack decisions
 
 **Documentation:**
+
 - [ ] Full schema file (`07-database-schema.md`) complete with all details
 - [ ] Essentials file (`07-database-schema-essentials.md`) generated for backlog use
 - [ ] "What We DIDN'T Choose" section complete (3+ alternatives) in full file
@@ -930,6 +984,7 @@ Before completing this session, verify:
 ## After This Session
 
 **Next steps:**
+
 1. **Apply migrations** to your development database
 2. **Generate ORM client** (Prisma generate, etc.)
 3. **Implement repositories/DAOs** in your application code
@@ -937,12 +992,14 @@ Before completing this session, verify:
 5. **Update API endpoints** to use new schema
 
 **Use this schema for:**
+
 - Feature development (reference table definitions)
 - API design (know what data is available)
 - Testing (seed realistic data)
 - Documentation (understand data model)
 
 **Future extensions:**
+
 - Add tables as backlog evolves
 - Optimize indexes based on production query patterns
 - Consider read replicas if query load increases
@@ -955,6 +1012,7 @@ Before completing this session, verify:
 **Every table must serve the user journey.**
 
 Don't create tables "just in case". Design schema based on:
+
 1. What data do journey steps need? → Entities
 2. How do users interact with data? → Relationships
 3. How will we query this data? → Indexes
@@ -963,6 +1021,7 @@ Don't create tables "just in case". Design schema based on:
 If you can't trace a table back to a journey step, you probably don't need it.
 
 **Reference files:**
+
 - Journey: `product-guidelines/00-user-journey.md`
 - Tech stack: `product-guidelines/02-tech-stack.md`
 - Architecture: `product-guidelines/04-architecture.md`

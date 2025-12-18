@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { generateBackendJWT } from "@/lib/backend-jwt"
-import { randomUUID } from "crypto"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { generateBackendJWT } from '@/lib/backend-jwt'
+import { randomUUID } from 'crypto'
 
 /**
  * API Proxy Route for Assessments
@@ -20,7 +20,7 @@ import { randomUUID } from "crypto"
 
 // Use API_URL environment variable (server-side only, not NEXT_PUBLIC_*)
 // Default to localhost for development
-const API_URL = process.env.API_URL || "http://localhost:8000"
+const API_URL = process.env.API_URL || 'http://localhost:8000'
 
 /**
  * POST /api/v1/assessments
@@ -43,10 +43,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: {
-            code: "UNAUTHORIZED",
-            message: "Authentication required",
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
             request_id: randomUUID(),
-          }
+          },
         },
         { status: 401 }
       )
@@ -60,10 +60,10 @@ export async function POST(request: NextRequest) {
 
     // Forward request to FastAPI backend
     const response = await fetch(`${API_URL}/v1/assessments`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${jwtToken}`,
       },
       body: JSON.stringify(body),
     })
@@ -75,12 +75,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data, { status: response.status })
   } catch (error) {
     const requestId = randomUUID()
-    console.error("[API Proxy - Assessments] Error:", { requestId, error })
+    console.error('[API Proxy - Assessments] Error:', { requestId, error })
     return NextResponse.json(
       {
         error: {
-          code: "INTERNAL_ERROR",
-          message: error instanceof Error ? error.message : "Internal server error",
+          code: 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : 'Internal server error',
           request_id: requestId,
         },
       },
@@ -111,10 +111,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: {
-            code: "UNAUTHORIZED",
-            message: "Authentication required",
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
             request_id: randomUUID(),
-          }
+          },
         },
         { status: 401 }
       )
@@ -132,9 +132,9 @@ export async function GET(request: NextRequest) {
       : `${API_URL}/v1/assessments`
 
     const response = await fetch(apiUrl, {
-      method: "GET",
+      method: 'GET',
       headers: {
-        "Authorization": `Bearer ${jwtToken}`,
+        Authorization: `Bearer ${jwtToken}`,
       },
     })
 
@@ -142,12 +142,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data, { status: response.status })
   } catch (error) {
     const requestId = randomUUID()
-    console.error("[API Proxy - Assessments] Error:", { requestId, error })
+    console.error('[API Proxy - Assessments] Error:', { requestId, error })
     return NextResponse.json(
       {
         error: {
-          code: "INTERNAL_ERROR",
-          message: error instanceof Error ? error.message : "Internal server error",
+          code: 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : 'Internal server error',
           request_id: requestId,
         },
       },

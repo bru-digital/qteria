@@ -2,11 +2,13 @@
 Application configuration management.
 Loads settings from environment variables using pydantic-settings.
 """
+
 import os
 from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings
 from pydantic import Field
+
 
 # Find project root (directory containing .env)
 def find_project_root() -> Path:
@@ -16,6 +18,7 @@ def find_project_root() -> Path:
         if (parent / ".env").exists():
             return parent
     return Path.cwd()
+
 
 PROJECT_ROOT = find_project_root()
 
@@ -37,9 +40,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(default="development", alias="PYTHON_ENV")
 
     # Database
-    DATABASE_URL: str = Field(
-        ..., description="PostgreSQL database URL (pooled connection)"
-    )
+    DATABASE_URL: str = Field(..., description="PostgreSQL database URL (pooled connection)")
     DATABASE_URL_UNPOOLED: str = Field(
         default="", description="PostgreSQL database URL (direct connection for migrations)"
     )
@@ -52,7 +53,8 @@ class Settings(BaseSettings):
         default=10, description="Redis connection pool size (10-20 for typical API)"
     )
     REDIS_SOCKET_KEEPALIVE: bool = Field(
-        default=True, description="Enable TCP keepalive for Redis connections (prevents idle connection drops)"
+        default=True,
+        description="Enable TCP keepalive for Redis connections (prevents idle connection drops)",
     )
     REDIS_SOCKET_KEEPALIVE_OPTIONS: dict = Field(
         default_factory=dict, description="TCP keepalive options (platform-specific socket options)"
@@ -60,8 +62,7 @@ class Settings(BaseSettings):
 
     # Rate Limiting
     UPLOAD_RATE_LIMIT_PER_HOUR: int = Field(
-        default=100,
-        description="Maximum uploads per user per hour (configurable per environment)"
+        default=100, description="Maximum uploads per user per hour (configurable per environment)"
     )
 
     # Security

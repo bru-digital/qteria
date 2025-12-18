@@ -35,17 +35,20 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Database: PostgreSQL 15+ (Vercel Postgres)
 - ORM: SQLAlchemy (Python)
 - Schema Management: Direct SQL (migrations in STORY-002)
 
 **Implementation Notes**:
+
 - Create tables in dependency order (organizations first, then users, then workflows, etc.)
 - Use UUID v4 for primary keys (`id UUID DEFAULT gen_random_uuid()`)
 - Multi-tenancy via organization_id on all user-data tables
 - Audit logs immutable (no UPDATE/DELETE allowed, only INSERT)
 
 **Database Schema** (from `07-database-schema-essentials.md`):
+
 ```sql
 CREATE TABLE organizations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -86,6 +89,7 @@ CREATE INDEX idx_users_email ON users(email);
 **Effort**: 2 person-days
 
 **Breakdown**:
+
 - Schema design: 0.5 days (reference cascade output)
 - SQL script writing: 0.5 days (9 tables + indexes + constraints)
 - Testing: 0.5 days (insert/query data, validate constraints)
@@ -110,6 +114,7 @@ CREATE INDEX idx_users_email ON users(email);
 ## Testing Requirements
 
 **Integration Tests** (70% coverage target):
+
 - [ ] Create organization → users → workflows (cascade insert)
 - [ ] Delete organization → users/workflows deleted (CASCADE)
 - [ ] Delete user → workflows stay, created_by set NULL (SET NULL)
@@ -119,6 +124,7 @@ CREATE INDEX idx_users_email ON users(email);
 - [ ] Multi-tenant isolation (org A cannot see org B data via organization_id filter)
 
 **Data Integrity Tests**:
+
 - [ ] UUID primary keys are unique and non-guessable
 - [ ] Timestamps auto-populate (created_at defaults to NOW())
 - [ ] JSONB columns accept valid JSON (ai_response_raw)
@@ -128,12 +134,15 @@ CREATE INDEX idx_users_email ON users(email);
 ## Risks & Mitigations
 
 **Risk**: Vercel Postgres free tier limits (256MB storage)
+
 - **Mitigation**: Monitor usage, plan for Pro upgrade ($20/month) when >80% full
 
 **Risk**: Foreign key cascades delete data unintentionally
+
 - **Mitigation**: Test cascade behavior thoroughly, use RESTRICT for history preservation (assessments)
 
 **Risk**: Schema changes required after deployment (migrations complex)
+
 - **Mitigation**: Thorough design review before deployment, use Alembic for future changes (STORY-002)
 
 ---

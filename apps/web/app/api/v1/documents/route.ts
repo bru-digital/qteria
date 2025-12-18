@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { generateBackendJWT } from "@/lib/backend-jwt"
-import { randomUUID } from "crypto"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { generateBackendJWT } from '@/lib/backend-jwt'
+import { randomUUID } from 'crypto'
 
 /**
  * API Proxy Route for Document Uploads
@@ -22,7 +22,7 @@ import { randomUUID } from "crypto"
 
 // Use API_URL environment variable (server-side only, not NEXT_PUBLIC_*)
 // Default to localhost for development
-const API_URL = process.env.API_URL || "http://localhost:8000"
+const API_URL = process.env.API_URL || 'http://localhost:8000'
 
 /**
  * POST /api/v1/documents
@@ -45,10 +45,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: {
-            code: "UNAUTHORIZED",
-            message: "Authentication required",
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
             request_id: randomUUID(),
-          }
+          },
         },
         { status: 401 }
       )
@@ -63,9 +63,9 @@ export async function POST(request: NextRequest) {
     // Forward request to FastAPI backend
     // Note: We pass FormData directly - fetch will set correct Content-Type with boundary
     const response = await fetch(`${API_URL}/v1/documents`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${jwtToken}`,
+        Authorization: `Bearer ${jwtToken}`,
         // Don't set Content-Type - let fetch set it with multipart boundary
       },
       body: formData,
@@ -78,12 +78,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data, { status: response.status })
   } catch (error) {
     const requestId = randomUUID()
-    console.error("[API Proxy - Documents] Error:", { requestId, error })
+    console.error('[API Proxy - Documents] Error:', { requestId, error })
     return NextResponse.json(
       {
         error: {
-          code: "INTERNAL_ERROR",
-          message: error instanceof Error ? error.message : "Internal server error",
+          code: 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : 'Internal server error',
           request_id: requestId,
         },
       },

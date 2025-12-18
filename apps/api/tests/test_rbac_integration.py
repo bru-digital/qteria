@@ -7,6 +7,7 @@ including audit logging, multi-tenancy isolation, and role enforcement.
 Unlike unit tests (test_rbac.py), these tests use real database transactions
 and verify end-to-end behavior including audit trail creation.
 """
+
 import pytest
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4, UUID
@@ -232,7 +233,9 @@ class TestRBACIntegration:
         data = response.json()
         assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
 
-    def test_non_admin_cannot_access_other_organization(self, client, test_orgs, test_users, db_session):
+    def test_non_admin_cannot_access_other_organization(
+        self, client, test_orgs, test_users, db_session
+    ):
         """Non-admin users cannot access another organization's details.
 
         Security Note: Returns 404 (not 403) to prevent info leakage.
@@ -274,7 +277,9 @@ class TestRBACIntegration:
         assert latest_log.resource_type == "organization"
         assert latest_log.resource_id == org_b.id
 
-    def test_admin_cannot_update_other_organization(self, client, test_orgs, test_users, db_session):
+    def test_admin_cannot_update_other_organization(
+        self, client, test_orgs, test_users, db_session
+    ):
         """Admin cannot update another organization (multi-tenancy).
 
         Security Note: Returns 404 (not 403) to prevent info leakage.
@@ -302,7 +307,9 @@ class TestRBACIntegration:
         db_session.refresh(org_b)
         assert org_b.name == TEST_ORG_B_NAME
 
-    def test_project_handler_cannot_create_organization(self, client, test_orgs, test_users, db_session):
+    def test_project_handler_cannot_create_organization(
+        self, client, test_orgs, test_users, db_session
+    ):
         """Project handler cannot create organizations (role enforcement)."""
         org_a, _ = test_orgs
         ph = test_users["org_a_project_handler"]
@@ -395,9 +402,9 @@ class TestAuditLoggingIntegration:
         )
 
         # Count audit logs before
-        logs_before = db_session.query(AuditLog).filter(
-            AuditLog.action == "auth.token.invalid"
-        ).count()
+        logs_before = (
+            db_session.query(AuditLog).filter(AuditLog.action == "auth.token.invalid").count()
+        )
 
         response = client.get(
             "/v1/organizations",
@@ -407,9 +414,9 @@ class TestAuditLoggingIntegration:
         assert response.status_code == 401
 
         # Count audit logs after
-        logs_after = db_session.query(AuditLog).filter(
-            AuditLog.action == "auth.token.invalid"
-        ).count()
+        logs_after = (
+            db_session.query(AuditLog).filter(AuditLog.action == "auth.token.invalid").count()
+        )
 
         # Should have one more log entry
         assert logs_after == logs_before + 1
@@ -430,12 +437,12 @@ class TestAuditLoggingIntegration:
 
         # Count audit logs before (check both possible actions since jose
         # may raise JWTError before we reach our expiration check)
-        logs_before_expired = db_session.query(AuditLog).filter(
-            AuditLog.action == "auth.token.expired"
-        ).count()
-        logs_before_invalid = db_session.query(AuditLog).filter(
-            AuditLog.action == "auth.token.invalid"
-        ).count()
+        logs_before_expired = (
+            db_session.query(AuditLog).filter(AuditLog.action == "auth.token.expired").count()
+        )
+        logs_before_invalid = (
+            db_session.query(AuditLog).filter(AuditLog.action == "auth.token.invalid").count()
+        )
 
         response = client.get(
             "/v1/organizations",
@@ -445,12 +452,12 @@ class TestAuditLoggingIntegration:
         assert response.status_code == 401
 
         # Count audit logs after
-        logs_after_expired = db_session.query(AuditLog).filter(
-            AuditLog.action == "auth.token.expired"
-        ).count()
-        logs_after_invalid = db_session.query(AuditLog).filter(
-            AuditLog.action == "auth.token.invalid"
-        ).count()
+        logs_after_expired = (
+            db_session.query(AuditLog).filter(AuditLog.action == "auth.token.expired").count()
+        )
+        logs_after_invalid = (
+            db_session.query(AuditLog).filter(AuditLog.action == "auth.token.invalid").count()
+        )
 
         # Should have one more log entry (either expired or invalid)
         # jose library may raise ExpiredSignatureError which is caught as JWTError
@@ -484,11 +491,7 @@ class TestAuditLoggingIntegration:
         )
 
         # Get latest audit log
-        latest_log = (
-            db_session.query(AuditLog)
-            .order_by(AuditLog.created_at.desc())
-            .first()
-        )
+        latest_log = db_session.query(AuditLog).order_by(AuditLog.created_at.desc()).first()
 
         assert latest_log is not None
         assert latest_log.user_agent is not None

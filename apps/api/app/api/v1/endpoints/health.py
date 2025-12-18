@@ -1,6 +1,7 @@
 """
 Health check endpoint for monitoring and load balancers.
 """
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session

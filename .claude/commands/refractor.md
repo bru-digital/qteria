@@ -5,6 +5,7 @@ Refactor code following best practices and design patterns. Execute with surgica
 ## Refactoring Philosophy
 
 You are a 10x senior developer who refactors like a surgeon:
+
 - **Surgical**: Only touch what needs changing
 - **Elegant**: Use framework capabilities, remove abstraction
 - **Simple**: Flat over nested, obvious over clever
@@ -13,17 +14,20 @@ You are a 10x senior developer who refactors like a surgeon:
 ## Step 1: Understand the Refactoring Target
 
 Ask yourself:
+
 1. **What is the actual problem?** (Not "could be better", but actual pain)
 2. **What is the simplest fix?** (Minimum viable refactor)
 3. **Does this align with product mission?** (Or is it theoretical improvement?)
 
 **Red Flags to STOP:**
+
 - ❌ "Let's clean this up while we're here"
 - ❌ "This could be more flexible for future needs"
 - ❌ "Let's extract an abstraction layer"
 - ❌ "This should follow X pattern"
 
 **Good Reasons to Refactor:**
+
 - ✅ Code duplicated 3+ times (violates DRY)
 - ✅ Function >100 lines and unreadable
 - ✅ Performance issue (P95 >10 min for assessments)
@@ -33,11 +37,13 @@ Ask yourself:
 ## Step 2: Read Current Code
 
 Use Read tool to examine:
+
 - The target file(s)
 - Related tests
 - Calling code (to understand impact)
 
 Understand:
+
 - Current architecture
 - Why it was built this way
 - What constraints exist
@@ -48,16 +54,19 @@ Understand:
 Based on what you're refactoring:
 
 **For Backend Refactoring:**
+
 - `product-guidelines/04-architecture.md`
 - `product-guidelines/08-api-contracts-essentials.md`
 - `product-guidelines/09-test-strategy-essentials.md`
 
 **For Frontend Refactoring:**
+
 - `product-guidelines/04-architecture.md`
 - `product-guidelines/06-design-system.md`
 - `product-guidelines/00-user-journey.md`
 
 **For Database Refactoring:**
+
 - `product-guidelines/07-database-schema-essentials.md`
 - `product-guidelines/04-architecture.md`
 
@@ -96,28 +105,36 @@ Create a minimal refactoring plan:
 ## Refactor: {Description}
 
 ### Problem
+
 {What's actually broken/painful? Be specific.}
 
 ### Surgical Changes
+
 **Files to modify:**
+
 - `path/to/file1.py` - {specific change}
 - `path/to/file2.py` - {specific change}
 
 **Changes:**
+
 1. {Specific action} in {file}
 2. {Specific action} in {file}
 
 **Not Changing:**
+
 - {Explicitly list what you're NOT touching}
 
 ### Breaking Changes
+
 {List breaking changes, or "None"}
 
 ### Test Updates
+
 - Update {test_file} for new structure
 - Coverage: {current}% -> {target}%
 
 ### Success Criteria
+
 - {Metric 1}: {before} -> {after}
 - Tests passing: {X} tests, {Y}% coverage
 - No regressions: {specific validation}
@@ -162,29 +179,35 @@ Output a summary:
 ## ✅ Refactor Complete: {Description}
 
 ### Changes Made
+
 - {Change 1}: {file1}
 - {Change 2}: {file2}
 - {Change 3}: {file3}
 
 ### Impact
+
 - Lines changed: {+X, -Y} (net: {Z})
 - Files touched: {N}
 - Tests updated: {M}
 - Coverage: {before}% -> {after}%
 
 ### Breaking Changes
+
 {Summary or "None"}
 
 ### Performance Impact
+
 {Measurement or "No change"}
 
 ### What Was NOT Changed
+
 {Explicitly list scope that was NOT touched}
 ```
 
 ## Refactoring Anti-Patterns to AVOID
 
 ### ❌ The "While We're Here" Trap
+
 **Bad:**
 "Let's refactor the entire auth system while fixing this one bug"
 
@@ -192,6 +215,7 @@ Output a summary:
 "Fix the bug. If broader refactor needed, create separate issue."
 
 ### ❌ The "Future Flexibility" Trap
+
 **Bad:**
 "Let's add an abstraction layer so we can easily swap ORMs later"
 
@@ -199,6 +223,7 @@ Output a summary:
 "Use SQLAlchemy directly. Swap only if we actually need to."
 
 ### ❌ The "Pattern Compliance" Trap
+
 **Bad:**
 "This should use Repository pattern even though FastAPI + SQLAlchemy works fine"
 
@@ -206,6 +231,7 @@ Output a summary:
 "Use framework conventions unless actual pain point exists."
 
 ### ❌ The "Premature Extraction" Trap
+
 **Bad:**
 "Extract this 5-line function into a service class"
 
@@ -213,6 +239,7 @@ Output a summary:
 "Inline until used 3+ times, then extract."
 
 ### ❌ The "Backwards Compatible" Trap
+
 **Bad:**
 "Support both old and new approaches during transition"
 
@@ -224,6 +251,7 @@ Output a summary:
 **Problem:** Assessment validation duplicated across 3 endpoints
 
 **Surgical Changes:**
+
 1. Extract `validate_assessment_access(assessment_id, user)` to `app/api/dependencies.py`
 2. Replace 3 duplications with new dependency
 3. Update 3 tests to mock new dependency
@@ -235,6 +263,7 @@ Output a summary:
 **Problem:** Assessment validation duplicated across 3 endpoints
 
 **Over-Engineered "Solution":**
+
 1. Create `app/services/assessment_service.py` (new abstraction layer)
 2. Create `app/repositories/assessment_repository.py` (unnecessary)
 3. Create `app/validators/assessment_validator.py` (over-split)
@@ -249,6 +278,7 @@ Output a summary:
 ## When to Stop and Ask
 
 Stop and ask user if:
+
 - Refactor requires touching >10 files
 - Breaking changes affect >5 call sites
 - Refactor adds new dependencies

@@ -9,6 +9,7 @@ You are helping the user design a comprehensive visual brand identity including 
 ## When to Use This
 
 **Run AFTER `/create-brand-strategy`** (Session 5) when you have:
+
 - ✅ User journey defined (`product-guidelines/00-user-journey.md`)
 - ✅ Brand strategy established (`product-guidelines/05-brand-strategy.md`)
 - ✅ Design system created (`product-guidelines/06-design-system.md`) - recommended but optional
@@ -17,6 +18,7 @@ You are helping the user design a comprehensive visual brand identity including 
 Your visual identity should express the brand personality and values defined in your brand strategy, not be created in a vacuum.
 
 **Skip this** if:
+
 - You already have an established logo and visual identity
 - You're building an internal tool without branding needs
 - You plan to hire a professional designer (though this can serve as a creative brief)
@@ -26,34 +28,42 @@ Your visual identity should express the brand personality and values defined in 
 This command READS previous outputs to create journey-grounded visual identity:
 
 1. **Read the user journey**:
+
    ```bash
    Read product-guidelines/00-user-journey.md
    ```
+
    - Who is the target audience? (influences aesthetic)
    - What problem domain? (industry conventions vs. disruption)
    - What emotions should the brand evoke?
 
 2. **Read the brand strategy**:
+
    ```bash
    Read product-guidelines/05-brand-strategy.md
    ```
+
    - Brand personality (professional/playful, serious/friendly, etc.)
    - Brand values (what guides design decisions)
    - Visual direction (color preferences, mood, aesthetic)
    - Brand differentiation (how to stand apart visually)
 
 3. **Read the design system** (if exists):
+
    ```bash
    Read product-guidelines/06-design-system.md
    ```
+
    - Color palette (brand colors to incorporate)
    - Typography (font choices for logo/brand materials)
    - Design philosophy (visual principles)
 
 4. **Read the brand name** (if exists):
+
    ```bash
    Read product-guidelines/brand-naming.md
    ```
+
    - Chosen name to incorporate into logo
    - Name meaning and associations
 
@@ -66,6 +76,7 @@ Create a comprehensive brand identity system including logo concepts, visual ass
 ### Steps to Execute
 
 1. **FIRST: Read cascade inputs** (see "Cascade Inputs" section above):
+
    ```bash
    Read product-guidelines/00-user-journey.md
    Read product-guidelines/05-brand-strategy.md
@@ -74,6 +85,7 @@ Create a comprehensive brand identity system including logo concepts, visual ass
    ```
 
 2. **Read the template structure**:
+
    ```bash
    Read templates/17-brand-identity-template.md
    ```
@@ -89,6 +101,7 @@ Create a comprehensive brand identity system including logo concepts, visual ass
 4. **Logo Design Decision Tree**:
 
    **Logo Type Selection**:
+
    ```
    What best expresses the brand personality?
 
@@ -249,6 +262,7 @@ Create a comprehensive brand identity system including logo concepts, visual ass
 `product-guidelines/17-brand-identity.md`
 
 This will be read by:
+
 - `/create-content-guidelines` - Uses identity for visual content standards
 - Design and marketing teams - Implementation reference
 - External vendors - Design brief for assets
@@ -257,6 +271,7 @@ This will be read by:
 ## Template Structure
 
 The output follows this structure:
+
 - **Brand Identity Overview** (purpose, brand personality expressed)
 - **Logo Concepts** (3-5 concepts with rationale)
 - **Recommended Logo** (primary choice and why)
@@ -331,11 +346,13 @@ This visual identity expresses [brand personality] and will help [journey audien
 ## After This Session
 
 **Recommended next**:
+
 - `/create-content-guidelines` (Session extends) - Uses brand identity for content standards
 - `/define-messaging` (if not done) - Messaging framework with identity in mind
 - Designer handoff - Use this as creative brief for professional design
 
 **Optional**:
+
 - Work with designer to create actual logo files (SVG, PNG, etc.)
 - Create brand guidelines presentation/PDF
 - Design additional brand assets (patterns, illustrations, etc.)
@@ -343,21 +360,25 @@ This visual identity expresses [brand personality] and will help [journey audien
 ## What We DIDN'T Choose (And Why)
 
 **Approach 1: AI-Generated Logo Images**
+
 - **Why not**: Claude Code focuses on strategy and description, not pixel-perfect design execution
 - **When to reconsider**: If AI image generation is integrated and user requests visual mockups
 - **Instead**: Provide detailed descriptions that serve as design briefs
 
 **Approach 2: Require Professional Designer First**
+
 - **Why not**: Not all products need expensive design work upfront; strategic thinking comes first
 - **When to reconsider**: For consumer brands where visual identity is core differentiator
 - **Instead**: Create comprehensive design brief that CAN be handed to designer or executed by team
 
 **Approach 3: Focus Only on Logo, Skip Full Identity System**
+
 - **Why not**: Logo alone isn't enough - need colors, typography, usage guidelines
 - **When to reconsider**: Never - comprehensive identity prevents inconsistent brand application
 - **Instead**: Full identity system ensures brand consistency across all touchpoints
 
 **Approach 4: Generate Generic "Modern Tech" Aesthetic**
+
 - **Why not**: Visual identity must be grounded in specific brand strategy and journey
 - **When to reconsider**: Never - generic branding doesn't differentiate or serve journey
 - **Instead**: Every design choice traces to brand personality, audience, and journey value

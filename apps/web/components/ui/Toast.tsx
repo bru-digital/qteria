@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react"
-import { CheckCircle, XCircle, Info, X } from "lucide-react"
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { CheckCircle, XCircle, Info, X } from 'lucide-react'
 
-type ToastType = "success" | "error" | "info"
+type ToastType = 'success' | 'error' | 'info'
 
 interface Toast {
   id: string
@@ -22,16 +22,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback((type: ToastType, message: string) => {
     const id = crypto.randomUUID()
-    setToasts((prev) => [...prev, { id, type, message }])
+    setToasts(prev => [...prev, { id, type, message }])
 
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id))
+      setToasts(prev => prev.filter(t => t.id !== id))
     }, 5000)
   }, [])
 
   const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id))
+    setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
   return (
@@ -45,7 +45,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useToast() {
   const context = useContext(ToastContext)
   if (!context) {
-    throw new Error("useToast must be used within ToastProvider")
+    throw new Error('useToast must be used within ToastProvider')
   }
   return context
 }
@@ -60,7 +60,7 @@ function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
-      {toasts.map((toast) => (
+      {toasts.map(toast => (
         <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
     </div>
@@ -80,9 +80,9 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
   }
 
   const colors = {
-    success: "bg-green-50 text-green-800 border-green-200",
-    error: "bg-red-50 text-red-800 border-red-200",
-    info: "bg-blue-50 text-blue-800 border-blue-200",
+    success: 'bg-green-50 text-green-800 border-green-200',
+    error: 'bg-red-50 text-red-800 border-red-200',
+    info: 'bg-blue-50 text-blue-800 border-blue-200',
   }
 
   const Icon = icons[toast.type]

@@ -35,11 +35,13 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI (middleware, dependencies)
 - JWT: Role stored in token payload
 - Frontend: Next.js (role-based UI rendering)
 
 **Role Definitions**:
+
 ```python
 from enum import Enum
 
@@ -69,6 +71,7 @@ ROLE_PERMISSIONS = {
 ```
 
 **FastAPI Role Dependency** (`app/dependencies/auth.py`):
+
 ```python
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -113,6 +116,7 @@ def require_role(*allowed_roles: UserRole):
 ```
 
 **Protected Endpoint Example** (`app/api/workflows.py`):
+
 ```python
 from fastapi import APIRouter, Depends
 from app.dependencies.auth import require_role, get_current_user
@@ -145,6 +149,7 @@ async def delete_workflow(
 ```
 
 **Frontend Role-Based UI** (`components/WorkflowActions.tsx`):
+
 ```typescript
 "use client"
 import { useSession } from "next-auth/react"
@@ -189,6 +194,7 @@ export function WorkflowActions() {
 **Effort**: 2 person-days
 
 **Breakdown**:
+
 - FastAPI middleware: 0.5 days (JWT validation, role extraction)
 - Role decorator/dependency: 0.5 days (require_role logic)
 - Frontend role-based UI: 0.5 days (show/hide features)
@@ -214,6 +220,7 @@ export function WorkflowActions() {
 ## Testing Requirements
 
 **Security Tests** (100% coverage required):
+
 - [ ] Process Manager can create workflow → 201 Created
 - [ ] Project Handler tries to create workflow → 403 Forbidden
 - [ ] Admin can create workflow → 201 Created
@@ -224,12 +231,14 @@ export function WorkflowActions() {
 - [ ] Invalid JWT → 401 Unauthorized
 
 **Functional Tests**:
+
 - [ ] Login as Process Manager → see "Create Workflow" button
 - [ ] Login as Project Handler → "Create Workflow" button hidden
 - [ ] Login as Admin → see all admin features
 - [ ] Role change propagates immediately (no stale permissions)
 
 **Edge Cases**:
+
 - [ ] User role changed in database → old JWT still valid until expiry (acceptable)
 - [ ] Multiple roles required → endpoint requires any of [process_manager, admin]
 - [ ] No role in JWT → default to lowest permission level
@@ -239,15 +248,19 @@ export function WorkflowActions() {
 ## Risks & Mitigations
 
 **Risk**: Role enforcement bypassed (developer forgets to add `require_role`)
+
 - **Mitigation**: Default all new endpoints to require authentication, code review checklist includes role check verification
 
 **Risk**: Frontend hides button but backend allows request
+
 - **Mitigation**: ALWAYS enforce roles on backend (frontend is just UX enhancement), test backend directly
 
 **Risk**: Admin role abused (single admin deletes all workflows)
+
 - **Mitigation**: Audit logs track admin actions (STORY-001 audit_logs table), review admin activity regularly
 
 **Risk**: Role granularity insufficient (need per-workflow permissions)
+
 - **Mitigation**: For MVP, three roles sufficient; consider resource-level permissions in Year 2 (e.g., workflow owner can edit, others read-only)
 
 ---

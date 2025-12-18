@@ -13,10 +13,10 @@ This directory contains design source files and brand assets for Qteria.
 The production logo is located at `apps/web/public/logo.png` and is web-accessible via Next.js at `/logo.png`.
 
 To use the logo in the app:
+
 ```tsx
 import Image from 'next/image'
-
-<Image src="/logo.png" alt="Qteria" width={200} height={50} />
+;<Image src="/logo.png" alt="Qteria" width={200} height={50} />
 ```
 
 ## Editing Logo

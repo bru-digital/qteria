@@ -23,6 +23,7 @@ Usage:
     ):
         return {"message": "Admin access granted"}
 """
+
 from datetime import datetime, timezone
 from typing import Annotated, Callable, Optional
 from uuid import UUID
@@ -243,7 +244,7 @@ async def get_current_user(
                 "user_id": user_id,
                 "organization_id": organization_id,
                 "role": role,
-            }
+            },
         )
 
         return current_user

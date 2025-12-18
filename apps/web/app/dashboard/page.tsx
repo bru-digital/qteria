@@ -1,8 +1,8 @@
-import { auth } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { DashboardActions } from "@/app/dashboard/dashboard-actions"
-import { TopNav } from "@/components/navigation/TopNav"
-import type { UserRoleType } from "@/lib/rbac"
+import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import { DashboardActions } from '@/app/dashboard/dashboard-actions'
+import { TopNav } from '@/components/navigation/TopNav'
+import type { UserRoleType } from '@/lib/rbac'
 
 /**
  * Dashboard page (Server Component).
@@ -22,7 +22,7 @@ export default async function DashboardPage() {
 
   // Redirect to login if not authenticated
   if (!session?.user) {
-    redirect("/login")
+    redirect('/login')
   }
 
   // TypeScript type guard for session.user
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
         {/* Welcome Section - Minimalistic */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-            Welcome back{user.name ? `, ${user.name.split(" ")[0]}` : ""}
+            Welcome back{user.name ? `, ${user.name.split(' ')[0]}` : ''}
           </h2>
           <p className="text-gray-600">
             Manage workflows, run assessments, and validate certification documents.

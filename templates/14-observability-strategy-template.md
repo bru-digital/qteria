@@ -9,6 +9,7 @@
 This document defines the comprehensive observability strategy including metrics, logs, traces, dashboards, alerts, SLOs, and incident response.
 
 **The Three Pillars**:
+
 - **Metrics**: What is happening (numbers, trends)
 - **Logs**: Why it's happening (events, context)
 - **Traces**: Where it's happening (distributed systems)
@@ -28,6 +29,7 @@ This document defines the comprehensive observability strategy including metrics
 ### Goals
 
 **What we want to achieve**:
+
 1. [Goal 1 - e.g., "Detect issues before customers report them"]
 2. [Goal 2 - e.g., "Reduce MTTR from [X] to [Y] minutes"]
 3. [Goal 3 - e.g., "99.9% uptime with < 5 min to detect incidents"]
@@ -39,45 +41,49 @@ This document defines the comprehensive observability strategy including metrics
 **For each service, track these four signals**:
 
 ### 1. Latency
-*How long does it take to service a request?*
 
-| Service | Metric | Target | Alert Threshold |
-|---------|--------|--------|-----------------|
-| API | p50 response time | < 100ms | > 200ms |
-| API | p95 response time | < 300ms | > 500ms |
-| API | p99 response time | < 1000ms | > 2000ms |
-| Database | Query time p95 | < 50ms | > 100ms |
-| Frontend | Page load time p95 | < 2000ms | > 4000ms |
+_How long does it take to service a request?_
+
+| Service  | Metric             | Target   | Alert Threshold |
+| -------- | ------------------ | -------- | --------------- |
+| API      | p50 response time  | < 100ms  | > 200ms         |
+| API      | p95 response time  | < 300ms  | > 500ms         |
+| API      | p99 response time  | < 1000ms | > 2000ms        |
+| Database | Query time p95     | < 50ms   | > 100ms         |
+| Frontend | Page load time p95 | < 2000ms | > 4000ms        |
 
 ### 2. Traffic
-*How much demand is being placed on your system?*
 
-| Service | Metric | Baseline | Alert Threshold |
-|---------|--------|----------|-----------------|
-| API | Requests per second | [X] rps | < 10% of baseline or > 300% |
-| API | Active connections | [Y] | > [max capacity] |
-| Database | Queries per second | [Z] qps | > 80% of capacity |
+_How much demand is being placed on your system?_
+
+| Service  | Metric              | Baseline | Alert Threshold             |
+| -------- | ------------------- | -------- | --------------------------- |
+| API      | Requests per second | [X] rps  | < 10% of baseline or > 300% |
+| API      | Active connections  | [Y]      | > [max capacity]            |
+| Database | Queries per second  | [Z] qps  | > 80% of capacity           |
 
 ### 3. Errors
-*What is the rate of failed requests?*
 
-| Service | Metric | Target | Alert Threshold |
-|---------|--------|--------|-----------------|
-| API | Error rate (5xx) | < 0.1% | > 1% |
-| API | Client error rate (4xx) | < 5% | > 10% |
-| Database | Connection errors | 0 | > 5 errors/min |
-| Third-party | API call failures | < 1% | > 5% |
+_What is the rate of failed requests?_
+
+| Service     | Metric                  | Target | Alert Threshold |
+| ----------- | ----------------------- | ------ | --------------- |
+| API         | Error rate (5xx)        | < 0.1% | > 1%            |
+| API         | Client error rate (4xx) | < 5%   | > 10%           |
+| Database    | Connection errors       | 0      | > 5 errors/min  |
+| Third-party | API call failures       | < 1%   | > 5%            |
 
 ### 4. Saturation
-*How full is your service?*
 
-| Service | Metric | Target | Alert Threshold |
-|---------|--------|--------|-----------------|
-| CPU | Utilization | < 70% avg | > 85% for 5 min |
-| Memory | Utilization | < 80% | > 90% |
-| Disk | Utilization | < 80% | > 90% |
-| Database | Connection pool | < 70% | > 90% |
-| Queue | Depth | < 100 | > 1000 |
+_How full is your service?_
+
+| Service  | Metric          | Target    | Alert Threshold |
+| -------- | --------------- | --------- | --------------- |
+| CPU      | Utilization     | < 70% avg | > 85% for 5 min |
+| Memory   | Utilization     | < 80%     | > 90%           |
+| Disk     | Utilization     | < 80%     | > 90%           |
+| Database | Connection pool | < 70%     | > 90%           |
+| Queue    | Depth           | < 100     | > 1000          |
 
 ---
 
@@ -86,6 +92,7 @@ This document defines the comprehensive observability strategy including metrics
 ### What to Log
 
 **Application logs**:
+
 - ✅ User actions (login, core actions)
 - ✅ Errors and exceptions
 - ✅ Performance bottlenecks
@@ -93,12 +100,14 @@ This document defines the comprehensive observability strategy including metrics
 - ✅ Business events (subscriptions, payments)
 
 **Infrastructure logs**:
+
 - ✅ Server start/stop
 - ✅ Deployment events
 - ✅ Configuration changes
 - ✅ Health check results
 
 **What NOT to log**:
+
 - ❌ Passwords or credentials
 - ❌ Credit card numbers
 - ❌ Personal identification numbers
@@ -133,6 +142,7 @@ This document defines the comprehensive observability strategy including metrics
 ```
 
 **Standard fields** (every log):
+
 - `timestamp`: ISO 8601 format
 - `level`: debug, info, warn, error, fatal
 - `service`: Which service generated this
@@ -147,23 +157,23 @@ This document defines the comprehensive observability strategy including metrics
 
 **When to use each level**:
 
-| Level | When to Use | Example | Goes to Alert? |
-|-------|-------------|---------|----------------|
-| **DEBUG** | Detailed diagnostic info | "Query took 45ms" | No |
-| **INFO** | General informational messages | "User logged in" | No |
-| **WARN** | Potential issues, recoverable | "Retry attempt 2/3" | No |
-| **ERROR** | Error occurred, user impacted | "Payment failed" | Yes (if frequent) |
-| **FATAL** | System crash, immediate action | "Database unreachable" | Yes (always) |
+| Level     | When to Use                    | Example                | Goes to Alert?    |
+| --------- | ------------------------------ | ---------------------- | ----------------- |
+| **DEBUG** | Detailed diagnostic info       | "Query took 45ms"      | No                |
+| **INFO**  | General informational messages | "User logged in"       | No                |
+| **WARN**  | Potential issues, recoverable  | "Retry attempt 2/3"    | No                |
+| **ERROR** | Error occurred, user impacted  | "Payment failed"       | Yes (if frequent) |
+| **FATAL** | System crash, immediate action | "Database unreachable" | Yes (always)      |
 
 ---
 
 ### Log Retention
 
-| Environment | Retention Period | Reason |
-|-------------|------------------|--------|
-| Production | 30 days hot, 90 days cold | Compliance, debugging |
-| Staging | 7 days | Cost optimization |
-| Development | 3 days | Cost optimization |
+| Environment | Retention Period          | Reason                |
+| ----------- | ------------------------- | --------------------- |
+| Production  | 30 days hot, 90 days cold | Compliance, debugging |
+| Staging     | 7 days                    | Cost optimization     |
+| Development | 3 days                    | Cost optimization     |
 
 **Cost estimate**: $[X]/month at [Y] GB/day
 
@@ -174,11 +184,13 @@ This document defines the comprehensive observability strategy including metrics
 ### When to Use Tracing
 
 **Use tracing for**:
+
 - Multi-service requests (microservices)
 - Complex workflows (many steps)
 - Performance debugging (where's the slowdown?)
 
 **Don't need tracing for**:
+
 - Monolithic apps (logs sufficient)
 - Simple request/response (metrics sufficient)
 
@@ -189,6 +201,7 @@ This document defines the comprehensive observability strategy including metrics
 **Tool**: [Jaeger / Zipkin / AWS X-Ray / OpenTelemetry]
 
 **Sampling strategy**:
+
 - **100% of errors**: Always trace failed requests
 - **10% of successful requests**: Sample successes to reduce cost
 - **100% of slow requests** (> 2s): Always trace slow requests
@@ -210,6 +223,7 @@ Total: 175ms
 ```
 
 **What to trace**:
+
 - HTTP requests
 - Database queries
 - Cache lookups
@@ -225,14 +239,16 @@ Total: 175ms
 **Approach**: [RED method / USE method]
 
 #### RED Method (for services)
-*Recommended for request-driven services*
+
+_Recommended for request-driven services_
 
 - **Rate**: Requests per second
 - **Errors**: Requests that fail
 - **Duration**: Time to complete requests
 
 #### USE Method (for resources)
-*Recommended for infrastructure*
+
+_Recommended for infrastructure_
 
 - **Utilization**: % of resource used
 - **Saturation**: Degree of overload
@@ -243,37 +259,40 @@ Total: 175ms
 ### Custom Metrics
 
 **Business metrics**:
+
 ```javascript
 // Example: Track signups
 metrics.increment('user.signup', 1, {
   source: 'organic',
-  plan: 'pro'
-});
+  plan: 'pro',
+})
 
 // Example: Track revenue
 metrics.gauge('revenue.mrr', 50000, {
-  currency: 'USD'
-});
+  currency: 'USD',
+})
 ```
 
 **Product metrics**:
+
 ```javascript
 // Example: Track feature usage
 metrics.increment('feature.used', 1, {
   feature: 'export',
-  format: 'csv'
-});
+  format: 'csv',
+})
 ```
 
 **Performance metrics**:
+
 ```javascript
 // Example: Track function duration
-const start = Date.now();
-await performExpensiveOperation();
-const duration = Date.now() - start;
+const start = Date.now()
+await performExpensiveOperation()
+const duration = Date.now() - start
 metrics.timing('operation.duration', duration, {
-  operation: 'expensive_task'
-});
+  operation: 'expensive_task',
+})
 ```
 
 ---
@@ -281,12 +300,14 @@ metrics.timing('operation.duration', duration, {
 ### Metrics Aggregation
 
 **Time windows**:
+
 - Real-time: 1-minute buckets
 - Short-term: 5-minute buckets
 - Medium-term: 1-hour buckets
 - Long-term: 1-day buckets
 
 **Retention**:
+
 - 1-min data: 24 hours
 - 5-min data: 7 days
 - 1-hour data: 90 days
@@ -303,6 +324,7 @@ metrics.timing('operation.duration', duration, {
 **Audience**: Everyone (displayed on TV/monitors)
 
 **Metrics**:
+
 - **Status indicator**: 🟢 Healthy / 🟡 Degraded / 🔴 Down
 - **Error rate**: Current vs baseline (5-min window)
 - **Latency**: p50, p95, p99 (5-min window)
@@ -310,6 +332,7 @@ metrics.timing('operation.duration', duration, {
 - **Active incidents**: Count and severity
 
 **Layout**:
+
 ```
 ┌─────────────────────────────────────────┐
 │  System Status: 🟢 Healthy             │
@@ -338,6 +361,7 @@ metrics.timing('operation.duration', duration, {
 **Audience**: Engineers, on-call
 
 **Metrics** (per service):
+
 - Request rate (rps)
 - Error rate (% and absolute count)
 - Latency percentiles (p50, p95, p99)
@@ -346,6 +370,7 @@ metrics.timing('operation.duration', duration, {
 - Dependency health (upstream/downstream services)
 
 **Filters**:
+
 - Time range (last 1h, 6h, 24h, 7d)
 - Environment (production, staging)
 - Version (compare releases)
@@ -359,12 +384,14 @@ metrics.timing('operation.duration', duration, {
 **Audience**: Product, customer success
 
 **Metrics**:
+
 - Signup funnel (conversion at each step)
 - Activation rate (% completing core action)
 - Error rate for user-facing actions
 - User-reported errors (support tickets)
 
 **Layout**:
+
 ```
 Signup Funnel:
 Landing (1000) → Signup (500) → Email Verify (450) → Activated (400)
@@ -385,6 +412,7 @@ Critical User Flows:
 **Audience**: Platform/DevOps, on-call
 
 **Metrics**:
+
 - CPU utilization (per host, avg/max)
 - Memory utilization (per host, avg/max)
 - Disk usage (per host, % used)
@@ -393,6 +421,7 @@ Critical User Flows:
 - Queue depth (per queue)
 
 **Alerts**:
+
 - CPU > 85% for 5+ minutes
 - Memory > 90%
 - Disk > 90%
@@ -400,7 +429,7 @@ Critical User Flows:
 
 ---
 
-*[Define 4-6 key dashboards]*
+_[Define 4-6 key dashboards]_
 
 ---
 
@@ -408,11 +437,11 @@ Critical User Flows:
 
 ### Alert Severity Levels
 
-| Level | When to Use | Response Time | Notification |
-|-------|-------------|---------------|--------------|
-| **Critical** | User-facing outage, data loss | Immediate (page on-call) | PagerDuty, Slack, Phone |
-| **Warning** | Degraded performance, approaching limits | 15 minutes | Slack |
-| **Info** | FYI, no action needed | N/A | Slack (optional) |
+| Level        | When to Use                              | Response Time            | Notification            |
+| ------------ | ---------------------------------------- | ------------------------ | ----------------------- |
+| **Critical** | User-facing outage, data loss            | Immediate (page on-call) | PagerDuty, Slack, Phone |
+| **Warning**  | Degraded performance, approaching limits | 15 minutes               | Slack                   |
+| **Info**     | FYI, no action needed                    | N/A                      | Slack (optional)        |
 
 ---
 
@@ -504,7 +533,7 @@ Critical User Flows:
 
 ---
 
-*[Define 8-12 critical alerts, 5-10 warning alerts]*
+_[Define 8-12 critical alerts, 5-10 warning alerts]_
 
 ---
 
@@ -513,6 +542,7 @@ Critical User Flows:
 ### Service Level Objectives
 
 **What is an SLO?**
+
 - Target reliability level (e.g., 99.9% uptime)
 - Measured over a time window (e.g., 30 days)
 - Creates an error budget (allowable downtime)
@@ -534,6 +564,7 @@ Critical User Flows:
 **Error budget remaining**: [Y] minutes this month
 
 **What happens when budget exhausted**:
+
 - Stop all feature work
 - Focus on reliability improvements
 - No deploys except bug fixes
@@ -575,16 +606,19 @@ Critical User Flows:
 ### Error Budget Policy
 
 **When error budget is healthy** (> 50% remaining):
+
 - ✅ Ship new features
 - ✅ Deploy to production multiple times/day
 - ✅ Take calculated risks
 
 **When error budget is low** (< 20% remaining):
+
 - ⚠️ Slow down feature releases
 - ⚠️ Increase testing
 - ⚠️ Focus on stability
 
 **When error budget is exhausted** (0% remaining):
+
 - 🛑 Feature freeze
 - 🛑 Only reliability improvements
 - 🛑 Post-mortem required
@@ -596,6 +630,7 @@ Critical User Flows:
 ### Runbook Template
 
 Each runbook should include:
+
 1. **Symptoms**: What you're seeing (alerts, user reports)
 2. **Diagnosis**: How to confirm the issue
 3. **Fix**: Step-by-step resolution
@@ -607,6 +642,7 @@ Each runbook should include:
 ### Runbook 1: High Error Rate
 
 **Symptoms**:
+
 - Alert: "Error rate > 1% for 5 minutes"
 - Users reporting errors
 - Error tracking shows spike
@@ -625,6 +661,7 @@ Each runbook should include:
 **Fix**:
 
 **If caused by recent deployment**:
+
 ```bash
 # Rollback to previous version
 kubectl rollout undo deployment/api-deployment
@@ -634,6 +671,7 @@ kubectl rollout undo deployment/api-deployment
 ```
 
 **If caused by bad data**:
+
 ```bash
 # Fix data issue
 # Example: Remove invalid records
@@ -643,6 +681,7 @@ DELETE FROM users WHERE email IS NULL;
 ```
 
 **If caused by third-party outage**:
+
 ```bash
 # Enable feature flag to disable feature
 featureFlags.disable('stripe-payments');
@@ -651,11 +690,13 @@ featureFlags.disable('stripe-payments');
 ```
 
 **Prevention**:
+
 - Add more comprehensive tests
 - Improve staging environment to catch before prod
 - Add gradual rollout (canary deployment)
 
 **Escalation**:
+
 - If unable to resolve in 15 minutes → escalate to senior engineer
 - If data corruption → escalate to data team
 - If third-party → check status page, contact their support if needed
@@ -665,6 +706,7 @@ featureFlags.disable('stripe-payments');
 ### Runbook 2: API Down
 
 **Symptoms**:
+
 - Alert: "Health check failing"
 - Users can't access application
 - All requests timing out
@@ -672,6 +714,7 @@ featureFlags.disable('stripe-payments');
 **Diagnosis**:
 
 1. Check if service is running:
+
    ```bash
    kubectl get pods -l app=api
 
@@ -680,6 +723,7 @@ featureFlags.disable('stripe-payments');
    ```
 
 2. Check service logs:
+
    ```bash
    kubectl logs -l app=api --tail=100
 
@@ -694,6 +738,7 @@ featureFlags.disable('stripe-payments');
 **Fix**:
 
 **If pods are crashing**:
+
 ```bash
 # Check pod status
 kubectl describe pod [pod-name]
@@ -708,6 +753,7 @@ kubectl rollout undo deployment/api-deployment
 ```
 
 **If database is down**:
+
 ```bash
 # Check database status
 aws rds describe-db-instances --db-instance-identifier [name]
@@ -717,6 +763,7 @@ aws rds describe-db-instances --db-instance-identifier [name]
 ```
 
 **If infrastructure issue**:
+
 ```bash
 # Check AWS/GCP status page
 # Check networking (security groups, VPC)
@@ -724,19 +771,21 @@ aws rds describe-db-instances --db-instance-identifier [name]
 ```
 
 **Prevention**:
+
 - Implement proper health checks
 - Add resource limits and requests
 - Set up auto-restart policies
 - Multi-AZ deployment for high availability
 
 **Escalation**:
+
 - If unable to restart service in 10 minutes → escalate to platform team
 - If database issue → escalate to database admin
 - If cloud provider outage → wait for status updates, communicate to users
 
 ---
 
-*[Create 8-12 runbooks for common scenarios]*
+_[Create 8-12 runbooks for common scenarios]_
 
 ---
 
@@ -744,11 +793,11 @@ aws rds describe-db-instances --db-instance-identifier [name]
 
 ### Incident Severity
 
-| Severity | Definition | Example | Response Time |
-|----------|------------|---------|---------------|
-| **SEV-1** | Complete outage, all users affected | API down, database down | Immediate (< 5 min) |
-| **SEV-2** | Significant degradation, many users affected | High error rate, slow performance | 15 minutes |
-| **SEV-3** | Minor issue, few users affected | Feature broken, UI bug | 1 hour |
+| Severity  | Definition                                   | Example                           | Response Time       |
+| --------- | -------------------------------------------- | --------------------------------- | ------------------- |
+| **SEV-1** | Complete outage, all users affected          | API down, database down           | Immediate (< 5 min) |
+| **SEV-2** | Significant degradation, many users affected | High error rate, slow performance | 15 minutes          |
+| **SEV-3** | Minor issue, few users affected              | Feature broken, UI bug            | 1 hour              |
 
 ---
 
@@ -757,11 +806,13 @@ aws rds describe-db-instances --db-instance-identifier [name]
 #### 1. Detect (0-5 minutes)
 
 **How incidents are detected**:
+
 - Monitoring alerts (automated)
 - User reports (support tickets)
 - Team member notices (manual)
 
 **First actions**:
+
 - [ ] Acknowledge alert in PagerDuty
 - [ ] Triage severity (SEV-1, 2, or 3)
 - [ ] Create incident in incident management tool
@@ -771,6 +822,7 @@ aws rds describe-db-instances --db-instance-identifier [name]
 #### 2. Communicate (5-10 minutes)
 
 **Internal communication**:
+
 - [ ] Post in #incidents Slack channel:
   ```
   🔴 INCIDENT: [Title]
@@ -783,6 +835,7 @@ aws rds describe-db-instances --db-instance-identifier [name]
 - [ ] Loop in relevant teams
 
 **External communication** (if customer-facing):
+
 - [ ] Update status page: "Investigating"
 - [ ] If SEV-1: Consider email to affected customers
 
@@ -791,6 +844,7 @@ aws rds describe-db-instances --db-instance-identifier [name]
 #### 3. Diagnose (10-20 minutes)
 
 **Diagnosis steps**:
+
 - [ ] Check dashboards (errors, latency, traffic)
 - [ ] Check logs (what errors are occurring?)
 - [ ] Check recent changes (deployments, config, migrations)
@@ -804,6 +858,7 @@ aws rds describe-db-instances --db-instance-identifier [name]
 #### 4. Fix (20-45 minutes)
 
 **Resolution approaches**:
+
 - **Rollback**: Deploy previous version (fastest)
 - **Hotfix**: Fix the bug and deploy (if quick)
 - **Disable feature**: Use feature flag to turn off broken feature
@@ -811,6 +866,7 @@ aws rds describe-db-instances --db-instance-identifier [name]
 - **Wait**: If third-party outage, wait for their resolution
 
 **Actions**:
+
 - [ ] Execute fix
 - [ ] Verify fix (check dashboards, test manually)
 - [ ] Confirm error rate returns to normal
@@ -821,11 +877,13 @@ aws rds describe-db-instances --db-instance-identifier [name]
 #### 5. Monitor (45-60 minutes)
 
 **Post-fix monitoring**:
+
 - [ ] Watch dashboards for 15-30 minutes
 - [ ] Ensure no new issues arise
 - [ ] Check for customer reports (support tickets)
 
 **Communication**:
+
 - [ ] Update #incidents: "Resolved"
 - [ ] Update status page: "Resolved"
 - [ ] If customer impact: Send resolution email
@@ -835,6 +893,7 @@ aws rds describe-db-instances --db-instance-identifier [name]
 #### 6. Post-Mortem (Within 48 hours)
 
 **For SEV-1 and SEV-2 incidents**:
+
 - [ ] Schedule post-mortem meeting (within 48 hours)
 - [ ] Write post-mortem document (template below)
 - [ ] Share with team for review
@@ -892,11 +951,11 @@ aws rds describe-db-instances --db-instance-identifier [name]
 
 ## Action Items
 
-| Action | Owner | Due Date | Priority |
-|--------|-------|----------|----------|
-| [Action 1 - e.g., "Add test coverage for this scenario"] | @engineer | [Date] | High |
-| [Action 2 - e.g., "Automate rollback procedure"] | @devops | [Date] | High |
-| [Action 3 - e.g., "Improve staging environment"] | @team | [Date] | Medium |
+| Action                                                   | Owner     | Due Date | Priority |
+| -------------------------------------------------------- | --------- | -------- | -------- |
+| [Action 1 - e.g., "Add test coverage for this scenario"] | @engineer | [Date]   | High     |
+| [Action 2 - e.g., "Automate rollback procedure"]         | @devops   | [Date]   | High     |
+| [Action 3 - e.g., "Improve staging environment"]         | @team     | [Date]   | Medium   |
 
 ## Lessons Learned
 
@@ -913,16 +972,16 @@ aws rds describe-db-instances --db-instance-identifier [name]
 
 ### Recommended Tools
 
-| Category | Tool | Cost | Why |
-|----------|------|------|-----|
-| **Metrics** | [Prometheus + Grafana] | Free (self-hosted) or $[X]/mo (Grafana Cloud) | Open source, powerful, widely adopted |
-| **Logs** | [Loki / ELK / Datadog] | $[X]/month | Scalable, searchable, integrates with metrics |
-| **Traces** | [Jaeger / OpenTelemetry] | Free (self-hosted) or $[X]/mo (Datadog APM) | Distributed tracing, visualize request flows |
-| **Dashboards** | [Grafana] | Free or $[X]/mo | Flexible, beautiful, integrates everything |
-| **Alerts** | [Prometheus Alertmanager / PagerDuty] | PagerDuty $[X]/user/mo | Reliable, on-call management |
-| **APM** | [Datadog / New Relic] | $[X]/host/mo | Application performance monitoring |
-| **Uptime** | [UptimeRobot / Pingdom] | $[X]/month | External monitoring (outside your infrastructure) |
-| **Error tracking** | [Sentry] | $[X]/month | Error aggregation, stack traces, releases |
+| Category           | Tool                                  | Cost                                          | Why                                               |
+| ------------------ | ------------------------------------- | --------------------------------------------- | ------------------------------------------------- |
+| **Metrics**        | [Prometheus + Grafana]                | Free (self-hosted) or $[X]/mo (Grafana Cloud) | Open source, powerful, widely adopted             |
+| **Logs**           | [Loki / ELK / Datadog]                | $[X]/month                                    | Scalable, searchable, integrates with metrics     |
+| **Traces**         | [Jaeger / OpenTelemetry]              | Free (self-hosted) or $[X]/mo (Datadog APM)   | Distributed tracing, visualize request flows      |
+| **Dashboards**     | [Grafana]                             | Free or $[X]/mo                               | Flexible, beautiful, integrates everything        |
+| **Alerts**         | [Prometheus Alertmanager / PagerDuty] | PagerDuty $[X]/user/mo                        | Reliable, on-call management                      |
+| **APM**            | [Datadog / New Relic]                 | $[X]/host/mo                                  | Application performance monitoring                |
+| **Uptime**         | [UptimeRobot / Pingdom]               | $[X]/month                                    | External monitoring (outside your infrastructure) |
+| **Error tracking** | [Sentry]                              | $[X]/month                                    | Error aggregation, stack traces, releases         |
 
 ### Total estimated cost: $[X]/month
 
@@ -933,6 +992,7 @@ aws rds describe-db-instances --db-instance-identifier [name]
 Before going to production:
 
 ### Metrics
+
 - [ ] Golden signals instrumented (latency, traffic, errors, saturation)
 - [ ] Business metrics tracked
 - [ ] Custom metrics for key user actions
@@ -940,6 +1000,7 @@ Before going to production:
 - [ ] Metrics retention policy configured
 
 ### Logs
+
 - [ ] Structured logging implemented
 - [ ] Log levels used correctly
 - [ ] No PII in logs
@@ -947,11 +1008,13 @@ Before going to production:
 - [ ] Log retention policy configured
 
 ### Traces
+
 - [ ] Distributed tracing configured (if applicable)
 - [ ] Sampling strategy defined
 - [ ] Traces linked to logs (request_id)
 
 ### Alerts
+
 - [ ] Critical alerts configured
 - [ ] Warning alerts configured
 - [ ] Runbooks written for each alert
@@ -960,12 +1023,14 @@ Before going to production:
 - [ ] Alert fatigue prevented (only actionable alerts)
 
 ### SLOs
+
 - [ ] SLOs defined for critical user journeys
 - [ ] Error budgets calculated
 - [ ] Error budget policy agreed upon
 - [ ] SLO dashboards created
 
 ### Incident Response
+
 - [ ] Incident process documented
 - [ ] Runbooks created
 - [ ] Post-mortem template created

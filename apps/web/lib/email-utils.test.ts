@@ -210,7 +210,11 @@ describe('normalizeAndValidateEmail', () => {
   })
 
   it('should validate TÜV SÜD style emails (target customer)', () => {
-    expect(normalizeAndValidateEmail('Project.Handler@tuv-sud.de')).toBe('project.handler@tuv-sud.de')
-    expect(normalizeAndValidateEmail('Process.Manager@TUV-SUD.COM')).toBe('process.manager@tuv-sud.com')
+    expect(normalizeAndValidateEmail('Project.Handler@tuv-sud.de')).toBe(
+      'project.handler@tuv-sud.de'
+    )
+    expect(normalizeAndValidateEmail('Process.Manager@TUV-SUD.COM')).toBe(
+      'process.manager@tuv-sud.com'
+    )
   })
 })

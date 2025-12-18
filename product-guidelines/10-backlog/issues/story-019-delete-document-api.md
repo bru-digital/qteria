@@ -34,10 +34,12 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI + SQLAlchemy
 - Storage: Vercel Blob (delete operation)
 
 **API Endpoint** (`app/api/v1/documents.py`):
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -103,6 +105,7 @@ async def delete_document(
 ```
 
 **Vercel Blob Service** (`app/services/blob_storage.py`):
+
 ```python
 from vercel_blob import delete
 import os
@@ -115,12 +118,14 @@ async def delete_from_vercel_blob(storage_key: str):
 ```
 
 **Example Request**:
+
 ```
 DELETE /v1/documents/doc_abc123
 Authorization: Bearer <jwt_token>
 ```
 
 **Example Response**:
+
 ```
 HTTP/1.1 204 No Content
 ```
@@ -141,6 +146,7 @@ HTTP/1.1 204 No Content
 **Effort**: 1 person-day
 
 **Breakdown**:
+
 - API endpoint: 0.5 days (delete logic, assessment check)
 - Vercel Blob deletion: 0.25 days (delete service)
 - Testing: 0.25 days (conflict scenarios)
@@ -164,6 +170,7 @@ HTTP/1.1 204 No Content
 ## Testing Requirements
 
 **Integration Tests**:
+
 - [ ] Delete document not in assessment → 204 No Content, blob deleted
 - [ ] Delete document in pending assessment → 204 No Content (allowed)
 - [ ] Delete document in completed assessment → 409 Conflict
@@ -176,9 +183,11 @@ HTTP/1.1 204 No Content
 ## Risks & Mitigations
 
 **Risk**: Blob deletion fails but DB record deleted → orphaned blob
+
 - **Mitigation**: Log error, acceptable for MVP (cleanup script post-MVP)
 
 **Risk**: Document deleted while assessment is processing → assessment fails
+
 - **Mitigation**: Prevent deletion of documents in "in_progress" assessments
 
 ---

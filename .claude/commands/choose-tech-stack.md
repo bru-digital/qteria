@@ -32,15 +32,18 @@ You are a thoughtful tech architect. Your job is to:
 ### Step 1: Read User Journey and Product Strategy
 
 Use the Read tool to read:
+
 - `product-guidelines/00-user-journey.md`
 - `product-guidelines/01-product-strategy.md`
 
 **Extract from Journey**:
+
 - Core user flow (Steps 1-5)
 - Technical implications of each step
 - User context (mobile? web? both?)
 
 **Extract from Product Strategy**:
+
 - Scale expectations (from market sizing)
 - Competitive positioning (technical differentiators)
 - Strategic goals (technical capabilities needed)
@@ -53,29 +56,34 @@ For each journey step, identify technical requirements:
 **Questions to Ask (internally)**:
 
 **Real-Time Needs?**
+
 - Does Step 3 require <1 second updates?
 - Are multiple users collaborating simultaneously?
 - → If yes: Consider WebSocket-friendly backends (Node.js, Go), real-time databases
 
 **Data Complexity?**
+
 - Is data highly relational (users → teams → projects → tasks)?
 - Or document-heavy with flexible schemas?
 - Or key-value patterns?
 - → PostgreSQL for relational, PostgreSQL JSONB for flexible, Redis for key-value
 
 **Scale Expectations?**
+
 - MVP (100s of users)?
 - Growth (10,000s)?
 - Scale (100,000s+)?
 - → Choose tech that scales without rewrites, but don't over-engineer for scale you don't have
 
 **SEO Requirements?**
+
 - Are shareable links important (compliance reports, portfolios)?
 - Do pages need to be indexed by search engines?
 - → If yes: Server-side rendering (Next.js, SvelteKit, etc.)
 - → If no: SPA is fine (Vite + React, etc.)
 
 **Mobile vs Web?**
+
 - Is this mobile-first?
 - Desktop-only internal tool?
 - Both?
@@ -84,6 +92,7 @@ For each journey step, identify technical requirements:
 - → Both: Next.js for web + React Native for mobile (share some code)
 
 **Processing Complexity?**
+
 - Heavy AI/ML integration?
 - Document/image processing?
 - Simple CRUD?
@@ -94,6 +103,7 @@ For each journey step, identify technical requirements:
 - → Real-time: Node.js, Go
 
 **Integration Needs?**
+
 - Lots of third-party APIs?
 - Webhook-heavy?
 - → Consider ecosystem size (npm > PyPI > others in absolute numbers)
@@ -103,6 +113,7 @@ For each journey step, identify technical requirements:
 For each layer (frontend, backend, database, etc.), apply this logic:
 
 **Frontend Decision Tree:**
+
 ```
 Does journey require SEO/shareable links?
   Yes → Server-side rendering framework
@@ -120,6 +131,7 @@ Is it mobile-first?
 ```
 
 **Backend Decision Tree:**
+
 ```
 Does journey require heavy AI/ML integration?
   Yes → Python (FastAPI, Flask)
@@ -134,6 +146,7 @@ Does team have strong preferences/expertise?
 ```
 
 **Database Decision Tree:**
+
 ```
 Is data highly relational?
   Yes → PostgreSQL
@@ -150,6 +163,7 @@ Need graph queries?
 ```
 
 **AI Provider Decision Tree:**
+
 ```
 Does journey require:
   Deep reasoning? → Claude (Sonnet or Opus)
@@ -221,6 +235,7 @@ Use `/templates/02-tech-stack-template.md` as structure.
 ## Validation Checklist
 
 Before writing the file, verify:
+
 - [ ] Every tech choice references a specific journey requirement
 - [ ] Alternatives are considered (not just defaulting to "popular" tech)
 - [ ] Stack is cohesive (technologies work well together)
@@ -233,11 +248,13 @@ Before writing the file, verify:
 **Scenario: Real-Time Multiplayer Drawing Game**
 
 **Journey Analysis**:
+
 - Step 2: 10 players drawing simultaneously
 - Step 3: Changes visible in <100ms to all players
 - Context: Mobile-first, creative tool
 
 **Stack Recommendation**:
+
 ```
 Frontend: React Native (mobile-first requirement)
 Backend: Node.js + Socket.io (real-time <100ms requirement)
@@ -256,6 +273,7 @@ NOT DynamoDB (want relational game history)
 Once you've created the file:
 
 1. **Show a summary**:
+
    ```
    ✅ Tech stack chosen!
 
@@ -272,6 +290,7 @@ Once you've created the file:
    - "Chose [tech] over [alternative] because your journey requires [requirement]"
 
 3. **Next steps**:
+
    ```
    ✅ Session 3 complete!
 

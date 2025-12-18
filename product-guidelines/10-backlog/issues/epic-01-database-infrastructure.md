@@ -28,21 +28,25 @@ Set up PostgreSQL database schema, infrastructure foundation, and deployment pip
 ## Stories in This Epic
 
 ### STORY-001: Database Schema Setup [P0, 2 days]
+
 Create complete PostgreSQL schema with all 9 core tables (organizations, users, workflows, buckets, criteria, assessments, assessment_documents, assessment_results, audit_logs) with proper foreign keys, indexes, and constraints.
 
 **RICE**: R:100 × I:3 × C:100% ÷ E:2 = **150** (Highest priority - blocks everything)
 
 ### STORY-002: Database Migration System [P0, 1 day]
+
 Set up Alembic for database migrations, create initial migration (v001_initial_schema), and test upgrade/downgrade workflows.
 
 **RICE**: R:100 × I:2 × C:100% ÷ E:1 = **200**
 
 ### STORY-003: Seed Data for Development [P0, 0.5 days]
+
 Create seed data script (1 organization "TÜV SÜD Demo", 2 users, 2 sample workflows with buckets/criteria) for local development and testing.
 
 **RICE**: R:50 × I:1 × C:100% ÷ E:0.5 = **100**
 
 ### STORY-004: FastAPI Infrastructure & Health Checks [P0, 1.5 days]
+
 Set up FastAPI application structure, database connection pool (SQLAlchemy), health check endpoint, CORS configuration, and deploy to Railway.
 
 **RICE**: R:100 × I:2 × C:100% ÷ E:1.5 = **133**
@@ -54,6 +58,7 @@ Set up FastAPI application structure, database connection pool (SQLAlchemy), hea
 **5 person-days** (1 week for solo founder)
 
 **Breakdown**:
+
 - Backend: 4 days (schema, migrations, API setup)
 - DevOps: 0.5 days (deployment)
 - Testing: 0.5 days (schema validation, connection tests)
@@ -63,6 +68,7 @@ Set up FastAPI application structure, database connection pool (SQLAlchemy), hea
 ## Dependencies
 
 **Blocks**:
+
 - EPIC-02: Authentication (needs users, organizations tables)
 - EPIC-03: Workflow Management (needs workflows, buckets, criteria tables)
 - EPIC-04: Document Processing (needs assessment_documents table)
@@ -76,12 +82,14 @@ Set up FastAPI application structure, database connection pool (SQLAlchemy), hea
 ## Technical Approach
 
 **Tech Stack**:
+
 - Database: PostgreSQL 15+ (Vercel Postgres free tier)
 - Backend: FastAPI + SQLAlchemy (ORM)
 - Migrations: Alembic
 - Deployment: Railway (backend), Vercel Postgres (database)
 
 **Key Design Decisions**:
+
 - UUID primary keys (non-guessable, distributed-safe)
 - Multi-tenancy via organization_id (row-level isolation)
 - JSONB for flexible AI responses (future-proof schema)
@@ -95,11 +103,13 @@ Set up FastAPI application structure, database connection pool (SQLAlchemy), hea
 ## Success Metrics
 
 **Technical Metrics**:
+
 - Database query P95 latency: <100ms
 - Connection pool never exhausted (max 20 connections)
 - Zero data integrity errors (foreign key violations)
 
 **Operational Metrics**:
+
 - Database uptime: 99.9%
 - Successful migrations: 100% (no rollbacks required)
 - Seed data load time: <5 seconds
@@ -123,12 +133,15 @@ Set up FastAPI application structure, database connection pool (SQLAlchemy), hea
 ## Risks & Mitigations
 
 **Risk**: PostgreSQL free tier limits (256MB storage)
+
 - **Mitigation**: Monitor storage usage, upgrade to Pro ($20/month) when >80% full
 
 **Risk**: Alembic migration conflicts (if schema changes rapidly)
+
 - **Mitigation**: Run migrations in linear order, test before merging
 
 **Risk**: Foreign key cascades delete data unintentionally
+
 - **Mitigation**: Test cascade behavior thoroughly, use RESTRICT for critical relationships (assessments preserve history)
 
 ---
@@ -136,6 +149,7 @@ Set up FastAPI application structure, database connection pool (SQLAlchemy), hea
 ## Testing Requirements
 
 **Integration Tests** (70% coverage target):
+
 - [ ] Create organization → users → workflows (cascade insert)
 - [ ] Delete organization → users/workflows deleted (cascade delete)
 - [ ] Delete user → workflows stay, created_by set NULL (SET NULL)
@@ -144,6 +158,7 @@ Set up FastAPI application structure, database connection pool (SQLAlchemy), hea
 - [ ] All constraints enforced (CHECK, UNIQUE, FOREIGN KEY)
 
 **Performance Tests**:
+
 - [ ] Insert 1000 workflows: <10 seconds
 - [ ] Query workflows by organization: <50ms
 - [ ] Join workflows + buckets + criteria: <100ms

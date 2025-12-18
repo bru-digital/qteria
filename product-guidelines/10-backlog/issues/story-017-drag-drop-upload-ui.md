@@ -38,12 +38,14 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Frontend: Next.js 14+ (App Router), React
 - Drag-Drop: react-dropzone
 - UI Library: Tailwind CSS, Shadcn UI
 - State Management: React useState
 
 **Upload Page** (`app/assessments/new/page.tsx`):
+
 ```typescript
 "use client"
 import { useState, useCallback } from "react"
@@ -266,6 +268,7 @@ function BucketUploadZone({ bucket, uploadedDocs, isUploading, onUpload }) {
 **Effort**: 2 person-days
 
 **Breakdown**:
+
 - UI layout: 0.5 days (workflow selector, bucket sections)
 - Drag-drop integration: 0.5 days (react-dropzone setup)
 - Upload logic: 0.5 days (API calls, progress tracking)
@@ -294,6 +297,7 @@ function BucketUploadZone({ bucket, uploadedDocs, isUploading, onUpload }) {
 ## Testing Requirements
 
 **E2E Tests**:
+
 - [ ] Select workflow → buckets displayed
 - [ ] Drag PDF into bucket → upload starts
 - [ ] Upload completes → success message shown
@@ -307,9 +311,11 @@ function BucketUploadZone({ bucket, uploadedDocs, isUploading, onUpload }) {
 ## Risks & Mitigations
 
 **Risk**: Drag-drop confusing for non-technical users
+
 - **Mitigation**: Clear instructions, support click-to-browse alternative
 
 **Risk**: Upload progress not visible (users think it's frozen)
+
 - **Mitigation**: Show percentage + spinner, estimate time remaining
 
 ---

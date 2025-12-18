@@ -10,6 +10,7 @@ Tests POST /v1/workflows endpoint for:
 
 Journey Step 1: Process Manager creates validation workflows.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
@@ -301,9 +302,7 @@ class TestCreateWorkflow:
             "buckets": [
                 {"name": "  Technical Documentation  ", "required": True, "order_index": 0}
             ],
-            "criteria": [
-                {"name": "  All documents signed  ", "applies_to_bucket_ids": [0]}
-            ],
+            "criteria": [{"name": "  All documents signed  ", "applies_to_bucket_ids": [0]}],
         }
 
         response = client.post(
@@ -402,11 +401,13 @@ class TestCreateWorkflow:
             "buckets": [
                 {"name": "Technical Documentation", "required": True, "order_index": 0},
                 {"name": "Test Reports", "required": True, "order_index": 1},
-                {"name": "technical documentation", "required": False, "order_index": 2},  # Duplicate (case-insensitive)
+                {
+                    "name": "technical documentation",
+                    "required": False,
+                    "order_index": 2,
+                },  # Duplicate (case-insensitive)
             ],
-            "criteria": [
-                {"name": "Test Criteria", "applies_to_bucket_ids": [0]}
-            ],
+            "criteria": [{"name": "Test Criteria", "applies_to_bucket_ids": [0]}],
         }
 
         response = client.post(
@@ -417,7 +418,10 @@ class TestCreateWorkflow:
 
         assert response.status_code == 422
         error_detail = response.json()["error"]
-        assert any("unique" in str(err).lower() and "technical documentation" in str(err).lower() for err in error_detail)
+        assert any(
+            "unique" in str(err).lower() and "technical documentation" in str(err).lower()
+            for err in error_detail
+        )
 
 
 class TestListWorkflows:
@@ -917,6 +921,7 @@ class TestMultiTenancyIsolation:
         data = response.json()
         # Verify workflow is scoped to organization A
         from tests.conftest import TEST_ORG_A_ID
+
         assert data["organization_id"] == TEST_ORG_A_ID
 
     def test_list_workflows_only_shows_own_organization(

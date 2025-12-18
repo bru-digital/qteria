@@ -15,6 +15,7 @@
 
 **Journey Connection**:
 This testing strategy ensures reliability for:
+
 - Step 1: [Journey step] → [Test coverage]
 - Step 2: [Journey step] → [Test coverage]
 - Step 3: [Journey step] → [Test coverage]
@@ -28,12 +29,14 @@ This testing strategy ensures reliability for:
 [Philosophy based on product risk and user value]
 
 **What we test**:
+
 1. [Critical path from journey] - MUST work reliably
 2. [Business logic] - Data accuracy is critical
 3. [Security boundaries] - Auth, authorization, data isolation
 4. [Performance bottlenecks] - User experience depends on speed
 
 **What we DON'T test**:
+
 - Framework code (React, FastAPI internals)
 - External libraries (well-tested by maintainers)
 - Simple getters/setters (low value)
@@ -48,6 +51,7 @@ This testing strategy ensures reliability for:
 ### Scope
 
 **What gets unit tested:**
+
 - ✓ Business logic and algorithms
 - ✓ Validation rules and business rules
 - ✓ Utilities and helpers
@@ -58,23 +62,25 @@ This testing strategy ensures reliability for:
 
 ### Coverage Targets
 
-| Component | Coverage Target | Reasoning |
-|-----------|----------------|-----------|
-| Business logic | [90-100%] | Critical accuracy |
-| API handlers | [70-80%] | High user interaction |
-| Database models | [50-70%] | Test custom methods |
-| UI components | [40-60%] | Focus on complex components |
-| Utilities | [80%] | Reused across app |
+| Component       | Coverage Target | Reasoning                   |
+| --------------- | --------------- | --------------------------- |
+| Business logic  | [90-100%]       | Critical accuracy           |
+| API handlers    | [70-80%]        | High user interaction       |
+| Database models | [50-70%]        | Test custom methods         |
+| UI components   | [40-60%]        | Focus on complex components |
+| Utilities       | [80%]           | Reused across app           |
 
 ### Testing Tools
 
 **Backend**:
+
 - Test framework: [Pytest/Jest/etc. from tech stack]
 - Mocking: [unittest.mock/Jest mocks]
 - Coverage: [pytest-cov/c8/nyc]
 - Fixtures: [pytest fixtures/factory-boy]
 
 **Frontend**:
+
 - Test framework: [Vitest/Jest from tech stack]
 - Component testing: [Testing Library/Enzyme]
 - Mocking: [MSW/nock]
@@ -85,6 +91,7 @@ This testing strategy ensures reliability for:
 **Naming convention**: `test_[function]_[scenario]_[expected_result]`
 
 **Structure**: Arrange-Act-Assert (AAA)
+
 ```
 def test_assessment_score_calculates_correctly_for_perfect_match():
     # Arrange
@@ -99,17 +106,20 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ```
 
 **Test organization**:
+
 - Co-locate tests with source: `assessment.py` → `assessment.test.py`
 - Mirror directory structure: `src/services/` → `tests/services/`
 
 ### Example Unit Tests
 
 **Backend example:**
+
 ```[language]
 [Example unit test from journey critical path]
 ```
 
 **Frontend example:**
+
 ```[language]
 [Example component test from journey critical path]
 ```
@@ -121,6 +131,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### Scope
 
 **What gets integration tested:**
+
 - ✓ API endpoints (request/response, auth, errors)
 - ✓ Database operations (queries, transactions, relationships)
 - ✓ External service integrations (APIs, file storage)
@@ -129,6 +140,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### Integration Test Coverage
 
 **API Tests:**
+
 - [Endpoint 1 from journey]: Test [scenarios]
 - [Endpoint 2 from journey]: Test [scenarios]
 - Authentication: Test JWT validation, session handling
@@ -136,37 +148,44 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 - Rate limiting: Test per-user/team limits
 
 **Database Tests:**
+
 - Multi-tenant isolation: User A can't see User B's data
 - Cascading operations: [Delete scenarios]
 - Transaction handling: [Rollback scenarios]
 - Query performance: [N+1 prevention]
 
 **External Service Tests:**
+
 - [Service 1]: Mock responses, test retry logic
 - [Service 2]: Test [integration scenarios]
 
 ### Integration Test Setup
 
 **Test database**:
+
 - Tool: [Docker PostgreSQL/MongoDB/etc.]
 - Migrations: Run before tests, clean after
 - Isolation: [Fresh DB per test / Transactions + rollback]
 
 **Test data**:
+
 - Strategy: [Factories/Fixtures]
 - Minimal for speed, realistic for coverage
 
 **External APIs**:
+
 - Strategy: [Mock with responses/MSW / Use test mode]
 
 ### Example Integration Tests
 
 **API test:**
+
 ```[language]
 [Example API test from journey - e.g., document upload]
 ```
 
 **Database test:**
+
 ```[language]
 [Example database test - e.g., multi-tenant isolation]
 ```
@@ -214,6 +233,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 
 **Environment**: [Staging/Production-like]
 **Frequency**:
+
 - Every PR: Smoke tests ([N] critical tests, [X] min)
 - Merge to main: Full suite ([N] tests, [X] min)
 - Nightly: Full suite + extended scenarios
@@ -237,6 +257,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 **Overall coverage**: [70%] (minimum)
 
 **By component**:
+
 - [Critical module 1]: [95%]
 - [Critical module 2]: [90%]
 - [Module 3]: [80%]
@@ -244,6 +265,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 - [UI components]: [50%]
 
 **By test type**:
+
 - Unit tests: [60%] of codebase
 - Integration tests: [20%] (overlaps with unit)
 - E2E tests: [10%] (critical paths only)
@@ -251,6 +273,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### Quality Gates
 
 **Blocking (must pass to merge)**:
+
 - [ ] All unit tests pass
 - [ ] All integration tests pass
 - [ ] Coverage >= [70%]
@@ -258,6 +281,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 - [ ] No high/critical security vulnerabilities
 
 **Non-blocking (warnings)**:
+
 - [ ] E2E tests pass (block on main, warn on PR)
 - [ ] Performance tests pass (informational)
 - [ ] Linting passes (can be fixed later)
@@ -265,6 +289,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### CI/CD Integration
 
 **On pull request**:
+
 1. Run unit tests ([< 5 min])
 2. Run integration tests ([< 5 min])
 3. Run E2E smoke tests ([< 10 min])
@@ -272,17 +297,20 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 5. Block merge if quality gates fail
 
 **On merge to main**:
+
 1. Run full test suite ([< 30 min])
 2. Run full E2E suite ([< 30 min])
 3. Upload coverage report
 
 **Nightly**:
+
 1. Run full test suite
 2. Run performance tests ([1-2 hours])
 3. Run security scans
 4. Send report to team
 
 **Before production deploy**:
+
 1. All tests must pass (required)
 2. Coverage check (required)
 3. Security scan (required)
@@ -311,16 +339,19 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 **Strategy**: [Factories/Fixtures]
 
 **Factories** (recommended):
+
 - Tool: [FactoryBoy/Fishery/Faker]
 - Generate realistic data programmatically
 - Easy to customize per test
 
 **Example factory:**
+
 ```[language]
 [Example factory for key entity from journey]
 ```
 
 **Example factory usage:**
+
 ```[language]
 [Example test using factory]
 ```
@@ -329,6 +360,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 
 **Location**: `tests/fixtures/`
 **Contents**:
+
 - Sample files: [sample.pdf, policy.docx]
 - API responses: [api-responses/*.json]
 - Database seeds: [seeds.sql for E2E tests]
@@ -348,11 +380,13 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 **Tool**: [Locust/k6/Artillery]
 
 **Scenarios**:
+
 1. [Scenario 1]: [X] concurrent users, [Y] requests/min
 2. [Scenario 2]: [X] concurrent users, [Y] requests/min
 3. [Scenario 3]: [X] concurrent users, [Y] requests/min
 
 **Success criteria**:
+
 - p95 latency < [500ms]
 - p99 latency < [2s]
 - 0% error rate under normal load
@@ -365,17 +399,20 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 **Document**: Failure mode (graceful degradation?)
 
 **Success criteria**:
+
 - System handles 2x expected load
 - System fails gracefully (503, not 500)
 
 ### Benchmark Testing
 
 **Critical operations**:
+
 - [Operation 1]: < [X]s for [scenario]
 - [Operation 2]: < [X]s for [scenario]
 - [Operation 3]: < [X]s for [scenario]
 
 **Execution**:
+
 - Before/after performance changes
 - Track performance over time
 - CI integration: Optional (long-running)
@@ -393,6 +430,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### Authentication Testing
 
 **Scenarios**:
+
 - Test invalid tokens (expired, malformed, wrong signature)
 - Test token expiration and refresh
 - Test password strength requirements
@@ -401,6 +439,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### Authorization Testing
 
 **Scenarios**:
+
 - Test multi-tenant isolation (User A can't access User B's data)
 - Test role-based access control
 - Test API endpoints require authentication
@@ -409,6 +448,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### Input Validation Testing
 
 **Scenarios**:
+
 - Test SQL injection prevention (parameterized queries)
 - Test XSS prevention (input sanitization)
 - Test file upload validation (type, size limits)
@@ -417,17 +457,20 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### Vulnerability Scanning
 
 **Dependency scanning**:
+
 - Tool: [Snyk/Dependabot/npm audit]
 - Frequency: Daily (CI)
 - Action: Create issue for vulnerabilities
 - Blocking: High/critical block deploy
 
 **SAST (Static Analysis)**:
+
 - Tool: [Semgrep/Bandit/ESLint security]
 - Frequency: Every PR
 - Checks: Hardcoded secrets, SQL injection patterns, XSS
 
 **DAST (Dynamic Analysis)**:
+
 - Tool: [OWASP ZAP/Burp Suite]
 - Frequency: Weekly (staging)
 - Checks: Auth bypasses, injection attacks, misconfigurations
@@ -445,6 +488,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### Test-Driven Development (TDD)
 
 **Process**:
+
 1. Write failing test (Red)
 2. Write minimal code to pass (Green)
 3. Refactor (still Green)
@@ -453,6 +497,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 **When to use**: Building new features, complex logic
 
 **Example workflow**:
+
 ```
 1. Write test: test_assessment_calculates_score()
    → FAIL (function doesn't exist)
@@ -469,6 +514,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 ### Behavior-Driven Development (BDD)
 
 **Process**:
+
 1. Write test as user scenario (Given-When-Then)
 2. Implement feature
 3. Test passes
@@ -476,6 +522,7 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 **When to use**: User-facing features, stakeholder communication
 
 **Example**:
+
 ```
 Scenario: User uploads document for assessment
   Given I am logged in
@@ -488,12 +535,14 @@ Scenario: User uploads document for assessment
 ### Regression Testing
 
 **Process**:
+
 1. Bug discovered
 2. Write test reproducing bug (FAIL)
 3. Fix bug (PASS)
 4. Test remains in suite (prevent regression)
 
 **Management**:
+
 - Never delete regression tests
 - Tag with issue numbers (test_issue_123)
 - Run full suite before releases
@@ -544,11 +593,13 @@ Scenario: User uploads document for assessment
 **What it is**: [Description]
 
 **Why not (for this journey)**:
+
 - [Reason 1 based on journey]
 - [Reason 2 based on tech stack]
 - [Reason 3 based on pragmatism]
 
 **When to reconsider**:
+
 - IF [condition 1]
 - IF [condition 2]
 - IF [condition 3]
@@ -562,11 +613,13 @@ Scenario: User uploads document for assessment
 **What it is**: [Description]
 
 **Why not (for this journey)**:
+
 - [Reason 1 based on journey]
 - [Reason 2 based on team]
 - [Reason 3 based on cost]
 
 **When to reconsider**:
+
 - IF [condition 1]
 - IF [condition 2]
 
@@ -579,11 +632,13 @@ Scenario: User uploads document for assessment
 **What it is**: [Description]
 
 **Why not (for this journey)**:
+
 - [Reason 1]
 - [Reason 2]
 - [Reason 3]
 
 **When to reconsider**:
+
 - IF [condition 1]
 - IF [condition 2]
 
@@ -596,10 +651,12 @@ Scenario: User uploads document for assessment
 **What it is**: [Description]
 
 **Why not (for this journey)**:
+
 - [Reason 1]
 - [Reason 2]
 
 **When to reconsider**:
+
 - IF [condition 1]
 - IF [condition 2]
 
@@ -664,11 +721,13 @@ Scenario: User uploads document for assessment
 ### Quality Gates Summary
 
 **Blocking**:
+
 - All unit/integration tests pass
 - Coverage >= [70%]
 - No high/critical vulnerabilities
 
 **Non-blocking**:
+
 - E2E tests (block on main)
 - Performance tests (informational)
 

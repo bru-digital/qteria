@@ -28,11 +28,13 @@
 ## Technical Details
 
 **API Endpoint**:
+
 ```python
 GET /v1/reports/{report_id}/download
 ```
 
 **Implementation**:
+
 ```python
 @router.get("/reports/{report_id}/download")
 async def download_report(

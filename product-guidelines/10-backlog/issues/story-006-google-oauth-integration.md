@@ -35,11 +35,13 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Frontend: Next.js, Auth.js (NextAuth)
 - OAuth Provider: Google OAuth 2.0
 - Google Cloud Console: OAuth credentials, consent screen
 
 **Google OAuth Setup**:
+
 1. Create project in Google Cloud Console
 2. Enable Google+ API
 3. Create OAuth 2.0 credentials (Client ID + Secret)
@@ -47,47 +49,51 @@
 5. Add authorized redirect URI: `https://qteria.app/api/auth/callback/google`
 
 **Auth.js Configuration** (add to `route.ts`):
+
 ```typescript
-import GoogleProvider from "next-auth/providers/google"
+import GoogleProvider from 'next-auth/providers/google'
 
 export const authOptions = {
   // ... existing config
   providers: [
-    CredentialsProvider({ /* ... */ }),
+    CredentialsProvider({
+      /* ... */
+    }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          prompt: "select_account", // Always show account picker
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
-    })
+          prompt: 'select_account', // Always show account picker
+          access_type: 'offline',
+          response_type: 'code',
+        },
+      },
+    }),
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
       // Auto-create user if first Google login
-      if (account?.provider === "google") {
+      if (account?.provider === 'google') {
         const existingUser = await prisma.user.findUnique({
-          where: { email: profile.email }
+          where: { email: profile.email },
         })
 
         if (!existingUser) {
           // Create new user (need organization assignment logic)
           // For MVP: assign to default organization or require invite
-          return "/onboarding?step=organization"
+          return '/onboarding?step=organization'
         }
       }
       return true
     },
     // ... existing callbacks
-  }
+  },
 }
 ```
 
 **Login Page Update** (`app/login/page.tsx`):
+
 ```typescript
 "use client"
 import { signIn } from "next-auth/react"
@@ -114,6 +120,7 @@ export default function LoginPage() {
 ```
 
 **Environment Variables** (`.env`):
+
 ```
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-secret
@@ -122,6 +129,7 @@ NEXTAUTH_SECRET=your-secret-key
 ```
 
 **OAuth Scopes**:
+
 - `openid` - User identity
 - `profile` - Name, picture
 - `email` - Email address
@@ -141,6 +149,7 @@ NEXTAUTH_SECRET=your-secret-key
 **Effort**: 1 person-day
 
 **Breakdown**:
+
 - Google Cloud Console setup: 0.25 days (project, OAuth credentials)
 - Auth.js provider config: 0.25 days (add Google provider)
 - UI update: 0.25 days (add Google button, styling)
@@ -167,6 +176,7 @@ NEXTAUTH_SECRET=your-secret-key
 ## Testing Requirements
 
 **Functional Tests**:
+
 - [ ] Click "Sign in with Google" → redirect to Google consent screen
 - [ ] Approve consent → redirect to dashboard with active session
 - [ ] User cancels consent → return to login with error message
@@ -175,11 +185,13 @@ NEXTAUTH_SECRET=your-secret-key
 - [ ] User profile picture displayed in dashboard (from Google)
 
 **Security Tests**:
+
 - [ ] OAuth token not exposed to frontend (stored server-side)
 - [ ] Invalid OAuth callback → error, no session created
 - [ ] OAuth state parameter validated (CSRF protection)
 
 **Edge Cases**:
+
 - [ ] Google login with email already registered via email/password → merge accounts
 - [ ] Google login with email from different domain → handled gracefully (optional: restrict to specific domains for enterprise)
 
@@ -188,15 +200,19 @@ NEXTAUTH_SECRET=your-secret-key
 ## Risks & Mitigations
 
 **Risk**: User signs up with Google, then tries email/password with same email → duplicate account
+
 - **Mitigation**: Check for existing email before creating user, merge accounts if email matches
 
 **Risk**: OAuth credentials leaked (Client Secret exposed)
+
 - **Mitigation**: Store in environment variables, never commit to git, rotate secrets if compromised
 
 **Risk**: Google API rate limits exceeded
+
 - **Mitigation**: Monitor API usage in Google Cloud Console, upgrade quota if needed
 
 **Risk**: Organization assignment unclear for Google users (which org should they join?)
+
 - **Mitigation**: For MVP, require invitation link with org_id, or show onboarding flow to select/create organization
 
 ---

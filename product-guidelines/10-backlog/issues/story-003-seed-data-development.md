@@ -35,16 +35,19 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: Python script using SQLAlchemy
 - Database: PostgreSQL 15+
 
 **Implementation Notes**:
+
 - Create `scripts/seed_data.py` script
 - Use SQLAlchemy ORM for inserting data
 - Check if data exists before inserting (idempotent)
 - Use UUIDs for IDs (consistent across environments)
 
 **Sample Data Structure**:
+
 ```python
 # Organization
 organization = {
@@ -115,6 +118,7 @@ workflows = [
 ```
 
 **Script Usage**:
+
 ```bash
 # Seed data (idempotent)
 python scripts/seed_data.py
@@ -142,6 +146,7 @@ python scripts/seed_data.py --env staging
 **Effort**: 0.5 person-days (4 hours)
 
 **Breakdown**:
+
 - Script setup: 0.1 days (file structure, imports)
 - Sample data creation: 0.2 days (realistic workflows, criteria text)
 - Idempotency logic: 0.1 days (check if data exists)
@@ -167,6 +172,7 @@ python scripts/seed_data.py --env staging
 ## Testing Requirements
 
 **Functional Tests**:
+
 - [ ] Run script on empty database → verify 1 org, 2 users, 2 workflows created
 - [ ] Run script again → no errors, no duplicate data
 - [ ] Run with `--reset` → old data deleted, new data inserted
@@ -174,6 +180,7 @@ python scripts/seed_data.py --env staging
 - [ ] Verify workflows have buckets and criteria properly nested
 
 **Performance Tests**:
+
 - [ ] Script completes in <5 seconds
 - [ ] Insert 2 workflows with 5 buckets each, 10 criteria per bucket → <5 seconds
 
@@ -182,12 +189,15 @@ python scripts/seed_data.py --env staging
 ## Risks & Mitigations
 
 **Risk**: Seed data conflicts with production data (same UUIDs)
+
 - **Mitigation**: Use clearly marked demo UUIDs with prefix (e.g., `demo_org_uuid`), never use in production
 
 **Risk**: Script fails mid-execution, leaves partial data
+
 - **Mitigation**: Wrap inserts in transaction, rollback on error
 
 **Risk**: Seed data becomes stale as schema evolves
+
 - **Mitigation**: Update seed data script whenever schema changes (link to migrations)
 
 ---

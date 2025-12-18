@@ -14,6 +14,7 @@ Exports:
 - DbSession: Type alias for database session dependency (Annotated[Session, Depends(get_db)])
 - RedisClient: Type alias for Redis client dependency
 """
+
 from __future__ import annotations
 
 import logging
@@ -67,7 +68,7 @@ def initialize_redis_client() -> None:
         _redis_client = Redis.from_url(
             redis_url,
             decode_responses=True,  # Return strings instead of bytes
-            socket_timeout=5,       # 5 second timeout for operations
+            socket_timeout=5,  # 5 second timeout for operations
             socket_connect_timeout=2,  # 2 second timeout for connection
             max_connections=settings.REDIS_MAX_CONNECTIONS,  # Connection pool size
             socket_keepalive=settings.REDIS_SOCKET_KEEPALIVE,  # Enable TCP keepalive
@@ -229,7 +230,9 @@ def check_upload_rate_limit(
         # Use Redis pipeline to ensure atomicity of INCRBY + EXPIREAT
         pipe = redis.pipeline()
         pipe.incrby(rate_limit_key, file_count)
-        pipe.expireat(rate_limit_key, reset_timestamp)  # Absolute timestamp (prevents TTL reset bugs)
+        pipe.expireat(
+            rate_limit_key, reset_timestamp
+        )  # Absolute timestamp (prevents TTL reset bugs)
         result = pipe.execute()
 
         # Get the new count from pipeline result (first command result)
@@ -242,7 +245,9 @@ def check_upload_rate_limit(
             # leading to incorrect counts or lost TTL
             rollback_pipe = redis.pipeline()
             rollback_pipe.decrby(rate_limit_key, file_count)
-            rollback_pipe.expireat(rate_limit_key, reset_timestamp)  # EXPIREAT is idempotent - no NX needed
+            rollback_pipe.expireat(
+                rate_limit_key, reset_timestamp
+            )  # EXPIREAT is idempotent - no NX needed
             rollback_pipe.get(rate_limit_key)  # Fetch actual count after rollback
             rollback_results = rollback_pipe.execute()
 

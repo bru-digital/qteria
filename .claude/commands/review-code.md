@@ -9,6 +9,7 @@ You are helping the user review code using a comprehensive code review framework
 ## When to Use This
 
 **Use during development** when:
+
 - You're reviewing a pull request
 - You want to apply consistent review standards
 - You need a checklist for thorough code review
@@ -23,6 +24,7 @@ Guide the user through code review using the framework in `/prompts/technical/co
 ### Steps to Execute
 
 1. **Read the code review prompt**:
+
    ```bash
    Read /prompts/technical/code-review.md
    ```
@@ -33,6 +35,7 @@ Guide the user through code review using the framework in `/prompts/technical/co
    - Specific concerns (performance? security? style?)
 
 3. **Read the code** to be reviewed:
+
    ```bash
    Read [files to review]
    ```
@@ -70,30 +73,35 @@ This command does NOT write to `/product-guidelines`. It provides immediate feed
 Use the comprehensive checklist from `/prompts/technical/code-review.md`:
 
 ### 1. Correctness
+
 - [ ] Does the code do what it's supposed to do?
 - [ ] Are there any obvious bugs?
 - [ ] Are edge cases handled?
 - [ ] Are there off-by-one errors?
 
 ### 2. Architecture & Design
+
 - [ ] Does this fit the system architecture?
 - [ ] Are abstractions appropriate?
 - [ ] Is it modular and reusable?
 - [ ] Are dependencies reasonable?
 
 ### 3. Readability & Maintainability
+
 - [ ] Can someone understand this in 6 months?
 - [ ] Are names descriptive?
 - [ ] Is the logic clear or convoluted?
 - [ ] Are functions appropriately sized?
 
 ### 4. Performance
+
 - [ ] Are there N+1 queries?
 - [ ] Are there unnecessary loops?
 - [ ] Is caching used appropriately?
 - [ ] Are large datasets handled efficiently?
 
 ### 5. Security
+
 - [ ] SQL injection vulnerabilities?
 - [ ] XSS vulnerabilities?
 - [ ] Authentication/authorization correct?
@@ -101,24 +109,28 @@ Use the comprehensive checklist from `/prompts/technical/code-review.md`:
 - [ ] Input validation?
 
 ### 6. Testing
+
 - [ ] Are there tests?
 - [ ] Do tests cover happy path?
 - [ ] Do tests cover edge cases?
 - [ ] Are tests readable and maintainable?
 
 ### 7. Error Handling
+
 - [ ] Are errors caught appropriately?
 - [ ] Are error messages helpful?
 - [ ] Are failures logged?
 - [ ] Are resources cleaned up on error?
 
 ### 8. Documentation
+
 - [ ] Are complex parts explained?
 - [ ] Are public APIs documented?
 - [ ] Are assumptions stated?
 - [ ] Are TODOs tracked?
 
 ### 9. Style & Conventions
+
 - [ ] Does it follow project style guide?
 - [ ] Is formatting consistent?
 - [ ] Are there linting violations?
@@ -134,7 +146,7 @@ Use the comprehensive checklist from `/prompts/technical/code-review.md`:
 
 ## Example Prompt Flow
 
-```
+````
 You: I'll help you review this code. What should I look at? A PR URL, file paths, or paste the code directly?
 
 User: [Provides code or PR]
@@ -160,28 +172,30 @@ const query = `SELECT * FROM users WHERE email = '${email}'`;
 // Fix
 const query = 'SELECT * FROM users WHERE email = ?';
 const result = await db.query(query, [email]);
-```
+````
 
 **Why**: This allows attackers to inject malicious SQL. Always use parameterized queries.
 
 ### 2. Missing Error Handling (Correctness)
+
 **File**: `src/api/users.ts:67`
 **Issue**: Database query has no error handling
+
 ```typescript
 // Current
-const user = await db.query(query);
-return user.rows[0];
+const user = await db.query(query)
+return user.rows[0]
 
 // Fix
 try {
-  const user = await db.query(query);
+  const user = await db.query(query)
   if (!user.rows[0]) {
-    throw new NotFoundError('User not found');
+    throw new NotFoundError('User not found')
   }
-  return user.rows[0];
+  return user.rows[0]
 } catch (error) {
-  logger.error('Failed to fetch user', { email, error });
-  throw error;
+  logger.error('Failed to fetch user', { email, error })
+  throw error
 }
 ```
 
@@ -190,17 +204,19 @@ try {
 ## Important Suggestions (Should Fix)
 
 ### 3. N+1 Query Problem (Performance)
+
 **File**: `src/api/users.ts:89`
 **Issue**: Loop makes individual DB calls
+
 ```typescript
 // Current (N+1)
 for (const userId of userIds) {
-  const user = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
-  users.push(user);
+  const user = await db.query('SELECT * FROM users WHERE id = ?', [userId])
+  users.push(user)
 }
 
 // Fix
-const users = await db.query('SELECT * FROM users WHERE id IN (?)', [userIds]);
+const users = await db.query('SELECT * FROM users WHERE id IN (?)', [userIds])
 ```
 
 **Why**: 100 user IDs = 100 DB queries. One query with IN is much faster.
@@ -208,14 +224,16 @@ const users = await db.query('SELECT * FROM users WHERE id IN (?)', [userIds]);
 ## Nits (Nice to Have)
 
 ### 4. Naming (Readability)
+
 **File**: `src/api/users.ts:23`
 **Issue**: Variable name `d` is unclear
+
 ```typescript
 // Current
-const d = new Date();
+const d = new Date()
 
 // Suggestion
-const createdAt = new Date();
+const createdAt = new Date()
 ```
 
 **Why**: Descriptive names make code self-documenting.
@@ -232,6 +250,7 @@ const createdAt = new Date();
 **Request Changes** - Fix the 2 critical issues (SQL injection, error handling) before merging. The performance and naming suggestions can be addressed in a follow-up PR if you prefer.
 
 Let me know if you'd like me to explain any of these in more detail!
+
 ```
 
 ## After This Session
@@ -245,3 +264,4 @@ Let me know if you'd like me to explain any of these in more detail!
 ---
 
 **Remember**: Code review is a learning opportunity for both reviewer and reviewee. Be thorough but kind, specific but not pedantic, critical but encouraging.
+```

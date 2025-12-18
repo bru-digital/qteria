@@ -29,6 +29,7 @@
 ## Technical Details
 
 **Before (Individual Calls)**:
+
 ```python
 for criteria in workflow.criteria:
     prompt = build_prompt(criteria, document_text)
@@ -37,6 +38,7 @@ for criteria in workflow.criteria:
 ```
 
 **After (Batch Call)**:
+
 ```python
 # Build batch prompt with all criteria
 batch_prompt = f"""
@@ -66,6 +68,7 @@ results = json.loads(response)  # Array of 10 results
 ```
 
 **Batch Prompt Template**:
+
 ```python
 def build_batch_prompt(criteria_list, document_text):
     criteria_json = [
@@ -125,9 +128,11 @@ Return JSON array with results for each criteria:
 ## Risks & Mitigations
 
 **Risk**: Batch mode less accurate (Claude confused by multiple criteria)
+
 - **Mitigation**: Test extensively with TÜV SÜD data; fallback to individual calls if accuracy drops
 
 **Risk**: Claude API timeout (batch prompt too large)
+
 - **Mitigation**: Limit batch size to 10 criteria; split if needed
 
 ---

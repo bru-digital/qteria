@@ -1,22 +1,14 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { useRole } from "@/lib/hooks/useRole"
+import Link from 'next/link'
+import { useRole } from '@/lib/hooks/useRole'
 import {
   CanCreateWorkflow,
   CanRunAssessment,
   CanUploadDocuments,
   AdminOnly,
-} from "@/components/RoleGuard"
-import {
-  FileText,
-  PlayCircle,
-  Upload,
-  Settings,
-  FileCheck,
-  Users,
-  Shield,
-} from "lucide-react"
+} from '@/components/RoleGuard'
+import { FileText, PlayCircle, Upload, Settings, FileCheck, Users, Shield } from 'lucide-react'
 
 /**
  * Dashboard actions component (Client Component).
@@ -57,12 +49,12 @@ export function DashboardActions() {
             title="Workflow Management"
             description="Create and manage validation workflows"
             primaryAction={{
-              label: "Create Workflow",
-              href: "/workflows/new",
+              label: 'Create Workflow',
+              href: '/workflows/new',
             }}
             secondaryAction={{
-              label: "View Workflows",
-              href: "/workflows",
+              label: 'View Workflows',
+              href: '/workflows',
             }}
           />
         </CanCreateWorkflow>
@@ -74,12 +66,12 @@ export function DashboardActions() {
             title="Assessment Management"
             description="Run AI-powered document validation"
             primaryAction={{
-              label: "Start Assessment",
-              href: "/assessments/new",
+              label: 'Start Assessment',
+              href: '/assessments/new',
             }}
             secondaryAction={{
-              label: "View Results",
-              href: "/assessments",
+              label: 'View Results',
+              href: '/assessments',
             }}
           />
         </CanRunAssessment>
@@ -91,8 +83,8 @@ export function DashboardActions() {
             title="Document Upload"
             description="Upload documents for validation"
             primaryAction={{
-              label: "Upload Documents",
-              href: "/assessments/new",
+              label: 'Upload Documents',
+              href: '/assessments/new',
             }}
           />
         </CanUploadDocuments>
@@ -104,12 +96,12 @@ export function DashboardActions() {
             title="Administration"
             description="Manage users and organization settings"
             primaryAction={{
-              label: "Manage Users",
-              href: "/admin/users",
+              label: 'Manage Users',
+              href: '/admin/users',
             }}
             secondaryActions={[
-              { label: "Organization Settings", href: "/admin/settings" },
-              { label: "View Audit Logs", href: "/admin/audit-logs" },
+              { label: 'Organization Settings', href: '/admin/settings' },
+              { label: 'View Audit Logs', href: '/admin/audit-logs' },
             ]}
           />
         </AdminOnly>
@@ -155,11 +147,7 @@ export function DashboardActions() {
       {/* Info note - Minimal */}
       <div className="mt-6 flex items-start gap-3 rounded-lg bg-gray-50 p-4">
         <div className="flex-shrink-0">
-          <svg
-            className="h-5 w-5 text-gray-400"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
+          <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
             <path
               fillRule="evenodd"
               d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
@@ -168,8 +156,8 @@ export function DashboardActions() {
           </svg>
         </div>
         <p className="text-sm text-gray-600">
-          All permissions are enforced on the server for security. Actions shown
-          are based on your role.
+          All permissions are enforced on the server for security. Actions shown are based on your
+          role.
         </p>
       </div>
     </div>

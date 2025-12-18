@@ -16,36 +16,36 @@
  * https://github.com/danielmiessler/SecLists/tree/master/Passwords/Common-Credentials
  */
 const COMMON_PASSWORDS = new Set([
-  "password",
-  "password123",
-  "123456",
-  "12345678",
-  "123456789",
-  "1234567890",
-  "qwerty",
-  "abc123",
-  "monkey",
-  "letmein",
-  "trustno1",
-  "dragon",
-  "baseball",
-  "iloveyou",
-  "master",
-  "sunshine",
-  "ashley",
-  "bailey",
-  "passw0rd",
-  "shadow",
-  "123123",
-  "654321",
-  "superman",
-  "qazwsx",
-  "michael",
-  "football",
-  "welcome",
-  "admin",
-  "login",
-  "starwars",
+  'password',
+  'password123',
+  '123456',
+  '12345678',
+  '123456789',
+  '1234567890',
+  'qwerty',
+  'abc123',
+  'monkey',
+  'letmein',
+  'trustno1',
+  'dragon',
+  'baseball',
+  'iloveyou',
+  'master',
+  'sunshine',
+  'ashley',
+  'bailey',
+  'passw0rd',
+  'shadow',
+  '123123',
+  '654321',
+  'superman',
+  'qazwsx',
+  'michael',
+  'football',
+  'welcome',
+  'admin',
+  'login',
+  'starwars',
 ])
 
 /**
@@ -54,7 +54,7 @@ const COMMON_PASSWORDS = new Set([
 export interface PasswordValidationResult {
   valid: boolean
   errors: string[]
-  strength: "weak" | "fair" | "good" | "strong"
+  strength: 'weak' | 'fair' | 'good' | 'strong'
 }
 
 /**
@@ -76,41 +76,45 @@ export function validatePassword(password: string): PasswordValidationResult {
 
   // Check minimum length
   if (password.length < 12) {
-    errors.push("Password must be at least 12 characters long")
+    errors.push('Password must be at least 12 characters long')
   }
 
   // Check for uppercase letters
   if (!/[A-Z]/.test(password)) {
-    errors.push("Password must contain at least one uppercase letter")
+    errors.push('Password must contain at least one uppercase letter')
   }
 
   // Check for lowercase letters
   if (!/[a-z]/.test(password)) {
-    errors.push("Password must contain at least one lowercase letter")
+    errors.push('Password must contain at least one lowercase letter')
   }
 
   // Check for numbers
   if (!/[0-9]/.test(password)) {
-    errors.push("Password must contain at least one number")
+    errors.push('Password must contain at least one number')
   }
 
   // Check for special characters
   if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    errors.push("Password must contain at least one special character (!@#$%^&* etc.)")
+    errors.push('Password must contain at least one special character (!@#$%^&* etc.)')
   }
 
   // Check against common passwords (case-insensitive)
   if (COMMON_PASSWORDS.has(password.toLowerCase())) {
-    errors.push("This password is too common. Please choose a more unique password")
+    errors.push('This password is too common. Please choose a more unique password')
   }
 
   // Check for sequential characters (e.g., "12345", "abcdef")
-  if (/(?:abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz)/i.test(password)) {
-    errors.push("Password should not contain sequential characters")
+  if (
+    /(?:abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz)/i.test(
+      password
+    )
+  ) {
+    errors.push('Password should not contain sequential characters')
   }
 
   if (/(?:012|123|234|345|456|567|678|789|890)/.test(password)) {
-    errors.push("Password should not contain sequential numbers")
+    errors.push('Password should not contain sequential numbers')
   }
 
   // Check for repeated characters (e.g., "aaaa", "1111")
@@ -134,9 +138,7 @@ export function validatePassword(password: string): PasswordValidationResult {
  * @param password - Password to evaluate
  * @returns Strength rating
  */
-function calculatePasswordStrength(
-  password: string
-): "weak" | "fair" | "good" | "strong" {
+function calculatePasswordStrength(password: string): 'weak' | 'fair' | 'good' | 'strong' {
   let score = 0
 
   // Length scoring
@@ -151,7 +153,7 @@ function calculatePasswordStrength(
   if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 1
 
   // Bonus for entropy (mix of different character types)
-  const uniqueChars = new Set(password.split("")).size
+  const uniqueChars = new Set(password.split('')).size
   if (uniqueChars >= 10) score += 1
   if (uniqueChars >= 15) score += 1
 
@@ -160,10 +162,10 @@ function calculatePasswordStrength(
   if (/(.)\1{3,}/.test(password)) score -= 1
 
   // Map score to strength
-  if (score >= 7) return "strong"
-  if (score >= 5) return "good"
-  if (score >= 3) return "fair"
-  return "weak"
+  if (score >= 7) return 'strong'
+  if (score >= 5) return 'good'
+  if (score >= 3) return 'fair'
+  return 'weak'
 }
 
 /**
@@ -172,14 +174,12 @@ function calculatePasswordStrength(
  * @param strength - Password strength rating
  * @returns Human-readable description
  */
-export function getStrengthDescription(
-  strength: "weak" | "fair" | "good" | "strong"
-): string {
+export function getStrengthDescription(strength: 'weak' | 'fair' | 'good' | 'strong'): string {
   const descriptions = {
-    weak: "This password is weak. Please add more characters and variety.",
-    fair: "This password is fair, but could be stronger. Consider adding more special characters.",
-    good: "This is a good password. It meets security requirements.",
-    strong: "This is a strong password. Excellent choice!",
+    weak: 'This password is weak. Please add more characters and variety.',
+    fair: 'This password is fair, but could be stronger. Consider adding more special characters.',
+    good: 'This is a good password. It meets security requirements.',
+    strong: 'This is a strong password. Excellent choice!',
   }
 
   return descriptions[strength]
@@ -192,13 +192,13 @@ export function getStrengthDescription(
  * @returns Color name (for Tailwind CSS classes or similar)
  */
 export function getStrengthColor(
-  strength: "weak" | "fair" | "good" | "strong"
-): "red" | "yellow" | "blue" | "green" {
+  strength: 'weak' | 'fair' | 'good' | 'strong'
+): 'red' | 'yellow' | 'blue' | 'green' {
   const colors = {
-    weak: "red" as const,
-    fair: "yellow" as const,
-    good: "blue" as const,
-    strong: "green" as const,
+    weak: 'red' as const,
+    fair: 'yellow' as const,
+    good: 'blue' as const,
+    strong: 'green' as const,
   }
 
   return colors[strength]

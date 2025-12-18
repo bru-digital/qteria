@@ -29,6 +29,7 @@
 ## Technical Details
 
 **Indexes to Add**:
+
 ```sql
 -- Assessments by org and status
 CREATE INDEX idx_assessments_org_status
@@ -49,6 +50,7 @@ ON assessment_documents(organization_id, bucket_id);
 ```
 
 **Query Optimization**:
+
 ```sql
 -- Before: 3 separate queries (N+1 problem)
 SELECT * FROM workflows WHERE id = X;

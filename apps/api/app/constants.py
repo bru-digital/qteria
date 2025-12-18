@@ -15,6 +15,7 @@ class AssessmentStatus:
 
     See: app/models/models.py Assessment.status
     """
+
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"

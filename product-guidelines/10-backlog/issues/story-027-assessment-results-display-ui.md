@@ -31,12 +31,14 @@
 ## Technical Details
 
 **Tech Stack**:
+
 - Frontend: Next.js 14 + React + TypeScript
 - Styling: Tailwind CSS (from design system)
 - State: React Query (for data fetching)
 - API: `GET /v1/assessments/:id/results`
 
 **Component Structure**:
+
 ```tsx
 <AssessmentResults>
   <OverallStatusCard>
@@ -50,14 +52,14 @@
       confidence="high"
       title="Criteria 1: Signatures present"
       reasoning="All required signatures found..."
-      evidenceLinks={[{doc: "technical-file.pdf", page: 3}]}
+      evidenceLinks={[{ doc: 'technical-file.pdf', page: 3 }]}
     />
     <CriteriaCard
       pass={false}
       confidence="high"
       title="Criteria 2: Test summary missing"
       reasoning="Could not locate pass/fail summary table..."
-      evidenceLinks={[{doc: "test-report.pdf", page: 8, section: "3.2"}]}
+      evidenceLinks={[{ doc: 'test-report.pdf', page: 8, section: '3.2' }]}
     />
     ...
   </CriteriaList>
@@ -65,6 +67,7 @@
 ```
 
 **API Response Format**:
+
 ```json
 {
   "assessment_id": "assess_123",
@@ -79,9 +82,7 @@
       "pass": true,
       "confidence": "high",
       "reasoning": "All required signatures found in technical-file.pdf",
-      "evidence": [
-        {"document_id": "doc_123", "document_name": "technical-file.pdf", "page": 3}
-      ]
+      "evidence": [{ "document_id": "doc_123", "document_name": "technical-file.pdf", "page": 3 }]
     },
     {
       "criteria_id": "crit_2",
@@ -90,7 +91,12 @@
       "confidence": "high",
       "reasoning": "Could not locate pass/fail summary table in section 3.2",
       "evidence": [
-        {"document_id": "doc_456", "document_name": "test-report.pdf", "page": 8, "section": "3.2"}
+        {
+          "document_id": "doc_456",
+          "document_name": "test-report.pdf",
+          "page": 8,
+          "section": "3.2"
+        }
       ]
     }
   ]
@@ -98,6 +104,7 @@
 ```
 
 **Color Coding**:
+
 - Green (pass + high confidence): ✅ Strong pass
 - Red (fail + high confidence): ❌ Strong fail
 - Yellow (any + medium/low confidence): ⚠️ Please verify
@@ -107,10 +114,12 @@
 ## Dependencies
 
 **Blocks**:
+
 - STORY-031: Replace document (needs results display to show what failed)
 - STORY-034: Generate PDF report (uses same data)
 
 **Blocked By**:
+
 - STORY-021: Claude AI integration (needs AI results)
 - STORY-022: Evidence extraction (needs evidence data)
 - STORY-023: Background job queue (needs completed assessment)
@@ -120,16 +129,19 @@
 ## Testing Requirements
 
 **Unit Tests** (50% coverage):
+
 - [ ] AssessmentResults component renders correctly
 - [ ] CriteriaCard shows pass/fail badge based on status
 - [ ] Confidence colors applied correctly (green/yellow/red)
 - [ ] Evidence links formatted correctly
 
 **Integration Tests**:
+
 - [ ] GET /v1/assessments/:id/results returns expected data
 - [ ] Results page fetches and displays data
 
 **E2E Tests**:
+
 - [ ] Navigate to results page after assessment completes
 - [ ] All criteria displayed with correct pass/fail status
 - [ ] Evidence links clickable
@@ -139,12 +151,14 @@
 ## Design Reference
 
 **Figma**: See `product-guidelines/06-design-system.md` for:
+
 - Color palette (green/red/yellow for confidence)
 - Typography (headings, body text)
 - Card component styles
 - Badge components
 
 **Visual Example**:
+
 ```
 ┌────────────────────────────────────────────┐
 │ Assessment Results                         │

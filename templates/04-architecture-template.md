@@ -15,13 +15,16 @@
 ## Core Architectural Principles
 
 ### 1. Journey-Step Optimization
+
 **Principle**: Optimize architecture for critical journey steps, not theoretical scale.
 
 **Application**:
+
 - Step [X]: [Architectural decision]
 - Step [Y]: [Architectural decision]
 
 ### 2. [Principle Name]
+
 **Principle**: [Principle statement]
 
 **Application**: [How you apply this]
@@ -57,10 +60,12 @@
 ## Scaling Strategy
 
 ### Current Capacity
+
 - [Metric]: [Current capacity]
 - [Metric]: [Current capacity]
 
 ### Bottlenecks & Solutions
+
 **Bottleneck**: [Potential bottleneck]
 **Solution**: [How to address when needed]
 

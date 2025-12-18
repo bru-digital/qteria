@@ -6,6 +6,7 @@ Tests cover:
 - Storage key generation (uniqueness, organization isolation)
 - Upload/delete edge cases
 """
+
 import os
 from datetime import datetime
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -128,8 +129,7 @@ class TestStorageKeyGeneration:
         filename = "report.pdf"
 
         storage_key = BlobStorageService._generate_storage_key(
-            filename=filename,
-            organization_id=org_id
+            filename=filename, organization_id=org_id
         )
 
         # Format: documents/{org_id}/{timestamp}_{filename}
@@ -144,9 +144,7 @@ class TestStorageKeyGeneration:
         filename = "report.pdf"
 
         storage_key = BlobStorageService._generate_storage_key(
-            filename=filename,
-            organization_id=org_id,
-            document_id=doc_id
+            filename=filename, organization_id=org_id, document_id=doc_id
         )
 
         # Format: documents/{org_id}/{timestamp}_{document_id}_{filename}
@@ -177,6 +175,7 @@ class TestStorageKeyGeneration:
         key1 = BlobStorageService._generate_storage_key(filename, org_id)
         # Ensure timestamp changes (microsecond precision)
         import time
+
         time.sleep(0.001)  # 1ms delay
         key2 = BlobStorageService._generate_storage_key(filename, org_id)
 
@@ -189,8 +188,7 @@ class TestStorageKeyGeneration:
         malicious = "../../etc/passwd"
 
         storage_key = BlobStorageService._generate_storage_key(
-            filename=malicious,
-            organization_id=org_id
+            filename=malicious, organization_id=org_id
         )
 
         # Should not contain path traversal
@@ -226,7 +224,7 @@ class TestUploadFile:
                     file_content=file_content,
                     filename=filename,
                     content_type=content_type,
-                    organization_id=org_id
+                    organization_id=org_id,
                 )
 
                 assert url == mock_response["url"]
@@ -256,7 +254,7 @@ class TestUploadFile:
                     file_content=b"content",
                     filename="test.pdf",
                     content_type="application/pdf",
-                    organization_id=org_id
+                    organization_id=org_id,
                 )
 
             assert "BLOB_READ_WRITE_TOKEN" in str(exc_info.value)
@@ -278,7 +276,7 @@ class TestUploadFile:
                         file_content=b"content",
                         filename="test.pdf",
                         content_type="application/pdf",
-                        organization_id=org_id
+                        organization_id=org_id,
                     )
 
                 assert "Invalid response" in str(exc_info.value)
@@ -298,7 +296,7 @@ class TestUploadFile:
                         file_content=b"content",
                         filename="test.pdf",
                         content_type="application/pdf",
-                        organization_id=org_id
+                        organization_id=org_id,
                     )
 
                 assert "Failed to upload file" in str(exc_info.value)
@@ -320,7 +318,7 @@ class TestUploadFile:
                     filename="test.pdf",
                     content_type="application/pdf",
                     organization_id=org_id,
-                    document_id=doc_id
+                    document_id=doc_id,
                 )
 
                 # Check storage key includes document_id

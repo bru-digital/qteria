@@ -12,6 +12,7 @@ Required Security Tests (per product guidelines):
 - File size validation: Large files rejected (413)
 - Audit logging: Upload events logged for SOC2 compliance
 """
+
 import io
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
@@ -31,15 +32,17 @@ class TestDocumentUpload:
     @pytest.fixture
     def mock_blob_storage(self):
         """Mock Vercel Blob storage service."""
-        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+        with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:
             # Mock successful async upload
-            mock_service.upload_file = AsyncMock(return_value="https://blob.vercel-storage.com/documents/test.pdf")
+            mock_service.upload_file = AsyncMock(
+                return_value="https://blob.vercel-storage.com/documents/test.pdf"
+            )
             yield mock_service
 
     @pytest.fixture
     def mock_magic(self):
         """Mock python-magic MIME type detection."""
-        with patch('app.api.v1.endpoints.documents.magic') as mock_magic:
+        with patch("app.api.v1.endpoints.documents.magic") as mock_magic:
             # Default to PDF
             mock_magic.from_buffer.return_value = "application/pdf"
             yield mock_magic
@@ -68,7 +71,7 @@ class TestDocumentUpload:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock database dependency
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -96,7 +99,7 @@ class TestDocumentUpload:
         assert mock_blob_storage.upload_file.called
 
         # Verify audit log created
-        assert mock_audit_service['log_event'].called
+        assert mock_audit_service["log_event"].called
 
     def test_upload_docx_success(
         self,
@@ -117,15 +120,23 @@ class TestDocumentUpload:
         docx_file = io.BytesIO(docx_content)
 
         # Mock DOCX MIME type
-        mock_magic.from_buffer.return_value = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        mock_magic.from_buffer.return_value = (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test-document.docx", docx_file, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+                files={
+                    "files": (
+                        "test-document.docx",
+                        docx_file,
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                },
             )
 
         assert response.status_code == 201
@@ -134,7 +145,10 @@ class TestDocumentUpload:
         assert len(data) == 1
         doc = data[0]
         assert doc["file_name"] == "test-document.docx"
-        assert doc["mime_type"] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        assert (
+            doc["mime_type"]
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
 
     def test_upload_with_bucket_id(
         self,
@@ -227,7 +241,7 @@ class TestDocumentUpload:
         mock_query.join.return_value = mock_join
         mock_db.query.return_value = mock_query
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -241,8 +255,8 @@ class TestDocumentUpload:
         assert "access denied" in data["error"]["message"].lower()
 
         # Verify audit log for security monitoring
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_bucket_id"
 
@@ -277,7 +291,7 @@ class TestDocumentUpload:
         mock_query.join.return_value = mock_join
         mock_db.query.return_value = mock_query
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -290,7 +304,7 @@ class TestDocumentUpload:
         assert data["error"]["code"] == "BUCKET_NOT_FOUND"
 
         # Verify audit log
-        assert mock_audit_service['log_event'].called
+        assert mock_audit_service["log_event"].called
 
     def test_upload_invalid_uuid_bucket_id(
         self,
@@ -314,7 +328,7 @@ class TestDocumentUpload:
         # Use an invalid UUID format
         invalid_bucket_id = "not-a-valid-uuid"
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -343,7 +357,7 @@ class TestDocumentUpload:
         - Lists allowed file types
         - Audit log created for security monitoring
         """
-        jpg_content = b"\xFF\xD8\xFF JPG content"
+        jpg_content = b"\xff\xd8\xff JPG content"
         jpg_file = io.BytesIO(jpg_content)
 
         # Mock JPG MIME type
@@ -351,7 +365,7 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -368,8 +382,8 @@ class TestDocumentUpload:
         assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in allowed_types
 
         # Verify audit log for security monitoring
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_file_type"
 
@@ -394,7 +408,7 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -408,8 +422,8 @@ class TestDocumentUpload:
         assert data["error"]["details"]["max_size_bytes"] == 50 * 1024 * 1024
 
         # Verify audit log
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "file_too_large"
 
@@ -434,7 +448,7 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -498,7 +512,7 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -510,9 +524,10 @@ class TestDocumentUpload:
         assert data["error"]["code"] == "UPLOAD_FAILED"
 
         # Verify audit log for operational monitoring
-        assert mock_audit_service['log_event'].called
+        assert mock_audit_service["log_event"].called
         failure_calls = [
-            call for call in mock_audit_service['log_event'].call_args_list
+            call
+            for call in mock_audit_service["log_event"].call_args_list
             if call[1].get("action") == "document.upload.failed"
         ]
         assert len(failure_calls) > 0
@@ -534,12 +549,9 @@ class TestDocumentUpload:
         pdf_content = b"%PDF-1.4 Test"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(
-            organization_id=TEST_ORG_A_ID,
-            role="project_handler"
-        )
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="project_handler")
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -569,15 +581,12 @@ class TestDocumentUpload:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(
-            organization_id=TEST_ORG_A_ID,
-            role="project_handler"
-        )
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="project_handler")
 
         # Test various Unicode filenames
         unicode_filename = "文档_test_αβγ_тест.pdf"
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -608,12 +617,9 @@ class TestDocumentUpload:
         pdf_content = b"%PDF-1.4 Test"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(
-            organization_id=TEST_ORG_A_ID,
-            role="process_manager"
-        )
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -642,12 +648,9 @@ class TestDocumentUpload:
         pdf_content = b"%PDF-1.4 Test"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(
-            organization_id=TEST_ORG_A_ID,
-            role="admin"
-        )
+        token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -682,7 +685,7 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -714,15 +717,23 @@ class TestDocumentUpload:
         xlsx_file = io.BytesIO(xlsx_content)
 
         # Mock XLSX MIME type (modern Office Open XML format)
-        mock_magic.from_buffer.return_value = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mock_magic.from_buffer.return_value = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test-data.xlsx", xlsx_file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                files={
+                    "files": (
+                        "test-data.xlsx",
+                        xlsx_file,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                },
             )
 
         assert response.status_code == 201
@@ -731,13 +742,15 @@ class TestDocumentUpload:
         assert len(data) == 1
         doc = data[0]
         assert doc["file_name"] == "test-data.xlsx"
-        assert doc["mime_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        assert (
+            doc["mime_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
         # Verify blob storage called
         assert mock_blob_storage.upload_file.called
 
         # Verify audit log created
-        assert mock_audit_service['log_event'].called
+        assert mock_audit_service["log_event"].called
 
     def test_upload_xls_success(
         self,
@@ -754,7 +767,7 @@ class TestDocumentUpload:
         - Returns 201 Created with correct MIME type
         """
         # Create XLS file content
-        xls_content = b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1 XLS content"
+        xls_content = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1 XLS content"
         xls_file = io.BytesIO(xls_content)
 
         # Mock legacy XLS MIME type
@@ -762,7 +775,7 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -801,7 +814,7 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -816,13 +829,19 @@ class TestDocumentUpload:
         # Verify all allowed types are present (PDF, DOCX, XLSX, XLS)
         assert len(data["error"]["details"]["allowed_types"]) == 4
         assert "application/pdf" in data["error"]["details"]["allowed_types"]
-        assert "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in data["error"]["details"]["allowed_types"]
-        assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in data["error"]["details"]["allowed_types"]
+        assert (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            in data["error"]["details"]["allowed_types"]
+        )
+        assert (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            in data["error"]["details"]["allowed_types"]
+        )
         assert "application/vnd.ms-excel" in data["error"]["details"]["allowed_types"]
 
         # Verify audit log for security monitoring
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_file_type"
 
@@ -849,11 +868,17 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("data.ods", ods_file, "application/vnd.oasis.opendocument.spreadsheet")},
+                files={
+                    "files": (
+                        "data.ods",
+                        ods_file,
+                        "application/vnd.oasis.opendocument.spreadsheet",
+                    )
+                },
             )
 
         assert response.status_code == 400
@@ -864,13 +889,19 @@ class TestDocumentUpload:
         assert "allowed_types" in data["error"]["details"]
         assert len(data["error"]["details"]["allowed_types"]) == 4
         assert "application/pdf" in data["error"]["details"]["allowed_types"]
-        assert "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in data["error"]["details"]["allowed_types"]
-        assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in data["error"]["details"]["allowed_types"]
+        assert (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            in data["error"]["details"]["allowed_types"]
+        )
+        assert (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            in data["error"]["details"]["allowed_types"]
+        )
         assert "application/vnd.ms-excel" in data["error"]["details"]["allowed_types"]
 
         # Verify audit log for security monitoring
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_file_type"
 
@@ -903,11 +934,17 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("malicious-data.xlsm", xlsm_file, "application/vnd.ms-excel.sheet.macroEnabled.12")},
+                files={
+                    "files": (
+                        "malicious-data.xlsm",
+                        xlsm_file,
+                        "application/vnd.ms-excel.sheet.macroEnabled.12",
+                    )
+                },
             )
 
         assert response.status_code == 400
@@ -918,11 +955,14 @@ class TestDocumentUpload:
         assert "macro" in data["error"]["message"].lower()
 
         # Verify audit log for security monitoring (macro upload attempt)
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_file_type"
-        assert call_args["metadata"]["detected_mime_type"] == "application/vnd.ms-excel.sheet.macroEnabled.12"
+        assert (
+            call_args["metadata"]["detected_mime_type"]
+            == "application/vnd.ms-excel.sheet.macroEnabled.12"
+        )
 
     def test_upload_docm_rejected_security(
         self,
@@ -949,11 +989,17 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("malicious-doc.docm", docm_file, "application/vnd.ms-word.document.macroEnabled.12")},
+                files={
+                    "files": (
+                        "malicious-doc.docm",
+                        docm_file,
+                        "application/vnd.ms-word.document.macroEnabled.12",
+                    )
+                },
             )
 
         assert response.status_code == 400
@@ -964,8 +1010,8 @@ class TestDocumentUpload:
         assert "macro" in data["error"]["message"].lower()
 
         # Verify audit log for security monitoring
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_file_type"
 
@@ -997,30 +1043,43 @@ class TestDocumentUpload:
         pptm_file = io.BytesIO(pptm_content)
 
         # Mock PPTM MIME type (macro-enabled PowerPoint 2007+)
-        mock_magic.from_buffer.return_value = "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
+        mock_magic.from_buffer.return_value = (
+            "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
+        )
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("malicious-presentation.pptm", pptm_file, "application/vnd.ms-powerpoint.presentation.macroEnabled.12")},
+                files={
+                    "files": (
+                        "malicious-presentation.pptm",
+                        pptm_file,
+                        "application/vnd.ms-powerpoint.presentation.macroEnabled.12",
+                    )
+                },
             )
 
         assert response.status_code == 400
         data = response.json()
         assert data["error"]["code"] == "INVALID_FILE_TYPE"
-        assert "application/vnd.ms-powerpoint.presentation.macroEnabled.12" in data["error"]["message"]
+        assert (
+            "application/vnd.ms-powerpoint.presentation.macroEnabled.12" in data["error"]["message"]
+        )
         # Verify security-specific error message
         assert "macro" in data["error"]["message"].lower()
 
         # Verify audit log for security monitoring (macro upload attempt)
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "invalid_file_type"
-        assert call_args["metadata"]["detected_mime_type"] == "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
+        assert (
+            call_args["metadata"]["detected_mime_type"]
+            == "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
+        )
 
 
 class TestBatchDocumentUpload:
@@ -1029,15 +1088,17 @@ class TestBatchDocumentUpload:
     @pytest.fixture
     def mock_blob_storage(self):
         """Mock Vercel Blob storage service."""
-        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+        with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:
             # Mock successful async upload
-            mock_service.upload_file = AsyncMock(return_value="https://blob.vercel-storage.com/documents/test.pdf")
+            mock_service.upload_file = AsyncMock(
+                return_value="https://blob.vercel-storage.com/documents/test.pdf"
+            )
             yield mock_service
 
     @pytest.fixture
     def mock_magic(self):
         """Mock python-magic MIME type detection."""
-        with patch('app.api.v1.endpoints.documents.magic') as mock_magic:
+        with patch("app.api.v1.endpoints.documents.magic") as mock_magic:
             # Default to PDF
             mock_magic.from_buffer.return_value = "application/pdf"
             yield mock_magic
@@ -1062,7 +1123,7 @@ class TestBatchDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -1125,7 +1186,7 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -1149,7 +1210,8 @@ class TestBatchDocumentUpload:
 
         # Verify audit logs created for each file
         success_logs = [
-            call for call in mock_audit_service['log_event'].call_args_list
+            call
+            for call in mock_audit_service["log_event"].call_args_list
             if call[1].get("action") == "document.upload.success"
         ]
         assert len(success_logs) == 5
@@ -1179,7 +1241,7 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -1221,7 +1283,7 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -1240,8 +1302,8 @@ class TestBatchDocumentUpload:
         assert not mock_blob_storage.upload_file.called
 
         # Verify audit log
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.upload.failed"
         assert call_args["metadata"]["reason"] == "batch_size_exceeded"
 
@@ -1264,7 +1326,7 @@ class TestBatchDocumentUpload:
         # Create 3 files: 2 valid PDFs, 1 invalid JPG
         files_data = [
             ("file1.pdf", b"%PDF-1.4 File 1"),
-            ("invalid.jpg", b"\xFF\xD8\xFF JPG content"),  # Invalid
+            ("invalid.jpg", b"\xff\xd8\xff JPG content"),  # Invalid
             ("file3.pdf", b"%PDF-1.4 File 3"),
         ]
 
@@ -1283,7 +1345,7 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -1328,7 +1390,7 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -1379,7 +1441,7 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
             response = client.post(
                 "/v1/documents",
                 headers={"Authorization": f"Bearer {token}"},
@@ -1402,14 +1464,16 @@ class TestDocumentUploadRateLimiting:
     @pytest.fixture
     def mock_blob_storage(self):
         """Mock Vercel Blob storage service."""
-        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
-            mock_service.upload_file = AsyncMock(return_value="https://blob.vercel-storage.com/documents/test.pdf")
+        with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:
+            mock_service.upload_file = AsyncMock(
+                return_value="https://blob.vercel-storage.com/documents/test.pdf"
+            )
             yield mock_service
 
     @pytest.fixture
     def mock_magic(self):
         """Mock python-magic MIME type detection."""
-        with patch('app.api.v1.endpoints.documents.magic') as mock_magic:
+        with patch("app.api.v1.endpoints.documents.magic") as mock_magic:
             mock_magic.from_buffer.return_value = "application/pdf"
             yield mock_magic
 
@@ -1435,12 +1499,14 @@ class TestDocumentUploadRateLimiting:
         """
         mock_db = MagicMock()
 
-        with patch('app.core.dependencies._redis_client', mock_redis), \
-             patch('app.core.dependencies.get_redis', return_value=iter([mock_redis])), \
-             patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with (
+            patch("app.core.dependencies._redis_client", mock_redis),
+            patch("app.core.dependencies.get_redis", return_value=iter([mock_redis])),
+            patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])),
+        ):
             yield {
-                'redis': mock_redis,
-                'db': mock_db,
+                "redis": mock_redis,
+                "db": mock_db,
             }
 
     def test_rate_limit_enforced_at_100_uploads(
@@ -1472,8 +1538,8 @@ class TestDocumentUploadRateLimiting:
         # First execute() is increment pipeline (INCRBY, EXPIRE) → [101, True]
         # Second execute() is rollback pipeline (DECRBY, EXPIRE, GET) → [100, True, "100"]
         mock_redis.execute.side_effect = [
-            [101, True],        # Increment pipeline result
-            [100, True, "100"]  # Rollback pipeline result
+            [101, True],  # Increment pipeline result
+            [100, True, "100"],  # Rollback pipeline result
         ]
 
         response = client.post(
@@ -1490,8 +1556,8 @@ class TestDocumentUploadRateLimiting:
         assert data["error"]["details"]["limit"] == 100
 
         # Verify audit log for security monitoring
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "rate_limit.exceeded"
         assert call_args["metadata"]["limit_type"] == "upload"
         assert call_args["metadata"]["current_count"] == 100
@@ -1608,6 +1674,7 @@ class TestDocumentUploadRateLimiting:
 
         # Use valid UUIDs for user isolation testing
         from uuid import uuid4
+
         user_a_id = str(uuid4())
         user_b_id = str(uuid4())
 
@@ -1617,9 +1684,9 @@ class TestDocumentUploadRateLimiting:
         # Second execute() is rollback pipeline → [100, True, "100"]
         # Third execute() is User B's increment pipeline → [1, True]
         mock_redis.execute.side_effect = [
-            [101, True],        # User A increment
-            [100, True, "100"], # User A rollback
-            [1, True]           # User B increment
+            [101, True],  # User A increment
+            [100, True, "100"],  # User A rollback
+            [1, True],  # User B increment
         ]
 
         response_a = client.post(
@@ -1764,9 +1831,9 @@ class TestDocumentUploadRateLimiting:
         # Second execute() is rollback pipeline → [96, True, "96"]
         # Third execute() is Test 2's increment pipeline → [100, True]
         mock_redis.execute.side_effect = [
-            [101, True],       # Test 1 increment (96 + 5 = 101)
+            [101, True],  # Test 1 increment (96 + 5 = 101)
             [96, True, "96"],  # Test 1 rollback
-            [100, True]        # Test 2 increment (96 + 4 = 100)
+            [100, True],  # Test 2 increment (96 + 4 = 100)
         ]
 
         response_fail = client.post(
@@ -1816,8 +1883,8 @@ class TestDocumentUploadRateLimiting:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock get_redis to return None (Redis unavailable)
-        with patch('app.core.dependencies.get_redis', return_value=iter([None])):
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([MagicMock()])):
+        with patch("app.core.dependencies.get_redis", return_value=iter([None])):
+            with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
                 response = client.post(
                     "/v1/documents",
                     headers={"Authorization": f"Bearer {token}"},
@@ -1851,8 +1918,8 @@ class TestDocumentUploadRateLimiting:
 
         # Mock Redis to return count of 101 after increment (limit exceeded)
         mock_redis.execute.side_effect = [
-            [101, True],        # Increment pipeline
-            [100, True, "100"]  # Rollback pipeline
+            [101, True],  # Increment pipeline
+            [100, True, "100"],  # Rollback pipeline
         ]
 
         response = client.post(
@@ -1896,8 +1963,8 @@ class TestDocumentUploadRateLimiting:
 
         # Mock Redis to return count of 101 after increment (limit exceeded)
         mock_redis.execute.side_effect = [
-            [101, True],        # Increment pipeline
-            [100, True, "100"]  # Rollback pipeline
+            [101, True],  # Increment pipeline
+            [100, True, "100"],  # Rollback pipeline
         ]
 
         response = client.post(
@@ -2041,11 +2108,17 @@ class TestDocumentUploadRateLimiting:
         # OR vice versa (order not guaranteed in threading)
 
         # Verify exactly 1 succeeded and 1 failed
-        assert status_counts[201] == 1, f"Expected exactly 1 success (201), got {status_counts[201]}"
-        assert status_counts[429] == 1, f"Expected exactly 1 rejection (429), got {status_counts[429]}"
+        assert (
+            status_counts[201] == 1
+        ), f"Expected exactly 1 success (201), got {status_counts[201]}"
+        assert (
+            status_counts[429] == 1
+        ), f"Expected exactly 1 rejection (429), got {status_counts[429]}"
 
         # Verify final count is 100 (one request succeeded, one rolled back)
-        assert redis_counter["count"] == 100, f"Expected final count 100, got {redis_counter['count']}"
+        assert (
+            redis_counter["count"] == 100
+        ), f"Expected final count 100, got {redis_counter['count']}"
 
 
 class TestDocumentDownload:
@@ -2054,9 +2127,11 @@ class TestDocumentDownload:
     @pytest.fixture
     def mock_blob_storage(self):
         """Mock Vercel Blob storage service."""
-        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+        with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:
             # Mock get_download_url to return a signed URL
-            mock_service.get_download_url = AsyncMock(return_value="https://blob.vercel-storage.com/documents/signed-url-123.pdf?token=abc")
+            mock_service.get_download_url = AsyncMock(
+                return_value="https://blob.vercel-storage.com/documents/signed-url-123.pdf?token=abc"
+            )
             yield mock_service
 
     @pytest.fixture
@@ -2064,10 +2139,10 @@ class TestDocumentDownload:
         """Mock database with test document."""
         from uuid import uuid4
         from app.models import Document
-        
+
         mock_db = MagicMock()
         mock_query = MagicMock()
-        
+
         # Create mock document
         test_document = MagicMock(spec=Document)
         test_document.id = uuid4()
@@ -2076,12 +2151,12 @@ class TestDocumentDownload:
         test_document.file_size = 1024000
         test_document.mime_type = "application/pdf"
         test_document.storage_key = "https://blob.vercel-storage.com/documents/test.pdf"
-        
+
         # Setup query mock chain
         mock_db.query.return_value = mock_query
         mock_query.filter.return_value = mock_query
         mock_query.first.return_value = test_document
-        
+
         return mock_db, test_document
 
     def test_download_success(
@@ -2104,7 +2179,7 @@ class TestDocumentDownload:
         mock_db, test_doc = mock_document_db
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.get(
                 f"/v1/documents/{test_doc.id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2118,8 +2193,8 @@ class TestDocumentDownload:
         assert "test-document.pdf" in response.headers["Content-Disposition"]
 
         # Verify audit log
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.download.success"
 
     def test_download_with_page_parameter(
@@ -2139,7 +2214,7 @@ class TestDocumentDownload:
         mock_db, test_doc = mock_document_db
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.get(
                 f"/v1/documents/{test_doc.id}?page=8",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2165,17 +2240,17 @@ class TestDocumentDownload:
         - Audit log created for security monitoring
         """
         from uuid import uuid4
-        
+
         mock_db = MagicMock()
         mock_query = MagicMock()
         mock_db.query.return_value = mock_query
         mock_query.filter.return_value = mock_query
         mock_query.first.return_value = None  # Document not found
-        
+
         token = create_test_token(organization_id=TEST_ORG_A_ID)
         nonexistent_id = uuid4()
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.get(
                 f"/v1/documents/{nonexistent_id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2184,10 +2259,10 @@ class TestDocumentDownload:
         assert response.status_code == 404
         data = response.json()
         assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
-        
+
         # Verify audit log
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.download.failed"
 
     def test_download_multi_tenancy_enforcement(
@@ -2206,24 +2281,24 @@ class TestDocumentDownload:
         """
         from uuid import uuid4
         from app.models import Document
-        
+
         mock_db = MagicMock()
         mock_query = MagicMock()
-        
+
         # Document belongs to Org B
         org_b_document = MagicMock(spec=Document)
         org_b_document.id = uuid4()
         org_b_document.organization_id = TEST_ORG_B_ID  # Different org
-        
+
         # Setup query to return no document (multi-tenancy filter blocks it)
         mock_db.query.return_value = mock_query
         mock_query.filter.return_value = mock_query
         mock_query.first.return_value = None  # Filtered out
-        
+
         # User from Org A tries to download Org B's document
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.get(
                 f"/v1/documents/{org_b_document.id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2246,7 +2321,7 @@ class TestDocumentDownload:
         - Returns 401 Unauthorized
         """
         from uuid import uuid4
-        
+
         response = client.get(
             f"/v1/documents/{uuid4()}",
         )
@@ -2270,13 +2345,14 @@ class TestDocumentDownload:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock blob storage failure
-        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+        with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:
+
             async def url_error(*args, **kwargs):
                 raise Exception("Blob storage connection timeout")
-            
+
             mock_service.get_download_url = AsyncMock(side_effect=url_error)
 
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
                 response = client.get(
                     f"/v1/documents/{test_doc.id}",
                     headers={"Authorization": f"Bearer {token}"},
@@ -2293,7 +2369,7 @@ class TestDocumentDeletion:
     @pytest.fixture
     def mock_blob_storage(self):
         """Mock Vercel Blob storage service."""
-        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+        with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:
             # Mock successful async delete
             mock_service.delete_file = AsyncMock(return_value=True)
             yield mock_service
@@ -2363,7 +2439,7 @@ class TestDocumentDeletion:
 
         mock_db.query.side_effect = mock_query_handler
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.delete(
                 f"/v1/documents/{test_doc.id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2379,9 +2455,10 @@ class TestDocumentDeletion:
         assert mock_db.commit.called
 
         # Verify audit log
-        assert mock_audit_service['log_event'].called
+        assert mock_audit_service["log_event"].called
         success_logs = [
-            call for call in mock_audit_service['log_event'].call_args_list
+            call
+            for call in mock_audit_service["log_event"].call_args_list
             if call[1].get("action") == "document.delete.success"
         ]
         assert len(success_logs) == 1
@@ -2405,6 +2482,7 @@ class TestDocumentDeletion:
 
         # Mock assessment_documents query to return document with pending status
         from app.models import Assessment
+
         mock_assessment_doc = MagicMock()
         mock_assessment_doc.assessment = MagicMock(spec=Assessment)
         mock_assessment_doc.assessment.status = "pending"
@@ -2412,12 +2490,9 @@ class TestDocumentDeletion:
         # First query is for document, second is for assessment_documents
         mock_assessment_query = MagicMock()
         mock_assessment_query.first.return_value = None  # No completed/processing assessment
-        mock_db.query.side_effect = [
-            mock_document_db[0].query.return_value,
-            mock_assessment_query
-        ]
+        mock_db.query.side_effect = [mock_document_db[0].query.return_value, mock_assessment_query]
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.delete(
                 f"/v1/documents/{test_doc.id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2462,10 +2537,10 @@ class TestDocumentDeletion:
         mock_assessment_query.first.return_value = mock_assessment_doc
         mock_db.query.side_effect = [
             mock_document_db[0].query.return_value,  # Document query
-            mock_assessment_query  # AssessmentDocument query
+            mock_assessment_query,  # AssessmentDocument query
         ]
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.delete(
                 f"/v1/documents/{test_doc.id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2482,9 +2557,10 @@ class TestDocumentDeletion:
         assert not mock_db.delete.called
 
         # Verify audit log for failed deletion
-        assert mock_audit_service['log_event'].called
+        assert mock_audit_service["log_event"].called
         fail_logs = [
-            call for call in mock_audit_service['log_event'].call_args_list
+            call
+            for call in mock_audit_service["log_event"].call_args_list
             if call[1].get("action") == "document.delete.failed"
         ]
         assert len(fail_logs) == 1
@@ -2523,12 +2599,9 @@ class TestDocumentDeletion:
         # Setup queries
         mock_assessment_query = MagicMock()
         mock_assessment_query.first.return_value = mock_assessment_doc
-        mock_db.query.side_effect = [
-            mock_document_db[0].query.return_value,
-            mock_assessment_query
-        ]
+        mock_db.query.side_effect = [mock_document_db[0].query.return_value, mock_assessment_query]
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.delete(
                 f"/v1/documents/{test_doc.id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2564,7 +2637,7 @@ class TestDocumentDeletion:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
         nonexistent_id = uuid4()
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.delete(
                 f"/v1/documents/{nonexistent_id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2575,8 +2648,8 @@ class TestDocumentDeletion:
         assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
 
         # Verify audit log
-        assert mock_audit_service['log_event'].called
-        call_args = mock_audit_service['log_event'].call_args[1]
+        assert mock_audit_service["log_event"].called
+        call_args = mock_audit_service["log_event"].call_args[1]
         assert call_args["action"] == "document.delete.failed"
 
     def test_delete_document_different_org_not_found(
@@ -2607,7 +2680,7 @@ class TestDocumentDeletion:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
         org_b_doc_id = uuid4()
 
-        with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
             response = client.delete(
                 f"/v1/documents/{org_b_doc_id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2637,7 +2710,8 @@ class TestDocumentDeletion:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock blob storage failure
-        with patch('app.api.v1.endpoints.documents.BlobStorageService') as mock_service:
+        with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:
+
             async def delete_error(*args, **kwargs):
                 raise Exception("Blob storage connection timeout")
 
@@ -2648,10 +2722,10 @@ class TestDocumentDeletion:
             mock_assessment_query.first.return_value = None
             mock_db.query.side_effect = [
                 mock_document_db[0].query.return_value,
-                mock_assessment_query
+                mock_assessment_query,
             ]
 
-            with patch('app.api.v1.endpoints.documents.get_db', return_value=iter([mock_db])):
+            with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
                 response = client.delete(
                     f"/v1/documents/{test_doc.id}",
                     headers={"Authorization": f"Bearer {token}"},
@@ -2666,7 +2740,8 @@ class TestDocumentDeletion:
 
         # Verify audit log shows blob deletion failed
         success_logs = [
-            call for call in mock_audit_service['log_event'].call_args_list
+            call
+            for call in mock_audit_service["log_event"].call_args_list
             if call[1].get("action") == "document.delete.success"
         ]
         assert len(success_logs) == 1

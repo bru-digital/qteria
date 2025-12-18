@@ -9,11 +9,13 @@ You are helping the user create comprehensive API contracts including OpenAPI/Sw
 ## When to Use This
 
 **This is Session 8** in the core Stack-Driven cascade. Run it:
+
 - After Session 7 (`/design-database-schema` - data model)
 - Before Session 10 (`/generate-backlog` - implementation planning)
 - When you need to define your API contracts based on journey, architecture, and data model
 
 **Skip this** if:
+
 - You're building a frontend-only application (no backend)
 - Your product doesn't expose APIs
 - You prefer to evolve APIs incrementally during development
@@ -21,6 +23,7 @@ You are helping the user create comprehensive API contracts including OpenAPI/Sw
 ## Your Task
 
 Create comprehensive API contracts including:
+
 - OpenAPI 3.0 specification
 - Endpoint definitions with HTTP methods, paths, and parameters
 - Request and response schemas with validation rules
@@ -55,18 +58,21 @@ Read: product-guidelines/12-project-scaffold.md (if exists - scaffold comes afte
 ```
 
 **Extract from Journey**:
+
 - What user actions require API endpoints?
 - What data flows through the system?
 - What are the critical path operations?
 - What integration points exist with external systems?
 
 **Extract from Tech Stack**:
+
 - Backend framework (FastAPI, Express, NestJS, Django, etc.)
 - Authentication method (JWT, OAuth, API keys, Clerk, Auth0)
 - API style preference (REST, GraphQL, gRPC)
 - Documentation tools (Swagger UI, Redoc, Postman)
 
 **Extract from Architecture**:
+
 - API design patterns (REST principles, HATEOAS, etc.)
 - Security requirements
 - Rate limiting strategy
@@ -74,12 +80,14 @@ Read: product-guidelines/12-project-scaffold.md (if exists - scaffold comes afte
 - Multi-tenancy implementation
 
 **Extract from Backlog (if available)**:
+
 - What features need what endpoints?
 - What data operations are required (CRUD, search, bulk)?
 - What integrations are planned (webhooks, third-party APIs)?
 - Note: Backlog is generated AFTER this session, so focus on journey and architecture if backlog doesn't exist yet
 
 **Extract from Database Schema (required):**
+
 - What entities exist?
 - What relationships need API exposure?
 - What query patterns should be supported?
@@ -150,6 +158,7 @@ For each entity in database schema or backlog, ask:
 ```
 
 **Example**: compliance-saas endpoints:
+
 - Documents: GET/POST `/api/documents`, GET/DELETE `/api/documents/:id`
 - Frameworks: GET `/api/frameworks`, GET `/api/frameworks/:id`
 - Assessments: GET/POST `/api/assessments`, GET/POST `/api/assessments/:id/{cancel,share}`
@@ -161,6 +170,7 @@ For each entity in database schema or backlog, ask:
 ### Step 4: Define Request and Response Schemas
 
 For EACH endpoint, define:
+
 - **Request schema** (path params, query params, headers, body)
 - **Response schema** (success and error cases)
 - **Validation rules** (required fields, formats, constraints)
@@ -244,6 +254,7 @@ From tech stack, determine auth method:
 **Example auth**: Clerk JWT in `Authorization: Bearer <token>` header, applied to all endpoints except `/public/*`
 
 **Authorization patterns:**
+
 - User-owned: `WHERE user_id = :current_user_id`
 - Team resource: `WHERE team_id = :current_user_team_id`
 - Admin only: `WHERE role = 'admin' OR team_id = :id`
@@ -260,11 +271,11 @@ From tech stack, determine auth method:
 ```json
 {
   "error": {
-    "code": "ERROR_CODE",              // Machine-readable constant
+    "code": "ERROR_CODE", // Machine-readable constant
     "message": "Human-readable error", // User-facing message
-    "details": {},                     // Optional: additional context
-    "field": "fieldName",              // Optional: which field caused error
-    "requestId": "req_abc123"          // Optional: for support debugging
+    "details": {}, // Optional: additional context
+    "field": "fieldName", // Optional: which field caused error
+    "requestId": "req_abc123" // Optional: for support debugging
   }
 }
 ```
@@ -296,6 +307,7 @@ Server Errors:
 ```
 
 **Example errors**: All use format `{error: {code, message, details?, field?, requestId?}}`
+
 - 400: `VALIDATION_ERROR` (invalid input)
 - 401: `INVALID_TOKEN` (auth failed)
 - 429: `RATE_LIMIT_EXCEEDED` (includes limit, remaining, resetAt)
@@ -357,6 +369,7 @@ Server Errors:
 Create complete OpenAPI 3.0 specification. Use template at `templates/08-api-contracts-template.md` for detailed structure.
 
 **Key sections to include:**
+
 - `info`: title, description (with auth/rate limit/error conventions), version, contact
 - `servers`: production, staging, local development URLs
 - `tags`: group endpoints by resource type
@@ -364,6 +377,7 @@ Create complete OpenAPI 3.0 specification. Use template at `templates/08-api-con
 - `components`: securitySchemes (bearerAuth), schemas (all data models), responses (reusable error responses)
 
 **Best practices:**
+
 - Use `$ref` for reusable schemas and responses
 - Include examples in schemas
 - Mark required fields explicitly
@@ -375,6 +389,7 @@ Create complete OpenAPI 3.0 specification. Use template at `templates/08-api-con
 ### Step 9: Document API Design Decisions
 
 Write `product-guidelines/08-api-contracts.md` with:
+
 - **Overview**: API style, base URLs, versioning strategy, endpoint count
 - **Authentication**: Method and how to use it
 - **Core Resources**: For each resource: purpose (journey connection), endpoints table, key design decisions
@@ -392,6 +407,7 @@ Write `product-guidelines/08-api-contracts.md` with:
 Use template at `templates/08-api-contracts-essentials-template.md` to create `product-guidelines/08-api-contracts-essentials.md` with:
 
 **What to include** (target: 100-150 lines):
+
 - API configuration (style, auth, pagination, rate limiting)
 - Endpoint lists organized by journey step
 - Brief description for each endpoint (one line)
@@ -399,6 +415,7 @@ Use template at `templates/08-api-contracts-essentials-template.md` to create `p
 - Story scoping guidance for backlog generation
 
 **What to EXCLUDE** (these belong in full `08-api-contracts.md`):
+
 - Complete OpenAPI 3.0 specification
 - Request/response schemas
 - Error response definitions
@@ -411,26 +428,30 @@ Use template at `templates/08-api-contracts-essentials-template.md` to create `p
 **Why**: Session 10 (backlog generation) only needs the endpoint list to create stories. Loading the full 782-line OpenAPI spec bloats context by ~3,128 tokens when only ~280 tokens are needed.
 
 **Format**:
+
 ```markdown
 # API Contracts Essentials (For Backlog Generation)
 
 > See `08-api-contracts.md` for complete OpenAPI 3.0 specification
 
 ## API Configuration
+
 - API Style: [REST/GraphQL]
 - Authentication: [JWT/OAuth]
-...
+  ...
 
 ## Endpoints by Journey Step
 
 ### Authentication (Journey Step 0)
+
 - `POST /api/auth/login` - User login
-...
+  ...
 
 ### [Resource] Endpoints (Journey Step X)
+
 - `POST /api/[resource]` - Create [resource]
 - `GET /api/[resource]` - List [resource] (paginated)
-...
+  ...
 ```
 
 ---
@@ -440,18 +461,21 @@ Use template at `templates/08-api-contracts-essentials-template.md` to create `p
 **Quality Checklist:**
 
 **Journey Alignment:**
+
 - [ ] All journey actions have corresponding API endpoints
 - [ ] Critical path (Steps 1-3) fully supported by API
 - [ ] No endpoints that don't serve journey steps
 - [ ] API enables all features in backlog
 
 **Consistency:**
+
 - [ ] Naming conventions consistent (camelCase vs snake_case)
 - [ ] Error format consistent across all endpoints
 - [ ] Pagination format consistent
 - [ ] Authentication method consistent
 
 **Completeness:**
+
 - [ ] All CRUD operations defined where needed
 - [ ] All request schemas have validation rules
 - [ ] All responses include success and error cases
@@ -460,12 +484,14 @@ Use template at `templates/08-api-contracts-essentials-template.md` to create `p
 - [ ] Error codes documented
 
 **Tech Stack Alignment:**
+
 - [ ] API style matches tech stack decision (REST/GraphQL/etc.)
 - [ ] Auth method matches tech stack choice
 - [ ] Framework-specific features leveraged
 - [ ] OpenAPI format compatible with chosen tools
 
 **Security:**
+
 - [ ] Authentication required on protected endpoints
 - [ ] Authorization checks documented
 - [ ] Sensitive data not exposed in URLs
@@ -474,6 +500,7 @@ Use template at `templates/08-api-contracts-essentials-template.md` to create `p
 - [ ] HTTPS enforced in production
 
 **Performance:**
+
 - [ ] Pagination prevents large payloads
 - [ ] Heavy operations are async (return 202 Accepted)
 - [ ] Caching headers specified for cacheable endpoints
@@ -484,31 +511,37 @@ Use template at `templates/08-api-contracts-essentials-template.md` to create `p
 ## What We DIDN'T Choose (And Why)
 
 ### GraphQL API
+
 **What**: Query language letting clients request exact data needed
 **Why not**: Journey has simple CRUD (not complex graphs), team knows REST better, no over-fetching problem
 **Reconsider if**: Mobile app needs bandwidth optimization, UI needs highly variable data shapes, 50+ optional fields per entity
 
 ### gRPC API
+
 **What**: High-performance RPC with Protocol Buffers (binary)
 **Why not**: Web-based journey (browsers need grpc-web proxy), no network bottleneck, REST/JSON easier to debug
 **Reconsider if**: Microservices with service-to-service calls, need bidirectional streaming, internal-only APIs
 
 ### Header-Based API Versioning
+
 **What**: Version in `Accept: application/vnd.myapi.v2+json` header instead of URL
 **Why not**: URL versioning (`/v1/`, `/v2/`) is simpler, more explicit, easier to debug
 **Reconsider if**: Building hypermedia API (HATEOAS), version applies to entire surface
 
 ### Full OAuth 2.0 Server
+
 **What**: OAuth with authorization code flow, client credentials, refresh tokens
 **Why not**: B2B SaaS uses Clerk/Auth0 (not app authorization), high complexity, no third-party app integrations yet
 **Reconsider if**: Building platform with third-party apps (Slack/GitHub-style), need programmatic API access
 
 ### WebSocket for Real-Time
+
 **What**: Persistent bidirectional connection
 **Why not**: Polling every 2-5 seconds is acceptable for document processing, WebSocket adds complexity (scaling, connection mgmt)
 **Reconsider if**: Need <500ms updates (real-time collab), many users watching same resource, mobile app (battery)
 
 ### API Gateway (Kong, AWS)
+
 **What**: Centralized gateway for rate limiting, auth, logging, routing
 **Why not**: MVP stage (single service), framework middleware sufficient, operational complexity, cost
 **Reconsider if**: Microservices architecture, advanced rate limiting needs, detailed API analytics
@@ -538,12 +571,14 @@ Use template at `templates/08-api-contracts-essentials-template.md` to create `p
 Before completing this session, verify:
 
 **Journey Alignment:**
+
 - [ ] All user actions from journey have API endpoints
 - [ ] Critical path (journey steps 1-3) fully supported
 - [ ] No endpoints exist that don't serve a journey step
 - [ ] API enables all features in backlog
 
 **Completeness:**
+
 - [ ] All CRUD operations defined where needed
 - [ ] Request and response schemas complete
 - [ ] Validation rules specified
@@ -552,6 +587,7 @@ Before completing this session, verify:
 - [ ] Rate limiting and pagination specified
 
 **Technical Quality:**
+
 - [ ] OpenAPI 3.0 specification valid (use validator)
 - [ ] Consistent naming conventions
 - [ ] Consistent error format
@@ -559,12 +595,14 @@ Before completing this session, verify:
 - [ ] Security best practices followed (HTTPS, auth, rate limits)
 
 **Tech Stack Alignment:**
+
 - [ ] API style matches tech stack decision
 - [ ] Auth method from tech stack implemented
 - [ ] Framework-specific patterns leveraged
 - [ ] Documentation tool compatible with stack
 
 **Documentation:**
+
 - [ ] "What We DIDN'T Choose" section complete (3+ alternatives)
 - [ ] Each endpoint has purpose explanation
 - [ ] Design decisions reference journey
@@ -572,6 +610,7 @@ Before completing this session, verify:
 - [ ] Setup instructions clear
 
 **Essentials Version (for backlog generation):**
+
 - [ ] Essentials file created at `08-api-contracts-essentials.md`
 - [ ] All endpoints listed with journey step mapping
 - [ ] File is 100-200 lines (not bloated with schemas)
@@ -595,6 +634,7 @@ Before completing this session, verify:
 **Every endpoint must serve the user journey.**
 
 Don't create endpoints "just in case". Design APIs based on:
+
 1. What user actions require API support? → Endpoints
 2. What data flows through the system? → Schemas
 3. How do users interact with features? → Request/response patterns
@@ -603,6 +643,7 @@ Don't create endpoints "just in case". Design APIs based on:
 If you can't trace an endpoint back to a journey step or backlog feature, you probably don't need it.
 
 **Reference files:**
+
 - Journey: `product-guidelines/00-user-journey.md`
 - Tech stack: `product-guidelines/02-tech-stack.md`
 - Architecture: `product-guidelines/04-architecture.md`

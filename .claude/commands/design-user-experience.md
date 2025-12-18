@@ -9,20 +9,24 @@ You are helping the user create detailed UX design including research, informati
 ## When to Use This
 
 **Run AFTER Session 3** (`/generate-strategy`) if:
+
 - You've defined strategy and need detailed UX before design system
 - You want to map user flows and information architecture
 - You need wireframes and interaction specs before visual design
 
 **Or run ALONGSIDE Session 4** if:
+
 - You're doing design system and UX simultaneously
 - You have a designer who works both levels
 
 **Difference from Session 4**:
+
 - **Session 4** (`/create-design`): Design SYSTEM (tokens, components, patterns) - the visual language
 - **This command**: UX DESIGN (research, flows, wireframes, interactions) - the structure and behavior
 - **Both complement**: UX defines behavior, design system defines appearance
 
 **Skip this** if:
+
 - You're building a simple product without complex flows
 - You prefer to discover UX through prototyping
 - You don't have design resources yet
@@ -34,27 +38,33 @@ Create comprehensive UX design documentation using the prompt in `/prompts/desig
 ### Steps to Execute
 
 1. **Read the UX design prompt**:
+
    ```bash
    Read /prompts/design/user-experience.md
    ```
 
 2. **Read the template structure**:
+
    ```bash
    Read templates/19-user-experience-template.md
    ```
 
 3. **Check for cascade inputs** (required):
+
    ```bash
    Read product-guidelines/00-user-journey.md
    Read product-guidelines/05-architecture.md
    ```
+
    - User journey shows the high-level flow
    - Architecture shows technical constraints and patterns
 
 4. **Check for backlog** (recommended):
+
    ```bash
    Read product-guidelines/07-backlog/
    ```
+
    - Backlog shows specific features to design for
 
 5. **Interview the user** following the UX design prompt:
@@ -88,6 +98,7 @@ Create comprehensive UX design documentation using the prompt in `/prompts/desig
 `product-guidelines/19-user-experience.md`
 
 This will be used by:
+
 - Designers creating visual design (Session 4 or after)
 - Developers implementing features (with design system)
 - Product managers validating flows
@@ -97,6 +108,7 @@ This will be used by:
 ## Template Structure
 
 The output follows this structure:
+
 - UX Research Summary (users, needs, pain points)
 - Information Architecture (site map, navigation)
 - User Flows (critical paths with decision points)
@@ -173,10 +185,12 @@ Ready to create your design system with /create-design?
 ## After This Session
 
 **Recommended next**:
+
 - `/create-design` (Session 4) if you haven't run it yet - use this UX as input
 - Or start building with your design system (if Session 4 is complete)
 
 **Use this document**:
+
 - When implementing features from backlog
 - When validating prototypes with users
 - When onboarding new designers or developers

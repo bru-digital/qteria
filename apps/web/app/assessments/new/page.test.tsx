@@ -1,29 +1,29 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
-import { userEvent } from "@testing-library/user-event"
-import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
-import NewAssessmentPage from "./page"
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import NewAssessmentPage from './page'
 
 // Mock Next.js navigation
-vi.mock("next/navigation", () => ({
+vi.mock('next/navigation', () => ({
   useRouter: vi.fn(),
 }))
 
 // Mock Next Auth
-vi.mock("next-auth/react", () => ({
+vi.mock('next-auth/react', () => ({
   useSession: vi.fn(),
 }))
 
 // Mock react-dropzone
-vi.mock("react-dropzone", () => ({
+vi.mock('react-dropzone', () => ({
   useDropzone: vi.fn(({ onDrop, accept, maxSize }) => ({
     getRootProps: () => ({
       onClick: () => {},
     }),
     getInputProps: () => ({
-      type: "file",
-      accept: Object.keys(accept).join(","),
+      type: 'file',
+      accept: Object.keys(accept).join(','),
       multiple: false,
     }),
     isDragActive: false,
@@ -37,41 +37,41 @@ vi.mock("react-dropzone", () => ({
 // Mock fetch for API calls
 global.fetch = vi.fn()
 
-describe("NewAssessmentPage", () => {
+describe('NewAssessmentPage', () => {
   const mockRouter = {
     push: vi.fn(),
   }
 
   const mockWorkflows = [
     {
-      id: "workflow-1",
-      name: "ISO 9001 Certification",
-      description: "Quality Management System",
+      id: 'workflow-1',
+      name: 'ISO 9001 Certification',
+      description: 'Quality Management System',
       buckets: [
         {
-          id: "bucket-1",
-          name: "Test Reports",
-          description: "All test reports",
+          id: 'bucket-1',
+          name: 'Test Reports',
+          description: 'All test reports',
           required: true,
           order_index: 0,
         },
         {
-          id: "bucket-2",
-          name: "Risk Assessment",
-          description: "Risk analysis documents",
+          id: 'bucket-2',
+          name: 'Risk Assessment',
+          description: 'Risk analysis documents',
           required: false,
           order_index: 1,
         },
       ],
     },
     {
-      id: "workflow-2",
-      name: "CE Marking",
-      description: "European Conformity",
+      id: 'workflow-2',
+      name: 'CE Marking',
+      description: 'European Conformity',
       buckets: [
         {
-          id: "bucket-3",
-          name: "Declaration of Conformity",
+          id: 'bucket-3',
+          name: 'Declaration of Conformity',
           required: true,
           order_index: 0,
         },
@@ -80,9 +80,9 @@ describe("NewAssessmentPage", () => {
   ]
 
   const mockDocument = {
-    id: "doc-123",
-    file_name: "test-report.pdf",
-    storage_key: "blob/test-report.pdf",
+    id: 'doc-123',
+    file_name: 'test-report.pdf',
+    storage_key: 'blob/test-report.pdf',
     file_size_bytes: 1024000, // ~1MB
   }
 
@@ -92,43 +92,42 @@ describe("NewAssessmentPage", () => {
     ;(global.fetch as any).mockClear()
   })
 
-  describe("Authentication", () => {
-    it("redirects to login when user is unauthenticated", () => {
+  describe('Authentication', () => {
+    it('redirects to login when user is unauthenticated', () => {
       ;(useSession as any).mockReturnValue({
         data: null,
-        status: "unauthenticated",
+        status: 'unauthenticated',
       })
 
       render(<NewAssessmentPage />)
 
-      expect(mockRouter.push).toHaveBeenCalledWith("/login")
+      expect(mockRouter.push).toHaveBeenCalledWith('/login')
     })
 
-    it("shows loading state while checking authentication", () => {
+    it('shows loading state while checking authentication', () => {
       ;(useSession as any).mockReturnValue({
         data: null,
-        status: "loading",
+        status: 'loading',
       })
 
       render(<NewAssessmentPage />)
 
-      expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument()
-      expect(screen.getByText("Loading...")).toBeInTheDocument()
+      expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument()
+      expect(screen.getByText('Loading...')).toBeInTheDocument()
     })
 
-    it("renders page content when authenticated", async () => {
+    it('renders page content when authenticated', async () => {
       ;(useSession as any).mockReturnValue({
         data: {
           user: {
-            id: "user-123",
-            email: "ph@example.com",
-            role: "project_handler",
-            organizationId: "org-123",
+            id: 'user-123',
+            email: 'ph@example.com',
+            role: 'project_handler',
+            organizationId: 'org-123',
           },
         },
-        status: "authenticated",
+        status: 'authenticated',
       })
-
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
         json: async () => mockWorkflows,
@@ -137,27 +136,27 @@ describe("NewAssessmentPage", () => {
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(screen.getByText("New Assessment")).toBeInTheDocument()
+        expect(screen.getByText('New Assessment')).toBeInTheDocument()
       })
     })
   })
 
-  describe("Workflow Selector", () => {
+  describe('Workflow Selector', () => {
     beforeEach(() => {
       ;(useSession as any).mockReturnValue({
         data: {
           user: {
-            id: "user-123",
-            email: "ph@example.com",
-            role: "project_handler",
-            organizationId: "org-123",
+            id: 'user-123',
+            email: 'ph@example.com',
+            role: 'project_handler',
+            organizationId: 'org-123',
           },
         },
-        status: "authenticated",
+        status: 'authenticated',
       })
     })
 
-    it("fetches and displays workflows on mount", async () => {
+    it('fetches and displays workflows on mount', async () => {
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
         json: async () => mockWorkflows,
@@ -166,15 +165,15 @@ describe("NewAssessmentPage", () => {
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith("/api/v1/workflows")
+        expect(global.fetch).toHaveBeenCalledWith('/api/v1/workflows')
       })
 
       await waitFor(() => {
-        expect(screen.getByText("Select Workflow")).toBeInTheDocument()
+        expect(screen.getByText('Select Workflow')).toBeInTheDocument()
       })
     })
 
-    it("displays workflow options in dropdown", async () => {
+    it('displays workflow options in dropdown', async () => {
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
         json: async () => mockWorkflows,
@@ -183,7 +182,7 @@ describe("NewAssessmentPage", () => {
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        const select = screen.getByRole("combobox")
+        const select = screen.getByRole('combobox')
         expect(select).toBeInTheDocument()
       })
 
@@ -192,7 +191,7 @@ describe("NewAssessmentPage", () => {
       expect(screen.getByText(/CE Marking/i)).toBeInTheDocument()
     })
 
-    it("shows message when no workflows available", async () => {
+    it('shows message when no workflows available', async () => {
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
         json: async () => [],
@@ -202,12 +201,12 @@ describe("NewAssessmentPage", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("No workflows available. Please create a workflow first.")
+          screen.getByText('No workflows available. Please create a workflow first.')
         ).toBeInTheDocument()
       })
     })
 
-    it("displays buckets after workflow selection", async () => {
+    it('displays buckets after workflow selection', async () => {
       const user = userEvent.setup()
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -217,69 +216,68 @@ describe("NewAssessmentPage", () => {
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(screen.getByRole("combobox")).toBeInTheDocument()
+        expect(screen.getByRole('combobox')).toBeInTheDocument()
       })
 
-      const select = screen.getByRole("combobox")
-      await user.selectOptions(select, "workflow-1")
+      const select = screen.getByRole('combobox')
+      await user.selectOptions(select, 'workflow-1')
 
       await waitFor(() => {
-        expect(screen.getByText("Upload Documents")).toBeInTheDocument()
-        expect(screen.getByText("Test Reports")).toBeInTheDocument()
-        expect(screen.getByText("Risk Assessment")).toBeInTheDocument()
+        expect(screen.getByText('Upload Documents')).toBeInTheDocument()
+        expect(screen.getByText('Test Reports')).toBeInTheDocument()
+        expect(screen.getByText('Risk Assessment')).toBeInTheDocument()
       })
     })
 
-    it("displays error when workflow fetch fails", async () => {
-      ;(global.fetch as any).mockRejectedValueOnce(new Error("Network error"))
+    it('displays error when workflow fetch fails', async () => {
+      ;(global.fetch as any).mockRejectedValueOnce(new Error('Network error'))
 
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(screen.getByText("Network error")).toBeInTheDocument()
+        expect(screen.getByText('Network error')).toBeInTheDocument()
       })
     })
   })
 
-  describe("Document Upload Validation", () => {
+  describe('Document Upload Validation', () => {
     beforeEach(() => {
       ;(useSession as any).mockReturnValue({
         data: {
           user: {
-            id: "user-123",
-            email: "ph@example.com",
-            role: "project_handler",
-            organizationId: "org-123",
+            id: 'user-123',
+            email: 'ph@example.com',
+            role: 'project_handler',
+            organizationId: 'org-123',
           },
         },
-        status: "authenticated",
+        status: 'authenticated',
       })
-
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
         json: async () => mockWorkflows,
       })
     })
 
-    it("shows required indicator (*) for required buckets", async () => {
+    it('shows required indicator (*) for required buckets', async () => {
       const user = userEvent.setup()
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(screen.getByRole("combobox")).toBeInTheDocument()
+        expect(screen.getByRole('combobox')).toBeInTheDocument()
       })
 
-      const select = screen.getByRole("combobox")
-      await user.selectOptions(select, "workflow-1")
+      const select = screen.getByRole('combobox')
+      await user.selectOptions(select, 'workflow-1')
 
       await waitFor(() => {
-        const testReportsHeading = screen.getByText("Test Reports")
+        const testReportsHeading = screen.getByText('Test Reports')
         const parentDiv = testReportsHeading.parentElement
-        expect(parentDiv?.textContent).toContain("*")
+        expect(parentDiv?.textContent).toContain('*')
       })
     })
 
-    it("accepts valid PDF file upload", async () => {
+    it('accepts valid PDF file upload', async () => {
       const user = userEvent.setup()
       ;(global.fetch as any)
         .mockResolvedValueOnce({
@@ -294,19 +292,19 @@ describe("NewAssessmentPage", () => {
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(screen.getByRole("combobox")).toBeInTheDocument()
+        expect(screen.getByRole('combobox')).toBeInTheDocument()
       })
 
-      const select = screen.getByRole("combobox")
-      await user.selectOptions(select, "workflow-1")
+      const select = screen.getByRole('combobox')
+      await user.selectOptions(select, 'workflow-1')
 
       await waitFor(() => {
-        expect(screen.getByText("Test Reports")).toBeInTheDocument()
+        expect(screen.getByText('Test Reports')).toBeInTheDocument()
       })
 
       // Simulate file upload
-      const file = new File(["test content"], "test-report.pdf", {
-        type: "application/pdf",
+      const file = new File(['test content'], 'test-report.pdf', {
+        type: 'application/pdf',
       })
 
       // Mock the upload endpoint - verify dropzone is rendered
@@ -317,38 +315,35 @@ describe("NewAssessmentPage", () => {
 
       // Simulate successful upload by calling fetch
       const formData = new FormData()
-      formData.append("file", file)
-      formData.append("bucket_id", "bucket-1")
+      formData.append('file', file)
+      formData.append('bucket_id', 'bucket-1')
 
-      await fetch("/api/v1/documents", {
-        method: "POST",
+      await fetch('/api/v1/documents', {
+        method: 'POST',
         body: formData,
       })
 
       expect(global.fetch).toHaveBeenCalledWith(
-        "/api/v1/documents",
+        '/api/v1/documents',
         expect.objectContaining({
-          method: "POST",
+          method: 'POST',
         })
       )
     })
-
-
-
   })
 
-  describe("Start Assessment Button", () => {
+  describe('Start Assessment Button', () => {
     beforeEach(() => {
       ;(useSession as any).mockReturnValue({
         data: {
           user: {
-            id: "user-123",
-            email: "ph@example.com",
-            role: "project_handler",
-            organizationId: "org-123",
+            id: 'user-123',
+            email: 'ph@example.com',
+            role: 'project_handler',
+            organizationId: 'org-123',
           },
         },
-        status: "authenticated",
+        status: 'authenticated',
       })
 
       // Default mock for workflows - can be overridden in individual tests
@@ -358,62 +353,59 @@ describe("NewAssessmentPage", () => {
       })
     })
 
-    it("is disabled when no workflow is selected", async () => {
+    it('is disabled when no workflow is selected', async () => {
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(screen.getByRole("combobox")).toBeInTheDocument()
+        expect(screen.getByRole('combobox')).toBeInTheDocument()
       })
 
       // Button should not be visible when no workflow is selected
-      expect(screen.queryByText("Start Assessment")).not.toBeInTheDocument()
+      expect(screen.queryByText('Start Assessment')).not.toBeInTheDocument()
     })
 
-    it("is disabled when required buckets are empty", async () => {
+    it('is disabled when required buckets are empty', async () => {
       const user = userEvent.setup()
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(screen.getByRole("combobox")).toBeInTheDocument()
+        expect(screen.getByRole('combobox')).toBeInTheDocument()
       })
 
-      const select = screen.getByRole("combobox")
-      await user.selectOptions(select, "workflow-1")
+      const select = screen.getByRole('combobox')
+      await user.selectOptions(select, 'workflow-1')
 
       await waitFor(() => {
-        const button = screen.getByRole("button", { name: /Start Assessment/i })
+        const button = screen.getByRole('button', { name: /Start Assessment/i })
         expect(button).toBeDisabled()
       })
     })
-
-
-
   })
 
-  describe("Error Handling", () => {
+  describe('Error Handling', () => {
     beforeEach(() => {
       ;(useSession as any).mockReturnValue({
         data: {
           user: {
-            id: "user-123",
-            email: "ph@example.com",
-            role: "project_handler",
-            organizationId: "org-123",
+            id: 'user-123',
+            email: 'ph@example.com',
+            role: 'project_handler',
+            organizationId: 'org-123',
           },
         },
-        status: "authenticated",
+        status: 'authenticated',
       })
     })
 
-    it("displays error section when workflow fetch fails", async () => {
+    it('displays error section when workflow fetch fails', async () => {
       ;(global.fetch as any).mockClear()
-      ;(global.fetch as any).mockRejectedValueOnce(new Error("Network error"))
+      ;(global.fetch as any).mockRejectedValueOnce(new Error('Network error'))
 
       render(<NewAssessmentPage />)
 
       // Component renders without crashing and shows error state
       await waitFor(() => {
-        expect(screen.getByText("New Assessment")).toBeInTheDocument()
+        expect(screen.getByText('New Assessment')).toBeInTheDocument()
       })
 
       // Error display structure is present (testing implementation detail, but necessary for coverage)
@@ -421,23 +413,22 @@ describe("NewAssessmentPage", () => {
     })
   })
 
-
-  describe("Responsive Behavior", () => {
+  describe('Responsive Behavior', () => {
     beforeEach(() => {
       ;(useSession as any).mockReturnValue({
         data: {
           user: {
-            id: "user-123",
-            email: "ph@example.com",
-            role: "project_handler",
-            organizationId: "org-123",
+            id: 'user-123',
+            email: 'ph@example.com',
+            role: 'project_handler',
+            organizationId: 'org-123',
           },
         },
-        status: "authenticated",
+        status: 'authenticated',
       })
     })
 
-    it("renders main container with responsive classes", async () => {
+    it('renders main container with responsive classes', async () => {
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
         json: async () => mockWorkflows,
@@ -446,31 +437,31 @@ describe("NewAssessmentPage", () => {
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(screen.getByText("New Assessment")).toBeInTheDocument()
+        expect(screen.getByText('New Assessment')).toBeInTheDocument()
       })
 
       // Verify responsive container is present
-      const main = screen.getByRole("main")
-      expect(main).toHaveClass("max-w-4xl", "mx-auto")
+      const main = screen.getByRole('main')
+      expect(main).toHaveClass('max-w-4xl', 'mx-auto')
     })
   })
 
-  describe("Navigation", () => {
+  describe('Navigation', () => {
     beforeEach(() => {
       ;(useSession as any).mockReturnValue({
         data: {
           user: {
-            id: "user-123",
-            email: "ph@example.com",
-            role: "project_handler",
-            organizationId: "org-123",
+            id: 'user-123',
+            email: 'ph@example.com',
+            role: 'project_handler',
+            organizationId: 'org-123',
           },
         },
-        status: "authenticated",
+        status: 'authenticated',
       })
     })
 
-    it("has back button to dashboard", async () => {
+    it('has back button to dashboard', async () => {
       const user = userEvent.setup()
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -480,13 +471,13 @@ describe("NewAssessmentPage", () => {
       render(<NewAssessmentPage />)
 
       await waitFor(() => {
-        expect(screen.getByText("← Back")).toBeInTheDocument()
+        expect(screen.getByText('← Back')).toBeInTheDocument()
       })
 
-      const backButton = screen.getByText("← Back")
+      const backButton = screen.getByText('← Back')
       await user.click(backButton)
 
-      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard")
+      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
     })
   })
 })

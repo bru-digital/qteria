@@ -37,11 +37,13 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI + SQLAlchemy
 - Database: PostgreSQL (assessments, assessment_documents tables)
 - Job Queue: Celery + Redis (for STORY-023)
 
 **API Endpoint** (`app/api/v1/assessments.py`):
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -137,6 +139,7 @@ async def start_assessment(
 ```
 
 **Pydantic Schemas** (`app/schemas/assessment.py`):
+
 ```python
 from pydantic import BaseModel, Field
 from typing import List
@@ -160,6 +163,7 @@ class AssessmentResponse(BaseModel):
 ```
 
 **Example Request**:
+
 ```json
 POST /v1/assessments
 Authorization: Bearer <jwt_token>
@@ -181,6 +185,7 @@ Content-Type: application/json
 ```
 
 **Example Response**:
+
 ```json
 {
   "id": "assessment_xyz789",
@@ -211,6 +216,7 @@ Content-Type: application/json
 **Effort**: 2 person-days
 
 **Breakdown**:
+
 - API endpoint: 0.5 days (validation logic)
 - Required bucket validation: 0.5 days (complex logic)
 - Assessment record creation: 0.5 days (joins)
@@ -237,6 +243,7 @@ Content-Type: application/json
 ## Testing Requirements
 
 **Integration Tests**:
+
 - [ ] Valid assessment → 201 Created, assessment + joins created
 - [ ] Missing required bucket → 400 Bad Request
 - [ ] Invalid workflow_id → 404 Not Found
@@ -251,9 +258,11 @@ Content-Type: application/json
 ## Risks & Mitigations
 
 **Risk**: Required bucket validation logic has bugs (missing edge cases)
+
 - **Mitigation**: Comprehensive tests covering all scenarios, validate against workflow definition
 
 **Risk**: Race condition (document deleted between validation and assessment creation)
+
 - **Mitigation**: Database transaction ensures atomicity, validate documents exist in transaction
 
 ---

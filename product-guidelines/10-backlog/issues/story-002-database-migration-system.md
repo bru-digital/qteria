@@ -35,11 +35,13 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Migrations: Alembic (Python)
 - Database: PostgreSQL 15+ (Vercel Postgres)
 - ORM: SQLAlchemy
 
 **Implementation Notes**:
+
 - Initialize Alembic with `alembic init alembic`
 - Configure alembic.ini with database connection string (use environment variables)
 - Create initial migration from STORY-001 schema
@@ -47,6 +49,7 @@
 - Store migrations in `alembic/versions/` directory
 
 **Migration Structure**:
+
 ```python
 # alembic/versions/v001_initial_schema.py
 def upgrade():
@@ -63,6 +66,7 @@ def downgrade():
 ```
 
 **Commands**:
+
 ```bash
 # Create migration
 alembic revision -m "initial schema"
@@ -91,6 +95,7 @@ alembic history
 **Effort**: 1 person-day
 
 **Breakdown**:
+
 - Alembic setup: 0.25 days (config, initialization)
 - Initial migration creation: 0.25 days (convert STORY-001 schema to migration)
 - Testing upgrade/downgrade: 0.25 days (test on local + Vercel Postgres)
@@ -116,6 +121,7 @@ alembic history
 ## Testing Requirements
 
 **Integration Tests** (70% coverage target):
+
 - [ ] Run upgrade → verify all 9 tables exist
 - [ ] Run downgrade → verify all tables removed
 - [ ] Run upgrade again → verify tables recreated
@@ -124,6 +130,7 @@ alembic history
 - [ ] Test with existing database (upgrade scenario)
 
 **Edge Cases**:
+
 - [ ] Migration fails mid-execution → rollback transaction
 - [ ] Run migration twice → idempotent (no errors)
 - [ ] Concurrent migrations → handled gracefully (alembic lock)
@@ -133,12 +140,15 @@ alembic history
 ## Risks & Mitigations
 
 **Risk**: Migration fails in production, database left in inconsistent state
+
 - **Mitigation**: Use database transactions, test migrations thoroughly on staging, enable backups before migration
 
 **Risk**: Downgrade loses data (destructive operations)
+
 - **Mitigation**: Document which migrations are destructive, require manual confirmation for data-loss migrations
 
 **Risk**: Alembic auto-generate creates incorrect migrations
+
 - **Mitigation**: Always review auto-generated migrations manually, test upgrade/downgrade before committing
 
 ---

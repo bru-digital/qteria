@@ -28,11 +28,13 @@
 ## Technical Details
 
 **API Endpoint**:
+
 ```python
 POST /v1/assessments/{assessment_id}/rerun
 ```
 
 **Implementation**:
+
 ```python
 @router.post("/assessments/{assessment_id}/rerun")
 async def rerun_assessment(

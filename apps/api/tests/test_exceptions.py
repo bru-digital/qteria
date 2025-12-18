@@ -1,4 +1,5 @@
 """Unit tests for standardized error response handling."""
+
 import pytest
 from fastapi import Request, HTTPException
 from unittest.mock import MagicMock, Mock
@@ -37,6 +38,7 @@ def test_create_error_response_with_details():
 
 def test_create_error_response_with_request_state():
     """Test error response uses request_id from request state."""
+
     # Create a simple state object with instance attribute
     class State:
         def __init__(self):

@@ -85,6 +85,7 @@
 ### Pagination Parameters (List Endpoints)
 
 All `GET /api/[resource]` endpoints support:
+
 - `cursor` or `page` - Pagination cursor/page number
 - `limit` - Items per page (default: 20, max: 100)
 - `sort` - Sort field (prefix `-` for descending, e.g., `-created_at`)
@@ -92,6 +93,7 @@ All `GET /api/[resource]` endpoints support:
 ### Filtering Parameters (List Endpoints)
 
 Resource-specific filters vary, common examples:
+
 - `status` - Filter by status (e.g., `active`, `inactive`)
 - `search` - Text search across relevant fields
 - `created_after` / `created_before` - Date range filters
@@ -116,15 +118,18 @@ Resource-specific filters vary, common examples:
 ### Story Scoping
 
 **Simple endpoint stories** (1-2 days):
+
 - Single CRUD operations: `POST /api/[resource]`, `GET /api/[resource]/{id}`
 - Example: "User can create [resource1]" → Implement POST endpoint
 
 **Medium endpoint stories** (2-4 days):
+
 - List endpoints with pagination/filtering: `GET /api/[resource]`
 - Custom actions: `POST /api/[resource]/{id}/[action]`
 - Example: "User can filter [resource1] by status" → Add query params + filtering logic
 
 **Complex endpoint stories** (4+ days - should be split):
+
 - File uploads with processing
 - Bulk operations
 - Complex analytics aggregations
@@ -132,6 +137,7 @@ Resource-specific filters vary, common examples:
 ### Multi-tenancy Considerations
 
 All endpoints (except auth and public) must:
+
 - Verify team membership
 - Filter data by `team_id`
 - Include "data isolation" in acceptance criteria
@@ -139,6 +145,7 @@ All endpoints (except auth and public) must:
 ### Authentication Flow
 
 Stories that need authentication endpoints:
+
 - User registration flow → `POST /api/auth/signup`
 - Login flow → `POST /api/auth/login`
 - Token refresh → `POST /api/auth/refresh`
@@ -148,6 +155,7 @@ Stories that need authentication endpoints:
 ## References
 
 For complete API specification including:
+
 - Full OpenAPI 3.0 YAML
 - Request/response schemas with validation rules
 - Error response definitions

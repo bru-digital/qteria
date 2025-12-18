@@ -6,7 +6,7 @@
  * - Max 20 total login attempts per IP per hour
  */
 
-import Redis from "ioredis"
+import Redis from 'ioredis'
 
 /**
  * Redis client singleton
@@ -15,7 +15,7 @@ let redis: Redis | null = null
 
 function getRedisClient(): Redis {
   if (!redis) {
-    const redisUrl = process.env.REDIS_URL || "redis://localhost:6379/0"
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379/0'
 
     redis = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
@@ -26,18 +26,18 @@ function getRedisClient(): Redis {
       lazyConnect: true, // Don't connect immediately
     })
 
-    redis.on("error", (err) => {
-      console.error("[REDIS] Connection error:", err)
+    redis.on('error', err => {
+      console.error('[REDIS] Connection error:', err)
     })
 
-    redis.on("connect", () => {
-      console.log("[REDIS] Connected successfully")
+    redis.on('connect', () => {
+      console.log('[REDIS] Connected successfully')
     })
 
     // Attempt to connect
-    redis.connect().catch((err) => {
-      console.error("[REDIS] Failed to connect:", err)
-      console.warn("[REDIS] Rate limiting will be disabled")
+    redis.connect().catch(err => {
+      console.error('[REDIS] Failed to connect:', err)
+      console.warn('[REDIS] Rate limiting will be disabled')
     })
   }
 
@@ -72,14 +72,12 @@ export interface RateLimitResult {
  * @param email - User email address
  * @returns Rate limit result
  */
-export async function checkFailedLoginRateLimit(
-  email: string
-): Promise<RateLimitResult> {
+export async function checkFailedLoginRateLimit(email: string): Promise<RateLimitResult> {
   const client = getRedisClient()
 
   // If Redis is not connected, allow the request (fail open for availability)
-  if (client.status !== "ready") {
-    console.warn("[RATE_LIMIT] Redis not ready, allowing request")
+  if (client.status !== 'ready') {
+    console.warn('[RATE_LIMIT] Redis not ready, allowing request')
     return {
       allowed: true,
       remainingAttempts: RateLimitConfig.FAILED_LOGIN_MAX_ATTEMPTS,
@@ -111,7 +109,7 @@ export async function checkFailedLoginRateLimit(
       resetInSeconds: RateLimitConfig.FAILED_LOGIN_WINDOW_SECONDS,
     }
   } catch (error) {
-    console.error("[RATE_LIMIT] Error checking failed login rate limit:", error)
+    console.error('[RATE_LIMIT] Error checking failed login rate limit:', error)
     // On error, fail open (allow the request)
     return {
       allowed: true,
@@ -129,8 +127,8 @@ export async function checkFailedLoginRateLimit(
 export async function recordFailedLoginAttempt(email: string): Promise<void> {
   const client = getRedisClient()
 
-  if (client.status !== "ready") {
-    console.warn("[RATE_LIMIT] Redis not ready, skipping failed login recording")
+  if (client.status !== 'ready') {
+    console.warn('[RATE_LIMIT] Redis not ready, skipping failed login recording')
     return
   }
 
@@ -144,7 +142,7 @@ export async function recordFailedLoginAttempt(email: string): Promise<void> {
       await client.expire(key, RateLimitConfig.FAILED_LOGIN_WINDOW_SECONDS)
     }
   } catch (error) {
-    console.error("[RATE_LIMIT] Error recording failed login attempt:", error)
+    console.error('[RATE_LIMIT] Error recording failed login attempt:', error)
   }
 }
 
@@ -156,7 +154,7 @@ export async function recordFailedLoginAttempt(email: string): Promise<void> {
 export async function resetFailedLoginAttempts(email: string): Promise<void> {
   const client = getRedisClient()
 
-  if (client.status !== "ready") {
+  if (client.status !== 'ready') {
     return
   }
 
@@ -165,7 +163,7 @@ export async function resetFailedLoginAttempts(email: string): Promise<void> {
   try {
     await client.del(key)
   } catch (error) {
-    console.error("[RATE_LIMIT] Error resetting failed login attempts:", error)
+    console.error('[RATE_LIMIT] Error resetting failed login attempts:', error)
   }
 }
 
@@ -175,14 +173,12 @@ export async function resetFailedLoginAttempts(email: string): Promise<void> {
  * @param ipAddress - Client IP address
  * @returns Rate limit result
  */
-export async function checkTotalLoginRateLimit(
-  ipAddress: string
-): Promise<RateLimitResult> {
+export async function checkTotalLoginRateLimit(ipAddress: string): Promise<RateLimitResult> {
   const client = getRedisClient()
 
   // If Redis is not connected, allow the request (fail open)
-  if (client.status !== "ready") {
-    console.warn("[RATE_LIMIT] Redis not ready, allowing request")
+  if (client.status !== 'ready') {
+    console.warn('[RATE_LIMIT] Redis not ready, allowing request')
     return {
       allowed: true,
       remainingAttempts: RateLimitConfig.TOTAL_LOGIN_MAX_ATTEMPTS,
@@ -214,7 +210,7 @@ export async function checkTotalLoginRateLimit(
       resetInSeconds: RateLimitConfig.TOTAL_LOGIN_WINDOW_SECONDS,
     }
   } catch (error) {
-    console.error("[RATE_LIMIT] Error checking total login rate limit:", error)
+    console.error('[RATE_LIMIT] Error checking total login rate limit:', error)
     // On error, fail open (allow the request)
     return {
       allowed: true,
@@ -232,8 +228,8 @@ export async function checkTotalLoginRateLimit(
 export async function recordLoginAttempt(ipAddress: string): Promise<void> {
   const client = getRedisClient()
 
-  if (client.status !== "ready") {
-    console.warn("[RATE_LIMIT] Redis not ready, skipping login attempt recording")
+  if (client.status !== 'ready') {
+    console.warn('[RATE_LIMIT] Redis not ready, skipping login attempt recording')
     return
   }
 
@@ -247,7 +243,7 @@ export async function recordLoginAttempt(ipAddress: string): Promise<void> {
       await client.expire(key, RateLimitConfig.TOTAL_LOGIN_WINDOW_SECONDS)
     }
   } catch (error) {
-    console.error("[RATE_LIMIT] Error recording login attempt:", error)
+    console.error('[RATE_LIMIT] Error recording login attempt:', error)
   }
 }
 
@@ -259,14 +255,14 @@ export async function recordLoginAttempt(ipAddress: string): Promise<void> {
  */
 export function formatRateLimitReset(seconds: number): string {
   if (seconds < 60) {
-    return `${seconds} second${seconds !== 1 ? "s" : ""}`
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`
   }
 
   const minutes = Math.ceil(seconds / 60)
   if (minutes < 60) {
-    return `${minutes} minute${minutes !== 1 ? "s" : ""}`
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`
   }
 
   const hours = Math.ceil(minutes / 60)
-  return `${hours} hour${hours !== 1 ? "s" : ""}`
+  return `${hours} hour${hours !== 1 ? 's' : ''}`
 }

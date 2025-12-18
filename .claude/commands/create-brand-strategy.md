@@ -9,6 +9,7 @@ This is **Session 5** of the cascade. You'll create a comprehensive brand strate
 ## When to Use This
 
 **Run AFTER Session 4** (`/generate-strategy`) when you have:
+
 - ✅ User journey defined (`product-guidelines/00-user-journey.md`)
 - ✅ Product strategy validated (`product-guidelines/01-product-strategy.md`)
 - ✅ Tech stack chosen (`product-guidelines/02-tech-stack.md`)
@@ -17,6 +18,7 @@ This is **Session 5** of the cascade. You'll create a comprehensive brand strate
 Your brand should EXPRESS the value you deliver in the user journey, not be created in a vacuum.
 
 **Skip this** if:
+
 - You already have established branding (but consider documenting it)
 
 ## Cascade Inputs
@@ -24,30 +26,38 @@ Your brand should EXPRESS the value you deliver in the user journey, not be crea
 This command READS previous outputs to ground your brand in reality:
 
 1. **Read the user journey**:
+
    ```bash
    Read product-guidelines/00-user-journey.md
    ```
+
    - Identify: What problem do users struggle with?
    - Identify: What's the "aha moment" in the journey?
    - Identify: Where does value get delivered?
 
 2. **Read the product strategy**:
+
    ```bash
    Read product-guidelines/01-product-strategy.md
    ```
+
    - Understand your market positioning and competitive differentiation
 
 3. **Read the mission**:
+
    ```bash
    Read product-guidelines/03-mission.md
    ```
+
    - Your mission = the promise to deliver journey value
    - Brand purpose should express WHY you keep this promise
 
 4. **Read the metrics** (optional):
+
    ```bash
    Read product-guidelines/04-metrics.md
    ```
+
    - What defines success? Brand should communicate this.
 
 Your brand strategy must connect to these inputs. Don't create brand in isolation.
@@ -59,6 +69,7 @@ Create a comprehensive brand strategy document by following the prompt in `/prom
 ### Steps to Execute
 
 1. **FIRST: Read cascade inputs** (see "Cascade Inputs" section above):
+
    ```bash
    Read product-guidelines/00-user-journey.md
    Read product-guidelines/01-product-strategy.md
@@ -68,6 +79,7 @@ Create a comprehensive brand strategy document by following the prompt in `/prom
    ```
 
 2. **Read the template structure**:
+
    ```bash
    Read templates/05-brand-strategy-template.md
    ```
@@ -108,6 +120,7 @@ Create a comprehensive brand strategy document by following the prompt in `/prom
 `product-guidelines/05-brand-strategy.md`
 
 This will be read by:
+
 - `/create-design` (Session 6) - Uses brand strategy to inform design decisions (colors, typography, personality)
 - `/discover-naming` - Uses brand strategy to generate journey-aligned names
 - `/define-messaging` - Uses brand strategy for messaging framework
@@ -116,6 +129,7 @@ This will be read by:
 ## Template Structure
 
 The output follows this structure:
+
 - Brand Purpose (why we exist)
 - Core Values (3-5 guiding principles)
 - Brand Personality (how we show up)
@@ -167,9 +181,11 @@ Or check progress: /cascade-status
 ## After This Session
 
 **Recommended next**:
+
 - `/create-design` (Session 6) - Create design system informed by your brand strategy
 
 **Optional extensions** (can run after Session 6+):
+
 - `/discover-naming` - Generate brand name that expresses journey value
 - `/define-messaging` - Create messaging framework from brand + journey
 

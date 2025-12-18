@@ -9,6 +9,7 @@ You are helping the user create a comprehensive brand messaging framework that c
 ## When to Use This
 
 **Run AFTER `/create-brand-strategy`** when you have:
+
 - ✅ User journey defined (`product-guidelines/00-user-journey.md`)
 - ✅ Mission statement (`product-guidelines/03-mission.md`)
 - ✅ Brand strategy (`product-guidelines/05-brand-strategy.md`)
@@ -17,6 +18,7 @@ You are helping the user create a comprehensive brand messaging framework that c
 Your messaging should communicate [journey value] in [brand voice], not be created in isolation.
 
 **Skip this** if:
+
 - You're building an internal tool without marketing needs
 - You prefer to develop voice organically through content creation
 - You don't need formal messaging documentation
@@ -26,32 +28,40 @@ Your messaging should communicate [journey value] in [brand voice], not be creat
 This command READS previous outputs to create journey-grounded messaging:
 
 1. **Read the user journey**:
+
    ```bash
    Read product-guidelines/00-user-journey.md
    ```
+
    - Who is the target audience? (from journey)
    - What problem do they struggle with?
    - What transformation do they experience?
    - What's the value delivered?
 
 2. **Read the mission**:
+
    ```bash
    Read product-guidelines/03-mission.md
    ```
+
    - This becomes your value proposition foundation
 
 3. **Read the brand strategy**:
+
    ```bash
    Read product-guidelines/05-brand-strategy.md
    ```
+
    - Brand voice (how you sound)
    - Brand values (what guides communication)
    - Brand personality (tone characteristics)
 
 4. **Read the brand name** (if available):
+
    ```bash
    Read product-guidelines/brand-naming.md  # If naming was done
    ```
+
    - Use chosen name in messaging
 
 Your messaging communicates [journey value] to [journey audience] in [brand voice].
@@ -63,6 +73,7 @@ Create a brand messaging framework that expresses the journey value in your bran
 ### Steps to Execute
 
 1. **FIRST: Read cascade inputs** (see "Cascade Inputs" section above):
+
    ```bash
    Read product-guidelines/00-user-journey.md
    Read product-guidelines/03-mission.md
@@ -71,6 +82,7 @@ Create a brand messaging framework that expresses the journey value in your bran
    ```
 
 2. **Read the template structure**:
+
    ```bash
    Read templates/16-brand-messaging-template.md
    ```
@@ -112,6 +124,7 @@ Create a brand messaging framework that expresses the journey value in your bran
 `product-guidelines/16-brand-messaging.md`
 
 This will be read by:
+
 - `/create-content-guidelines` - Uses messaging for detailed content style guide
 - Marketing and content creation efforts
 - Sales and customer support training
@@ -119,6 +132,7 @@ This will be read by:
 ## Template Structure
 
 The output follows this structure:
+
 - Value Proposition (one-line promise)
 - Target Audience (who we serve)
 - Elevator Pitch (15-second, 30-second, 1-minute versions)
@@ -180,6 +194,7 @@ Every line traces back to your user journey. Try the homepage hero - does it spe
 ## After This Session
 
 **Recommended next**:
+
 - `/create-content-guidelines` - Detailed content style guide with journey-aligned messaging
 - Apply messaging to website, product, and marketing materials
 

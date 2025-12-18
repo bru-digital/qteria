@@ -11,6 +11,7 @@
 ## Overview
 
 This schema supports the AI-powered document validation workflow for TIC (Testing, Inspection, Certification) notified bodies. The design prioritizes:
+
 - **Journey alignment**: Every table serves specific journey steps
 - **Data privacy**: SOC2/ISO 27001 compliant (audit logs, encryption support)
 - **Query performance**: Indexed for common access patterns
@@ -25,14 +26,14 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 
 ## How This Traces to User Journey
 
-| Journey Step | Tables Used | Purpose |
-|--------------|-------------|---------|
-| **Step 1: Create Workflow** | `workflows`, `buckets`, `criteria` | Store workflow definitions (buckets + validation criteria) |
-| **Step 2: Upload Documents** | `assessment_documents` | Track uploaded PDFs/DOCX files per bucket |
-| **Step 3: AI Validation** | `assessments`, `assessment_results` | Store processing status, AI output, evidence links |
-| **Step 4: Review Results** | `assessment_results` | Display pass/fail per criteria with evidence |
-| **Step 5: Export Report** | `assessments`, `assessment_results` | Generate PDF reports from stored results |
-| **All Steps** | `users`, `organizations`, `audit_logs` | Authentication, multi-tenancy, compliance audit trails |
+| Journey Step                 | Tables Used                            | Purpose                                                    |
+| ---------------------------- | -------------------------------------- | ---------------------------------------------------------- |
+| **Step 1: Create Workflow**  | `workflows`, `buckets`, `criteria`     | Store workflow definitions (buckets + validation criteria) |
+| **Step 2: Upload Documents** | `assessment_documents`                 | Track uploaded PDFs/DOCX files per bucket                  |
+| **Step 3: AI Validation**    | `assessments`, `assessment_results`    | Store processing status, AI output, evidence links         |
+| **Step 4: Review Results**   | `assessment_results`                   | Display pass/fail per criteria with evidence               |
+| **Step 5: Export Report**    | `assessments`, `assessment_results`    | Generate PDF reports from stored results                   |
+| **All Steps**                | `users`, `organizations`, `audit_logs` | Authentication, multi-tenancy, compliance audit trails     |
 
 ---
 
@@ -74,6 +75,7 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 ```
 
 **Legend**:
+
 - 1:N = One-to-Many relationship
 - M:N = Many-to-Many (via junction table or JSONB array)
 - Foreign keys enforce referential integrity with CASCADE/RESTRICT
@@ -98,13 +100,16 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 | updated_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last modification timestamp |
 
 **Indexes**:
+
 - Primary key (id) - auto-indexed
 - `idx_organizations_status`: ON (subscription_status) - billing queries
 
 **Relationships**:
+
 - Has many: `users`, `workflows`
 
 **Design Decisions**:
+
 - **UUID**: Non-guessable IDs (security), supports distributed systems
 - **subscription_tier**: Stored here (not separate table) - simple pricing model (3 tiers only)
 - **TIMESTAMPTZ**: Timezone-aware for global customers
@@ -131,16 +136,19 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 | updated_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last modification |
 
 **Indexes**:
+
 - Primary key (id)
 - `idx_users_org_id`: ON (organization_id) - frequent joins
 - `idx_users_auth_id`: UNIQUE ON (auth_provider_id) - login lookups
 - `idx_users_email`: UNIQUE ON (email) - email lookups
 
 **Relationships**:
+
 - Belongs to: `organizations` (nullable for initial signup flow)
 - Has many: `workflows`, `assessments`, `audit_logs`
 
 **Design Decisions**:
+
 - **auth_provider_id**: External auth (Auth.js), not passwords (security best practice)
 - **organization_id NULLABLE**: Allows user creation before org assignment (onboarding flow)
 - **role CHECK**: Enum enforcement at DB level (process_manager, project_handler, admin)
@@ -167,16 +175,19 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 | updated_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last modification |
 
 **Indexes**:
+
 - Primary key (id)
 - `idx_workflows_org_id`: ON (organization_id) - "show all workflows for org"
 - `idx_workflows_created_by`: ON (created_by) - "my workflows"
 - `idx_workflows_active`: ON (is_active) WHERE is_active = TRUE - partial index for active workflows
 
 **Relationships**:
+
 - Belongs to: `organizations`, `users` (creator)
 - Has many: `buckets`, `criteria`, `assessments`
 
 **Design Decisions**:
+
 - **is_active**: Soft disable (don't delete workflows with assessment history)
 - **ON DELETE SET NULL** for created_by: Keep workflow if creator leaves (orphaned workflows stay)
 - **name + organization_id**: No UNIQUE constraint (allow duplicate names across orgs, even within org)
@@ -200,15 +211,18 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
 
 **Indexes**:
+
 - Primary key (id)
 - `idx_buckets_workflow_id`: ON (workflow_id) - "get all buckets for workflow"
 - `idx_buckets_order`: ON (workflow_id, order_index) - sorted display
 
 **Relationships**:
+
 - Belongs to: `workflows`
 - Has many: `assessment_documents` (documents uploaded to this bucket)
 
 **Design Decisions**:
+
 - **required**: Boolean (not nullable) - explicit true/false, no ambiguity
 - **order_index**: UI sorting without string sorting (drag-drop reorder)
 - **ON DELETE CASCADE**: If workflow deleted, buckets deleted (no orphans)
@@ -235,17 +249,20 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
 
 **Indexes**:
+
 - Primary key (id)
 - `idx_criteria_workflow_id`: ON (workflow_id) - "get all criteria for workflow"
 - `idx_criteria_order`: ON (workflow_id, order_index) - sorted display
 - `idx_criteria_bucket_gin`: USING GIN (applies_to_bucket_ids) - array containment queries
 
 **Relationships**:
+
 - Belongs to: `workflows`
 - Applies to: `buckets` (via UUID array - many-to-many without junction table)
 - Has many: `assessment_results` (results per criteria)
 
 **Design Decisions**:
+
 - **UUID[]**: PostgreSQL array (many-to-many without junction table) - simpler than `criteria_buckets` table
 - **applies_to_bucket_ids NULLABLE**: NULL = applies to ALL buckets (common case)
 - **GIN index**: Fast containment queries (`WHERE bucket_id = ANY(applies_to_bucket_ids)`)
@@ -276,6 +293,7 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 | updated_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last status update |
 
 **Indexes**:
+
 - Primary key (id)
 - `idx_assessments_org_id`: ON (organization_id) - billing queries
 - `idx_assessments_workflow_id`: ON (workflow_id) - "assessments per workflow"
@@ -285,10 +303,12 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 - `idx_assessments_org_status`: ON (organization_id, status) - composite (common query pattern)
 
 **Relationships**:
+
 - Belongs to: `organizations`, `workflows`, `users` (creator)
 - Has many: `assessment_documents`, `assessment_results`
 
 **Design Decisions**:
+
 - **status CHECK**: Enforce valid states (pending, processing, completed, failed)
 - **duration_ms**: Milliseconds (more precise than seconds) for performance monitoring
 - **ai_cost_cents**: Cents not dollars (avoid float precision issues), tracks Claude API spend
@@ -316,15 +336,18 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 | uploaded_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Upload timestamp |
 
 **Indexes**:
+
 - Primary key (id)
 - `idx_assessment_docs_assessment_id`: ON (assessment_id) - "get all docs for assessment"
 - `idx_assessment_docs_bucket_id`: ON (bucket_id) - "docs per bucket"
 - `idx_assessment_docs_storage_key`: UNIQUE ON (storage_key) - fast retrieval
 
 **Relationships**:
+
 - Belongs to: `assessments`, `buckets`
 
 **Design Decisions**:
+
 - **storage_key UNIQUE**: Prevent duplicate uploads, fast blob retrieval
 - **file_size_bytes CHECK**: Enforce max size at DB level (> 0, < 52428800 = 50MB)
 - **file_type CHECK**: Only allow PDF, DOCX (application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document)
@@ -354,6 +377,7 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Result timestamp |
 
 **Indexes**:
+
 - Primary key (id)
 - `idx_assessment_results_assessment_id`: ON (assessment_id) - "get all results for assessment"
 - `idx_assessment_results_criteria_id`: ON (criteria_id) - "results per criteria across assessments"
@@ -361,12 +385,14 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 - `idx_assessment_results_confidence`: ON (confidence) WHERE confidence IN ('medium', 'low') - filter uncertain results
 
 **Relationships**:
+
 - Belongs to: `assessments`, `criteria`, `assessment_documents` (evidence source)
 
 **Design Decisions**:
+
 - **pass NOT NULL**: Always boolean (no "uncertain" - use confidence for that)
 - **confidence CHECK**: Enforce valid levels (high, medium, low)
-- **evidence_* columns**: All nullable (some criteria don't have document evidence, e.g., "workflow completeness")
+- **evidence\_\* columns**: All nullable (some criteria don't have document evidence, e.g., "workflow completeness")
 - **ai_response_raw JSONB**: Store full Claude response (helps debug false positives/negatives)
 - **JSONB not JSON**: Binary format, faster queries, supports indexing
 - **ON DELETE RESTRICT** for criteria: Can't delete criteria with historical results
@@ -394,6 +420,7 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | When action occurred |
 
 **Indexes**:
+
 - Primary key (id)
 - `idx_audit_logs_org_id`: ON (organization_id) - org-specific audits
 - `idx_audit_logs_user_id`: ON (user_id) - user activity reports
@@ -402,9 +429,11 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 - `idx_audit_logs_resource`: ON (resource_type, resource_id) - "audit trail for resource X"
 
 **Relationships**:
+
 - Belongs to: `organizations`, `users` (nullable)
 
 **Design Decisions**:
+
 - **Immutable**: No UPDATE or DELETE (audit logs never change) - enforce via app logic or triggers
 - **user_id NULLABLE**: System actions (e.g., scheduled jobs) have no user
 - **metadata JSONB**: Flexible structure (different actions need different context)
@@ -421,14 +450,17 @@ This schema supports the AI-powered document validation workflow for TIC (Testin
 ### Common Queries (with indexes)
 
 **1. Show all workflows for organization (Step 1 dashboard)**:
+
 ```sql
 SELECT * FROM workflows
 WHERE organization_id = $1 AND is_active = TRUE
 ORDER BY created_at DESC;
 ```
+
 - Uses: `idx_workflows_org_id`, `idx_workflows_active`
 
 **2. Get workflow with buckets and criteria (Step 1 detail)**:
+
 ```sql
 -- Workflow
 SELECT * FROM workflows WHERE id = $1;
@@ -443,9 +475,11 @@ SELECT * FROM criteria
 WHERE workflow_id = $1
 ORDER BY order_index ASC;
 ```
+
 - Uses: Primary keys, `idx_buckets_workflow_id`, `idx_criteria_workflow_id`
 
 **3. Get assessment with results (Step 4 display)**:
+
 ```sql
 -- Assessment
 SELECT * FROM assessments WHERE id = $1;
@@ -457,9 +491,11 @@ JOIN criteria c ON ar.criteria_id = c.id
 WHERE ar.assessment_id = $1
 ORDER BY c.order_index ASC;
 ```
+
 - Uses: Primary keys, `idx_assessment_results_assessment_id`
 
 **4. Recent assessments for user (dashboard)**:
+
 ```sql
 SELECT a.*, w.name AS workflow_name
 FROM assessments a
@@ -468,9 +504,11 @@ WHERE a.created_by = $1
 ORDER BY a.created_at DESC
 LIMIT 20;
 ```
+
 - Uses: `idx_assessments_created_by`, `idx_assessments_created`
 
 **5. Billing: Count assessments per org per month**:
+
 ```sql
 SELECT
   organization_id,
@@ -482,9 +520,11 @@ WHERE organization_id = $1
   AND created_at >= $2 AND created_at < $3
 GROUP BY organization_id, month;
 ```
+
 - Uses: `idx_assessments_org_id`, `idx_assessments_created`
 
 **6. Performance monitoring: Average processing time**:
+
 ```sql
 SELECT
   AVG(duration_ms) AS avg_duration_ms,
@@ -493,6 +533,7 @@ FROM assessments
 WHERE status = 'completed'
   AND created_at >= NOW() - INTERVAL '7 days';
 ```
+
 - Uses: `idx_assessments_status`, `idx_assessments_created`
 
 ---
@@ -500,6 +541,7 @@ WHERE status = 'completed'
 ## Data Types Rationale
 
 **UUID vs BIGINT for Primary Keys**:
+
 - ✅ **Chose UUID**:
   - Non-guessable (security: can't enumerate assessments by incrementing ID)
   - Distributed-safe (can generate IDs in frontend, multiple backend instances)
@@ -510,6 +552,7 @@ WHERE status = 'completed'
   - 16 bytes vs 8 bytes (storage cost acceptable for security benefits)
 
 **TIMESTAMPTZ vs TIMESTAMP**:
+
 - ✅ **Chose TIMESTAMPTZ** (timezone-aware):
   - Global customers (notified bodies in different timezones)
   - Server timezone changes don't affect data
@@ -517,6 +560,7 @@ WHERE status = 'completed'
 - ❌ **Not TIMESTAMP**: Timezone-naive, ambiguous for global apps
 
 **JSONB vs JSON**:
+
 - ✅ **Chose JSONB** (binary format):
   - Faster queries (pre-parsed)
   - Supports indexing (`CREATE INDEX ON assessment_results USING GIN (ai_response_raw)`)
@@ -524,11 +568,13 @@ WHERE status = 'completed'
 - ❌ **Not JSON**: Text storage, slower queries, no indexing
 
 **VARCHAR(255) vs TEXT**:
+
 - **VARCHAR(255)**: Short strings with known max length (name, email, role)
 - **TEXT**: Long strings with unknown length (description, reasoning, error messages)
 - PostgreSQL treats them similarly (no performance difference), but VARCHAR documents intent
 
 **UUID[] vs Junction Table** (criteria → buckets):
+
 - ✅ **Chose UUID[] array**:
   - Simpler (1 table instead of 3: criteria, buckets, criteria_buckets)
   - Fewer joins (array containment query)
@@ -537,6 +583,7 @@ WHERE status = 'completed'
 - **When to reconsider**: If criteria apply to >10 buckets (array gets large)
 
 **INTEGER vs NUMERIC** (money, measurements):
+
 - **INTEGER (cents)**: Use for money (ai_cost_cents, file_size_bytes) - no float precision issues
 - **NUMERIC(precision, scale)**: Use for measurements with decimals (not needed in this schema)
 
@@ -547,6 +594,7 @@ WHERE status = 'completed'
 ### CHECK Constraints (DB-level validation)
 
 **Status enums** (prevent invalid states):
+
 ```sql
 -- Organizations
 subscription_tier CHECK (subscription_tier IN ('trial', 'professional', 'enterprise'))
@@ -563,6 +611,7 @@ confidence CHECK (confidence IN ('high', 'medium', 'low'))
 ```
 
 **Positive integers** (prevent negative values):
+
 ```sql
 file_size_bytes CHECK (file_size_bytes > 0)
 duration_ms CHECK (duration_ms >= 0)
@@ -571,6 +620,7 @@ order_index CHECK (order_index >= 0)
 ```
 
 **File types** (whitelist):
+
 ```sql
 file_type CHECK (file_type IN ('application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'))
 ```
@@ -578,21 +628,25 @@ file_type CHECK (file_type IN ('application/pdf', 'application/vnd.openxmlformat
 ### Foreign Key Constraints (referential actions)
 
 **CASCADE** (child deleted when parent deleted):
+
 - `organizations.id` → `users.organization_id`: Delete users when org deleted (GDPR)
 - `workflows.id` → `buckets.workflow_id`: Delete buckets when workflow deleted
 - `assessments.id` → `assessment_results.assessment_id`: Delete results when assessment deleted
 
 **SET NULL** (child orphaned when parent deleted):
+
 - `users.id` → `workflows.created_by`: Keep workflow if creator leaves
 - `users.id` → `assessments.created_by`: Keep assessment if creator leaves
 - `assessment_documents.id` → `assessment_results.evidence_document_id`: Keep result if doc deleted
 
 **RESTRICT** (prevent delete if child exists):
+
 - `workflows.id` → `assessments.workflow_id`: Can't delete workflow with assessment history
 - `criteria.id` → `assessment_results.criteria_id`: Can't delete criteria with results
 - `buckets.id` → `assessment_documents.bucket_id`: Can't delete bucket with uploaded docs
 
 **Rationale**:
+
 - CASCADE: Use when child is meaningless without parent
 - SET NULL: Use when child should survive parent deletion (historical records)
 - RESTRICT: Use to prevent accidental data loss (audit trail preservation)
@@ -604,12 +658,14 @@ file_type CHECK (file_type IN ('application/pdf', 'application/vnd.openxmlformat
 ### Current Capacity (Year 1-3)
 
 **Expected Load**:
+
 - 5 organizations × 50 users each = 250 users
 - 10 workflows per org × 5 = 50 workflows
 - 2,000 assessments/month × 12 = 24,000 assessments/year
 - 10 criteria per assessment × 24,000 = 240,000 results/year
 
 **PostgreSQL Handles**:
+
 - Millions of rows easily (current scale: 250K rows/year)
 - Vercel Postgres free tier: 256MB storage (sufficient for Year 1)
 - Upgrade to Pro ($20/month): 10GB storage (sufficient through Year 5)
@@ -617,19 +673,23 @@ file_type CHECK (file_type IN ('application/pdf', 'application/vnd.openxmlformat
 ### Bottlenecks & Solutions (Year 5+)
 
 **If assessments table > 1M rows**:
+
 - **Partition by month**: `CREATE TABLE assessments_2026_01 PARTITION OF assessments FOR VALUES FROM ('2026-01-01') TO ('2026-02-01')`
 - **Archive old assessments**: Move completed assessments >2 years old to cold storage (S3 + restore on demand)
 
 **If assessment_results > 10M rows**:
+
 - **Partition with assessments**: Same monthly partitioning (child table follows parent)
 - **Partial indexes**: Only index recent data (`WHERE created_at > NOW() - INTERVAL '1 year'`)
 
 **If query latency > 1 second**:
+
 - **Read replicas**: PostgreSQL streaming replication (1 write, N read replicas)
 - **Caching layer**: Redis cache for frequent queries (workflows, criteria)
 - **Materialized views**: Pre-compute dashboard stats (`REFRESH MATERIALIZED VIEW CONCURRENTLY`)
 
 **If writes > 1000/second**:
+
 - **Connection pooling**: PgBouncer (reuse connections, reduce overhead)
 - **Batch inserts**: Insert 100 assessment_results at once (reduce round-trips)
 - **Async writes**: Use message queue (Celery) for non-critical writes (audit logs)
@@ -868,6 +928,7 @@ def downgrade():
 ```
 
 **Apply Migration**:
+
 ```bash
 # Initialize Alembic (if not already)
 alembic init alembic
@@ -891,6 +952,7 @@ psql $DATABASE_URL -c "\dt"  # List tables
 **What it is**: Schema-less document database, stores JSON documents, no fixed structure
 
 **Why not**:
+
 - **Journey has stable entities**: workflows, buckets, criteria have predictable structure (won't change weekly)
 - **Relationships matter**: user → workflows → assessments is naturally relational (clearer in SQL)
 - **ACID transactions needed**: Billing calculations (can't lose assessment records for invoicing)
@@ -898,6 +960,7 @@ psql $DATABASE_URL -c "\dt"  # List tables
 - **Team expertise**: Tech stack shows FastAPI + PostgreSQL (team comfortable with SQL)
 
 **When to reconsider**:
+
 - IF schema changes weekly (product pivoting constantly, entities unstable)
 - IF documents have highly variable structure per type (e.g., 50 different certification types, each with unique fields)
 - IF need horizontal sharding immediately (MongoDB distributes more easily)
@@ -911,12 +974,14 @@ psql $DATABASE_URL -c "\dt"  # List tables
 **What it is**: Instead of `DELETE`, set `deleted_at = NOW()`, filter with `WHERE deleted_at IS NULL`
 
 **Why not**:
+
 - **GDPR compliance**: Users have "right to be forgotten" - must actually DELETE data, not just hide it
 - **Query complexity**: Every query needs `WHERE deleted_at IS NULL` (easy to forget, causes bugs)
 - **Index bloat**: Indexes grow with soft-deleted records (slower queries over time)
 - **Billing accuracy**: Don't want to accidentally count deleted assessments in billing queries
 
 **When to reconsider**:
+
 - IF undo feature required ("restore deleted workflow for 30 days")
 - IF legal requirement to retain deleted data for N months (beyond audit logs)
 - IF ORM has built-in soft delete support (handles WHERE clause automatically)
@@ -930,12 +995,14 @@ psql $DATABASE_URL -c "\dt"  # List tables
 **What it is**: Store all changes as events (WorkflowCreated, AssessmentStarted, ResultsGenerated), rebuild state from event log
 
 **Why not**:
+
 - **Journey is CRUD, not event-driven**: Assessments have simple lifecycle (created → processing → completed) - no complex state machine
 - **Complexity is massive**: Event store, event handlers, projections, eventual consistency, snapshots
 - **Team size is small**: 1-2 engineers can't maintain complex architecture (solo founder initially)
 - **No audit requirement justifies complexity**: Simple audit_logs table satisfies SOC2/ISO 27001 (immutable log of actions)
 
 **When to reconsider**:
+
 - IF regulatory requirement for complete audit trail of every field change (financial trading systems)
 - IF need to replay history ("what would assessment look like with old AI model?")
 - IF team has event sourcing expertise and time to build/maintain infrastructure
@@ -949,12 +1016,14 @@ psql $DATABASE_URL -c "\dt"  # List tables
 **What it is**: Base `workflows` table + subclasses (`ComplianceWorkflow`, `QualityWorkflow`) with type discriminator, separate tables per type
 
 **Why not**:
+
 - **All workflows are similar**: Compliance workflows have same structure (buckets + criteria) regardless of certification type
 - **No type-specific logic**: Assessment process is identical for all workflow types (Step 3 AI validation = same algorithm)
 - **Queries become complex**: JOIN across 3+ tables, many NULL fields, harder to reason about
 - **JSONB metadata column simpler**: If workflows need type-specific fields, add JSONB column (e.g., `metadata: {certification_type: "ISO13485"}`)
 
 **When to reconsider**:
+
 - IF workflow types have radically different structures (e.g., document workflows vs video workflows vs audio workflows)
 - IF type-specific validation logic (each type has completely different assessment algorithm)
 - IF querying specific type frequently ("show ONLY medical device workflows, never others")
@@ -968,6 +1037,7 @@ psql $DATABASE_URL -c "\dt"  # List tables
 **What it is**: Split into services (workflow-service, assessment-service, billing-service), each with own database
 
 **Why not**:
+
 - **Monolith is simpler**: Single FastAPI app, single PostgreSQL database (fewer moving parts)
 - **ACID transactions across entities**: Assessments reference workflows + users + criteria (hard with distributed DBs)
 - **Team size is small**: 1-2 engineers can't maintain 5 microservices + inter-service communication
@@ -975,6 +1045,7 @@ psql $DATABASE_URL -c "\dt"  # List tables
 - **Network overhead**: Cross-service API calls add latency (monolith = in-memory function calls)
 
 **When to reconsider**:
+
 - IF team grows to 20+ engineers (microservices enable parallel work by different teams)
 - IF specific service needs different scaling (e.g., AI validation needs 10x more resources than workflows)
 - IF need to deploy services independently (assessment-service update without touching workflow-service)
@@ -988,12 +1059,14 @@ psql $DATABASE_URL -c "\dt"  # List tables
 **What it is**: GraphQL API with global object IDs (`Base64(typename:id)` like `"V29ya2Zsb3c6MTIz"`) instead of UUIDs
 
 **Why not**:
+
 - **API pattern is REST** (from architecture doc): GraphQL adds complexity without clear benefit for this use case
 - **Global IDs obscure relationships**: Harder to debug, harder to write raw SQL, harder to understand data model
 - **Team expertise**: Tech stack shows REST + FastAPI (team familiar with REST, not GraphQL)
 - **Simpler is better for MVP**: UUIDs work perfectly, no need for encoding layer
 
 **When to reconsider**:
+
 - IF switching to GraphQL API (then global IDs are idiomatic)
 - IF building public API for partners (obscure database IDs for security)
 - IF need to refactor without breaking API contracts (global IDs allow moving entities between tables)

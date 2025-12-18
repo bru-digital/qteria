@@ -34,10 +34,12 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI + SQLAlchemy
 - Database: PostgreSQL (workflows, buckets, criteria tables with JOINs)
 
 **API Endpoint** (`app/api/v1/workflows.py`):
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -120,6 +122,7 @@ async def get_workflow(
 ```
 
 **Pydantic Schema** (`app/schemas/workflow.py`):
+
 ```python
 from pydantic import BaseModel
 from typing import List, Optional
@@ -154,12 +157,14 @@ class WorkflowDetailResponse(BaseModel):
 ```
 
 **Example Request**:
+
 ```
 GET /v1/workflows/wf_abc123
 Authorization: Bearer <jwt_token>
 ```
 
 **Example Response**:
+
 ```json
 {
   "id": "wf_abc123",
@@ -221,6 +226,7 @@ Authorization: Bearer <jwt_token>
 **Effort**: 1 person-day
 
 **Breakdown**:
+
 - API endpoint: 0.5 days (query with eager loading)
 - Schema: 0.25 days (response model)
 - Testing: 0.25 days (404 cases, multi-tenancy)
@@ -244,6 +250,7 @@ Authorization: Bearer <jwt_token>
 ## Testing Requirements
 
 **Integration Tests**:
+
 - [ ] Valid workflow_id → 200 OK with full details
 - [ ] Invalid workflow_id → 404 Not Found
 - [ ] Workflow from different org → 404 Not Found (multi-tenancy)
@@ -252,6 +259,7 @@ Authorization: Bearer <jwt_token>
 - [ ] Workflow with 10 criteria → all criteria returned
 
 **Performance Tests**:
+
 - [ ] Query uses eager loading (check SQL logs for 1 query, not N+1)
 - [ ] Response time <300ms for workflow with 10 buckets + 20 criteria
 
@@ -260,9 +268,11 @@ Authorization: Bearer <jwt_token>
 ## Risks & Mitigations
 
 **Risk**: N+1 query problem (workflow query + N bucket queries + M criteria queries)
+
 - **Mitigation**: Use SQLAlchemy selectinload for eager loading, verify with SQL logging
 
 **Risk**: Large workflows (50+ buckets) cause slow response
+
 - **Mitigation**: Monitor response time, add pagination for buckets/criteria if needed (post-MVP)
 
 ---

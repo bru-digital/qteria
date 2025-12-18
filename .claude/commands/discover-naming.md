@@ -9,6 +9,7 @@ You are helping the user discover the perfect brand name through systematic gene
 ## When to Use This
 
 **Run AFTER `/create-brand-strategy`** when you have:
+
 - ✅ User journey defined (`product-guidelines/00-user-journey.md`)
 - ✅ Mission statement (`product-guidelines/03-mission.md`)
 - ✅ Brand strategy (`product-guidelines/05-brand-strategy.md`)
@@ -16,6 +17,7 @@ You are helping the user discover the perfect brand name through systematic gene
 Your brand name should express the value delivered in the user journey, grounded in your brand strategy.
 
 **Skip this** if:
+
 - You already have a validated brand name
 - You're building an internal tool without branding needs
 - Your project doesn't require formal naming
@@ -25,24 +27,30 @@ Your brand name should express the value delivered in the user journey, grounded
 This command READS previous outputs to create journey-aligned names:
 
 1. **Read the user journey**:
+
    ```bash
    Read product-guidelines/00-user-journey.md
    ```
+
    - What's the core problem being solved?
    - What's the transformation users experience?
    - What keywords describe the journey value?
 
 2. **Read the mission**:
+
    ```bash
    Read product-guidelines/03-mission.md
    ```
+
    - What promise are you making?
    - What outcome do users achieve?
 
 3. **Read the brand strategy**:
+
    ```bash
    Read product-guidelines/05-brand-strategy.md
    ```
+
    - Brand purpose (why you exist)
    - Brand personality (how you show up)
    - Brand values (what guides you)
@@ -57,6 +65,7 @@ Generate brand name candidates that express the value from the user journey thro
 ### Steps to Execute
 
 1. **FIRST: Read cascade inputs** (see "Cascade Inputs" section above):
+
    ```bash
    Read product-guidelines/00-user-journey.md
    Read product-guidelines/03-mission.md
@@ -64,6 +73,7 @@ Generate brand name candidates that express the value from the user journey thro
    ```
 
 2. **Read the template structure**:
+
    ```bash
    Read templates/15-brand-naming-template.md
    ```
@@ -114,12 +124,14 @@ Generate brand name candidates that express the value from the user journey thro
 `product-guidelines/15-brand-naming.md`
 
 This will be read by:
+
 - `/define-messaging` - Uses chosen name in journey-aligned messaging
 - Decision-making process (narrow to final name)
 
 ## Template Structure
 
 The output follows this structure:
+
 - Naming Strategy (direction and criteria)
 - All Candidates (20-30 names organized by category)
 - Trademark Research Summary
@@ -167,6 +179,7 @@ Each name traces back to your user journey. Which direction resonates?
 ## After This Session
 
 **Recommended next**:
+
 - `/define-messaging` - Create messaging framework using chosen name + journey
 - `/create-content-guidelines` - Develop content style with journey-aligned name
 

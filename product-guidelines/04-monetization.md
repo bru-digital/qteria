@@ -9,6 +9,7 @@
 **Annual Subscription (Enterprise B2B)**
 
 **Rationale**:
+
 - **Journey fit**: TIC notified bodies plan annual budgets, prefer predictable costs over usage-based surprise bills
 - **Value delivery**: Value is continuous (replace $100K/year India team with $30K/year AI platform), not per-transaction
 - **Sales cycle**: Enterprise B2B with 3-6 month sales cycles → annual contracts natural fit
@@ -16,6 +17,7 @@
 - **Cash flow**: Upfront annual payment supports runway for solo founder bootstrapping
 
 **NOT Usage-Based** (per assessment):
+
 - ❌ Creates usage anxiety (Project Handlers might hesitate to re-run assessments, reducing value)
 - ❌ Doesn't match budget planning (finance teams want fixed annual cost, not variable)
 - ❌ Misaligned incentive (we want MORE assessments, charging per assessment discourages use)
@@ -27,6 +29,7 @@
 ## Pricing Tiers
 
 ### Pilot / Trial (Custom Engagement)
+
 - **Price**: Free for 30-day pilot, then $30K/year
 - **Includes**:
   - Unlimited workflows, users, assessments
@@ -42,6 +45,7 @@
 ---
 
 ### Professional ($30K/year)
+
 - **Price**: $30,000/year per notified body (billed annually)
 - **Includes**:
   - Unlimited workflows
@@ -68,6 +72,7 @@
 ---
 
 ### Enterprise (Custom Pricing, Starting $50K/year)
+
 - **Price**: Custom (typically $50K-100K/year)
 - **Includes** (everything in Professional, plus):
   - SSO/SAML integration (Okta, Azure AD, etc.)
@@ -104,6 +109,7 @@
 **User pays**: $30,000/year
 
 **User saves**:
+
 - Direct cost: $100K/year (India team) → $30K/year (Qteria) = **$70K/year saved**
 - Time value: 1-2 days → 10 minutes per assessment = ~400x faster
   - 500 assessments/month × 1.5 days saved each = 750 days/month = 25 days/day (equivalent to 25 person-days freed up)
@@ -115,6 +121,7 @@
 **ROI**: $220K value ÷ $30K cost = **7.3:1** (meets 10:1 target when including quality improvements)
 
 **Per-assessment cost** (for internal calculation):
+
 - $30K/year ÷ 500 assessments/month ÷ 12 months = **$5 per assessment** to customer
 - Value per assessment: $150-300 (time saved)
 - **Per-assessment ROI**: 30-60x
@@ -126,6 +133,7 @@
 ### Target Metrics
 
 **Year 1 (2026 - TÜV SÜD pilot)**:
+
 - **ARPU** (Average Revenue Per User): $30,000/year (only 1 customer)
 - **Gross Margin**: 95%+ (revenue $30K, costs ~$1.5K AI + infrastructure)
 - **LTV** (Lifetime Value): $150K (assume 5-year retention, 95% margin)
@@ -135,6 +143,7 @@
   - Year 2+ CAC: ~$5-10K (sales time, travel to conferences, demo costs)
 
 **Year 3 (2027 - 5 customers)**:
+
 - **ARPU**: $30,000/year (consistent per customer)
 - **Total ARR**: $150,000 (5 customers × $30K)
 - **Gross Margin**: 97%+ (revenue $150K, costs ~$5K infrastructure + AI)
@@ -143,6 +152,7 @@
 - **LTV:CAC Ratio**: 30:1 (exceptional)
 
 **Year 5 (2029 - 20 customers, path to sustainability)**:
+
 - **ARPU**: $35,000/year (10% price increase after product maturity)
 - **Total ARR**: $700,000 (20 customers × $35K)
 - **Gross Margin**: 95%+ (revenue $700K, costs ~$35K infrastructure + AI)
@@ -153,19 +163,23 @@
 ### Revenue Targets
 
 **30-day Goal** (Q2 2026 - TÜV SÜD pilot contract signed):
+
 - **MRR**: $2,500 ($30K annual ÷ 12 months)
 - **Milestone**: First paying customer, product-market fit validated
 
 **90-day Goal** (Q3 2026 - TÜV SÜD production, expanding usage):
+
 - **MRR**: $2,500 (same customer, proving retention)
 - **Milestone**: 500 assessments/month, NPS 50+, preparing for customer #2
 
 **12-month Goal** (Q2 2027 - expand to 3-4 customers):
+
 - **ARR**: $90K-120K (3-4 customers × $30K)
 - **MRR**: $7.5K-10K
 - **Milestone**: TÜV SÜD renewed (100% retention), reference case study drives 2-3 new customers
 
 **24-month Goal** (Q2 2028 - expand to 10 customers):
+
 - **ARR**: $300K (10 customers × $30K)
 - **MRR**: $25K
 - **Milestone**: Proven playbook (onboard, activate, retain), ready to scale
@@ -177,22 +191,26 @@
 ### Future Pricing Levers (Post-MVP)
 
 **1. Usage-Based Add-On** (Marketplace):
+
 - When consultants publish workflows on marketplace (2027+), charge per workflow license
 - Example: Consultant creates "Medical Device Class III" workflow, licenses it for $500/year to other notified bodies
 - Qteria takes 20-30% platform fee
 - Expands TAM beyond direct sales (consultants create workflows, Qteria distributes)
 
 **2. Tiered Seat Pricing** (If Customer Demand):
+
 - Some notified bodies might want "Starter" tier for small teams
 - Example: $15K/year for 5 users, $30K/year for unlimited users
 - Only introduce if customers explicitly request lower-cost entry point (not needed for Year 1-2)
 
 **3. Multi-Year Discounts** (Enterprise Retention):
+
 - Offer 10-15% discount for 3-year contracts (e.g., $85K for 3 years vs. $90K)
 - Locks in customers, improves cash flow
 - Only offer after Year 2 when retention proven
 
 **4. Premium Support SLA** (Add-On):
+
 - Charge +$10K/year for dedicated Slack channel, <1 hour support response, 99.99% uptime SLA
 - Only offer to Enterprise tier customers who explicitly need it
 
@@ -210,14 +228,17 @@
 ✅ **Annual software budget-friendly** ($2.5K/month feels manageable vs. $5-10K/month SaaS tools)
 
 **Anchoring to India Team Cost**:
+
 - Sales pitch: "You're paying $100K/year for 1-2 day turnaround. What if you got 10-minute turnaround for $30K?"
 - **Perceived value**: 70% cost savings + 400x speed = "no-brainer"
 
 **NOT $20K**:
+
 - Leaves $20K value on table (customer saves $80K instead of $70K, we capture less)
 - Signals "budget tool" instead of "premium solution"
 
 **NOT $50K**:
+
 - Harder to justify (only $50K savings vs. $70K at $30K price)
 - Triggers higher approval thresholds (CEO/CFO sign-off vs. VP-level at $30K)
 
@@ -226,6 +247,7 @@
 ## Sales Cycle & Payment Terms
 
 **Sales Cycle** (Enterprise B2B):
+
 1. **Initial Contact** (Week 0): Warm intro (TÜV SÜD reference) or conference connection
 2. **Discovery Call** (Week 1-2): Understand their India team cost, pain points, validation workflows
 3. **Demo** (Week 3-4): Show workflow creation → document upload → AI validation → results (15-min end-to-end demo)
@@ -237,10 +259,12 @@
 **Total**: ~6 months from first contact to closed deal
 
 **Payment Terms**:
+
 - **Year 1-2**: Annual prepayment (full $30K upfront) - improves cash flow for bootstrapping
 - **Year 3+**: Option for quarterly payments ($7.5K × 4) if customers prefer - reduces friction, but less cash upfront
 
 **Pilot-to-Paid Conversion**:
+
 - Target: 80%+ (high-touch pilot with founder involvement, co-development alignment = strong commitment)
 - If pilot fails, understand why (AI accuracy? UX issues? Data privacy concerns?) and fix before next customer
 
@@ -249,15 +273,18 @@
 ## Expansion & Upsell Strategy
 
 **Year 1-2: Land & Prove Value**
+
 - Focus: Sign first 5 customers at $30K/year, prove 100% retention, build reference case studies
 - No upsell yet (keep it simple, validate core product)
 
 **Year 3+: Expand Within Accounts**
+
 - **Upsell to Enterprise tier** ($50K+): When customers request SSO, custom SLA, API access
 - **Cross-sell to sister organizations**: TÜV SÜD Germany → TÜV SÜD USA, UK, etc. (same workflows, different geographies)
 - **Marketplace workflows**: Customers create workflows, license to other notified bodies, Qteria takes platform fee
 
 **Target Net Revenue Retention**: 120%+ by Year 5
+
 - 100% retention (no churn)
 - +20% expansion (upsells to Enterprise, cross-sells to sister orgs, marketplace revenue)
 
@@ -270,16 +297,19 @@
 **From Mission**: Charge for delivering mission outcome - "validate documents 400x faster" = $30K/year subscription that replaces $100K/year India team (70% savings + 400x speed = clear ROI)
 
 **To Metrics**:
+
 - **Revenue metrics tie to North Star**: More Active Assessments Per Month = more value delivered = higher retention + expansion likelihood
 - **ARR growth formula**: Active Customers × $30K/year = ARR (direct correlation)
 - **Expansion metric**: Net Revenue Retention (100% base + upsells) measured quarterly
 
 **To Product Principles**:
+
 - **Simplicity Over Features**: Unlimited usage (no metering complexity) keeps product simple
 - **White-Glove Support**: Relationship manager included in price (not separate support tier)
 - **Data Privacy Non-Negotiable**: Enterprise tier offers custom DPA, BAA (charge for compliance needs)
 
 **Pricing Validation Questions**:
+
 - ✅ Does $30K align with value delivered? YES - 7:1 ROI ($220K value)
 - ✅ Can customers afford it? YES - replacing $100K/year spend
 - ✅ Can we deliver profitably? YES - 95%+ gross margin

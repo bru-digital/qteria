@@ -50,6 +50,7 @@ Session 14: /design-observability      → product-guidelines/14-observability-s
 **Run AFTER core cascade to add comprehensive branding, UX, and growth planning**. All these commands READ the journey and core outputs.
 
 **After Session 6+** (Brand & Design Complete):
+
 ```
 /design-user-experience     → product-guidelines/19-user-experience.md
     (Detailed UX flows - expands journey with research, flows, wireframes)
@@ -65,6 +66,7 @@ Session 14: /design-observability      → product-guidelines/14-observability-s
 ```
 
 **After Backlog (Session 10+)**:
+
 ```
 /discover-naming            → product-guidelines/15-brand-naming.md
     (Brand naming - names the journey solution)
@@ -80,6 +82,7 @@ Session 14: /design-observability      → product-guidelines/14-observability-s
 ```
 
 **During Development**:
+
 ```
 /review-code                → (No output file - code review framework)
 ```
@@ -95,6 +98,7 @@ ls -la /home/user/stack-driven/product-guidelines/
 ```
 
 Look for:
+
 - **Core cascade**: `00-user-journey.md`, `01-product-strategy.md`, `11-product-strategy-essentials.md`, `02-tech-stack.md`, `03-mission.md`, `04-metrics.md`, `04-monetization.md`, `04-architecture.md`, `05-brand-strategy.md`, `06-design-system.md`, `07-database-schema.md`, `08-api-contracts.md`, `09-test-strategy.md`, `10-backlog/`, `12-project-scaffold.md`, `13-deployment-plan.md`, `14-observability-strategy.md`
 - **Post-core extensions (optional)**: `15-brand-naming.md`, `16-brand-messaging.md`, `17-brand-identity.md`, `18-content-guidelines.md`, `19-user-experience.md`, `20-analytics-plan.md`, `21-growth-strategy.md`, `22-financial-model.md`
 
@@ -155,25 +159,32 @@ Based on what files exist, determine the next recommended action:
 #### Decision Logic:
 
 **If no core cascade files exist**:
+
 - **Recommend**: Start with Session 1 (`/refine-journey`)
 - **NEVER suggest branding first** - journey ALWAYS comes first
 
 **If only 00-user-journey.md exists**:
+
 - **Recommend**: Session 2 (`/create-product-strategy`)
 
 **If 00 and 01 exist**:
+
 - **Recommend**: Session 3 (`/choose-tech-stack`)
 
 **If 00-02 exist**:
+
 - **Recommend**: Session 4 (`/generate-strategy`)
 
 **If 00-04 architecture exist (Session 4 complete)**:
+
 - **Recommend**: Session 5 (`/create-brand-strategy`)
 
 **If 00-05 brand-strategy exists (Session 5 complete)**:
+
 - **Recommend**: Session 6 (`/create-design`)
 
 **If 00-06 design-system exists (Session 6 complete)**:
+
 - **Recommend**: Session 7 (`/design-database-schema`)
 - **Also suggest** (optional):
   - `/design-user-experience` (product-guidelines/19-user-experience.md)
@@ -182,27 +193,35 @@ Based on what files exist, determine the next recommended action:
   - `/create-financial-model` (product-guidelines/22-financial-model.md)
 
 **If 00-07 database exists (Session 7 complete)**:
+
 - **Recommend**: Session 8 (`/generate-api-contracts`)
 
 **If 00-08 api exists (Session 8 complete)**:
+
 - **Recommend**: Session 9 (`/create-test-strategy`)
 
 **If 00-09 test exists (Session 9 complete)**:
+
 - **Recommend**: Session 10 (`/generate-backlog`)
 
 **If 00-10 backlog exists (Session 10 complete)**:
+
 - **Recommend**: Session 11 (`/create-gh-issues`)
 
 **If 00-10 backlog + GitHub issues exist (Session 11 complete)**:
+
 - **Recommend**: Session 12 (`/scaffold-project`)
 
 **If 00-12 scaffold exists (Session 12 complete)**:
+
 - **Recommend**: Session 13 (`/plan-deployment`)
 
 **If 00-13 deployment plan exists (Session 13 complete)**:
+
 - **Recommend**: Session 14 (`/design-observability`)
 
 **If all core cascade complete (Sessions 1-14)**:
+
 - **Congratulate** them!
 - **Recommend**: Copy scaffold files and start building!
 - **Also suggest** (optional):
@@ -333,6 +352,7 @@ Ready? Run: /create-product-strategy
 ### If they've skipped sessions
 
 **Message**:
+
 ```
 ⚠️ Warning: Some outputs are missing
 
@@ -349,6 +369,7 @@ Recommendation: Either fill in the gaps or accept that later sessions won't have
 ### If all core cascade complete
 
 **Message**:
+
 ```
 🎉 Core Cascade Complete!
 
@@ -403,6 +424,7 @@ You have everything from idea to production-ready system. Now go ship! 🎯
 ### If post-cascade files exist
 
 **Track and display** them:
+
 ```
 POST-CORE EXTENSIONS COMPLETE:
 ✅ 20-analytics-plan.md (Analytics implementation ready)
@@ -427,6 +449,7 @@ You're adding comprehensive planning! Consider UX flows for complete product def
 ## Summary of All Commands
 
 **Core Cascade (Required - Always Start Here)**:
+
 - `/refine-journey` - Session 1: User journey
 - `/create-product-strategy` - Session 2: Market validation, competitive analysis, strategic goals
 - `/choose-tech-stack` - Session 3: Tech stack
@@ -445,28 +468,33 @@ You're adding comprehensive planning! Consider UX flows for complete product def
 **Post-Core Extensions (Optional - Journey-Informed)**:
 
 After Session 6+:
+
 - `/design-user-experience` - Detailed UX flows (product-guidelines/19-user-experience.md)
 - `/setup-analytics` - Analytics implementation (product-guidelines/20-analytics-plan.md)
 - `/design-growth-strategy` - Growth strategy (product-guidelines/21-growth-strategy.md)
 - `/create-financial-model` - Financial model & unit economics (product-guidelines/22-financial-model.md)
 
 After Session 10+:
+
 - `/discover-naming` - Brand naming (product-guidelines/15-brand-naming.md)
 - `/define-messaging` - Messaging framework (product-guidelines/16-brand-messaging.md)
 - `/design-brand-identity` - Brand identity system (product-guidelines/17-brand-identity.md)
 - `/create-content-guidelines` - Content style guide (product-guidelines/18-content-guidelines.md)
 
 Dev-time:
+
 - `/validate-outputs` - Validate cascade outputs for quality (anytime)
 - `/review-code` - Code review framework (anytime)
 
 **Meta**:
+
 - `/cascade-status` - Show this status (what you're running now!)
 - `/run-cascade` - Execute sessions automatically from current progress
 
 ## Reference Files
 
 Mention if helpful:
+
 - `/examples/compliance-saas/` - Complete cascade example
 - `/templates/` - All template files
 - `README.md` - Framework overview

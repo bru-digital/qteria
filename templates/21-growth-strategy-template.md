@@ -13,6 +13,7 @@
 **Core Growth Loop**: [Brief description of self-reinforcing growth mechanism]
 
 **Key Goals** (12 months):
+
 - North Star: [Metric] from [X] → [Y] ([Z]% growth)
 - Acquisition: [X] → [Y] signups/month
 - Activation: [X]% → [Y]%
@@ -28,6 +29,7 @@
 **Target User**: [Persona from journey]
 
 **Aha Moment**: [Journey Step 3 - where value is delivered]
+
 - Current time to aha: [X minutes/hours/days]
 - Target time to aha: [Y minutes/hours/days]
 
@@ -40,6 +42,7 @@
 **Primary Model**: [Growth model type]
 
 **Why This Model**:
+
 ```
 [Reasoning based on journey characteristics]
 
@@ -54,6 +57,7 @@ Alternative models considered:
 ```
 
 **Growth Philosophy**:
+
 - [Principle 1: e.g., "Acquisition quality over quantity"]
 - [Principle 2: e.g., "Product-led growth, sales-assisted expansion"]
 - [Principle 3: e.g., "Retention before acquisition at scale"]
@@ -65,6 +69,7 @@ Alternative models considered:
 ### Channel Strategy
 
 **Channel Selection Criteria**:
+
 1. **Audience match**: [Journey persona] discovers solutions via [behavior]
 2. **Intent alignment**: Users have [high/medium] intent when finding us
 3. **Cost efficiency**: Target CAC <[X]% of LTV ($[Y])
@@ -78,15 +83,18 @@ Alternative models considered:
 **Target Audience**: [Specific segment within channel]
 
 **Content/Messaging Strategy**:
+
 - [What content/ads/positioning works here?]
 - [Example: "Problem-focused blog posts: 'How to [solve journey problem]'"]
 
 **Tactics** (prioritized):
+
 1. [Specific tactic 1] - [Expected impact]
 2. [Specific tactic 2] - [Expected impact]
 3. [Specific tactic 3] - [Expected impact]
 
 **Metrics**:
+
 - Volume: [X] → [Y] [visitors/impressions/reach] per month
 - Conversion: [X]% → [Y]% (channel visitor → signup)
 - CAC: $[X] (target: <$[Y])
@@ -106,14 +114,17 @@ Alternative models considered:
 **Target Audience**: [Specific segment]
 
 **Content/Messaging Strategy**:
+
 - [What works here?]
 
 **Tactics** (prioritized):
+
 1. [Tactic 1]
 2. [Tactic 2]
 3. [Tactic 3]
 
 **Metrics**:
+
 - Volume: [X] → [Y]
 - Conversion: [X]% → [Y]%
 - CAC: $[X]
@@ -138,6 +149,7 @@ Alternative models considered:
 **Why not**: [Journey-based reasoning: audience mismatch, wrong intent, cost inefficiency, unsustainable]
 
 **When to reconsider**: [Specific conditions that would make this viable]
+
 - [Condition 1: e.g., "If ACV increases to >$X"]
 - [Condition 2: e.g., "If persona expands to [new segment]"]
 
@@ -172,6 +184,7 @@ Alternative models considered:
 **Loop Type**: [Viral / Content / Network / Integration / Other]
 
 **Loop Mechanics**:
+
 ```
 1. [User action in journey]
    ↓
@@ -185,6 +198,7 @@ Alternative models considered:
 ```
 
 **Journey Integration**:
+
 - **Trigger point**: [Which journey step triggers loop?]
 - **Mechanism**: [How does it work technically?]
 - **User motivation**: [Why would users do this?]
@@ -193,11 +207,13 @@ Alternative models considered:
 [Concrete example of loop in action]
 
 **Metrics**:
+
 - **Viral coefficient**: [X new users per existing user per month]
 - **Cycle time**: [Y days for one loop cycle]
 - **Participation rate**: [Z% of users who trigger loop]
 
 **Optimization Tactics**:
+
 1. [Tactic to increase participation rate]
 2. [Tactic to decrease cycle time]
 3. [Tactic to increase viral coefficient]
@@ -223,6 +239,7 @@ Alternative models considered:
 **When to reconsider**: [Conditions]
 
 **Example**:
+
 ```
 ❌ Referral Program ($50 credit for referring)
 Why not: Journey value is trust-based (compliance), not discount-driven.
@@ -266,20 +283,24 @@ Activation (Aha Moment)
 **Goal**: [Target user] becomes aware of [solution] for [journey problem]
 
 **Channels**:
+
 - [Channel 1]: [Volume] [visitors/impressions] per month
 - [Channel 2]: [Volume]
 - [Channel 3]: [Volume]
 
 **Messaging**:
+
 - **Problem-focused**: "[Journey problem] is slow/expensive/frustrating"
 - **Solution-focused**: "[Product] helps you [journey outcome] in [time/cost]"
 
 **Assets**:
+
 - [Blog post: "How to solve [problem]"]
 - [Landing page: "[Solution] for [persona]"]
 - [Ad copy: "[Outcome] in [time]"]
 
 **Metrics**:
+
 - Awareness reach: [X] per month
 - Awareness → Consideration: [Y]%
 
@@ -290,12 +311,14 @@ Activation (Aha Moment)
 **Goal**: User evaluates [product] vs. [alternatives] and decides to try
 
 **Key Questions** (user is asking):
+
 1. "Does this solve MY specific problem?" → [How you answer]
 2. "How is this different from [alternative]?" → [How you answer]
 3. "Can I trust this?" → [How you answer]
 4. "What's the effort to get started?" → [How you answer]
 
 **Consideration Assets**:
+
 - **Landing page**: [Headline], [Social proof], [CTA]
 - **Comparison page**: vs. [Alternative 1], vs. [Alternative 2]
 - **Case studies**: "[Company] achieved [outcome] in [time]"
@@ -310,6 +333,7 @@ Activation (Aha Moment)
 | "Security concerns" | "[Compliance certs], [security page]" |
 
 **Metrics**:
+
 - Consideration → Trial: [X]%
 - Time on landing page: [Y] seconds (target: >[Z])
 
@@ -320,12 +344,14 @@ Activation (Aha Moment)
 **Goal**: Lowest-friction path to trying [journey aha moment]
 
 **Signup Flow**:
+
 1. [Step 1: e.g., "Email + password (or Google SSO)"]
 2. [Step 2: e.g., "Optional: Company name"]
 3. [Step 3: e.g., "Skip onboarding / Quick tour"]
 4. → [User lands in product, ready for journey Step 1]
 
 **Friction Reduction**:
+
 - ❌ No email verification (verify later)
 - ❌ No credit card required (freemium model)
 - ❌ No lengthy forms (3 fields max)
@@ -333,6 +359,7 @@ Activation (Aha Moment)
 - ✅ Sample data pre-loaded (try immediately)
 
 **Metrics**:
+
 - Landing page → Signup started: [X]%
 - Signup started → Signup completed: [Y]%
 - Time to complete signup: [Z] seconds (target: <60s)
@@ -348,11 +375,13 @@ Activation (Aha Moment)
 **Why This Moment**: [This is when user experiences journey value]
 
 **Current Metrics**:
+
 - Signup → Aha moment: [X]% (completion rate)
 - Time to aha moment: [Y] minutes (median)
 - Users who reach aha, D7 retention: [Z]%
 
 **Target Metrics** (3 months):
+
 - Signup → Aha moment: [X+N]%
 - Time to aha moment: [Y-M] minutes
 - Aha → D7 retention: [Z+P]%
@@ -363,16 +392,17 @@ Activation (Aha Moment)
 
 **Drop-off Analysis**:
 
-| Step | Current Completion | Drop-off | Reason | Fix |
-|------|-------------------|----------|--------|-----|
-| Signup complete | 100% | - | - | - |
-| [Onboarding step 1] | [X]% | [Y]% | [Reason] | [Solution] |
-| [Onboarding step 2] | [X]% | [Y]% | [Reason] | [Solution] |
-| Journey Step 1 | [X]% | [Y]% | [Reason] | [Solution] |
-| Journey Step 2 | [X]% | [Y]% | [Reason] | [Solution] |
-| Aha moment | [X]% | - | - | - |
+| Step                | Current Completion | Drop-off | Reason   | Fix        |
+| ------------------- | ------------------ | -------- | -------- | ---------- |
+| Signup complete     | 100%               | -        | -        | -          |
+| [Onboarding step 1] | [X]%               | [Y]%     | [Reason] | [Solution] |
+| [Onboarding step 2] | [X]%               | [Y]%     | [Reason] | [Solution] |
+| Journey Step 1      | [X]%               | [Y]%     | [Reason] | [Solution] |
+| Journey Step 2      | [X]%               | [Y]%     | [Reason] | [Solution] |
+| Aha moment          | [X]%               | -        | -        | -          |
 
 **Top 3 Blockers**:
+
 1. [Blocker 1]: [X]% drop-off at [step]
    - **Root cause**: [Why users drop off]
    - **Solution**: [How to fix]
@@ -410,12 +440,14 @@ Option 2: Jump to Value (For simple products)
 **Why**: [Journey complexity, user sophistication, time to value]
 
 **Implementation**:
+
 - [Element 1: e.g., "Progress checklist (3 steps to first value)"]
 - [Element 2: e.g., "Sample data pre-loaded"]
 - [Element 3: e.g., "Video tutorial (2 min)"]
 - [Element 4: e.g., "Email drip (D1, D3, D7 nudges)"]
 
 **Activation Triggers** (for users who drop off):
+
 - **Email 1** (2 hours after signup): "[User], complete your first [action]"
 - **Email 2** (24 hours, not activated): "Need help? [Link to guide/video]"
 - **Email 3** (3 days, not activated): "See how [Company] uses [product]"
@@ -432,6 +464,7 @@ Option 2: Jump to Value (For simple products)
 **When to reconsider**: [Conditions]
 
 **Example**:
+
 ```
 ❌ Mandatory 10-Minute Onboarding Video
 Why not: Journey aha moment is experiential (try it yourself), not
@@ -454,6 +487,7 @@ activation (selection bias - confused users watch videos).
 **Why Users Return**: [What triggers return to journey Step 1?]
 
 **Retention Metrics**:
+
 - **D1 Retention**: [X]% (users who return day 1)
 - **D7 Retention**: [Y]% (target: >[Y+10]%)
 - **D30 Retention**: [Z]% (target: >[Z+10]%)
@@ -484,6 +518,7 @@ activation (selection bias - confused users watch videos).
 [Concrete example]
 
 **Metrics**:
+
 - [Metric 1]: [Current] → [Target]
 - [Metric 2]: [Current] → [Target]
 
@@ -505,13 +540,13 @@ activation (selection bias - confused users watch videos).
 
 **Email Strategy**: [Nurture / Reminder / Digest / Milestone-based]
 
-| Email | Trigger | Goal | Content | Success Metric |
-|-------|---------|------|---------|----------------|
-| Welcome | Signup | Activate | "Complete first [action]" | [X]% click → aha |
-| D3 (not active) | No aha moment | Re-engage | "See how others use [product]" | [Y]% return |
-| D7 (active) | Reached aha | Habit | "[Milestone] reached! Try [feature 2]" | [Z]% return |
-| Weekly digest | Active users | Engagement | "Your [stats], new [content]" | [A]% open |
-| D30 (churn risk) | Low activity | Rescue | "Need help? Here's [guide]" | [B]% return |
+| Email            | Trigger       | Goal       | Content                                | Success Metric   |
+| ---------------- | ------------- | ---------- | -------------------------------------- | ---------------- |
+| Welcome          | Signup        | Activate   | "Complete first [action]"              | [X]% click → aha |
+| D3 (not active)  | No aha moment | Re-engage  | "See how others use [product]"         | [Y]% return      |
+| D7 (active)      | Reached aha   | Habit      | "[Milestone] reached! Try [feature 2]" | [Z]% return      |
+| Weekly digest    | Active users  | Engagement | "Your [stats], new [content]"          | [A]% open        |
+| D30 (churn risk) | Low activity  | Rescue     | "Need help? Here's [guide]"            | [B]% return      |
 
 ---
 
@@ -554,6 +589,7 @@ Tactics:
 ### Resurrection (Win-back Churned Users)
 
 **Churn Reasons** (survey churned users):
+
 1. [Reason 1]: [X]% of churned users
    - **Fix**: [Product improvement / messaging / pricing change]
 
@@ -561,6 +597,7 @@ Tactics:
    - **Fix**: [Solution]
 
 **Win-back Campaign**:
+
 - **Target**: Users churned [X-Y] months ago
 - **Message**: "[What's new since you left]"
 - **Incentive**: [Free month / Extended trial / Feature access]
@@ -577,6 +614,7 @@ Tactics:
 **When to reconsider**: [Conditions]
 
 **Example**:
+
 ```
 ❌ Daily Email Reminders
 Why not: Journey cadence is monthly (quarterly audits), not daily. Daily
@@ -596,6 +634,7 @@ monitoring vs. quarterly audits). Would need new product features first.
 **Model**: [Freemium / Free trial / Paid / Usage-based / Hybrid]
 
 **Pricing Tiers**:
+
 - **Free**: [Limits] - Goal: [Trial journey value]
 - **Paid**: $[X]/[period] - [Limits] - Goal: [Core customers]
 - **Enterprise**: $[Y]/[period] - [Limits] - Goal: [Large customers]
@@ -603,6 +642,7 @@ monitoring vs. quarterly audits). Would need new product features first.
 **Conversion Point**: [When do users hit paywall?]
 
 **Current Metrics**:
+
 - Free → Paid conversion: [X]%
 - Time to conversion: [Y] days (median)
 - MRR: $[Z]
@@ -705,6 +745,7 @@ monitoring vs. quarterly audits). Would need new product features first.
 **When to reconsider**: [Conditions]
 
 **Example**:
+
 ```
 ❌ Flat Unlimited Pricing ($299/month, unlimited usage)
 Why not: Journey value scales with usage (more assessments = more time
@@ -723,6 +764,7 @@ Currently, variance is 10x (200-2,000 assessments/month).
 ### Experiment Prioritization Framework
 
 **ICE Scoring**: (Impact + Confidence + Ease) / 3
+
 - **Impact** (1-10): How much will this move North Star?
 - **Confidence** (1-10): How certain are we it will work?
 - **Ease** (1-10): How easy to implement and measure?
@@ -740,6 +782,7 @@ Currently, variance is 10x (200-2,000 assessments/month).
 **Success Criteria**: [Metric] from [X] → [Y] ([Z]% improvement)
 
 **Implementation**:
+
 - [Step 1]
 - [Step 2]
 - [Step 3]
@@ -749,6 +792,7 @@ Currently, variance is 10x (200-2,000 assessments/month).
 **Resources**: [Team/time/budget needed]
 
 **ICE Breakdown**:
+
 - Impact: [X]/10 - [Why this score?]
 - Confidence: [Y]/10 - [Why this score?]
 - Ease: [Z]/10 - [Why this score?]
@@ -786,6 +830,7 @@ Currently, variance is 10x (200-2,000 assessments/month).
 **When to reconsider**: [Conditions]
 
 **Example**:
+
 ```
 ❌ Redesign Entire Landing Page (ICE: 4.3)
 Why not: Current landing page converts at 12% (above benchmark).
@@ -824,60 +869,60 @@ different needs).
 
 ### Acquisition Metrics
 
-| Metric | Current | 3-Month Goal | 12-Month Goal |
-|--------|---------|--------------|---------------|
-| Signups/month | [X] | [Y] | [Z] |
-| Signups by channel: [Channel 1] | [X] | [Y] | [Z] |
-| Signups by channel: [Channel 2] | [X] | [Y] | [Z] |
-| Signups by channel: [Channel 3] | [X] | [Y] | [Z] |
-| Cost per acquisition (CPA) | $[X] | $[Y] | $[Z] |
-| Payback period (months) | [X] | [Y] | [Z] |
+| Metric                          | Current | 3-Month Goal | 12-Month Goal |
+| ------------------------------- | ------- | ------------ | ------------- |
+| Signups/month                   | [X]     | [Y]          | [Z]           |
+| Signups by channel: [Channel 1] | [X]     | [Y]          | [Z]           |
+| Signups by channel: [Channel 2] | [X]     | [Y]          | [Z]           |
+| Signups by channel: [Channel 3] | [X]     | [Y]          | [Z]           |
+| Cost per acquisition (CPA)      | $[X]    | $[Y]         | $[Z]          |
+| Payback period (months)         | [X]     | [Y]          | [Z]           |
 
 ---
 
 ### Activation Metrics
 
-| Metric | Current | 3-Month Goal | 12-Month Goal |
-|--------|---------|--------------|---------------|
-| Signup → Aha moment % | [X]% | [Y]% | [Z]% |
-| Time to aha moment (median) | [X] min | [Y] min | [Z] min |
-| D1 retention | [X]% | [Y]% | [Z]% |
+| Metric                      | Current | 3-Month Goal | 12-Month Goal |
+| --------------------------- | ------- | ------------ | ------------- |
+| Signup → Aha moment %       | [X]%    | [Y]%         | [Z]%          |
+| Time to aha moment (median) | [X] min | [Y] min      | [Z] min       |
+| D1 retention                | [X]%    | [Y]%         | [Z]%          |
 
 ---
 
 ### Retention Metrics
 
-| Metric | Current | 3-Month Goal | 12-Month Goal |
-|--------|---------|--------------|---------------|
-| D7 retention | [X]% | [Y]% | [Z]% |
-| D30 retention | [X]% | [Y]% | [Z]% |
-| D90 retention | [X]% | [Y]% | [Z]% |
-| Monthly churn rate | [X]% | [Y]% | [Z]% |
-| Resurrection rate | [X]% | [Y]% | [Z]% |
+| Metric             | Current | 3-Month Goal | 12-Month Goal |
+| ------------------ | ------- | ------------ | ------------- |
+| D7 retention       | [X]%    | [Y]%         | [Z]%          |
+| D30 retention      | [X]%    | [Y]%         | [Z]%          |
+| D90 retention      | [X]%    | [Y]%         | [Z]%          |
+| Monthly churn rate | [X]%    | [Y]%         | [Z]%          |
+| Resurrection rate  | [X]%    | [Y]%         | [Z]%          |
 
 ---
 
 ### Monetization Metrics
 
-| Metric | Current | 3-Month Goal | 12-Month Goal |
-|--------|---------|--------------|---------------|
-| Free → Paid conversion | [X]% | [Y]% | [Z]% |
-| Time to conversion (days) | [X] | [Y] | [Z] |
-| MRR | $[X] | $[Y] | $[Z] |
-| ARPU | $[X] | $[Y] | $[Z] |
-| Net Revenue Retention | [X]% | [Y]% | [Z]% |
-| LTV:CAC ratio | [X]:1 | [Y]:1 | [Z]:1 |
+| Metric                    | Current | 3-Month Goal | 12-Month Goal |
+| ------------------------- | ------- | ------------ | ------------- |
+| Free → Paid conversion    | [X]%    | [Y]%         | [Z]%          |
+| Time to conversion (days) | [X]     | [Y]          | [Z]           |
+| MRR                       | $[X]    | $[Y]         | $[Z]          |
+| ARPU                      | $[X]    | $[Y]         | $[Z]          |
+| Net Revenue Retention     | [X]%    | [Y]%         | [Z]%          |
+| LTV:CAC ratio             | [X]:1   | [Y]:1        | [Z]:1         |
 
 ---
 
 ### Viral/Loop Metrics
 
-| Metric | Current | 3-Month Goal | 12-Month Goal |
-|--------|---------|--------------|---------------|
-| Viral coefficient | [X] | [Y] | [Z] |
-| Cycle time (days) | [X] | [Y] | [Z] |
-| K-factor | [X] | [Y] | [Z] |
-| % users who share/invite | [X]% | [Y]% | [Z]% |
+| Metric                   | Current | 3-Month Goal | 12-Month Goal |
+| ------------------------ | ------- | ------------ | ------------- |
+| Viral coefficient        | [X]     | [Y]          | [Z]           |
+| Cycle time (days)        | [X]     | [Y]          | [Z]           |
+| K-factor                 | [X]     | [Y]          | [Z]           |
+| % users who share/invite | [X]%    | [Y]%         | [Z]%          |
 
 ---
 
@@ -886,6 +931,7 @@ different needs).
 ### Required Tracking
 
 **Events to track** (for growth metrics):
+
 - [Event 1: e.g., "signup_completed"]
 - [Event 2: e.g., "aha_moment_reached"]
 - [Event 3: e.g., "free_limit_reached"]
@@ -893,11 +939,13 @@ different needs).
 - [Event 5: e.g., "invite_sent"]
 
 **Funnels to monitor**:
+
 - [Funnel 1: Landing page → Signup → Aha moment]
 - [Funnel 2: Free → Paid conversion]
 - [Funnel 3: Channel-specific acquisition funnels]
 
 **Cohort analysis**:
+
 - Retention by signup cohort (weekly/monthly)
 - Conversion by acquisition channel
 - Expansion by usage tier
@@ -907,6 +955,7 @@ different needs).
 ### Dashboard & Reporting
 
 **Weekly Growth Dashboard**:
+
 - North Star metric (trend)
 - Acquisition (signups by channel, CPA)
 - Activation (aha moment %, time to aha)
@@ -915,6 +964,7 @@ different needs).
 - Experiments (in-flight tests, results)
 
 **Alerts**:
+
 - [Alert 1: "North Star growth <5% WoW"]
 - [Alert 2: "D7 retention <[X]%"]
 - [Alert 3: "CPA >[X] for [channel]"]
@@ -928,6 +978,7 @@ different needs).
 **Goals**: Launch primary channels, optimize activation, baseline metrics
 
 **Priorities**:
+
 1. [Experiment 1 - Highest ICE]
 2. [Experiment 2]
 3. [Experiment 3]
@@ -943,6 +994,7 @@ different needs).
 **Goals**: Improve conversion, test retention tactics, scale winning channels
 
 **Priorities**:
+
 1. [Experiment 4]
 2. [Experiment 5]
 3. [Channel 2 launch]
@@ -957,6 +1009,7 @@ different needs).
 **Goals**: Scale channels, expand loops, optimize monetization
 
 **Priorities**:
+
 1. [Experiment 6]
 2. [Channel scaling]
 3. [Monetization optimization]
@@ -970,6 +1023,7 @@ different needs).
 **Goals**: New channels, advanced retention, revenue expansion
 
 **Priorities**:
+
 1. [Experiment 7]
 2. [Channel 3 launch if needed]
 3. [Expansion tactics]
@@ -985,11 +1039,13 @@ different needs).
 **Current**: [Current team/roles]
 
 **Needed** (to execute this strategy):
+
 - [Role 1: e.g., "Growth PM - owns experiments, prioritization"]
 - [Role 2: e.g., "Growth engineer - builds experiments, analytics"]
 - [Role 3: e.g., "Content marketer - owns SEO, content loop"]
 
 **External Partners**:
+
 - [Partner 1: e.g., "SEO agency for content production"]
 - [Partner 2: e.g., "Paid ads consultant"]
 
@@ -998,6 +1054,7 @@ different needs).
 ### Budget
 
 **Quarterly Growth Budget**:
+
 - Paid acquisition: $[X]/month (target: 3:1 LTV:CAC)
 - Content production: $[Y]/month
 - Tools/software: $[Z]/month (analytics, testing, etc.)
@@ -1030,4 +1087,4 @@ different needs).
 
 ---
 
-*This growth strategy is a living document. Re-run `/design-growth-strategy` quarterly to update based on learnings.*
+_This growth strategy is a living document. Re-run `/design-growth-strategy` quarterly to update based on learnings._

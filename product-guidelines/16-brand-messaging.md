@@ -11,37 +11,44 @@ This document defines the brand messaging framework that guides all customer com
 ## How This Traces to User Journey
 
 **Journey audience** (from `product-guidelines/00-user-journey.md`):
+
 - **Project Handlers** at TIC (Testing, Inspection, Certification) notified bodies
 - Run 15-20 document pre-assessments per day
 - Performance tracked by "clarification rounds" - fewer is better
 - Currently outsource to India team ($100K/year, 1-2 day turnaround)
 
 **Journey problem** (from `product-guidelines/00-user-journey.md`):
+
 - **Speed**: 1-2 day wait for basic pre-check results blocks pipeline
 - **Quality anxiety**: When errors slip through pre-check, creates embarrassing back-and-forth with Certification Person
 - **No visibility**: Can't see validation happening, just waits for India team email
 - **Cost**: $100K/year for 2-3 people doing basic checks
 
 **Journey transformation** (from `product-guidelines/00-user-journey.md`):
+
 - **From**: 1-2 day wait for validation results → **To**: <10 minutes with evidence-based AI validation
 - **From**: Black-box validation (no proof) → **To**: Exact page/section links showing WHERE issues exist ("FAIL → [Link: test-report.pdf, page 8]")
 - **From**: Embarrassing clarification rounds → **To**: Fix issues BEFORE Certification Person sees them
 
 **Journey value** (from `product-guidelines/00-user-journey.md`):
+
 - **Functional**: 10 minutes instead of 1-2 days (~400x faster), exact location of issues
 - **Emotional**: Confidence to fix issues before Certification Person sees them (no embarrassment)
 - **Economic**: $70K/year direct savings + faster pipeline + fewer clarification rounds
 
 **Mission foundation** (from `product-guidelines/03-mission.md`):
+
 - "We help Project Handlers at TIC notified bodies validate certification documents 400x faster by transforming manual compliance checks into AI-powered assessments with evidence-based results."
 
 **Brand voice** (from `product-guidelines/05-brand-strategy.md`):
+
 - **Direct and to the point**: "Here's what's wrong, here's where to find it, here's how to fix it"
 - **Professional but approachable**: Competent quality management professional, not stuffy corporate
 - **Authoritative but warm**: Expert voice with supportive tone
 - **Reserved but confident**: Results speak, no hype or "revolutionary" claims
 
 **Messaging Goal**:
+
 - Communicate **fast, evidence-based validation** (journey transformation) to **Project Handlers at TIC notified bodies** (journey audience) in **direct, professional, competent** voice (brand personality)
 - Every message connects back to the user journey: eliminating 1-2 day waits and embarrassing clarification rounds
 
@@ -58,6 +65,7 @@ This document defines the brand messaging framework that guides all customer com
 Qteria helps Project Handlers at TIC notified bodies validate certification documents 400x faster through AI that shows exactly where issues are - page, section, proof - so you can fix them before embarrassing clarification rounds.
 
 **Format breakdown**:
+
 - **Who**: Project Handlers at TIC notified bodies
 - **What**: Validate certification documents 400x faster
 - **How**: AI that shows exact evidence (page, section, proof)
@@ -70,12 +78,14 @@ Qteria helps Project Handlers at TIC notified bodies validate certification docu
 ### Primary Audience: Project Handler
 
 **Who they are**:
+
 - **Title**: Document Coordinator, Project Handler, Pre-Assessment Coordinator
 - **Company**: TIC (Testing, Inspection, Certification) notified bodies - organizations like TÜV SÜD, BSI, SGS, Intertek
 - **Industry**: Certification (Medical Devices, Machinery, Consumer Products, etc.)
 - **Size**: Mid-to-large notified bodies (50-500 employees)
 
 **Their context**:
+
 - **Where they work**: Quality management office at a notified body
 - **What they do**: Collect documents from clients, run 15-20 pre-assessments per day, coordinate with Certification Person
 - **What they care about**:
@@ -85,12 +95,14 @@ Qteria helps Project Handlers at TIC notified bodies validate certification docu
   - Control (can fix issues immediately vs waiting for India team)
 
 **Their pain points**:
+
 1. **Speed bottleneck**: 1-2 day wait for outsourced India team to validate documents blocks pipeline (15-20 assessments/day pile up)
 2. **Quality anxiety**: When India team misses something, Project Handler looks bad in front of Certification Person (embarrassing back-and-forth)
 3. **No visibility**: Can't see what's happening during validation - just wait for email from India
 4. **Expensive workaround**: $100K/year for 2-3 people in India doing basic checks
 
 **What they want**:
+
 - **Fast pre-check results** (<10 minutes instead of 1-2 days) so pipeline doesn't get blocked
 - **Evidence-based validation** (show me WHERE the issue is - exact page/section) so they can verify AI is correct
 - **Fewer clarification rounds** (catch issues BEFORE Certification Person sees them - avoid embarrassment)
@@ -99,10 +111,12 @@ Qteria helps Project Handlers at TIC notified bodies validate certification docu
 ### Secondary Audience: Process Manager
 
 **Who they are**:
+
 - **Title**: Quality Manager, Process Owner, Validation Lead
 - **Role**: Defines validation workflows and criteria for different product types
 
 **What they want**:
+
 - Create validation workflows fast (<30 min vs weeks to train India team)
 - Easy to experiment and refine criteria based on AI performance
 - Visibility into which criteria catch real issues vs create false positives
@@ -110,6 +124,7 @@ Qteria helps Project Handlers at TIC notified bodies validate certification docu
 ### How we talk to them
 
 **Language they use** (TIC industry terms):
+
 - "Certification Person" (the expert who makes final certification decision)
 - "Clarification rounds" (back-and-forth when documents have issues)
 - "Notified body" (organization authorized to perform certification assessments)
@@ -119,12 +134,14 @@ Qteria helps Project Handlers at TIC notified bodies validate certification docu
 - "Pass/fail" (binary assessment result)
 
 **Language they avoid**:
+
 - Generic AI hype: "Revolutionary AI", "game-changing automation", "disruptive technology"
 - Silicon Valley jargon: "synergy", "leverage", "move fast and break things"
 - Overly technical AI terms: "neural networks", "deep learning", "LLM hallucinations" (they don't care how it works)
 - Casual startup language: "awesome", "crushing it", "let's rock this"
 
 **Tone they respond to**:
+
 - **Direct and clear**: No corporate fluff, tell it straight
 - **Professional but not stuffy**: Quality management professional, not robotic enterprise software
 - **Evidence-based**: Show proof, don't just claim (they verify everything)
@@ -135,14 +152,16 @@ Qteria helps Project Handlers at TIC notified bodies validate certification docu
 ## Elevator Pitches
 
 ### 15-Second Version
-*For initial introductions, social bios, email signatures*
+
+_For initial introductions, social bios, email signatures_
 
 **Qteria validates certification documents in minutes with evidence for every decision. AI shows you exactly where issues are - page, section, proof - so you fix them before the Certification Person sees them.**
 
 ---
 
 ### 30-Second Version
-*For networking, quick conversations, cold outreach*
+
+_For networking, quick conversations, cold outreach_
 
 **Project Handlers at TIC notified bodies wait 1-2 days for outsourced teams to validate certification documents - and when errors slip through, it creates embarrassing clarification rounds with the Certification Person.**
 
@@ -151,7 +170,8 @@ Qteria helps Project Handlers at TIC notified bodies validate certification docu
 ---
 
 ### 1-Minute Version
-*For deeper conversations, demos, pitches, about us*
+
+_For deeper conversations, demos, pitches, about us_
 
 **If you're a Project Handler at a TIC notified body, you know the pain: you collect certification documents from clients and need to validate them against basic criteria before forwarding to the Certification Person. But validation takes 1-2 days through your outsourced India team, costing $100K/year. And when errors slip through, you get embarrassing back-and-forth clarification rounds.**
 
@@ -173,17 +193,20 @@ Qteria helps Project Handlers at TIC notified bodies validate certification docu
 When Project Handlers get "FAIL → [Link: test-report.pdf, page 8]" and click to see the exact issue, they think "IT ACTUALLY WORKS" - the AI provides proof, not just opinion. This builds confidence in AI validation (vs black-box "the AI said so" which destroys trust).
 
 **Supporting points**:
+
 - **Exact location**: Not just "issue detected" - you get page number, section reference, clickable link
 - **Verify correctness**: Click the link and see the issue yourself (you're the expert, we show evidence)
 - **Build trust**: Confidence comes from seeing the proof, not from marketing claims ("trust but verify")
 - **No black-box AI**: Users understand what was checked and why it passed/failed
 
 **Proof/evidence**:
+
 - Feature: "FAIL → [Link: test-report.pdf, page 8, section 3.2]" - clickable evidence links in results
 - Testimonial (future): "I can actually verify the AI is correct by clicking the link and checking page 8. That builds trust." - TÜV SÜD Project Handler
 - Metric: <5% false positive rate (users can flag issues, we track and refine)
 
 **Example copy**:
+
 - **Homepage**: "See exactly where issues are - page, section, proof. Verify the AI is correct, don't blindly trust it."
 - **Product UI**: "Criteria 2: Test summary missing - FAIL → [Link: test-report.pdf, page 8]"
 - **Support**: "The AI flagged page 8 because it expected a signature in section 3.2. Check the document there - if it's actually signed but AI missed it, flag it and we'll refine the model."
@@ -198,18 +221,21 @@ When Project Handlers get "FAIL → [Link: test-report.pdf, page 8]" and click t
 Project Handlers run 15-20 assessments/day. When each validation takes 1-2 days, the pipeline backs up and certification slows down. But speed means nothing if quality drops (false positives waste time, false negatives create embarrassment). They need BOTH speed AND accuracy.
 
 **Supporting points**:
+
 - **10 minutes vs 1-2 days**: ~400x faster per assessment (measurable, quantified)
 - **No quality trade-off**: <5% false positive rate, <1% false negative rate (AI accuracy matches or exceeds manual review)
 - **Immediate iteration**: Re-run assessment in 5 minutes after fixing issues (vs wait another 1-2 days for India team)
 - **Pipeline acceleration**: 15-20 assessments/day processed in hours, not weeks
 
 **Proof/evidence**:
+
 - Metric: 1-2 days → <10 minutes (400x faster)
 - Metric: 95%+ accuracy (comparable to India team, measured via false positive/negative feedback)
 - Feature: Re-run assessment capability (fix and re-validate in 5 minutes)
 - Value: $1.8M/year in pipeline time savings (15-20 assessments × 1.5 days saved × $500 opportunity cost)
 
 **Example copy**:
+
 - **Homepage**: "Validate documents in <10 minutes instead of 1-2 days. 400x faster without sacrificing accuracy."
 - **Email outreach**: "Your India team costs $100K/year and takes 1-2 days. Qteria delivers results in 10 minutes at $30K/year - same accuracy, 400x faster."
 - **Feature announcement**: "Re-run assessments in 5 minutes. Fix an issue and get updated results immediately - no more waiting 1-2 days for the next validation cycle."
@@ -224,18 +250,21 @@ Project Handlers run 15-20 assessments/day. When each validation takes 1-2 days,
 Project Handlers are measured by "clarification rounds" - fewer is better. When errors slip through pre-assessment and the Certification Person finds them, it creates embarrassing back-and-forth. Qteria helps them fix issues BEFORE handoff, so they look competent and performance improves.
 
 **Supporting points**:
+
 - **Clean handoff**: Forward documents with confidence that all criteria passed (no surprises later)
 - **Performance improves**: Fewer clarification rounds = better tracked KPI (measurable career impact)
 - **Confidence**: Fix issues immediately vs anxiety waiting to see if Certification Person finds something
 - **Control**: Iterate until clean (re-run assessment, fix, repeat) vs one shot with India team
 
 **Proof/evidence**:
+
 - Emotional journey: Step 4 satisfaction - "Fixed it before Certification Person even saw it"
 - Success criteria: Clean handoff to Certification Person with fewer clarification rounds
 - Feature: Re-run capability lets users iterate until clean (full control)
 - Testimonial (future): "My clarification rounds dropped by 40% in the first month. I catch issues earlier now." - Project Handler
 
 **Example copy**:
+
 - **Homepage**: "Fix issues before the Certification Person sees them. No embarrassing clarification rounds."
 - **Product UI**: "3/3 criteria passed - All clear! Ready to forward to Certification Person."
 - **Case study**: "TÜV SÜD reduced clarification rounds by 40% in the first month by catching issues earlier with Qteria's evidence-based validation."
@@ -250,18 +279,21 @@ Project Handlers are measured by "clarification rounds" - fewer is better. When 
 Process Managers trust Qteria because workflows match their mental models (document buckets for different file types, validation criteria that map to certification requirements). This isn't generic "document processing" - it's built by someone who understands notified body workflows deeply. Features designed for real use cases, not theoretical.
 
 **Supporting points**:
+
 - **Industry insider knowledge**: Built by professionals from TIC industry (we've worked in certification)
 - **Right features**: Document buckets, validation criteria, workflow sharing - designed for actual notified body workflows (not generic document tools)
 - **Speaks your language**: We know what SOC2, ISO 13485, Medical Device Class II mean (no need to explain)
 - **Co-developed with TÜV SÜD**: First customer shapes product with insider knowledge (pilot validates product-market fit)
 
 **Proof/evidence**:
+
 - Founder background: TIC industry professional (insider, not outsider)
 - First customer: TÜV SÜD pilot (credibility, co-development)
 - Feature design: Buckets + criteria model matches certification workflows (not generic upload → process → output)
 - Support: White-glove onboarding, relationship manager who understands certification (not ticket queue)
 
 **Example copy**:
+
 - **About us**: "Built by TIC professionals who've worked in certification. We understand notified body workflows because we've lived them."
 - **Homepage**: "Document buckets for Technical Documentation, Test Reports, Risk Assessment. Validation criteria that map to certification requirements. Built for how you actually work."
 - **Sales outreach**: "Unlike generic document AI tools built by Silicon Valley teams, Qteria was designed by TIC professionals for notified bodies. We speak your language - ISO 13485, Medical Device Class II, clarification rounds."
@@ -271,11 +303,13 @@ Process Managers trust Qteria because workflows match their mental models (docum
 ## Voice and Tone Guidelines
 
 ### Our Voice
-*Consistent personality across all communication*
+
+_Consistent personality across all communication_
 
 **How we sound**: Direct, professional, competent, helpful, no-nonsense
 
 **Voice = Brand personality applied to copy**:
+
 - **Direct and clear**: Say what you mean, no dancing around issues, plain English
 - **Professional but approachable**: Quality management expert, not corporate robot or casual startup
 - **Authoritative but warm**: Expert voice with supportive tone (helpful, not arrogant)
@@ -285,6 +319,7 @@ Process Managers trust Qteria because workflows match their mental models (docum
 A female quality management professional in her early 30s. Office nerd who loves details and precision. Direct and to the point. "Here's what's wrong, here's where to find it, here's how to fix it." Friendly and supportive, but doesn't waste time. You'd see her at a certification conference and think "she knows what she's doing."
 
 **What we do**:
+
 - ✅ **Lead with evidence**: Show proof first, then explain ("AI flagged page 8 because..." not "The AI detected an issue")
 - ✅ **Use plain English**: "Fix issues before the Certification Person sees them" (not "optimize your pre-assessment workflow for maximum efficiency")
 - ✅ **Be specific**: "10 minutes instead of 1-2 days" (not "fast and easy")
@@ -293,6 +328,7 @@ A female quality management professional in her early 30s. Office nerd who loves
 - ✅ **State facts, not hype**: "400x faster, $70K savings" (measurable) vs "revolutionary, game-changing" (marketing fluff)
 
 **What we don't do**:
+
 - ❌ **No AI hype**: Avoid "revolutionary AI", "disruptive technology", "cutting-edge machine learning" (they don't care about AI buzzwords)
 - ❌ **No corporate jargon**: Avoid "synergy", "leverage", "paradigm shift", "best-in-class" (empty words)
 - ❌ **No casual startup language**: Avoid "awesome", "crushing it", "rock your workflow", "let's do this!" (too informal for serious compliance)
@@ -301,18 +337,19 @@ A female quality management professional in her early 30s. Office nerd who loves
 - ❌ **No hiding behind complexity**: If there's an error, explain it clearly and how to fix it (no technical jargon walls)
 
 ### Tone Variations
-*How voice adapts to context*
 
-| Context | Tone | Example |
-|---------|------|---------|
-| **Default (Homepage, Product)** | Direct, professional, evidence-based | "Validate documents in <10 minutes with evidence for every decision. See exactly where issues are - page, section, proof." |
-| **Success/Celebration** | Satisfied, confirming (no fanfare) | "3/3 criteria passed - All clear! Ready to forward to Certification Person." |
-| **Error/Failure** | Direct, helpful, specific | "Assessment timed out. Large PDFs can take longer. Try splitting the 200-page technical documentation into smaller files." |
-| **Sensitive (false positive/negative)** | Respectful, collaborative | "The AI flagged this as an issue, but if you see it differently, please flag it. Your expertise helps us improve." |
-| **Urgent/Critical** | Direct, actionable (no panic) | "Assessment failed - missing signature on page 12. Add signature and re-run before forwarding to Certification Person." |
-| **Educational (onboarding, docs)** | Clear, instructional, patient | "Create a new workflow: Name it (e.g., 'Medical Device - Class II'), define document buckets (Technical Documentation, Test Reports), add validation criteria." |
-| **Marketing (outreach, ads)** | Professional, evidence-based, no hype | "TÜV SÜD reduced validation time from 1-2 days to <10 minutes while maintaining 95%+ accuracy. See how Qteria helps Project Handlers catch issues before clarification rounds." |
-| **Support (email, chat)** | Direct, helpful, expert | "Here's what I see: The AI expected a test summary on page 8 but didn't find it. Check that section - if it's there but formatted differently, flag it and we'll adjust the model." |
+_How voice adapts to context_
+
+| Context                                 | Tone                                  | Example                                                                                                                                                                             |
+| --------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Default (Homepage, Product)**         | Direct, professional, evidence-based  | "Validate documents in <10 minutes with evidence for every decision. See exactly where issues are - page, section, proof."                                                          |
+| **Success/Celebration**                 | Satisfied, confirming (no fanfare)    | "3/3 criteria passed - All clear! Ready to forward to Certification Person."                                                                                                        |
+| **Error/Failure**                       | Direct, helpful, specific             | "Assessment timed out. Large PDFs can take longer. Try splitting the 200-page technical documentation into smaller files."                                                          |
+| **Sensitive (false positive/negative)** | Respectful, collaborative             | "The AI flagged this as an issue, but if you see it differently, please flag it. Your expertise helps us improve."                                                                  |
+| **Urgent/Critical**                     | Direct, actionable (no panic)         | "Assessment failed - missing signature on page 12. Add signature and re-run before forwarding to Certification Person."                                                             |
+| **Educational (onboarding, docs)**      | Clear, instructional, patient         | "Create a new workflow: Name it (e.g., 'Medical Device - Class II'), define document buckets (Technical Documentation, Test Reports), add validation criteria."                     |
+| **Marketing (outreach, ads)**           | Professional, evidence-based, no hype | "TÜV SÜD reduced validation time from 1-2 days to <10 minutes while maintaining 95%+ accuracy. See how Qteria helps Project Handlers catch issues before clarification rounds."     |
+| **Support (email, chat)**               | Direct, helpful, expert               | "Here's what I see: The AI expected a test summary on page 8 but didn't find it. Check that section - if it's there but formatted differently, flag it and we'll adjust the model." |
 
 ---
 
@@ -451,27 +488,27 @@ This lets you iterate until clean: fix issue → re-validate → verify pass →
 
 ### Words We Use
 
-| Instead of... | We say... | Because... |
-|---------------|-----------|------------|
-| **"Users"** | **"Project Handlers"** or **"Process Managers"** | Specific role names show domain expertise (we know who uses this) |
-| **"Fast"** | **"<10 minutes instead of 1-2 days"** or **"400x faster"** | Specific numbers are more credible than vague speed claims |
-| **"Accurate AI"** | **"Evidence-based validation"** or **"AI that shows proof"** | Emphasizes transparency (our differentiator) vs generic accuracy claim |
-| **"Easy to use"** | **"Create workflows in <30 minutes"** | Specific time commitment is more useful than vague "easy" |
-| **"Document processing"** | **"Document validation"** or **"Pre-assessment"** | Industry-specific term (validation) vs generic (processing) |
-| **"Results"** | **"Pass/fail with evidence"** or **"Exact page/section proof"** | Describes what results actually contain (specificity builds trust) |
+| Instead of...             | We say...                                                       | Because...                                                             |
+| ------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **"Users"**               | **"Project Handlers"** or **"Process Managers"**                | Specific role names show domain expertise (we know who uses this)      |
+| **"Fast"**                | **"<10 minutes instead of 1-2 days"** or **"400x faster"**      | Specific numbers are more credible than vague speed claims             |
+| **"Accurate AI"**         | **"Evidence-based validation"** or **"AI that shows proof"**    | Emphasizes transparency (our differentiator) vs generic accuracy claim |
+| **"Easy to use"**         | **"Create workflows in <30 minutes"**                           | Specific time commitment is more useful than vague "easy"              |
+| **"Document processing"** | **"Document validation"** or **"Pre-assessment"**               | Industry-specific term (validation) vs generic (processing)            |
+| **"Results"**             | **"Pass/fail with evidence"** or **"Exact page/section proof"** | Describes what results actually contain (specificity builds trust)     |
 
 ### Words We Avoid
 
-| Word/Phrase | Why We Avoid |
-|-------------|--------------|
-| **"Revolutionary AI"** | AI hype language; violates brand personality (reserved, no hype) |
-| **"Game-changing"** | Overused marketing buzzword; vague and unspecific |
-| **"Leverage"** | Corporate jargon; say "use" instead (plain English) |
-| **"Synergy"** | Empty corporate speak; doesn't communicate real value |
-| **"Best-in-class"** | Superlative without proof; use specific metrics instead |
-| **"Seamless"** | Overused, vague; say what you mean ("no manual export - direct API integration") |
-| **"Robust"** | Technical jargon; say what it actually does ("handles 200-page PDFs") |
-| **"Empower"** | Vague corporate speak; say the actual outcome ("fix issues faster") |
+| Word/Phrase            | Why We Avoid                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| **"Revolutionary AI"** | AI hype language; violates brand personality (reserved, no hype)                 |
+| **"Game-changing"**    | Overused marketing buzzword; vague and unspecific                                |
+| **"Leverage"**         | Corporate jargon; say "use" instead (plain English)                              |
+| **"Synergy"**          | Empty corporate speak; doesn't communicate real value                            |
+| **"Best-in-class"**    | Superlative without proof; use specific metrics instead                          |
+| **"Seamless"**         | Overused, vague; say what you mean ("no manual export - direct API integration") |
+| **"Robust"**           | Technical jargon; say what it actually does ("handles 200-page PDFs")            |
+| **"Empower"**          | Vague corporate speak; say the actual outcome ("fix issues faster")              |
 
 ---
 
@@ -479,12 +516,12 @@ This lets you iterate until clean: fix issue → re-validate → verify pass →
 
 ### How We Position vs. Competitors
 
-| Competitor | Their Message | Our Counter-Position |
-|------------|---------------|---------------------|
-| **India outsourcing teams** (current baseline) | "Experienced validation professionals, thorough manual review" | **Speed + Evidence**: "1-2 days → 10 minutes. Get exact page/section proof, not just 'approved' or 'rejected'. Re-run in 5 minutes vs wait another 1-2 days." |
-| **Generic document AI tools** (DocuSign AI, Adobe AI) | "AI-powered document processing for all industries" | **Domain Expertise**: "Built by TIC professionals for notified bodies. Not generic 'document processing' - workflows designed for certification (buckets, criteria, evidence). We speak your language: ISO 13485, clarification rounds, Certification Person." |
-| **Internal homegrown tools** | "Custom-built for our exact needs, full control" | **Evidence-based AI**: "Your homegrown tool can't keep up with AI advances. Qteria delivers evidence-based validation (page/section proof) in <10 minutes with continuous model improvements. White-glove support vs maintain it yourself." |
-| **Enterprise compliance platforms** (ComplySci, AuditBoard) | "All-in-one compliance platform with reporting dashboards" | **Simplicity**: "We do ONE thing exceptionally well: validate documents with evidence. No bloated dashboards, no 50 features you don't need. Create workflow in <30 min vs week-long training." |
+| Competitor                                                  | Their Message                                                  | Our Counter-Position                                                                                                                                                                                                                                           |
+| ----------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **India outsourcing teams** (current baseline)              | "Experienced validation professionals, thorough manual review" | **Speed + Evidence**: "1-2 days → 10 minutes. Get exact page/section proof, not just 'approved' or 'rejected'. Re-run in 5 minutes vs wait another 1-2 days."                                                                                                  |
+| **Generic document AI tools** (DocuSign AI, Adobe AI)       | "AI-powered document processing for all industries"            | **Domain Expertise**: "Built by TIC professionals for notified bodies. Not generic 'document processing' - workflows designed for certification (buckets, criteria, evidence). We speak your language: ISO 13485, clarification rounds, Certification Person." |
+| **Internal homegrown tools**                                | "Custom-built for our exact needs, full control"               | **Evidence-based AI**: "Your homegrown tool can't keep up with AI advances. Qteria delivers evidence-based validation (page/section proof) in <10 minutes with continuous model improvements. White-glove support vs maintain it yourself."                    |
+| **Enterprise compliance platforms** (ComplySci, AuditBoard) | "All-in-one compliance platform with reporting dashboards"     | **Simplicity**: "We do ONE thing exceptionally well: validate documents with evidence. No bloated dashboards, no 50 features you don't need. Create workflow in <30 min vs week-long training."                                                                |
 
 ---
 
@@ -558,15 +595,18 @@ You can start running assessments the same day. We provide white-glove onboardin
 - **Re-run speed**: ~5 minutes to re-validate after fixing issues (vs wait another 1-2 days)
 
 **Testimonials** (future - from TÜV SÜD pilot):
+
 - "[Quote about reducing clarification rounds]" - [Name], Project Handler, TÜV SÜD
 - "[Quote about evidence-based validation building trust]" - [Name], Quality Manager, TÜV SÜD
 - "[Quote about pipeline acceleration]" - [Name], Certification Director, TÜV SÜD
 
 **Case studies** (future):
+
 - **TÜV SÜD reduces validation time from 1-2 days to <10 minutes**: How evidence-based AI helped Project Handlers catch issues 400x faster while maintaining 95%+ accuracy
 - **[Notified Body] cuts clarification rounds by 40%**: Catching issues before the Certification Person sees them with Qteria's evidence-based validation
 
 **Features that prove claims**:
+
 - **Evidence links**: Every result shows "FAIL → [Link: test-report.pdf, page 8]" - clickable proof
 - **Re-run capability**: Fix and re-validate in 5 minutes (control + speed)
 - **Workflow creation UI**: Document buckets + criteria definition in <30 min (simplicity)
@@ -574,6 +614,7 @@ You can start running assessments the same day. We provide white-glove onboardin
 - **Export report**: PDF summary with all criteria, pass/fail, evidence (audit trail)
 
 **Team credentials** (domain expertise):
+
 - **Founder**: TIC industry professional with [X years] in certification at [Company]
 - **First customer**: TÜV SÜD pilot (co-development validates product-market fit)
 - **Advisory**: [Names] from [Notified Bodies] (insider knowledge)
@@ -595,6 +636,7 @@ You can start running assessments the same day. We provide white-glove onboardin
 ### Quick test: "Would this resonate at a TIC conference?"
 
 Imagine you're at a certification industry conference. A Project Handler from a notified body walks up to your booth. Would this messaging:
+
 - ✅ Make them say "That's exactly my pain point!"? (Journey-grounded)
 - ✅ Make them ask "How do you do that?"? (Credible but intriguing)
 - ✅ Sound like someone who understands their world? (Domain expertise)

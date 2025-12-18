@@ -31,7 +31,7 @@ from app.models import (
 
 def clear_test_data():
     """Clear all data from test database (preserves schema)."""
-    load_dotenv('.env.test', override=True)
+    load_dotenv(".env.test", override=True)
 
     db = SessionLocal()
 
@@ -42,15 +42,15 @@ def clear_test_data():
         # (child tables first, parent tables last)
 
         counts = {}
-        counts['assessment_results'] = db.query(AssessmentResult).delete()
-        counts['assessment_documents'] = db.query(AssessmentDocument).delete()
-        counts['assessments'] = db.query(Assessment).delete()
-        counts['criteria'] = db.query(Criteria).delete()
-        counts['buckets'] = db.query(Bucket).delete()
-        counts['workflows'] = db.query(Workflow).delete()
-        counts['audit_logs'] = db.query(AuditLog).delete()
-        counts['users'] = db.query(User).delete()
-        counts['organizations'] = db.query(Organization).delete()
+        counts["assessment_results"] = db.query(AssessmentResult).delete()
+        counts["assessment_documents"] = db.query(AssessmentDocument).delete()
+        counts["assessments"] = db.query(Assessment).delete()
+        counts["criteria"] = db.query(Criteria).delete()
+        counts["buckets"] = db.query(Bucket).delete()
+        counts["workflows"] = db.query(Workflow).delete()
+        counts["audit_logs"] = db.query(AuditLog).delete()
+        counts["users"] = db.query(User).delete()
+        counts["organizations"] = db.query(Organization).delete()
 
         db.commit()
 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     print()
 
     response = input("⚠️  This will DELETE ALL DATA from qteria-test. Continue? (yes/no): ")
-    if response.lower() == 'yes':
+    if response.lower() == "yes":
         clear_test_data()
     else:
         print("Cancelled.")

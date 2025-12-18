@@ -15,6 +15,7 @@
 
 **Journey Connection**:
 This schema supports the following journey steps:
+
 - Step 1: [Journey step] → [Tables used]
 - Step 2: [Journey step] → [Tables used]
 - Step 3: [Journey step] → [Tables used]
@@ -42,6 +43,7 @@ Example:
 ```
 
 **Entity Descriptions**:
+
 - **[Entity 1]**: [Purpose - what it represents in user journey]
 - **[Entity 2]**: [Purpose]
 - **[Entity 3]**: [Purpose]
@@ -58,16 +60,18 @@ Example:
 
 **Schema**:
 
-| Column | Type | Constraints | Default | Purpose |
-|--------|------|-------------|---------|---------|
-| id | UUID | PRIMARY KEY | gen_random_uuid() | Unique identifier |
-| [column] | [type] | [constraints] | [default] | [purpose] |
+| Column   | Type   | Constraints   | Default           | Purpose           |
+| -------- | ------ | ------------- | ----------------- | ----------------- |
+| id       | UUID   | PRIMARY KEY   | gen_random_uuid() | Unique identifier |
+| [column] | [type] | [constraints] | [default]         | [purpose]         |
 
 **Indexes**:
+
 - `idx_[name]`: [Columns] - Used for [query pattern from backlog]
 - `idx_[name]`: [Columns] - Used for [query pattern]
 
 **Constraints**:
+
 - **Primary Key**: id
 - **Foreign Keys**:
   - [column] → [referenced_table]([referenced_column]) [ON DELETE CASCADE/RESTRICT]
@@ -75,10 +79,12 @@ Example:
 - **Check**: [any CHECK constraints with reasoning]
 
 **Relationships**:
+
 - **Belongs to**: [Parent table name] via [foreign key column]
 - **Has many**: [Child table names]
 
 **Design Decisions**:
+
 - **Why UUID vs BIGINT**: [Reasoning - distribution, security, etc.]
 - **Why [data type choice]**: [Reasoning based on journey requirements]
 - **Why [nullable/not null]**: [Reasoning]
@@ -96,6 +102,7 @@ Example:
 ### One-to-Many Relationships
 
 **[Parent] → [Child]**:
+
 - Description: [What this relationship represents]
 - Foreign Key: [child_table].[foreign_key_column]
 - On Delete: [CASCADE/RESTRICT/SET NULL]
@@ -104,6 +111,7 @@ Example:
 ### Many-to-Many Relationships
 
 **[Entity A] ↔ [Entity B]**:
+
 - Description: [What this relationship represents]
 - Join Table: [table_name]
 - Foreign Keys:
@@ -118,9 +126,11 @@ Example:
 ### Query Patterns from Backlog
 
 **Pattern 1: [Description of common query]**
+
 ```sql
 SELECT * FROM [table] WHERE [conditions] ORDER BY [column];
 ```
+
 - **Index**: `idx_[name]` on ([columns])
 - **Reasoning**: [Why this index optimizes this query]
 - **Estimated Frequency**: [How often - based on journey step usage]
@@ -137,6 +147,7 @@ SELECT * FROM [table] WHERE [conditions] ORDER BY [column];
 - **Partial Indexes**: [Count] (for filtered queries)
 
 **Reasoning for each composite index**:
+
 - `idx_[name]` ([col1], [col2]): [Query pattern it serves + why this column order]
 
 ---
@@ -169,14 +180,17 @@ SELECT * FROM [table] WHERE [conditions] ORDER BY [column];
 **Philosophy**: Referential integrity protects data consistency
 
 **ON DELETE CASCADE**:
+
 - `[child].[fk]` → `[parent].[id]`: When [parent] deleted, [child] should also be deleted
 - Example: When user deleted, their documents should be deleted (GDPR compliance)
 
 **ON DELETE RESTRICT**:
+
 - `[child].[fk]` → `[parent].[id]`: When [parent] has [children], deletion blocked
 - Example: Can't delete framework if assessments reference it (data integrity)
 
 **ON DELETE SET NULL**:
+
 - `[child].[fk]` → `[parent].[id]`: When [parent] deleted, [child] becomes orphaned
 - Example: When team disbanded, user.team_id becomes NULL (user keeps account)
 
@@ -191,17 +205,20 @@ SELECT * FROM [table] WHERE [conditions] ORDER BY [column];
 **File Location**: `product-guidelines/07-database-schema/migrations/[filename]`
 
 **What this migration does**:
+
 1. Creates [N] tables
 2. Defines [N] relationships
 3. Creates [N] indexes
 4. Adds [N] constraints
 
 **To apply migration**:
+
 ```bash
 [Commands to run migration - Prisma, Alembic, or raw SQL]
 ```
 
 **To rollback** (if needed):
+
 ```bash
 [Rollback commands]
 ```
@@ -219,6 +236,7 @@ SELECT * FROM [table] WHERE [conditions] ORDER BY [column];
 ```
 
 **EXPLAIN ANALYZE Notes**:
+
 - Index used: `[index_name]`
 - Estimated rows: [number]
 - Execution time: [milliseconds]
@@ -249,26 +267,31 @@ ORDER BY month DESC;
 ## Data Types Rationale
 
 **UUID vs BIGINT for IDs**:
+
 - **Choice**: [UUID/BIGINT]
 - **Reasoning**: [Based on architecture - distributed system? Security? Scale?]
 - **Trade-offs**: [UUIDs = larger indexes but distributed-safe, BIGINT = smaller but sequential]
 
 **VARCHAR vs TEXT**:
+
 - **Choice**: [Use TEXT everywhere / Use VARCHAR with limits]
 - **Reasoning**: [Based on database choice and query patterns]
 - **Trade-offs**: [VARCHAR enforces length, TEXT is unlimited]
 
 **JSONB vs Separate Columns**:
+
 - **When JSONB**: [assessment results - structure evolves]
 - **When Columns**: [user profile - stable structure]
 - **Reasoning**: [Flexibility vs query performance]
 
 **TIMESTAMPTZ vs TIMESTAMP**:
+
 - **Choice**: TIMESTAMPTZ (timezone-aware)
 - **Reasoning**: [Global users - different timezones]
 - **Trade-offs**: [Slightly larger storage, but prevents timezone bugs]
 
 **Arrays vs Join Tables**:
+
 - **When Arrays**: [Small, fixed lists - tags, labels]
 - **When Join Tables**: [Entities with attributes - assessments & frameworks]
 - **Reasoning**: [Query flexibility vs simplicity]
@@ -292,15 +315,18 @@ ORDER BY month DESC;
 ### When to Optimize
 
 **Read Replicas** (if read load > write load):
+
 - When: [Metric threshold - e.g., >1000 reads/sec]
 - For tables: [users, frameworks - rarely change]
 
 **Partitioning** (if table grows large):
+
 - When: [Metric threshold - e.g., >10M rows]
 - Strategy: Partition `assessments` by created_at (monthly partitions)
 - Reasoning: Recent assessments queried frequently, old ones archived
 
 **Sharding** (if single database too small):
+
 - When: [Metric threshold - e.g., >50M rows, >500GB]
 - Strategy: Shard by team_id (each team's data on separate database)
 - Reasoning: Teams don't query each other's data (perfect shard key)
@@ -308,10 +334,12 @@ ORDER BY month DESC;
 ### Archival Strategy
 
 **Which tables need archiving**:
+
 - `assessments`: Older than [N days/months] can be moved to cold storage
 - `usage_events`: After billing period closed, move to data warehouse
 
 **Archival method**:
+
 - Partition by month, drop old partitions to S3 / Glacier
 - Keep metadata in main database for lookups
 
@@ -322,11 +350,13 @@ ORDER BY month DESC;
 ### Seed Data
 
 **Minimal seed data** (for development):
+
 ```sql
 [SQL to insert test users, documents, frameworks]
 ```
 
 **Realistic seed data** (for testing):
+
 - [N] users across [N] teams
 - [N] documents
 - [N] assessments in various states
@@ -358,16 +388,19 @@ ORDER BY month DESC;
 ### What We Chose
 
 **[Decision 1]**: [What was chosen]
+
 - **Why**: [Journey-based reasoning]
 - **Trade-off accepted**: [What we gave up]
 
 **[Decision 2]**: [What was chosen]
+
 - **Why**: [Tech stack alignment]
 - **Trade-off accepted**: [Simplicity vs feature]
 
 ### What We DIDN'T Choose (see main document)
 
 Summary of key alternatives:
+
 - [Alternative 1]: [When to reconsider]
 - [Alternative 2]: [When to reconsider]
 - [Alternative 3]: [When to reconsider]
@@ -388,16 +421,19 @@ Summary of key alternatives:
 ### Modifying Existing Tables
 
 **Safe changes** (no downtime):
+
 - Adding nullable columns
 - Adding indexes (with CONCURRENTLY in PostgreSQL)
 - Adding CHECK constraints for new rows
 
 **Risky changes** (may require downtime):
+
 - Changing column types
 - Adding NOT NULL columns (need default or backfill)
 - Removing columns (may break application)
 
 **Migration strategy**:
+
 1. Write migration with up/down
 2. Test on staging database
 3. Run during low-traffic window

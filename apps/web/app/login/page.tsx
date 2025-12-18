@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import { useState, FormEvent, Suspense, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { signIn } from "next-auth/react"
-import { loginWithAudit } from "@/app/actions/auth"
+import { useState, FormEvent, Suspense, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { signIn } from 'next-auth/react'
+import { loginWithAudit } from '@/app/actions/auth'
 
 function LoginForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isMicrosoftLoading, setIsMicrosoftLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
@@ -24,12 +24,12 @@ function LoginForm() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError("")
+    setError('')
     setIsLoading(true)
 
     try {
       // Get callback URL from query params or default to dashboard
-      const callbackUrl = searchParams.get("callbackUrl") || undefined
+      const callbackUrl = searchParams.get('callbackUrl') || undefined
 
       // Use server action with audit logging
       const result = await loginWithAudit(
@@ -40,14 +40,14 @@ function LoginForm() {
 
       if (result.success) {
         // Redirect to callback URL or dashboard
-        router.push(result.redirectTo || "/dashboard")
+        router.push(result.redirectTo || '/dashboard')
         router.refresh()
       } else {
-        setError(result.error || "Invalid email or password")
+        setError(result.error || 'Invalid email or password')
       }
     } catch (err) {
-      console.error("[LOGIN] Error during login:", err)
-      const errorMessage = err instanceof Error ? err.message : "An error occurred during login"
+      console.error('[LOGIN] Error during login:', err)
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during login'
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -56,26 +56,22 @@ function LoginForm() {
 
   const handleMicrosoftLogin = async () => {
     setIsMicrosoftLoading(true)
-    setError("")
-    await signIn("microsoft-entra-id", { callbackUrl: "/dashboard" })
+    setError('')
+    await signIn('microsoft-entra-id', { callbackUrl: '/dashboard' })
   }
 
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true)
-    setError("")
-    await signIn("google", { callbackUrl: "/dashboard" })
+    setError('')
+    await signIn('google', { callbackUrl: '/dashboard' })
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
         <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">
-            Qteria
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
-          </p>
+          <h2 className="text-center text-3xl font-bold text-gray-900">Qteria</h2>
+          <p className="mt-2 text-center text-sm text-gray-600">Sign in to your account</p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -90,7 +86,7 @@ function LoginForm() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="you@example.com"
                 disabled={isLoading}
@@ -107,7 +103,7 @@ function LoginForm() {
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="••••••••"
                 disabled={isLoading}
@@ -129,7 +125,7 @@ function LoginForm() {
               disabled={isLoading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
         </form>
@@ -155,9 +151,26 @@ function LoginForm() {
             className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isMicrosoftLoading ? (
-              <svg className="animate-spin h-5 w-5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin h-5 w-5 text-gray-700"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
             ) : (
               <svg className="w-5 h-5" viewBox="0 0 23 23" fill="none" aria-hidden="true">
@@ -168,7 +181,7 @@ function LoginForm() {
               </svg>
             )}
             <span className="text-sm font-medium text-gray-700">
-              {isMicrosoftLoading ? "Signing in..." : "Sign in with Microsoft"}
+              {isMicrosoftLoading ? 'Signing in...' : 'Sign in with Microsoft'}
             </span>
           </button>
 
@@ -181,9 +194,26 @@ function LoginForm() {
             className="w-full flex items-center justify-center gap-3 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isGoogleLoading ? (
-              <svg className="animate-spin h-5 w-5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin h-5 w-5 text-gray-700"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
             ) : (
               <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -206,39 +236,62 @@ function LoginForm() {
               </svg>
             )}
             <span className="text-sm font-medium text-gray-700">
-              {isGoogleLoading ? "Signing in..." : "Sign in with Google"}
+              {isGoogleLoading ? 'Signing in...' : 'Sign in with Google'}
             </span>
           </button>
         </div>
 
         {/* OAuth Error Display */}
-        {searchParams.get("error") && (
-          <div className={`rounded-md p-4 ${
-            searchParams.get("error") === "oauth_user_not_found"
-              ? "bg-yellow-50"
-              : "bg-red-50"
-          }`}>
-            <div className={`text-sm ${
-              searchParams.get("error") === "oauth_user_not_found"
-                ? "text-yellow-800"
-                : "text-red-800"
-            }`}>
-              {searchParams.get("error") === "oauth_user_not_found" && (
-                <>No account found with this email. Please contact your administrator to get invited.</>
+        {searchParams.get('error') && (
+          <div
+            className={`rounded-md p-4 ${
+              searchParams.get('error') === 'oauth_user_not_found' ? 'bg-yellow-50' : 'bg-red-50'
+            }`}
+          >
+            <div
+              className={`text-sm ${
+                searchParams.get('error') === 'oauth_user_not_found'
+                  ? 'text-yellow-800'
+                  : 'text-red-800'
+              }`}
+            >
+              {searchParams.get('error') === 'oauth_user_not_found' && (
+                <>
+                  No account found with this email. Please contact your administrator to get
+                  invited.
+                </>
               )}
-              {searchParams.get("error") === "oauth_invalid_email" && (
-                <>Invalid email address provided by the authentication provider. Please try again or contact support.</>
+              {searchParams.get('error') === 'oauth_invalid_email' && (
+                <>
+                  Invalid email address provided by the authentication provider. Please try again or
+                  contact support.
+                </>
               )}
-              {searchParams.get("error") === "oauth_no_email" && (
-                <>OAuth login failed: no email address provided by the authentication provider. Please try again or contact support.</>
+              {searchParams.get('error') === 'oauth_no_email' && (
+                <>
+                  OAuth login failed: no email address provided by the authentication provider.
+                  Please try again or contact support.
+                </>
               )}
-              {searchParams.get("error") === "oauth_database_error" && (
-                <>Database connection error during login. Please try again in a few moments or contact support if the issue persists.</>
+              {searchParams.get('error') === 'oauth_database_error' && (
+                <>
+                  Database connection error during login. Please try again in a few moments or
+                  contact support if the issue persists.
+                </>
               )}
-              {searchParams.get("error") === "oauth_error" && (
-                <>An error occurred during OAuth authentication. Please try again or contact support if the issue persists.</>
+              {searchParams.get('error') === 'oauth_error' && (
+                <>
+                  An error occurred during OAuth authentication. Please try again or contact support
+                  if the issue persists.
+                </>
               )}
-              {!["oauth_user_not_found", "oauth_invalid_email", "oauth_no_email", "oauth_database_error", "oauth_error"].includes(searchParams.get("error") || "") && (
+              {![
+                'oauth_user_not_found',
+                'oauth_invalid_email',
+                'oauth_no_email',
+                'oauth_database_error',
+                'oauth_error',
+              ].includes(searchParams.get('error') || '') && (
                 <>Authentication error. Please try again or contact support.</>
               )}
             </div>

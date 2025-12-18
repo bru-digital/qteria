@@ -32,9 +32,11 @@ You are a product strategist creating market-validated strategy. Your job is to:
 This command READS previous outputs to ground product strategy in reality:
 
 1. **Read the user journey**:
+
    ```bash
    Read product-guidelines/00-user-journey.md
    ```
+
    - Who is the target audience? (market segment to size)
    - What problem are they solving? (market need validation)
    - What value do you deliver? (competitive differentiation)
@@ -48,6 +50,7 @@ Your product strategy validates and extends the journey with market context.
 Use the Read tool to read `product-guidelines/00-user-journey.md`.
 
 **Extract**:
+
 - Core user flow (Steps 1-5)
 - Target audience (who are we serving?)
 - Problem being solved (market need)
@@ -68,21 +71,27 @@ The full template is comprehensive; the essentials template shows what to extrac
 Ask journey-informed questions to develop comprehensive product strategy:
 
 **Vision (journey-grounded)**:
+
 - "Your journey shows [audience] achieving [outcome]. Project this forward: 3-5 years from now, how has [journey audience] been transformed at scale? What's the aspirational future?"
 
 **Market Analysis (journey-based)**:
+
 - "Your journey targets [audience]. Let's size this: How many [audience] exist? What would they pay to solve [journey problem]? Show me bottom-up math."
 
 **Competitive Landscape (journey-differentiated)**:
+
 - "You solve [journey problem] with [journey solution]. Who else solves this today? How do they position? What's YOUR unique approach from the journey?"
 
 **Strategic Goals (journey-aligned)**:
+
 - "Your journey delivers [value]. What 3-5 things MUST be true in 12-24 months to deliver this value at scale?"
 
 **Product Principles (journey-derived)**:
+
 - "Your journey shows [key moments]. What principles guide decisions about THIS journey? What won't you compromise?"
 
 **Roadmap Themes (journey-informed)**:
+
 - "What are the major initiative areas to deliver [journey value]?"
 
 ### Step 4: Develop Product Strategy
@@ -90,13 +99,13 @@ Ask journey-informed questions to develop comprehensive product strategy:
 Grounded in journey, develop:
 
 - **Vision statement**: Journey outcome projected 3-5 years forward
-   - **Market sizing**: Bottom-up calculation for [journey audience]
-   - **Competitive analysis**: How others solve [journey problem], your differentiation
-   - **Positioning**: Who ([journey audience]) + What ([journey solution]) + How (unique approach) + Why (journey value)
-   - **Strategic goals**: What must be true to achieve journey value at scale
-   - **Product principles**: Decision guides derived from [journey insights]
-   - **Roadmap themes**: Major initiatives to deliver [journey value]
-   - **Risks**: Assumptions about [journey], [market] that could be wrong
+  - **Market sizing**: Bottom-up calculation for [journey audience]
+  - **Competitive analysis**: How others solve [journey problem], your differentiation
+  - **Positioning**: Who ([journey audience]) + What ([journey solution]) + How (unique approach) + Why (journey value)
+  - **Strategic goals**: What must be true to achieve journey value at scale
+  - **Product principles**: Decision guides derived from [journey insights]
+  - **Roadmap themes**: Major initiatives to deliver [journey value]
+  - **Risks**: Assumptions about [journey], [market] that could be wrong
 
 ### Step 5: Write the Outputs
 
@@ -113,6 +122,7 @@ Read templates/11-product-strategy-essentials-template.md
 ```
 
 Extract ONLY the information needed for backlog generation:
+
 - Vision statement (1 sentence)
 - Positioning statement (brief)
 - Strategic goals (names + metrics only, no elaboration)
@@ -131,6 +141,7 @@ Write product-guidelines/11-product-strategy-essentials.md
 2. `product-guidelines/11-product-strategy-essentials.md` - Essentials for backlog generation (optimized for Session 10)
 
 This validates:
+
 - User journey (with market sizing and competitive analysis)
 - Creates foundation for tech stack decisions (understanding market and competitive landscape informs technical requirements)
 
@@ -139,6 +150,7 @@ Use for investor/stakeholder conversations and strategic alignment.
 ## Template Structure
 
 The output follows this structure:
+
 - Product Vision (3-5 year aspirational future)
 - Market Analysis (TAM/SAM/SOM, trends, dynamics)
 - Competitive Landscape (who, how positioned, gaps)
@@ -203,6 +215,7 @@ This validates your journey with market context. Everything traces back to the u
 ## After This Session
 
 **Recommended next**:
+
 - Continue with Session 3: `/choose-tech-stack` to select optimal technologies
 - Use this for investor/stakeholder presentations
 - Reference this when making product decisions

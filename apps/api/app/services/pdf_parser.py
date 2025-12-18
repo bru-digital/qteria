@@ -14,6 +14,7 @@ Features:
 - Configurable section patterns (custom regex per workflow)
 - OCR support (pytesseract for scanned PDFs)
 """
+
 import re
 import logging
 from pathlib import Path
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 try:
     import pytesseract
     from pdf2image import convert_from_path
+
     OCR_AVAILABLE = True
 except ImportError:
     OCR_AVAILABLE = False
@@ -44,10 +46,12 @@ except ImportError:
 # Optional memory monitoring (graceful degradation if not available)
 try:
     import psutil
+
     MEMORY_MONITORING_AVAILABLE = True
 except ImportError:
     MEMORY_MONITORING_AVAILABLE = False
     logger.info("psutil not available, OCR DPI optimization disabled")
+
 
 # Helper function for Java availability check (must be defined before use)
 def _check_java_availability() -> bool:
@@ -60,14 +64,10 @@ def _check_java_availability() -> bool:
         True if Java is available, False otherwise
     """
     import subprocess
+
     try:
         # Run 'java -version' to check if Java is installed
-        result = subprocess.run(
-            ['java', '-version'],
-            capture_output=True,
-            timeout=5,
-            check=False
-        )
+        result = subprocess.run(["java", "-version"], capture_output=True, timeout=5, check=False)
         # Java prints version to stderr (not stdout)
         return result.returncode == 0
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -75,7 +75,7 @@ def _check_java_availability() -> bool:
     except Exception as e:
         logger.warning(
             f"Failed to check Java availability: {e}",
-            extra={"event": "java_check_failed", "error": str(e)}
+            extra={"event": "java_check_failed", "error": str(e)},
         )
         return False
 
@@ -83,6 +83,7 @@ def _check_java_availability() -> bool:
 # Optional table extraction dependencies (graceful degradation if not available)
 try:
     import tabula
+
     JAVA_AVAILABLE = _check_java_availability()
     TABLE_EXTRACTION_AVAILABLE = JAVA_AVAILABLE
     if not JAVA_AVAILABLE:
@@ -355,9 +356,7 @@ class PDFParserService:
 
         # Check if encrypted
         if self._is_encrypted(str(path)):
-            raise EncryptedPDFError(
-                f"PDF is password-protected or encrypted: {file_path}"
-            )
+            raise EncryptedPDFError(f"PDF is password-protected or encrypted: {file_path}")
 
     def _is_encrypted(self, file_path: str) -> bool:
         """
@@ -508,9 +507,7 @@ class PDFParserService:
                 # Uppercase headings: "SECTION 1", "CHAPTER 2", "PART A"
                 re.compile(r"^([A-Z][A-Z\s]{5,50})\n", re.MULTILINE),
                 # Underlined headings (text followed by ===== or -----)
-                re.compile(
-                    r"^([A-Z][^\n]{5,100})\n[=\-]{5,}$", re.MULTILINE
-                ),
+                re.compile(r"^([A-Z][^\n]{5,100})\n[=\-]{5,}$", re.MULTILINE),
             ]
 
         for page in pages:
@@ -598,7 +595,7 @@ class PDFParserService:
         organization_id: UUID,
         parsed_data: List[Dict],
         method: str,
-        tables: Optional[List[Dict[str, Any]]] = None
+        tables: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         """
         Store parsed text in database cache.
@@ -618,10 +615,7 @@ class PDFParserService:
             PDFParsingError: If database operation fails
         """
         # Store in new format: Dict with pages and tables
-        cache_data = {
-            "pages": parsed_data,
-            "tables": tables if tables is not None else []
-        }
+        cache_data = {"pages": parsed_data, "tables": tables if tables is not None else []}
 
         parsed_doc = ParsedDocument(
             document_id=document_id,
@@ -648,9 +642,7 @@ class PDFParserService:
             )
             raise PDFParsingError(f"Failed to cache parsed document: {str(e)}")
 
-    def _compile_section_patterns(
-        self, patterns: List[str]
-    ) -> List[re.Pattern]:
+    def _compile_section_patterns(self, patterns: List[str]) -> List[re.Pattern]:
         """
         Compile and validate custom section detection patterns.
 
@@ -687,9 +679,7 @@ class PDFParserService:
                 pattern = re.compile(pattern_str, re.MULTILINE)
                 compiled_patterns.append(pattern)
             except re.error as e:
-                raise PDFParsingError(
-                    f"Invalid regex pattern '{pattern_str}': {str(e)}"
-                )
+                raise PDFParsingError(f"Invalid regex pattern '{pattern_str}': {str(e)}")
 
         return compiled_patterns
 
@@ -712,7 +702,7 @@ class PDFParserService:
         # Matches patterns like (a+)+, (x*)+, (y{2,5})*
         # Use [^)] instead of . to prevent catastrophic backtracking
         nested_quantifiers = re.compile(
-            rf'\([^)]{{0,{REDOS_NESTED_QUANTIFIER_MAX_LENGTH}}}[+*?]\)[+*?]'
+            rf"\([^)]{{0,{REDOS_NESTED_QUANTIFIER_MAX_LENGTH}}}[+*?]\)[+*?]"
         )
         if nested_quantifiers.search(pattern_str):
             raise PDFParsingError(
@@ -720,7 +710,7 @@ class PDFParserService:
             )
 
         # Check for multiple quantifiers in sequence: a++, a**, a+*
-        multiple_quantifiers = re.compile(r'[+*?]{2,}')
+        multiple_quantifiers = re.compile(r"[+*?]{2,}")
         if multiple_quantifiers.search(pattern_str):
             raise PDFParsingError(
                 f"Pattern contains multiple consecutive quantifiers (ReDoS risk): {pattern_str[:100]}..."
@@ -728,7 +718,7 @@ class PDFParserService:
 
         # Check for overlapping alternations with quantifiers: (a|a)*, (ab|a)*
         # This is a simplified check - catches obvious cases
-        alternation_pattern = re.compile(r'\([^()]*\|[^()]*\)[+*]')
+        alternation_pattern = re.compile(r"\([^()]*\|[^()]*\)[+*]")
         if alternation_pattern.search(pattern_str):
             # For production, consider using re2 library for guaranteed linear time
             logger.warning(
@@ -760,7 +750,7 @@ class PDFParserService:
             >>> _validate_ocr_language("eng+deu")  # Valid (combined)
             >>> _validate_ocr_language("eng; rm -rf /")  # Raises PDFParsingError
         """
-        if not re.match(r'^[a-z]{3}(\+[a-z]{3})*$', language):
+        if not re.match(r"^[a-z]{3}(\+[a-z]{3})*$", language):
             raise PDFParsingError(
                 f"Invalid OCR language code: {language}. "
                 "Must be 3-letter ISO 639-2 code (e.g., 'eng', 'deu', 'fra') or combined (e.g., 'eng+deu')"
@@ -790,7 +780,9 @@ class PDFParserService:
 
         # Additional check: If most pages have very little text, likely scanned
         pages_with_text = sum(
-            1 for page in pages if len(page.get("text", "").strip()) > SCANNED_PDF_PAGE_TEXT_THRESHOLD
+            1
+            for page in pages
+            if len(page.get("text", "").strip()) > SCANNED_PDF_PAGE_TEXT_THRESHOLD
         )
         if pages_with_text < len(pages) * 0.5:  # Less than 50% of pages have text
             return True, f"only {pages_with_text}/{len(pages)} pages have text (>50% threshold)"
@@ -840,8 +832,16 @@ class PDFParserService:
             # Use RGBA (4 bytes) instead of RGB (3 bytes) as pytesseract may use alpha channel
             # Add 20% safety margin for temporary buffers and processing overhead
             memory_mb_per_page = (
-                width_inches * height_inches * OCR_DEFAULT_DPI * OCR_DEFAULT_DPI * OCR_BYTES_PER_PIXEL_RGBA
-            ) / (1024 * 1024) * OCR_MEMORY_SAFETY_MARGIN
+                (
+                    width_inches
+                    * height_inches
+                    * OCR_DEFAULT_DPI
+                    * OCR_DEFAULT_DPI
+                    * OCR_BYTES_PER_PIXEL_RGBA
+                )
+                / (1024 * 1024)
+                * OCR_MEMORY_SAFETY_MARGIN
+            )
 
             # Get available memory in MB
             available_mb = psutil.virtual_memory().available / (1024 * 1024)
@@ -861,7 +861,7 @@ class PDFParserService:
                         "available_mb": int(available_mb),
                         "estimated_mb": int(estimated_memory_mb),
                         "dpi": OCR_LOW_MEMORY_DPI,
-                    }
+                    },
                 )
                 return OCR_LOW_MEMORY_DPI
 
@@ -870,7 +870,7 @@ class PDFParserService:
         except Exception as e:
             logger.warning(
                 f"Failed to calculate optimal DPI, using default: {e}",
-                extra={"event": "ocr_dpi_calculation_failed", "error": str(e)}
+                extra={"event": "ocr_dpi_calculation_failed", "error": str(e)},
             )
             return OCR_DEFAULT_DPI
 
@@ -926,10 +926,7 @@ class PDFParserService:
                     # Automatically lowered to 150 DPI in memory-constrained environments (Railway/Render 512MB tier)
                     # Lower DPI reduces quality but prevents OOM errors on large PDFs
                     images = convert_from_path(
-                        file_path,
-                        dpi=optimal_dpi,
-                        first_page=page_num,
-                        last_page=page_num
+                        file_path, dpi=optimal_dpi, first_page=page_num, last_page=page_num
                     )
 
                     # Run OCR on the single page image with specified language
@@ -939,8 +936,8 @@ class PDFParserService:
                         text = pytesseract.image_to_string(
                             images[0],
                             lang=language,
-                            config='--psm 1',  # Automatic page segmentation with OSD (Orientation and Script Detection)
-                            timeout=OCR_TIMEOUT_SECONDS
+                            config="--psm 1",  # Automatic page segmentation with OSD (Orientation and Script Detection)
+                            timeout=OCR_TIMEOUT_SECONDS,
                         )
                     except RuntimeError as timeout_error:
                         # pytesseract raises RuntimeError for timeouts (not a specific exception type)
@@ -1001,7 +998,9 @@ class PDFParserService:
         except Exception as e:
             raise PDFParsingError(f"OCR extraction failed: {str(e)}")
 
-    def _extract_tables(self, file_path: str, page_count: Optional[int] = None) -> List[Dict[str, Any]]:
+    def _extract_tables(
+        self, file_path: str, page_count: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """
         Extract tables from PDF using tabula-py.
 
@@ -1028,7 +1027,7 @@ class PDFParserService:
                 extra={
                     "event": "table_extraction_unavailable",
                     "file_path": file_path,
-                }
+                },
             )
             return []
 
@@ -1050,8 +1049,8 @@ class PDFParserService:
                         file_path,
                         pages=page_num,
                         multiple_tables=True,
-                        pandas_options={'header': 'infer'},
-                        java_options=["-Xmx512m"]  # Limit Java heap to 512MB
+                        pandas_options={"header": "infer"},
+                        java_options=["-Xmx512m"],  # Limit Java heap to 512MB
                     )
 
                     # Convert each table on this page to structured format
@@ -1061,13 +1060,15 @@ class PDFParserService:
 
                         # Convert DataFrame to list of dictionaries
                         columns = df.columns.tolist()
-                        data = df.to_dict('records')
+                        data = df.to_dict("records")
 
-                        structured_tables.append({
-                            "page": page_num,  # Accurate page number
-                            "columns": columns,
-                            "data": data
-                        })
+                        structured_tables.append(
+                            {
+                                "page": page_num,  # Accurate page number
+                                "columns": columns,
+                                "data": data,
+                            }
+                        )
 
                 except Exception as page_error:
                     # Log but continue - don't fail entire extraction if one page fails
@@ -1078,7 +1079,7 @@ class PDFParserService:
                             "file_path": file_path,
                             "page": page_num,
                             "error": str(page_error),
-                        }
+                        },
                     )
                     continue
 
@@ -1088,7 +1089,7 @@ class PDFParserService:
                     "event": "table_extraction_success",
                     "file_path": file_path,
                     "table_count": len(structured_tables),
-                }
+                },
             )
 
             return structured_tables
@@ -1101,6 +1102,6 @@ class PDFParserService:
                     "event": "table_extraction_failed",
                     "file_path": file_path,
                     "error": str(e),
-                }
+                },
             )
             return []

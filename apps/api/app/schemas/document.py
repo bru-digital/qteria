@@ -4,6 +4,7 @@ Pydantic schemas for document upload API.
 This module defines request/response models for document upload endpoints,
 including validation rules and error responses.
 """
+
 from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID
@@ -70,7 +71,7 @@ class DocumentErrorResponse(BaseModel):
                         "application/pdf",
                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        "application/vnd.ms-excel"
+                        "application/vnd.ms-excel",
                     ],
                 },
             }

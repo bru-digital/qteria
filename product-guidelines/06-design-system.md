@@ -1,6 +1,7 @@
 # Design System: Qteria
 
 > **Derived from**:
+>
 > - product-guidelines/00-user-journey.md (user context, interaction needs)
 > - product-guidelines/05-brand-strategy.md (brand personality, visual direction)
 > - product-guidelines/02-tech-stack.md (Next.js + Tailwind CSS)
@@ -33,6 +34,7 @@ Every design decision serves the user's goal: validate documents quickly with co
 4. **Organized**: Hierarchical information structure, grouped related content, white space separates sections.
 
 **NOT**:
+
 - ❌ **Playful**: No bright colors, no whimsical illustrations, no "fun" microcopy
 - ❌ **Trendy**: No design fads, no gradient backgrounds, no glassmorphism
 - ❌ **Cluttered**: No dense dashboards, no information overload, no competing CTAs
@@ -47,6 +49,7 @@ Every design decision serves the user's goal: validate documents quickly with co
 ### Primary Palette
 
 **Primary Blue** (Trust, professionalism, quality management):
+
 - `blue-50`: #EFF6FF (backgrounds, hover states)
 - `blue-100`: #DBEAFE (subtle highlights)
 - `blue-500`: #3B82F6 (primary actions, links)
@@ -55,6 +58,7 @@ Every design decision serves the user's goal: validate documents quickly with co
 - `blue-900`: #1E3A8A (headings, strong emphasis)
 
 **Neutral Grays** (Structure, hierarchy, backgrounds):
+
 - `gray-50`: #F9FAFB (page background)
 - `gray-100`: #F3F4F6 (card backgrounds)
 - `gray-200`: #E5E7EB (borders, dividers)
@@ -64,11 +68,13 @@ Every design decision serves the user's goal: validate documents quickly with co
 - `gray-900`: #111827 (primary text, headings)
 
 **Warm Accent** (Balkan warmth, subtle personality):
+
 - `terracotta-50`: #FFF7ED (subtle warm backgrounds)
 - `terracotta-500`: #C2410C (warm accent, rare use)
 - `terracotta-600`: #9A3412 (hover on warm elements)
 
 **Usage**:
+
 - Primary Blue: Main CTAs ("Start Assessment", "Save Workflow"), links, selected states
 - Warm Accent: Sparingly - perhaps in brand mark, special callouts (1-2 places max)
 - Grays: 90% of UI - text, borders, backgrounds, structure
@@ -76,30 +82,35 @@ Every design decision serves the user's goal: validate documents quickly with co
 ### Semantic Colors
 
 **Success Green** (Validation passed, criteria met):
+
 - `green-50`: #F0FDF4 (success background)
 - `green-500`: #22C55E (success icon, badge)
 - `green-600`: #16A34A (success hover)
 - `green-900`: #14532D (success text)
 
 **Warning Yellow** (Uncertain AI result, needs attention):
+
 - `yellow-50`: #FEFCE8 (warning background)
 - `yellow-500`: #EAB308 (warning icon, badge)
 - `yellow-600`: #CA8A04 (warning hover)
 - `yellow-900`: #713F12 (warning text)
 
 **Error Red** (Validation failed, critical issue):
+
 - `red-50`: #FEF2F2 (error background)
 - `red-500`: #EF4444 (error icon, badge)
 - `red-600`: #DC2626 (error hover)
 - `red-900`: #7F1D1D (error text)
 
 **Rationale**:
+
 - **Blues**: Industry standard for trust, professionalism (notified bodies expect this)
 - **Grays**: Neutral structure doesn't compete with content (evidence links are focus)
 - **Warm Accent**: Balkan heritage, subtle personality without undermining professionalism
 - **Semantic Colors**: Standard traffic light pattern (green/yellow/red) - universally understood for pass/uncertain/fail
 
 **Accessibility**:
+
 - All text colors meet WCAG AA 4.5:1 contrast (gray-600+ on white, white on blue-500+)
 - Semantic colors never used alone (always paired with icon: ✓, ⚠, ✗)
 - Link blue (blue-500) has 3:1 contrast with surrounding text
@@ -113,6 +124,7 @@ Every design decision serves the user's goal: validate documents quickly with co
 **Primary Font**: **Inter** (Google Fonts, self-hosted for performance)
 
 **Why Inter**:
+
 - High legibility at small sizes (evidence text, criteria descriptions must be readable)
 - Professional without being corporate-stiff (matches "competent office professional" personality)
 - Excellent number legibility (important for page references: "page 8, section 3.2")
@@ -122,11 +134,13 @@ Every design decision serves the user's goal: validate documents quickly with co
 **Monospace Font**: **JetBrains Mono** (for document references, technical data)
 
 **Usage**:
+
 - Document paths: `/uploads/technical-documentation.pdf`
 - Page references: `page 8, section 3.2`
 - API responses (if shown in debug mode)
 
 **Rationale**:
+
 - Inter is the modern B2B standard - professional but not boring
 - Variable font reduces load time (critical for Step 3 results page with many criteria)
 - Monospace for technical precision (page/section references must be exact)
@@ -148,6 +162,7 @@ xl:   25px (1.563rem)  → Page section headings
 ```
 
 **Journey Mapping**:
+
 - **Step 1** (Workflow Creation):
   - Form labels: `sm` (14px)
   - Input text: `base` (16px)
@@ -170,12 +185,14 @@ xl:   25px (1.563rem)  → Page section headings
   - Reasoning text: `sm` (14px)
 
 **Font Weights**:
+
 - 400 (Regular): Body text, form inputs
 - 500 (Medium): Labels, nav items, secondary buttons
 - 600 (Semibold): Headings, primary buttons, emphasis
 - 700 (Bold): Rare - strong emphasis only ("FAIL", error messages)
 
 **Line Heights**:
+
 - Tight (1.25): Headings, tight spaces
 - Normal (1.5): Body text, forms (balance readability and density)
 - Relaxed (1.75): Long-form content (documentation, help articles)
@@ -202,27 +219,32 @@ xl:   25px (1.563rem)  → Page section headings
 **Journey Step Spacing**:
 
 **Step 1** (Workflow Creation):
+
 - Between form fields: `space-4` (16px) - comfortable without wasting vertical space
 - Between bucket/criteria cards: `space-3` (12px) - visually grouped
 - Form section padding: `space-6` (24px) - clear separation
 - Page margins: `space-8` (32px) desktop, `space-4` mobile
 
 **Step 2** (Document Upload):
+
 - Drag-drop zone padding: `space-8` (32px) - large hit area
 - Between uploaded files: `space-2` (8px) - compact list
 - Upload button margin: `space-4` (16px)
 
 **Step 3** (Progress Display):
+
 - Progress bar height: 8px (matches `space-2`)
 - Status text spacing: `space-4` (16px) between updates
 - Container padding: `space-6` (24px)
 
 **Step 4** (Results Cards):
+
 - Card padding: `space-5` (20px) - room to breathe
 - Between criteria results: `space-3` (12px) - scannable list
 - Evidence link margin: `space-2` (8px) from main text
 
 **Rationale**:
+
 - 4px base aligns with Tailwind, browser rendering
 - Tighter spacing for Project Handlers (power users who run 15-20 assessments/day - efficient)
 - Generous padding on interactive elements (drag-drop, buttons - accessibility)
@@ -236,6 +258,7 @@ xl:   25px (1.563rem)  → Page section headings
 **Variants**:
 
 **Primary** (Main journey actions):
+
 ```
 Background: blue-500
 Text: white, font-medium, base size
@@ -251,6 +274,7 @@ Disabled: bg-gray-300, text-gray-500, cursor-not-allowed
 **Usage**: "Start Assessment", "Save Workflow", "Upload Documents"
 
 **Secondary** (Cancel, back actions):
+
 ```
 Background: transparent
 Text: gray-700, font-medium
@@ -264,6 +288,7 @@ Active: bg-gray-100
 **Usage**: "Cancel", "Go Back", "Skip"
 
 **Danger** (Destructive actions):
+
 ```
 Background: red-500
 Text: white, font-medium
@@ -276,11 +301,13 @@ Active: bg-red-700
 **Usage**: "Delete Workflow", "Remove Document"
 
 **Sizes**:
+
 - sm: py-2 px-4, text-sm → Inline actions, table rows
 - base: py-3 px-6, text-base → Standard
 - lg: py-4 px-8, text-lg → Primary CTAs on empty states
 
 **Accessibility**:
+
 - Min height: 44px (touch target)
 - Focus ring: 2px blue-500 outline, 2px offset
 - Keyboard: Enter/Space to activate
@@ -291,6 +318,7 @@ Active: bg-red-700
 ### 2. Form Input Component
 
 **Default Input**:
+
 ```
 Background: white
 Border: 1px solid gray-300
@@ -304,10 +332,12 @@ Disabled: bg-gray-50, text-gray-500
 ```
 
 **Label Pattern**:
+
 ```html
 <label class="block text-sm font-medium text-gray-700 mb-2">
   Workflow Name
-  <span class="text-red-500">*</span> <!-- Required indicator -->
+  <span class="text-red-500">*</span>
+  <!-- Required indicator -->
 </label>
 <input ... />
 <p class="text-xs text-gray-600 mt-1">
@@ -316,14 +346,14 @@ Disabled: bg-gray-50, text-gray-500
 ```
 
 **Error Pattern**:
+
 ```html
 <input class="border-red-500 ring-2 ring-red-200" ... />
-<p class="text-sm text-red-600 mt-1">
-  ✗ Workflow name is required
-</p>
+<p class="text-sm text-red-600 mt-1">✗ Workflow name is required</p>
 ```
 
 **Journey Usage**:
+
 - Step 1: Workflow name, bucket name, criteria description
 - Step 2: Search/filter inputs (optional document naming)
 
@@ -332,6 +362,7 @@ Disabled: bg-gray-50, text-gray-500
 ### 3. File Upload Component (Step 2 - Critical Path)
 
 **Drag-Drop Zone**:
+
 ```
 Default State:
   Border: 2px dashed gray-300
@@ -363,6 +394,7 @@ Error State:
 ```
 
 **File List** (after upload):
+
 ```
 Each file row:
   - Icon: Document icon (PDF/DOCX)
@@ -373,6 +405,7 @@ Each file row:
 ```
 
 **Accessibility**:
+
 - Hidden file input, styled label
 - Keyboard: Tab to zone, Enter/Space to trigger file picker
 - ARIA: `role="button"`, `aria-label="Upload documents"`, `aria-describedby="upload-instructions"`
@@ -383,6 +416,7 @@ Each file row:
 ### 4. Progress Indicator (Step 3 - AI Validation)
 
 **Indeterminate** (initializing):
+
 ```
 Spinner:
   Size: h-8 w-8
@@ -395,6 +429,7 @@ Text: "Initializing assessment..."
 ```
 
 **Determinate** (processing):
+
 ```
 Progress Bar:
   Container: w-full, h-2, bg-gray-200, rounded-full
@@ -414,6 +449,7 @@ Time estimate: "~3 minutes remaining"
 ```
 
 **Status Updates** (phases):
+
 ```
 List of steps with icons:
   ✓ Parsing PDFs (green-500)
@@ -425,6 +461,7 @@ Icons: h-4 w-4 inline
 ```
 
 **Accessibility**:
+
 - `role="progressbar"`, `aria-valuenow="45"`, `aria-valuemin="0"`, `aria-valuemax="100"`
 - `aria-live="polite"` for status updates (screen reader announces changes)
 
@@ -433,6 +470,7 @@ Icons: h-4 w-4 inline
 ### 5. Assessment Results Card (Step 4 - Evidence Display)
 
 **Card Structure** (collapsed):
+
 ```
 Container:
   Background: white
@@ -473,6 +511,7 @@ Expand button:
 ```
 
 **Card Structure** (expanded):
+
 ```
 Evidence Section:
   Label: "Evidence" (text-sm, font-medium, text-gray-700, mt-4)
@@ -494,6 +533,7 @@ Actions:
 ```
 
 **Accessibility**:
+
 - Expandable: `aria-expanded="false"`, `aria-controls="criteria-details-{id}"`
 - Evidence link: `aria-label="View evidence in test-report.pdf, page 8, section 3.2"`
 - Status badge: Not color-only (icon + text + background)
@@ -503,6 +543,7 @@ Actions:
 ### 6. Empty States
 
 **No Workflows Created** (Step 1 initial state):
+
 ```
 Container: text-center, py-12
 
@@ -519,6 +560,7 @@ Primary CTA: "Create Workflow" (primary button, mt-6)
 ```
 
 **No Documents Uploaded** (Step 2):
+
 ```
 Similar structure, but:
   Icon: Upload icon
@@ -528,6 +570,7 @@ Similar structure, but:
 ```
 
 **Assessment Complete - All Pass** (Step 4 positive empty state):
+
 ```
 Icon: Checkmark in circle (green-500)
 Heading: "All criteria passed!"
@@ -539,15 +582,16 @@ Actions: "Export Report" (primary), "Start New Assessment" (secondary)
 
 ## Component-Journey Mapping
 
-| Journey Step | Key Components | Design Priority | Accessibility |
-|--------------|----------------|-----------------|---------------|
-| **Step 1: Create Workflow** | Form inputs (text, textarea), Add button (bucket/criteria), Card list | Fast data entry, clear labels | Keyboard nav, ARIA labels, focus management |
-| **Step 2: Upload Documents** | Drag-drop zone, File list, Upload button | Large hit area, obvious interaction | Keyboard file picker, ARIA `role="button"`, screen reader instructions |
-| **Step 3: AI Validation** | Progress bar (determinate), Spinner (indeterminate), Status text | Real-time feedback, ETA clarity | `role="progressbar"`, `aria-live="polite"`, announce updates |
-| **Step 4: Results Display** | Results card (expandable), Status badge (green/yellow/red), Evidence link | Scannable list, evidence prominent | Never color-only (icon+text), evidence link descriptive, keyboard expand |
-| **Step 5: Export Report** | Export button, Download link | Clear action, success feedback | Download link announces file name, success message announced |
+| Journey Step                 | Key Components                                                            | Design Priority                     | Accessibility                                                            |
+| ---------------------------- | ------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------ |
+| **Step 1: Create Workflow**  | Form inputs (text, textarea), Add button (bucket/criteria), Card list     | Fast data entry, clear labels       | Keyboard nav, ARIA labels, focus management                              |
+| **Step 2: Upload Documents** | Drag-drop zone, File list, Upload button                                  | Large hit area, obvious interaction | Keyboard file picker, ARIA `role="button"`, screen reader instructions   |
+| **Step 3: AI Validation**    | Progress bar (determinate), Spinner (indeterminate), Status text          | Real-time feedback, ETA clarity     | `role="progressbar"`, `aria-live="polite"`, announce updates             |
+| **Step 4: Results Display**  | Results card (expandable), Status badge (green/yellow/red), Evidence link | Scannable list, evidence prominent  | Never color-only (icon+text), evidence link descriptive, keyboard expand |
+| **Step 5: Export Report**    | Export button, Download link                                              | Clear action, success feedback      | Download link announces file name, success message announced             |
 
 **Critical Path Optimization** (Step 3):
+
 - Progress indicator must update frequently (every 2-3 seconds)
 - Status text shows current phase ("Parsing PDFs", "Checking criteria")
 - Time estimate updates as processing continues
@@ -582,6 +626,7 @@ Actions: "Export Report" (primary), "Start New Assessment" (secondary)
 ```
 
 **Breakpoints**:
+
 - Mobile: max-w-full, px-4
 - Tablet: max-w-3xl, px-6
 - Desktop: max-w-7xl, px-8
@@ -605,28 +650,33 @@ Card:
 ### WCAG 2.1 AA Compliance
 
 **Color Contrast**:
+
 - ✓ Text on white: gray-600+ (4.5:1), gray-900 (14:1)
 - ✓ White on blue-500: 4.5:1
 - ✓ Links (blue-500) vs body text (gray-900): 3:1
 - ✓ Status badges: Icon + text + background (never color-only)
 
 **Keyboard Navigation**:
+
 - ✓ All interactive elements: Tab-accessible
 - ✓ Logical tab order: Follows journey flow (Step 1 → 2 → 3)
 - ✓ Focus indicators: 2px blue-500 outline, 2px offset
 - ✓ Skip links: "Skip to results" on Step 4 page
 
 **Screen Reader Support**:
+
 - ✓ Semantic HTML: `<button>`, `<nav>`, `<main>`, `<form>`
 - ✓ ARIA labels: All icons have `aria-label`
 - ✓ Live regions: Progress updates use `aria-live="polite"`
 - ✓ Form errors: `aria-invalid`, `aria-describedby` to error message
 
 **Touch Targets**:
+
 - ✓ Minimum 44px × 44px (buttons, links, form inputs)
 - ✓ Drag-drop zone: 200px height (easy targeting)
 
 **Testing Checklist**:
+
 - [x] Navigate entire journey with keyboard only (no mouse)
 - [x] Test with VoiceOver (Mac) / NVDA (Windows)
 - [x] Check color contrast with axe DevTools
@@ -640,12 +690,14 @@ Card:
 ### Strategy: **Desktop-First** (with mobile support)
 
 **Rationale** (from journey analysis):
+
 - Step 1 (Workflow Creation): Desktop-primary (complex form)
 - Step 2 (Upload Documents): Desktop-primary (large files, drag-drop)
 - Step 3 (Processing): Both (passive waiting)
 - Step 4 (Results): Desktop-primary (detailed evidence review)
 
 **Breakpoints** (Tailwind):
+
 ```
 sm: 640px   (large mobile)
 md: 768px   (tablet)
@@ -656,26 +708,32 @@ xl: 1280px  (large desktop)
 ### Responsive Patterns
 
 **Navigation**:
+
 - Desktop: Horizontal nav bar (items left, user menu right)
 - Mobile: Hamburger menu (top right), slide-in drawer
 
 **Workflow Form** (Step 1):
+
 - Desktop: Two-column layout (buckets left, criteria right)
 - Mobile: Single column, stacked sections
 
 **Document Upload** (Step 2):
+
 - Desktop: Drag-drop zone (200px height)
 - Mobile: Tap to upload (camera option on iOS/Android)
 
 **Results Cards** (Step 4):
+
 - Desktop: Grid 2 columns (md:grid-cols-2)
 - Mobile: Single column stack
 
 **Typography**:
+
 - Mobile: Slightly larger base font (17px) for readability on small screens
 - Desktop: Standard 16px base
 
 **Spacing**:
+
 - Mobile: Reduce page padding (px-4 instead of px-8)
 - Desktop: Generous spacing (px-8, space-6 between sections)
 
@@ -690,6 +748,7 @@ xl: 1280px  (large desktop)
 **✅ Chose: Tailwind CSS**
 
 **Why**:
+
 - Fast iteration for MVP (utility classes, no CSS file switching)
 - Design tokens via `tailwind.config.js` (centralized colors, spacing)
 - Smaller bundle size (PurgeCSS removes unused classes)
@@ -699,6 +758,7 @@ xl: 1280px  (large desktop)
 **❌ Didn't choose: Styled Components (CSS-in-JS)**
 
 **Why not**:
+
 - Runtime cost (CSS generated in browser, slower)
 - Next.js 13+ recommends Tailwind or CSS Modules (not CSS-in-JS)
 - Solo founder: Tailwind faster than writing custom CSS
@@ -712,6 +772,7 @@ xl: 1280px  (large desktop)
 **✅ Chose: shadcn/ui + Custom Journey Components**
 
 **Why**:
+
 - shadcn: Copy-paste components, full control, Tailwind-native
 - Generic components (Button, Input, Modal): Use shadcn
 - Journey-specific components (File Upload, Results Card): Custom-built
@@ -720,6 +781,7 @@ xl: 1280px  (large desktop)
 **❌ Didn't choose: Material UI (MUI)**
 
 **Why not**:
+
 - Material Design aesthetic doesn't match brand (too playful, too Google)
 - Larger bundle size (~300KB vs shadcn's opt-in)
 - Harder to customize deeply
@@ -727,6 +789,7 @@ xl: 1280px  (large desktop)
 **❌ Didn't choose: Fully Custom Components**
 
 **Why not**:
+
 - Solo founder: Don't have time to build buttons, inputs from scratch
 - shadcn provides accessible base components, customize from there
 
@@ -739,6 +802,7 @@ xl: 1280px  (large desktop)
 **✅ Chose: Lucide React**
 
 **Why**:
+
 - Tree-shakeable SVG components (only import icons used)
 - Consistent 24px grid, stroke-based (matches clean aesthetic)
 - Good coverage (~1000 icons)
@@ -747,6 +811,7 @@ xl: 1280px  (large desktop)
 **❌ Didn't choose: Font Awesome**
 
 **Why not**:
+
 - Icon font = entire font file loads (larger bundle)
 - Harder to customize color/size dynamically
 
@@ -759,6 +824,7 @@ xl: 1280px  (large desktop)
 **✅ Chose: Minimal CSS Transitions**
 
 **Why**:
+
 - B2B tool: Users prioritize speed over delight
 - Simple transitions sufficient:
   - Button hover: 150ms ease
@@ -769,6 +835,7 @@ xl: 1280px  (large desktop)
 **❌ Didn't choose: Framer Motion**
 
 **Why not**:
+
 - Adds 60-80KB to bundle
 - Journey doesn't need complex animations (no page transitions, no microinteractions)
 - Loading states: Simple spinner/progress bar sufficient
@@ -784,6 +851,7 @@ xl: 1280px  (large desktop)
 **✅ Chose: Tailwind Config as Source of Truth**
 
 **Why**:
+
 - Single source for colors, spacing, typography
 - Can export to Figma Tokens plugin for designer handoff
 - TypeScript autocomplete in VSCode (Tailwind IntelliSense)
@@ -791,10 +859,12 @@ xl: 1280px  (large desktop)
 **❌ Didn't choose: Separate CSS Variables**
 
 **Why not**:
+
 - Duplication (define in CSS, then reference in Tailwind)
 - Harder to maintain consistency
 
 **Implementation**:
+
 ```js
 // tailwind.config.js
 module.exports = {
@@ -822,21 +892,25 @@ module.exports = {
 ### Tech Stack Integration (from Session 3)
 
 **Next.js 14+ App Router**:
+
 - Server Components: Default (faster initial load)
 - Client Components: Only for interactivity (file upload, form submission)
 - Loading states: Use Next.js `loading.tsx` + Suspense
 
 **Tailwind CSS**:
+
 - Install: `npm install -D tailwindcss postcss autoprefixer`
 - Config: Extend theme with brand colors, Inter font
 - PurgeCSS: Enabled by default (only ship used classes)
 
 **shadcn/ui Components**:
+
 - Install CLI: `npx shadcn-ui@latest init`
 - Add components: `npx shadcn-ui@latest add button input`
 - Customize: Edit `components/ui/button.tsx` with brand colors
 
 **Lucide React**:
+
 - Install: `npm install lucide-react`
 - Import: `import { Upload, Check, X } from 'lucide-react'`
 - Usage: `<Upload className="h-5 w-5 text-gray-400" />`

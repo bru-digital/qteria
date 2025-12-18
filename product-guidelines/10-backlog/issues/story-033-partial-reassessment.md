@@ -28,6 +28,7 @@
 ## Technical Details
 
 **Smart Caching Logic**:
+
 ```python
 # Only validate criteria that apply to replaced bucket
 replaced_bucket_ids = get_replaced_buckets(original_id, new_id)

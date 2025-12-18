@@ -7,6 +7,7 @@ Supports nested bucket and criteria creation in a single transaction.
 Journey Step 1: Process Manager creates validation workflows with document buckets
 and validation criteria.
 """
+
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
@@ -126,8 +127,8 @@ class WorkflowCreate(BaseModel):
             raise ValueError("Workflow name cannot be empty or whitespace")
         return v.strip()
 
-    @model_validator(mode='after')
-    def validate_unique_bucket_names(self) -> 'WorkflowCreate':
+    @model_validator(mode="after")
+    def validate_unique_bucket_names(self) -> "WorkflowCreate":
         """
         Validate that bucket names are unique within the workflow (case-insensitive).
 
@@ -255,35 +256,12 @@ class PaginationMeta(BaseModel):
     Provides information about the current page, total items, and total pages.
     """
 
-    total_count: int = Field(
-        ...,
-        ge=0,
-        description="Total number of items across all pages"
-    )
-    page: int = Field(
-        ...,
-        ge=1,
-        description="Current page number (1-indexed)"
-    )
-    per_page: int = Field(
-        ...,
-        ge=1,
-        le=100,
-        description="Number of items per page (max 100)"
-    )
-    total_pages: int = Field(
-        ...,
-        ge=0,
-        description="Total number of pages"
-    )
-    has_next_page: bool = Field(
-        ...,
-        description="Whether there is a next page available"
-    )
-    has_prev_page: bool = Field(
-        ...,
-        description="Whether there is a previous page available"
-    )
+    total_count: int = Field(..., ge=0, description="Total number of items across all pages")
+    page: int = Field(..., ge=1, description="Current page number (1-indexed)")
+    per_page: int = Field(..., ge=1, le=100, description="Number of items per page (max 100)")
+    total_pages: int = Field(..., ge=0, description="Total number of pages")
+    has_next_page: bool = Field(..., description="Whether there is a next page available")
+    has_prev_page: bool = Field(..., description="Whether there is a previous page available")
 
 
 class WorkflowListResponse(BaseModel):
@@ -294,13 +272,9 @@ class WorkflowListResponse(BaseModel):
     """
 
     workflows: List[WorkflowListItem] = Field(
-        ...,
-        description="List of workflows for the current page"
+        ..., description="List of workflows for the current page"
     )
-    pagination: PaginationMeta = Field(
-        ...,
-        description="Pagination metadata"
-    )
+    pagination: PaginationMeta = Field(..., description="Pagination metadata")
 
 
 class BucketUpdate(BaseModel):
@@ -438,8 +412,8 @@ class WorkflowUpdate(BaseModel):
             raise ValueError("Workflow name cannot be empty or whitespace")
         return v.strip()
 
-    @model_validator(mode='after')
-    def validate_unique_bucket_names(self) -> 'WorkflowUpdate':
+    @model_validator(mode="after")
+    def validate_unique_bucket_names(self) -> "WorkflowUpdate":
         """
         Validate that bucket names are unique within the workflow (case-insensitive).
 

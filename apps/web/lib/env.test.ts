@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { validateEnv, getEnv, getOptionalEnv, isMicrosoftOAuthConfigured, isGoogleOAuthConfigured } from './env'
+import {
+  validateEnv,
+  getEnv,
+  getOptionalEnv,
+  isMicrosoftOAuthConfigured,
+  isGoogleOAuthConfigured,
+} from './env'
 
 describe('validateEnv', () => {
   // Store original env vars to restore after tests
@@ -127,7 +133,9 @@ describe('validateEnv - OAuth validation', () => {
     process.env.MICROSOFT_CLIENT_ID = 'test-client-id'
     delete process.env.MICROSOFT_CLIENT_SECRET
 
-    expect(() => validateEnv()).toThrow(/MICROSOFT_CLIENT_ID is set but MICROSOFT_CLIENT_SECRET is missing/)
+    expect(() => validateEnv()).toThrow(
+      /MICROSOFT_CLIENT_ID is set but MICROSOFT_CLIENT_SECRET is missing/
+    )
     expect(() => validateEnv()).toThrow(/See docs\/OAUTH_SETUP.md/)
   })
 
@@ -135,7 +143,9 @@ describe('validateEnv - OAuth validation', () => {
     delete process.env.MICROSOFT_CLIENT_ID
     process.env.MICROSOFT_CLIENT_SECRET = 'test-client-secret'
 
-    expect(() => validateEnv()).toThrow(/MICROSOFT_CLIENT_SECRET is set but MICROSOFT_CLIENT_ID is missing/)
+    expect(() => validateEnv()).toThrow(
+      /MICROSOFT_CLIENT_SECRET is set but MICROSOFT_CLIENT_ID is missing/
+    )
   })
 
   it('should pass when both Microsoft OAuth vars are set', () => {
@@ -156,7 +166,9 @@ describe('validateEnv - OAuth validation', () => {
     process.env.GOOGLE_CLIENT_ID = 'test-client-id'
     delete process.env.GOOGLE_CLIENT_SECRET
 
-    expect(() => validateEnv()).toThrow(/GOOGLE_CLIENT_ID is set but GOOGLE_CLIENT_SECRET is missing/)
+    expect(() => validateEnv()).toThrow(
+      /GOOGLE_CLIENT_ID is set but GOOGLE_CLIENT_SECRET is missing/
+    )
     expect(() => validateEnv()).toThrow(/See docs\/OAUTH_SETUP.md/)
   })
 
@@ -164,7 +176,9 @@ describe('validateEnv - OAuth validation', () => {
     delete process.env.GOOGLE_CLIENT_ID
     process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret'
 
-    expect(() => validateEnv()).toThrow(/GOOGLE_CLIENT_SECRET is set but GOOGLE_CLIENT_ID is missing/)
+    expect(() => validateEnv()).toThrow(
+      /GOOGLE_CLIENT_SECRET is set but GOOGLE_CLIENT_ID is missing/
+    )
   })
 
   it('should pass when both Google OAuth vars are set', () => {
@@ -196,8 +210,12 @@ describe('validateEnv - OAuth validation', () => {
     process.env.GOOGLE_CLIENT_ID = 'google-client-id'
     delete process.env.GOOGLE_CLIENT_SECRET
 
-    expect(() => validateEnv()).toThrow(/MICROSOFT_CLIENT_ID is set but MICROSOFT_CLIENT_SECRET is missing/)
-    expect(() => validateEnv()).toThrow(/GOOGLE_CLIENT_ID is set but GOOGLE_CLIENT_SECRET is missing/)
+    expect(() => validateEnv()).toThrow(
+      /MICROSOFT_CLIENT_ID is set but MICROSOFT_CLIENT_SECRET is missing/
+    )
+    expect(() => validateEnv()).toThrow(
+      /GOOGLE_CLIENT_ID is set but GOOGLE_CLIENT_SECRET is missing/
+    )
   })
 
   it('should treat empty string OAuth credentials as missing', () => {
@@ -205,7 +223,9 @@ describe('validateEnv - OAuth validation', () => {
     process.env.MICROSOFT_CLIENT_SECRET = 'test-secret'
 
     // Empty string CLIENT_ID with set CLIENT_SECRET should warn about mismatch
-    expect(() => validateEnv()).toThrow(/MICROSOFT_CLIENT_SECRET is set but MICROSOFT_CLIENT_ID is missing/)
+    expect(() => validateEnv()).toThrow(
+      /MICROSOFT_CLIENT_SECRET is set but MICROSOFT_CLIENT_ID is missing/
+    )
   })
 
   it('should treat whitespace-only OAuth credentials as missing', () => {
@@ -213,7 +233,9 @@ describe('validateEnv - OAuth validation', () => {
     process.env.MICROSOFT_CLIENT_SECRET = 'test-secret'
 
     // Whitespace-only CLIENT_ID with set CLIENT_SECRET should warn about mismatch
-    expect(() => validateEnv()).toThrow(/MICROSOFT_CLIENT_SECRET is set but MICROSOFT_CLIENT_ID is missing/)
+    expect(() => validateEnv()).toThrow(
+      /MICROSOFT_CLIENT_SECRET is set but MICROSOFT_CLIENT_ID is missing/
+    )
   })
 })
 
@@ -253,14 +275,16 @@ describe('getEnv', () => {
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     expect(getEnv('NEXTAUTH_SECRET')).toBe('')
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('NEXTAUTH_SECRET not set during build'))
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('NEXTAUTH_SECRET not set during build')
+    )
 
     consoleSpy.mockRestore()
   })
 
   it('should return empty string in production build if variable missing', () => {
-    delete (process.env as any).DATABASE_URL;
-    (process.env as any).NODE_ENV = 'production'
+    delete (process.env as any).DATABASE_URL
+    ;(process.env as any).NODE_ENV = 'production'
 
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -282,7 +306,7 @@ describe('getOptionalEnv', () => {
   })
 
   it('should return environment variable value if set', () => {
-    (process.env as any).NODE_ENV = 'production'
+    ;(process.env as any).NODE_ENV = 'production'
     expect(getOptionalEnv('NODE_ENV', 'development')).toBe('production')
   })
 
@@ -292,22 +316,26 @@ describe('getOptionalEnv', () => {
   })
 
   it('should return environment variable even if it matches default', () => {
-    (process.env as any).NODE_ENV = 'development'
+    ;(process.env as any).NODE_ENV = 'development'
     expect(getOptionalEnv('NODE_ENV', 'development')).toBe('development')
   })
 
   it('should return default for NEXT_PUBLIC_API_URL if not set', () => {
     delete process.env.NEXT_PUBLIC_API_URL
-    expect(getOptionalEnv('NEXT_PUBLIC_API_URL', 'http://localhost:8000/v1')).toBe('http://localhost:8000/v1')
+    expect(getOptionalEnv('NEXT_PUBLIC_API_URL', 'http://localhost:8000/v1')).toBe(
+      'http://localhost:8000/v1'
+    )
   })
 
   it('should return actual value for NEXT_PUBLIC_API_URL if set', () => {
     process.env.NEXT_PUBLIC_API_URL = 'https://api.qteria.app/v1'
-    expect(getOptionalEnv('NEXT_PUBLIC_API_URL', 'http://localhost:8000/v1')).toBe('https://api.qteria.app/v1')
+    expect(getOptionalEnv('NEXT_PUBLIC_API_URL', 'http://localhost:8000/v1')).toBe(
+      'https://api.qteria.app/v1'
+    )
   })
 
   it('should handle empty string as falsy and return default', () => {
-    (process.env as any).NODE_ENV = ''
+    ;(process.env as any).NODE_ENV = ''
     expect(getOptionalEnv('NODE_ENV', 'development')).toBe('development')
   })
 })

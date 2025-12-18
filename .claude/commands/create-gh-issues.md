@@ -22,6 +22,7 @@ Read: product-guidelines/10-backlog/issues/*.md (all issue files)
 ### Step 2: Dry Run (Show What Will Be Created)
 
 **Before creating anything**, show the user:
+
 ```
 📋 Ready to create GitHub issues
 
@@ -71,6 +72,7 @@ gh issue create \
 ```
 
 **Labels to Apply**:
+
 - Epic: `epic`
 - Story: `story`
 - Priority: `priority:P0`, `priority:P1`, `priority:P2`
@@ -79,6 +81,7 @@ gh issue create \
 ### Step 5: Link Dependencies (If Possible)
 
 After creating issues, if dependencies are clear:
+
 - Note which issue numbers were created
 - Add comments linking blocked/blocks relationships
 - Or manually suggest user links them
@@ -86,6 +89,7 @@ After creating issues, if dependencies are clear:
 ### Step 6: Output Results
 
 Show URLs of created issues:
+
 ```
 ✅ GitHub issues created!
 
@@ -135,6 +139,7 @@ Check cascade anytime: /cascade-status
 ## Fallback
 
 If `gh` CLI not available or fails:
+
 ```
 ❌ GitHub CLI not available
 

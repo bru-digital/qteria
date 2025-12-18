@@ -12,15 +12,19 @@ This document defines the brand strategy that guides all brand decisions, visual
 **IMPORTANT**: This brand strategy must connect to your core cascade outputs.
 
 **Journey problem** (from `product-guidelines/00-user-journey.md`):
+
 - [What problem do users struggle with? Where in the journey?]
 
 **Journey value moment** (from `product-guidelines/00-user-journey.md`):
+
 - [What's the "aha moment"? When does value get delivered?]
 
 **Mission promise** (from `product-guidelines/02-mission.md`):
+
 - [What's your mission statement?]
 
 **Connection**:
+
 - Brand purpose = WHY you solve [journey problem]
 - Brand values = HOW you deliver [journey value]
 - Brand personality = How you show up during [journey moments]
@@ -65,7 +69,7 @@ This document defines the brand strategy that guides all brand decisions, visual
 
 **Trade-offs we make**: [Sacrifices]
 
-### 4. [Value Name] *(optional)*
+### 4. [Value Name] _(optional)_
 
 **What it means**: [2-3 sentences]
 
@@ -73,7 +77,7 @@ This document defines the brand strategy that guides all brand decisions, visual
 
 **Trade-offs we make**: [Sacrifices]
 
-### 5. [Value Name] *(optional)*
+### 5. [Value Name] _(optional)_
 
 **What it means**: [2-3 sentences]
 
@@ -139,11 +143,13 @@ If your brand was a person:
 ### Visual References
 
 **Brands/aesthetics we admire**:
+
 - [Brand 1] - [What we like about their visual identity]
 - [Brand 2] - [What we like]
 - [Brand 3] - [What we like]
 
 **Brands/aesthetics to avoid**:
+
 - [Brand 1] - [Why this doesn't fit us]
 - [Brand 2] - [Why this doesn't fit us]
 
@@ -156,6 +162,7 @@ If your brand was a person:
 ### Competitive Landscape
 
 **Who else serves our audience?**
+
 - [Competitor 1] - [How they're positioned]
 - [Competitor 2] - [How they're positioned]
 - [Alternative solutions] - [Manual processes, other approaches]

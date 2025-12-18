@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 /**
  * Logout button client component.
@@ -8,9 +8,9 @@
  * as a server component for better security.
  */
 
-import { useRouter } from "next/navigation"
-import { logoutWithAudit } from "@/app/actions/auth"
-import { useState } from "react"
+import { useRouter } from 'next/navigation'
+import { logoutWithAudit } from '@/app/actions/auth'
+import { useState } from 'react'
 
 interface LogoutButtonProps {
   userId: string
@@ -30,12 +30,12 @@ export function LogoutButton({ userId, organizationId, email }: LogoutButtonProp
       await logoutWithAudit(userId, organizationId, email)
 
       // Redirect to login page
-      router.push("/login")
+      router.push('/login')
       router.refresh()
     } catch (error) {
-      console.error("[LOGOUT] Error during logout:", error)
+      console.error('[LOGOUT] Error during logout:', error)
       // Even if logout fails, redirect to login for safety
-      router.push("/login")
+      router.push('/login')
     } finally {
       setIsLoading(false)
     }
@@ -47,7 +47,7 @@ export function LogoutButton({ userId, organizationId, email }: LogoutButtonProp
       disabled={isLoading}
       className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      {isLoading ? "Signing out..." : "Sign out"}
+      {isLoading ? 'Signing out...' : 'Sign out'}
     </button>
   )
 }

@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 /**
  * Server actions for authentication with audit logging.
@@ -7,11 +7,11 @@
  * to ensure SOC2/ISO 27001 compliance.
  */
 
-import { signIn, signOut } from "@/lib/auth"
-import { createAuditLog, AuditAction, extractRequestMetadata } from "@/lib/audit"
-import { prisma } from "@/lib/prisma"
-import { headers } from "next/headers"
-import { AuthError } from "next-auth"
+import { signIn, signOut } from '@/lib/auth'
+import { createAuditLog, AuditAction, extractRequestMetadata } from '@/lib/audit'
+import { prisma } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { AuthError } from 'next-auth'
 import {
   checkFailedLoginRateLimit,
   checkTotalLoginRateLimit,
@@ -19,7 +19,7 @@ import {
   recordLoginAttempt,
   resetFailedLoginAttempts,
   formatRateLimitReset,
-} from "@/lib/rate-limit"
+} from '@/lib/rate-limit'
 
 export interface LoginResult {
   success: boolean
@@ -78,7 +78,7 @@ export async function loginWithAudit(
 
   try {
     // Attempt sign in
-    await signIn("credentials", {
+    await signIn('credentials', {
       email,
       password,
       redirect: false,
@@ -116,7 +116,7 @@ export async function loginWithAudit(
 
     return {
       success: true,
-      redirectTo: callbackUrl || "/dashboard",
+      redirectTo: callbackUrl || '/dashboard',
     }
   } catch (error) {
     // Record failed login attempt for rate limiting
@@ -142,7 +142,7 @@ export async function loginWithAudit(
         action: AuditAction.LOGIN_FAILED,
         actionMetadata: {
           email,
-          reason: "invalid_credentials",
+          reason: 'invalid_credentials',
         },
         ipAddress,
         userAgent,
@@ -153,7 +153,7 @@ export async function loginWithAudit(
       // Note: This requires a system organization to exist in the database
       try {
         const systemOrg = await prisma.organization.findFirst({
-          where: { name: "System" },
+          where: { name: 'System' },
         })
 
         if (systemOrg) {
@@ -163,7 +163,7 @@ export async function loginWithAudit(
             action: AuditAction.LOGIN_FAILED,
             actionMetadata: {
               email,
-              reason: "user_not_found",
+              reason: 'user_not_found',
             },
             ipAddress,
             userAgent,
@@ -171,19 +171,19 @@ export async function loginWithAudit(
         }
       } catch (auditError) {
         // If we can't log to audit (e.g., no system org), just console log
-        console.error("[AUTH] Failed to create audit log for failed login:", auditError)
+        console.error('[AUTH] Failed to create audit log for failed login:', auditError)
       }
     }
 
     // Determine error message
-    let errorMessage = "Invalid email or password"
+    let errorMessage = 'Invalid email or password'
 
     if (error instanceof AuthError) {
       // Handle specific Auth.js errors
-      if (error.type === "CredentialsSignin") {
-        errorMessage = "Invalid email or password"
-      } else if (error.type === "CallbackRouteError") {
-        errorMessage = "Authentication error. Please try again."
+      if (error.type === 'CredentialsSignin') {
+        errorMessage = 'Invalid email or password'
+      } else if (error.type === 'CallbackRouteError') {
+        errorMessage = 'Authentication error. Please try again.'
       }
     }
 

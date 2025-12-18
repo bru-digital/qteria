@@ -22,6 +22,7 @@
 ### Frontend: [Framework]
 
 **Journey Requirements**:
+
 - Step X: [Specific requirement from journey]
 - Step Y: [Specific requirement from journey]
 
@@ -31,12 +32,14 @@
 ✅ [Reason 3 tied to journey requirement]
 
 **Alternatives Considered**:
+
 - ❌ [Alternative]: [Why not chosen]
 - ✅ [Chosen]: [Why this is best fit]
 
 ### Backend: [Framework]
 
 **Journey Requirements**:
+
 - Step X: [Specific requirement from journey]
 - Step Y: [Specific requirement from journey]
 
@@ -45,12 +48,14 @@
 ✅ [Reason 2 tied to journey requirement]
 
 **Alternatives Considered**:
+
 - ❌ [Alternative]: [Why not chosen]
 - ✅ [Chosen]: [Why this is best fit]
 
 ### Database: [Database]
 
 **Journey Requirements**:
+
 - [Data needs from journey]
 - [Scale requirements]
 
@@ -62,27 +67,28 @@
 
 ## Stack Mapping to Journey
 
-| Journey Step | Technical Requirement | Technology Solution |
-|--------------|----------------------|---------------------|
-| Step 1: [Name] | [Requirement] | [Technology] |
-| Step 2: [Name] | [Requirement] | [Technology] |
-| Step 3: [Name] | [Requirement] | [Technology] |
+| Journey Step   | Technical Requirement | Technology Solution |
+| -------------- | --------------------- | ------------------- |
+| Step 1: [Name] | [Requirement]         | [Technology]        |
+| Step 2: [Name] | [Requirement]         | [Technology]        |
+| Step 3: [Name] | [Requirement]         | [Technology]        |
 
 ---
 
 ## Cost Estimate (MVP Phase)
 
-| Service | Cost | Notes |
-|---------|------|-------|
-| [Service] | $[X] | [Details] |
-| [Service] | $[Y] | [Details] |
-| **Total** | **$[Z]/month** | |
+| Service   | Cost           | Notes     |
+| --------- | -------------- | --------- |
+| [Service] | $[X]           | [Details] |
+| [Service] | $[Y]           | [Details] |
+| **Total** | **$[Z]/month** |           |
 
 ---
 
 ## What We DIDN'T Choose (And Why)
 
 ### [Technology Not Chosen]
+
 **Why Not**: [Reason based on journey requirements]
 
 ---

@@ -23,22 +23,27 @@ Unlike complicated AI document tools with feature creep or slow human outsourcin
 ## Strategic Goals
 
 ### Goal 1: Secure TÜV SÜD as First Customer
+
 - **Target Metric**: $30K ARR, 10+ active workflows, 100+ assessments/month
 - **Timeline**: Q2 2026
 
 ### Goal 2: Prove AI Validation Accuracy
+
 - **Target Metric**: <5% false positive rate, <1% false negative rate, 95%+ user trust
 - **Timeline**: Q3 2026
 
 ### Goal 3: Deliver Exceptional User Experience
+
 - **Target Metric**: <30 min workflow creation, <1 hour time-to-first-assessment, NPS 50+
 - **Timeline**: Ongoing through 2026
 
 ### Goal 4: Achieve Data Security Certification
+
 - **Target Metric**: SOC2 Type II or ISO 27001 certification, zero security incidents
 - **Timeline**: Q4 2026
 
 ### Goal 5: Expand to 5 Paying Customers
+
 - **Target Metric**: 5 notified bodies, $150K ARR, 100% retention
 - **Timeline**: Q4 2027
 
@@ -65,31 +70,37 @@ These principles guide feature prioritization and story acceptance criteria:
 These themes organize epics and provide prioritization context:
 
 ### Q1 2026: MVP Foundation
+
 - **Focus**: Core workflow engine that works end-to-end
 - **Key Outcomes**: TÜV SÜD can create workflows in <30 min, run assessments in <10 min
 - **Success Metrics**: End-to-end flow works reliably, co-development with TÜV SÜD complete
 
 ### Q2 2026: AI Validation Excellence
+
 - **Focus**: Make AI validation accurate, trustworthy, useful
 - **Key Outcomes**: <5% false positive, <1% false negative, confidence scoring, feedback loop
 - **Success Metrics**: 95%+ user trust in AI results
 
 ### Q3 2026: Enterprise Trust & Security
+
 - **Focus**: Data privacy, compliance, reliability for enterprise customers
 - **Key Outcomes**: SOC2/ISO 27001 certified, 99.9% uptime, audit trails
 - **Success Metrics**: Pass security audits, zero incidents
 
 ### Q4 2026: Scale to 5 Customers
+
 - **Focus**: Onboarding, support, customer success
 - **Key Outcomes**: White-glove onboarding, template workflows, reference case study
 - **Success Metrics**: 5 customers live, NPS 50+, $150K ARR
 
 ### Q1 2027: Performance & Polish
+
 - **Focus**: Speed, UX refinement, world-class quality
 - **Key Outcomes**: Sub-5-min validation, mobile-responsive, workflow versioning
 - **Success Metrics**: Best-in-class UX reputation
 
 ### Q2 2027: Marketplace Foundation
+
 - **Focus**: Enable consultants to create/sell workflows (future vision)
 - **Key Outcomes**: Public marketplace, workflow licensing, consultant onboarding
 - **Success Metrics**: First 5 consultants publishing workflows
@@ -116,6 +127,7 @@ Brief overview of major feature areas (helps organize backlog):
 How to prioritize stories within the backlog:
 
 **High Priority** (P0 - Must Have for MVP):
+
 - Core workflow engine features (create/edit workflows, define buckets/criteria)
 - Document upload and AI validation (pass/fail with evidence links)
 - Results page with evidence-based display
@@ -123,6 +135,7 @@ How to prioritize stories within the backlog:
 - Data security fundamentals (encryption, secure storage)
 
 **Medium Priority** (P1 - Should Have for Launch):
+
 - Confidence scoring (green/yellow/red)
 - Feedback mechanism for false positives/negatives
 - Export validation reports (PDF)
@@ -130,6 +143,7 @@ How to prioritize stories within the backlog:
 - Performance optimization (<10 min validation)
 
 **Low Priority** (P2 - Nice to Have, Future):
+
 - Template workflows library
 - Advanced analytics (which criteria catch most issues)
 - Annotations/comments on flagged criteria

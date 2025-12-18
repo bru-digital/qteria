@@ -9,12 +9,7 @@
 
 import { ReactNode } from 'react'
 import { useRole } from '@/lib/hooks/useRole'
-import {
-  UserRoleType,
-  PermissionType,
-  UserRole,
-  Permission,
-} from '@/lib/rbac'
+import { UserRoleType, PermissionType, UserRole, Permission } from '@/lib/rbac'
 
 interface RoleGuardProps {
   /** Content to render if user has the required role/permission */
@@ -43,11 +38,7 @@ interface RequirePermissionProps extends RoleGuardProps {
  * </RequireRole>
  * ```
  */
-export function RequireRole({
-  roles,
-  children,
-  fallback = null,
-}: RequireRoleProps) {
+export function RequireRole({ roles, children, fallback = null }: RequireRoleProps) {
   const { hasRole, isLoading, isAuthenticated } = useRole()
 
   if (isLoading) return null
@@ -85,7 +76,7 @@ export function RequirePermission({
   const permArray = Array.isArray(permissions) ? permissions : [permissions]
 
   // User must have ALL specified permissions
-  const hasAllPermissions = permArray.every((perm) => hasPermission(perm))
+  const hasAllPermissions = permArray.every(perm => hasPermission(perm))
 
   if (!hasAllPermissions) return <>{fallback}</>
 
@@ -122,10 +113,7 @@ export function AdminOnly({ children, fallback = null }: RoleGuardProps) {
  * </ProcessManagerOnly>
  * ```
  */
-export function ProcessManagerOnly({
-  children,
-  fallback = null,
-}: RoleGuardProps) {
+export function ProcessManagerOnly({ children, fallback = null }: RoleGuardProps) {
   const { isProcessManager, isLoading, isAuthenticated } = useRole()
 
   if (isLoading) return null
@@ -145,10 +133,7 @@ export function ProcessManagerOnly({
  * </ProjectHandlerOnly>
  * ```
  */
-export function ProjectHandlerOnly({
-  children,
-  fallback = null,
-}: RoleGuardProps) {
+export function ProjectHandlerOnly({ children, fallback = null }: RoleGuardProps) {
   const { isProjectHandler, isLoading, isAuthenticated } = useRole()
 
   if (isLoading) return null

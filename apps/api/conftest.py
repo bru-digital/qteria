@@ -3,6 +3,7 @@ Root conftest.py for pytest configuration.
 
 This file loads .env.test before running any tests.
 """
+
 import os
 from pathlib import Path
 from dotenv import load_dotenv

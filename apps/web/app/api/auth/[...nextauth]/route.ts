@@ -1,6 +1,6 @@
-import { handlers } from "@/lib/auth"
-import { requestContext, getIpAddress, getUserAgent } from "@/lib/request-context"
-import { NextRequest } from "next/server"
+import { handlers } from '@/lib/auth'
+import { requestContext, getIpAddress, getUserAgent } from '@/lib/request-context'
+import { NextRequest } from 'next/server'
 
 /**
  * Auth.js API route handlers (Node.js runtime).

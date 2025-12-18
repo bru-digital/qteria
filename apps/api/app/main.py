@@ -1,6 +1,7 @@
 """
 FastAPI main application entry point.
 """
+
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -71,6 +72,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     # Close Redis connection pool
     from app.core.dependencies import _redis_client
+
     if _redis_client:
         try:
             # close() is sufficient for synchronous Redis client (waits for in-flight operations)
@@ -79,9 +81,7 @@ async def lifespan(app: FastAPI):
             logger.info("Redis connection pool closed successfully")
         except Exception as e:
             logger.error(
-                "Error closing Redis connection pool",
-                extra={"error": str(e)},
-                exc_info=True
+                "Error closing Redis connection pool", extra={"error": str(e)}, exc_info=True
             )
 
 
@@ -213,11 +213,7 @@ async def global_exception_handler(request, exc):
     # Fall back to generating a new UUID if not present
     request_id = getattr(request.state, "request_id", str(uuid4()))
 
-    logger.error(
-        f"Unhandled exception: {exc}",
-        exc_info=True,
-        extra={"request_id": request_id}
-    )
+    logger.error(f"Unhandled exception: {exc}", exc_info=True, extra={"request_id": request_id})
     return JSONResponse(
         status_code=500,
         content={

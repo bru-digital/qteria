@@ -5,6 +5,7 @@ Structured text extraction from PDF documents with caching and section detection
 ## Overview
 
 The PDF Parser Service extracts text from PDF documents while preserving:
+
 - **Page boundaries** - Track which text appears on which page
 - **Section detection** - Identify numbered sections (1., 2.3, 3.2.1) and headings
 - **Caching** - Store parsed results in database to avoid re-parsing
@@ -99,6 +100,7 @@ for page in result["pages"]:
 Detects multiple heading patterns:
 
 **Numbered sections:**
+
 ```
 1. Introduction
 2.3 Test Results
@@ -106,12 +108,14 @@ Detects multiple heading patterns:
 ```
 
 **Uppercase headings:**
+
 ```
 TECHNICAL SPECIFICATIONS
 CHAPTER 2 - METHODS
 ```
 
 **Underlined headings:**
+
 ```
 Test Results
 ============
@@ -122,12 +126,14 @@ Test Results
 Extracts structured tabular data from PDFs using tabula-py (Java-based):
 
 **Features:**
+
 - Automatic table detection across all pages
 - Column header inference
 - Structured JSON output with page numbers
 - Graceful degradation if Java unavailable
 
 **Example output:**
+
 ```python
 {
     "page": 3,
@@ -140,6 +146,7 @@ Extracts structured tabular data from PDFs using tabula-py (Java-based):
 ```
 
 **Configuration:**
+
 ```python
 # Enable/disable table extraction
 result = parser.parse_document(
@@ -151,6 +158,7 @@ result = parser.parse_document(
 ```
 
 **Performance:**
+
 - Adds ~1-2 seconds per document with tables
 - Minimal overhead for documents without tables
 - Processes all pages in single pass
@@ -196,7 +204,7 @@ except PDFParsingError as e:
 ### Benchmarks
 
 | PDF Size | Pages | Parse Time | Cache Hit |
-|----------|-------|------------|-----------|
+| -------- | ----- | ---------- | --------- |
 | 1MB      | 10    | <1s        | <100ms    |
 | 10MB     | 100   | <5s        | <100ms    |
 | 50MB     | 500   | <30s       | <100ms    |
@@ -285,6 +293,7 @@ CREATE INDEX idx_parsed_documents_parsed_at ON parsed_documents(parsed_at);
 ## Dependencies
 
 ### Python Packages
+
 - **PyPDF2 3.0.1** - Primary PDF parsing
 - **pdfplumber 0.10.3** - Fallback extraction
 - **tabula-py 2.9.0** - Table extraction
@@ -295,6 +304,7 @@ CREATE INDEX idx_parsed_documents_parsed_at ON parsed_documents(parsed_at);
 - **PostgreSQL 15+** - Caching storage
 
 ### System Dependencies
+
 - **default-jre** - Java Runtime Environment (required for tabula-py)
 - **tesseract-ocr** - OCR engine (required for pytesseract)
 - **poppler-utils** - PDF utilities (required for pdf2image)
@@ -302,16 +312,19 @@ CREATE INDEX idx_parsed_documents_parsed_at ON parsed_documents(parsed_at);
 ### Installation
 
 **Python dependencies:**
+
 ```bash
 pip install -r requirements.txt
 ```
 
 **System dependencies (Linux/Ubuntu):**
+
 ```bash
 apt-get install default-jre tesseract-ocr poppler-utils
 ```
 
 **System dependencies (macOS):**
+
 ```bash
 brew install openjdk tesseract poppler
 ```
@@ -325,6 +338,7 @@ brew install openjdk tesseract poppler
 ## Support
 
 For issues or questions, see:
+
 - Unit tests: `app/services/pdf_parser_test.py`
 - Integration tests: `tests/test_pdf_parser_integration.py`
 - GitHub Issue: #30

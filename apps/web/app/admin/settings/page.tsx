@@ -1,9 +1,9 @@
-import { auth } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { Settings as SettingsIcon } from "lucide-react"
-import { TopNav } from "@/components/navigation/TopNav"
-import { Breadcrumb } from "@/components/navigation/Breadcrumb"
-import { isAdmin, isProcessManager, type UserRoleType } from "@/lib/rbac"
+import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import { Settings as SettingsIcon } from 'lucide-react'
+import { TopNav } from '@/components/navigation/TopNav'
+import { Breadcrumb } from '@/components/navigation/Breadcrumb'
+import { isAdmin, isProcessManager, type UserRoleType } from '@/lib/rbac'
 
 export default async function AdminSettingsPage() {
   // Server-side authentication check
@@ -11,7 +11,7 @@ export default async function AdminSettingsPage() {
 
   // Redirect to login if not authenticated
   if (!session?.user) {
-    redirect("/login")
+    redirect('/login')
   }
 
   // Server-side authorization check - admin or process_manager only
@@ -24,7 +24,7 @@ export default async function AdminSettingsPage() {
   }
 
   if (!isAdmin(user.role) && !isProcessManager(user.role)) {
-    redirect("/dashboard")
+    redirect('/dashboard')
   }
 
   return (
@@ -34,9 +34,9 @@ export default async function AdminSettingsPage() {
       <main className="max-w-7xl mx-auto px-8 py-6">
         <Breadcrumb
           items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Admin" },
-            { label: "Settings" },
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Admin' },
+            { label: 'Settings' },
           ]}
         />
 
@@ -45,8 +45,8 @@ export default async function AdminSettingsPage() {
             <SettingsIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h1 className="text-2xl font-semibold text-gray-900 mb-2">Organization Settings</h1>
             <p className="text-gray-600 max-w-md mx-auto">
-              Organization settings functionality will be implemented in a future release.
-              This page will allow you to configure organization details, billing, and API keys.
+              Organization settings functionality will be implemented in a future release. This page
+              will allow you to configure organization details, billing, and API keys.
             </p>
           </div>
         </div>

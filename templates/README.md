@@ -8,26 +8,26 @@ This directory contains all template files used by the Stack-Driven framework co
 
 Templates numbered `00` through `14` correspond to the **14-session core cascade**. The numbering follows the sequential flow of product development from journey to deployment:
 
-| # | Template File | Session | Command | Output File |
-|---|---------------|---------|---------|-------------|
-| **00** | `00-user-journey-template.md` | Session 1 | `/refine-journey` | `00-user-journey.md` |
-| | `00-user-journey-interview-template.md` | Session 1 | `/refine-journey` | *(interview guide)* |
-| **01** | `01-product-strategy-template.md` | Session 2 | `/create-product-strategy` | `01-product-strategy.md` |
-| **02** | `02-tech-stack-template.md` | Session 3 | `/choose-tech-stack` | `02-tech-stack.md` |
-| **03** | `03-mission-template.md` | Session 4 (1/4) | `/generate-strategy` | `03-mission.md` |
-| **04** | `04-metrics-template.md` | Session 4 (2/4) | `/generate-strategy` | `04-metrics.md` |
-| **04** | `04-monetization-template.md` | Session 4 (3/4) | `/generate-strategy` | `04-monetization.md` |
-| **04** | `04-architecture-template.md` | Session 4 (4/4) | `/generate-strategy` | `04-architecture.md` |
-| **05** | `05-brand-strategy-template.md` | Session 5 | `/create-brand-strategy` | `05-brand-strategy.md` |
-| **06** | `06-design-system-template.md` | Session 6 | `/create-design` | `06-design-system.md` |
-| **07** | `07-database-schema-template.md` | Session 7 | `/design-database-schema` | `07-database-schema.md` |
-| **08** | `08-api-contracts-template.md` | Session 8 | `/generate-api-contracts` | `08-api-contracts.md` |
-| **09** | `09-test-strategy-template.md` | Session 9 | `/create-test-strategy` | `09-test-strategy.md` |
-| **10** | `issue-template.md` | Session 10 | `/generate-backlog` | `10-backlog/*.md` |
-| **11** | *(Session 11 - GitHub only)* | Session 11 | `/create-gh-issues` | *(pushes to GitHub)* |
-| **12** | *(Session 12 - code generation)* | Session 12 | `/scaffold-project` | `12-project-scaffold.md` + code |
-| **13** | `13-deployment-plan-template.md` | Session 13 | `/plan-deployment` | `13-deployment-plan.md` |
-| **14** | `14-observability-strategy-template.md` | Session 14 | `/design-observability` | `14-observability-strategy.md` |
+| #      | Template File                           | Session         | Command                    | Output File                     |
+| ------ | --------------------------------------- | --------------- | -------------------------- | ------------------------------- |
+| **00** | `00-user-journey-template.md`           | Session 1       | `/refine-journey`          | `00-user-journey.md`            |
+|        | `00-user-journey-interview-template.md` | Session 1       | `/refine-journey`          | _(interview guide)_             |
+| **01** | `01-product-strategy-template.md`       | Session 2       | `/create-product-strategy` | `01-product-strategy.md`        |
+| **02** | `02-tech-stack-template.md`             | Session 3       | `/choose-tech-stack`       | `02-tech-stack.md`              |
+| **03** | `03-mission-template.md`                | Session 4 (1/4) | `/generate-strategy`       | `03-mission.md`                 |
+| **04** | `04-metrics-template.md`                | Session 4 (2/4) | `/generate-strategy`       | `04-metrics.md`                 |
+| **04** | `04-monetization-template.md`           | Session 4 (3/4) | `/generate-strategy`       | `04-monetization.md`            |
+| **04** | `04-architecture-template.md`           | Session 4 (4/4) | `/generate-strategy`       | `04-architecture.md`            |
+| **05** | `05-brand-strategy-template.md`         | Session 5       | `/create-brand-strategy`   | `05-brand-strategy.md`          |
+| **06** | `06-design-system-template.md`          | Session 6       | `/create-design`           | `06-design-system.md`           |
+| **07** | `07-database-schema-template.md`        | Session 7       | `/design-database-schema`  | `07-database-schema.md`         |
+| **08** | `08-api-contracts-template.md`          | Session 8       | `/generate-api-contracts`  | `08-api-contracts.md`           |
+| **09** | `09-test-strategy-template.md`          | Session 9       | `/create-test-strategy`    | `09-test-strategy.md`           |
+| **10** | `issue-template.md`                     | Session 10      | `/generate-backlog`        | `10-backlog/*.md`               |
+| **11** | _(Session 11 - GitHub only)_            | Session 11      | `/create-gh-issues`        | _(pushes to GitHub)_            |
+| **12** | _(Session 12 - code generation)_        | Session 12      | `/scaffold-project`        | `12-project-scaffold.md` + code |
+| **13** | `13-deployment-plan-template.md`        | Session 13      | `/plan-deployment`         | `13-deployment-plan.md`         |
+| **14** | `14-observability-strategy-template.md` | Session 14      | `/design-observability`    | `14-observability-strategy.md`  |
 
 ### Why Some Numbers Are Missing
 
@@ -40,6 +40,7 @@ Templates numbered `00` through `14` correspond to the **14-session core cascade
 ### Why "04" Appears Three Times
 
 Session 4 (`/generate-strategy`) creates **four separate tactical foundation files**:
+
 - `03-mission.md` - Your product's purpose and core values
 - `04-metrics.md` - North Star metric and success measurements
 - `04-monetization.md` - Revenue model and pricing strategy
@@ -50,6 +51,7 @@ All are created in a single session but stored as separate documents for modular
 ## Essentials Templates
 
 Some sessions create **two versions** of output:
+
 1. **Full template** - Comprehensive documentation for human reference
 2. **Essentials template** - Condensed version optimized for AI context in Session 10
 
@@ -57,12 +59,12 @@ Some sessions create **two versions** of output:
 
 Session 10 (`/generate-backlog`) reads ALL previous outputs to generate a comprehensive product backlog. To optimize token usage and reduce costs, we create "essentials" versions that contain only the critical information needed for backlog generation.
 
-| Full Template | Essentials Template | Size Reduction |
-|---------------|---------------------|----------------|
-| `01-product-strategy-template.md` | `11-product-strategy-essentials-template.md` | ~65% smaller |
-| `07-database-schema-template.md` | `07-database-schema-essentials-template.md` | ~56% smaller |
-| `08-api-contracts-template.md` | `08-api-contracts-essentials-template.md` | ~80% smaller |
-| `09-test-strategy-template.md` | `09-test-strategy-essentials-template.md` | ~66% smaller |
+| Full Template                     | Essentials Template                          | Size Reduction |
+| --------------------------------- | -------------------------------------------- | -------------- |
+| `01-product-strategy-template.md` | `11-product-strategy-essentials-template.md` | ~65% smaller   |
+| `07-database-schema-template.md`  | `07-database-schema-essentials-template.md`  | ~56% smaller   |
+| `08-api-contracts-template.md`    | `08-api-contracts-essentials-template.md`    | ~80% smaller   |
+| `09-test-strategy-template.md`    | `09-test-strategy-essentials-template.md`    | ~66% smaller   |
 
 **Note:** Essentials templates use their original session number (07, 08, 09) but product strategy essentials uses `11` because it's created in Session 2 and read specifically by Session 10.
 
@@ -71,18 +73,21 @@ Session 10 (`/generate-backlog`) reads ALL previous outputs to generate a compre
 These templates support **optional post-cascade commands** that extend the core framework. They are numbered `15` through `22` to distinguish them from the core cascade (00-14) while maintaining consistent numbering:
 
 ### Branding Extensions (After Session 5+)
+
 - **15** `15-brand-naming-template.md` → `/discover-naming` → `15-brand-naming.md`
 - **16** `16-brand-messaging-template.md` → `/define-messaging` → `16-brand-messaging.md`
 - **17** `17-brand-identity-template.md` → `/design-brand-identity` → `17-brand-identity.md`
 - **18** `18-content-guidelines-template.md` → `/create-content-guidelines` → `18-content-guidelines.md`
 
 ### Product Extensions (After Session 6+)
+
 - **19** `19-user-experience-template.md` → `/design-user-experience` → `19-user-experience.md`
 - **20** `20-analytics-plan-template.md` → `/setup-analytics` → `20-analytics-plan.md`
 - **21** `21-growth-strategy-template.md` → `/design-growth-strategy` → `21-growth-strategy.md`
 - **22** `22-financial-model-template.md` → `/create-financial-model` → `22-financial-model.md`
 
 ### Special Templates
+
 - `00-user-journey-interview-template.md` - Structured interview guide for Session 1 (16 progressive questions to gather user journey information)
 - `issue-template.md` - Used by Session 10 to generate individual backlog issue files
 
@@ -101,6 +106,7 @@ All templates follow a consistent structure:
 Each command file in `.claude/commands/` references one or more templates:
 
 **Core Cascade Commands:**
+
 ```
 Session 1:  /refine-journey           → 00-user-journey-interview-template.md (interview guide)
                                         00-user-journey-template.md (output structure)
@@ -120,6 +126,7 @@ Session 14: /design-observability     → 14-observability-strategy-template.md
 ```
 
 **Post-Cascade Commands:**
+
 ```
 /discover-naming            → 15-brand-naming-template.md
 /define-messaging           → 16-brand-messaging-template.md

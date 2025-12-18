@@ -5,6 +5,7 @@ This module provides:
 - Request ID middleware for distributed tracing and audit logging
 - Multi-tenant isolation middleware for automatic organization filtering
 """
+
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.multi_tenant import (
     MultiTenantMiddleware,

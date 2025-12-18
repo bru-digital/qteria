@@ -75,7 +75,7 @@ export interface AssessmentDocumentMapping {
 /**
  * Assessment status enum
  */
-export type AssessmentStatus = "pending" | "processing" | "completed" | "failed"
+export type AssessmentStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
 /**
  * Assessment response from API

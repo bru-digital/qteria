@@ -16,6 +16,7 @@
 **Rate Limiting**: 1000 req/hour per user, 100 uploads/hour, 50 assessments/hour
 
 **Common Response Codes**:
+
 - `200` OK (GET success)
 - `201` Created (POST success)
 - `202` Accepted (async operation started - assessments)
@@ -37,35 +38,40 @@
 **Implementation**: Auth.js (NextAuth v5) with JWT-only session strategy
 
 **Frontend Endpoints**:
+
 - `POST /api/auth/signin` - User login with credentials
 - `POST /api/auth/signout` - User logout
 - `GET /api/auth/session` - Get current session (includes user + JWT)
 - `GET /api/auth/csrf` - Get CSRF token (for form submissions)
 
 **Server Actions** (recommended over direct API calls):
+
 - `loginWithAudit(email, password, callbackUrl?)` - Login with audit logging + rate limiting
 - `logoutWithAudit(userId, organizationId, email)` - Logout with audit logging
 
 #### POST /api/auth/signin
 
 **Request**:
+
 ```json
 {
   "email": "test@qteria.com",
   "password": "password123",
-  "redirect": false  // Don't auto-redirect (for client-side handling)
+  "redirect": false // Don't auto-redirect (for client-side handling)
 }
 ```
 
 **Response (Success - 200)**:
+
 ```json
 {
   "ok": true,
-  "url": null  // No redirect when redirect: false
+  "url": null // No redirect when redirect: false
 }
 ```
 
 **Response (Failure - 401)**:
+
 ```json
 {
   "ok": false,
@@ -74,6 +80,7 @@
 ```
 
 **Security Features**:
+
 - Rate limiting: 5 failed attempts per email per 15 min, 20 attempts per IP per hour
 - Timing attack protection (constant-time responses)
 - Audit logging (success + failure)
@@ -81,6 +88,7 @@
 - Role validation before JWT creation
 
 **Rate Limit Response (429)**:
+
 ```json
 {
   "success": false,
@@ -99,6 +107,7 @@
 **Response (200)**: Clears session cookie and redirects to `/login`
 
 **Security Features**:
+
 - Audit logging (records logout event)
 - Session invalidation (JWT removed from httpOnly cookie)
 
@@ -107,6 +116,7 @@
 #### GET /api/auth/session
 
 **Response (Authenticated - 200)**:
+
 ```json
 {
   "user": {
@@ -121,6 +131,7 @@
 ```
 
 **Response (Unauthenticated - 200)**:
+
 ```json
 {
   "user": null
@@ -134,15 +145,16 @@
 #### Session Configuration
 
 **JWT Payload**:
+
 ```json
 {
-  "sub": "123e4567-e89b-12d3-a456-426614174000",  // User ID
+  "sub": "123e4567-e89b-12d3-a456-426614174000", // User ID
   "email": "test@qteria.com",
   "name": "Test User",
-  "role": "admin",                                 // process_manager, project_handler, admin
+  "role": "admin", // process_manager, project_handler, admin
   "organizationId": "123e4567-e89b-12d3-a456-426614174001",
-  "iat": 1732176000,                              // Issued at
-  "exp": 1732780800                               // Expires (7 days from iat)
+  "iat": 1732176000, // Issued at
+  "exp": 1732780800 // Expires (7 days from iat)
 }
 ```
 
@@ -156,6 +168,7 @@
 #### Authentication Flow
 
 **Login Flow**:
+
 ```
 1. User submits email + password to login page
 2. Frontend calls loginWithAudit() server action
@@ -169,6 +182,7 @@
 ```
 
 **Session Validation Flow** (on each protected route):
+
 ```
 1. Middleware checks for authjs.session-token cookie
 2. JWT signature validated with NEXTAUTH_SECRET
@@ -178,6 +192,7 @@
 ```
 
 **Logout Flow**:
+
 ```
 1. User clicks "Sign out" button
 2. Frontend calls logoutWithAudit() server action
@@ -191,11 +206,13 @@
 #### Error Codes
 
 **Authentication Errors**:
+
 - `CredentialsSignin` - Invalid email or password
 - `CallbackRouteError` - Error during authentication callback
 - `SessionRequired` - Protected route accessed without valid session
 
 **Custom Error Responses** (from server actions):
+
 ```json
 {
   "success": false,
@@ -219,6 +236,7 @@
 All authentication events are logged to `audit_logs` table:
 
 **Login Success**:
+
 ```json
 {
   "organizationId": "123e4567-e89b-12d3-a456-426614174001",
@@ -235,6 +253,7 @@ All authentication events are logged to `audit_logs` table:
 ```
 
 **Login Failed**:
+
 ```json
 {
   "organizationId": "123e4567-e89b-12d3-a456-426614174001",
@@ -251,6 +270,7 @@ All authentication events are logged to `audit_logs` table:
 ```
 
 **Logout**:
+
 ```json
 {
   "organizationId": "123e4567-e89b-12d3-a456-426614174001",
@@ -270,17 +290,15 @@ All authentication events are logged to `audit_logs` table:
 #### Protected Routes
 
 **Middleware Configuration** (`middleware.ts`):
+
 ```typescript
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/workflows/:path*",
-    "/assessments/:path*"
-  ]
+  matcher: ['/dashboard/:path*', '/workflows/:path*', '/assessments/:path*'],
 }
 ```
 
 **Behavior**:
+
 - Unauthenticated requests to protected routes → Redirect to `/login?callbackUrl={original_path}`
 - After login, redirect back to original path via callback URL
 - Server components can check auth with `await auth()`
@@ -291,6 +309,7 @@ export const config = {
 #### Frontend Usage
 
 **Server Component** (recommended):
+
 ```typescript
 import { auth } from "@/lib/auth-middleware"
 import { redirect } from "next/navigation"
@@ -308,6 +327,7 @@ export default async function ProtectedPage() {
 ```
 
 **Client Component**:
+
 ```typescript
 "use client"
 import { useSession } from "next-auth/react"
@@ -323,9 +343,10 @@ export default function ClientComponent() {
 ```
 
 **Login Form**:
+
 ```typescript
-"use client"
-import { loginWithAudit } from "@/app/actions/auth"
+'use client'
+import { loginWithAudit } from '@/app/actions/auth'
 
 async function handleSubmit(email: string, password: string) {
   const result = await loginWithAudit(email, password)
@@ -422,16 +443,18 @@ async function handleSubmit(email: string, password: string) {
 ## Authentication & Authorization
 
 **JWT Token Payload**:
+
 ```json
 {
-  "sub": "user_123",          // User ID
-  "org_id": "org_tuv_sud",    // Organization ID (multi-tenancy)
+  "sub": "user_123", // User ID
+  "org_id": "org_tuv_sud", // Organization ID (multi-tenancy)
   "email": "handler@tuvsud.com",
-  "role": "project_handler"   // process_manager, project_handler, admin
+  "role": "project_handler" // process_manager, project_handler, admin
 }
 ```
 
 **Role-Based Access**:
+
 - `process_manager` - Can create/update/delete workflows
 - `project_handler` - Can upload documents, start assessments, view results
 - `admin` - Can manage users, view organization settings
@@ -459,6 +482,7 @@ All errors return consistent structure:
 ```
 
 **Common Error Codes**:
+
 - `VALIDATION_ERROR` (400) - Invalid input
 - `INVALID_TOKEN` (401) - JWT invalid/expired
 - `INSUFFICIENT_PERMISSIONS` (403) - Role not authorized
@@ -476,6 +500,7 @@ All errors return consistent structure:
 **When creating stories, reference**:
 
 ### Frontend Stories
+
 - Authentication: Auth.js setup, `loginWithAudit()` server action, login/dashboard pages
 - Workflow builder: `POST /workflows` (with nested buckets + criteria)
 - Document upload: `POST /documents` (multipart/form-data)
@@ -484,6 +509,7 @@ All errors return consistent structure:
 - Report export: `POST /assessments/:id/reports` → `GET /reports/:id/download`
 
 ### Backend Stories
+
 - Implement endpoints per resource (Workflows, Documents, Assessments, Reports)
 - JWT validation middleware for `/v1/*` endpoints (validate Auth.js JWT from cookie)
 - Multi-tenancy enforcement (filter by `organizationId` from JWT)
@@ -495,6 +521,7 @@ All errors return consistent structure:
 **Note**: Authentication (login/logout/session) handled by Auth.js on frontend. Backend only validates JWT tokens.
 
 ### Integration Stories
+
 - Generate TypeScript client from OpenAPI spec
 - Frontend API client setup (axios interceptors for JWT)
 - Error boundary for API errors (401 → redirect to login, 429 → show rate limit message)
@@ -520,16 +547,16 @@ All errors return consistent structure:
 
 ## Journey-to-Endpoint Mapping
 
-| Journey Step | Primary API Call | Returns |
-|--------------|------------------|---------|
-| **Step 1: Create Workflow** | `POST /v1/workflows` | Created workflow with buckets + criteria |
-| **Step 2: Upload Documents** | `POST /v1/documents` (multiple) | Document IDs |
-| **Step 2: Start Assessment** | `POST /v1/assessments` | 202 Accepted, assessment ID |
-| **Step 3: Poll Status** | `GET /v1/assessments/:id` | Status: pending/processing/completed |
-| **Step 3: View Results** | `GET /v1/assessments/:id/results` | Evidence-based pass/fail per criteria |
-| **Step 4: Re-run** | `POST /v1/assessments/:id/rerun` | New assessment ID (202 Accepted) |
-| **Step 5: Export Report** | `POST /v1/assessments/:id/reports` | Report ID |
-| **Step 5: Download Report** | `GET /v1/reports/:id/download` | PDF stream |
+| Journey Step                 | Primary API Call                   | Returns                                  |
+| ---------------------------- | ---------------------------------- | ---------------------------------------- |
+| **Step 1: Create Workflow**  | `POST /v1/workflows`               | Created workflow with buckets + criteria |
+| **Step 2: Upload Documents** | `POST /v1/documents` (multiple)    | Document IDs                             |
+| **Step 2: Start Assessment** | `POST /v1/assessments`             | 202 Accepted, assessment ID              |
+| **Step 3: Poll Status**      | `GET /v1/assessments/:id`          | Status: pending/processing/completed     |
+| **Step 3: View Results**     | `GET /v1/assessments/:id/results`  | Evidence-based pass/fail per criteria    |
+| **Step 4: Re-run**           | `POST /v1/assessments/:id/rerun`   | New assessment ID (202 Accepted)         |
+| **Step 5: Export Report**    | `POST /v1/assessments/:id/reports` | Report ID                                |
+| **Step 5: Download Report**  | `GET /v1/reports/:id/download`     | PDF stream                               |
 
 ---
 

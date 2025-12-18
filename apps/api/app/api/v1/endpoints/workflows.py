@@ -16,6 +16,7 @@ Note: All endpoints use `def` (not `async def`) because:
 - FastAPI handles both sync and async functions efficiently
 - Using `def` is more accurate and avoids unnecessary async overhead
 """
+
 from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
@@ -156,7 +157,10 @@ def create_workflow(
         for idx, criteria_data in enumerate(workflow_data.criteria):
             # Convert bucket indexes to UUIDs
             applies_to_bucket_ids = (
-                [bucket_index_to_id[bucket_idx] for bucket_idx in criteria_data.applies_to_bucket_ids]
+                [
+                    bucket_index_to_id[bucket_idx]
+                    for bucket_idx in criteria_data.applies_to_bucket_ids
+                ]
                 if criteria_data.applies_to_bucket_ids
                 else None  # None = applies to all buckets
             )
@@ -300,11 +304,7 @@ def list_workflows(
 
     # Count total workflows for pagination metadata
     # Note: scalar() returns None if no rows match, so we default to 0
-    total_count = (
-        db.query(func.count(Workflow.id))
-        .filter(*filters)
-        .scalar()
-    ) or 0
+    total_count = (db.query(func.count(Workflow.id)).filter(*filters).scalar()) or 0
 
     # Calculate pagination values
     total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
@@ -312,9 +312,7 @@ def list_workflows(
 
     # Use subqueries for efficient counting without loading all relationships
     buckets_count_subquery = (
-        db.query(func.count(Bucket.id))
-        .filter(Bucket.workflow_id == Workflow.id)
-        .scalar_subquery()
+        db.query(func.count(Bucket.id)).filter(Bucket.workflow_id == Workflow.id).scalar_subquery()
     )
 
     criteria_count_subquery = (
@@ -324,14 +322,11 @@ def list_workflows(
     )
 
     # Build query with sorting - apply same filters as count query
-    query = (
-        db.query(
-            Workflow,
-            buckets_count_subquery.label('buckets_count'),
-            criteria_count_subquery.label('criteria_count'),
-        )
-        .filter(*filters)
-    )
+    query = db.query(
+        Workflow,
+        buckets_count_subquery.label("buckets_count"),
+        criteria_count_subquery.label("criteria_count"),
+    ).filter(*filters)
 
     # Apply sorting using explicit field mapping (defense-in-depth)
     # FastAPI regex validation already enforces sort_by in ALLOWED_SORT_FIELDS,
@@ -379,9 +374,8 @@ def list_workflows(
             # Edge case: When total_count=0, total_pages=0, page=1 → both flags are False
             has_next_page=page < total_pages,
             has_prev_page=page > 1,
-        )
+        ),
     )
-
 
 
 @router.get(
@@ -597,7 +591,8 @@ def update_workflow(
                 if criteria.applies_to_bucket_ids:
                     # Remove deleted bucket IDs from criteria
                     updated_ids = [
-                        bid for bid in criteria.applies_to_bucket_ids
+                        bid
+                        for bid in criteria.applies_to_bucket_ids
                         if bid not in buckets_to_delete
                     ]
                     # Convert empty list to None (applies to all buckets)
@@ -606,8 +601,7 @@ def update_workflow(
         # Create a mapping of existing buckets for quick lookup
         # Filter out deleted buckets to prevent race condition
         existing_buckets_map = {
-            bucket.id: bucket for bucket in workflow.buckets
-            if bucket.id not in buckets_to_delete
+            bucket.id: bucket for bucket in workflow.buckets if bucket.id not in buckets_to_delete
         }
 
         # Update/create buckets
@@ -830,9 +824,7 @@ def archive_workflow(
     # Data integrity check: Prevent archiving if workflow has assessments
     # Check external dependencies first (before checking internal state)
     assessment_count = (
-        db.query(func.count(Assessment.id))
-        .filter(Assessment.workflow_id == workflow_id)
-        .scalar()
+        db.query(func.count(Assessment.id)).filter(Assessment.workflow_id == workflow_id).scalar()
     ) or 0
 
     if assessment_count > 0:
@@ -850,7 +842,9 @@ def archive_workflow(
             status_code=status.HTTP_400_BAD_REQUEST,
             error_code="ALREADY_ARCHIVED",
             message="Workflow is already archived",
-            details={"archived_at": workflow.archived_at.isoformat() if workflow.archived_at else None},
+            details={
+                "archived_at": workflow.archived_at.isoformat() if workflow.archived_at else None
+            },
             request=request,
         )
 

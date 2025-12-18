@@ -29,11 +29,13 @@
 ## Technical Details
 
 **API Endpoint**:
+
 ```python
 PUT /v1/assessments/{assessment_id}/documents/{bucket_id}
 ```
 
 **Implementation**:
+
 ```python
 @router.put("/assessments/{assessment_id}/documents/{bucket_id}")
 async def replace_document(
