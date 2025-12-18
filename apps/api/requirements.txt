@@ -36,6 +36,7 @@ pillow==10.2.0
 pytesseract==0.3.10
 pdf2image==1.17.0
 psutil==5.9.8
+tabula-py==2.9.0
 
 # HTTP Client & Utilities
 httpx==0.26.0

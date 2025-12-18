@@ -10,6 +10,7 @@ FROM python:3.11-slim
 # tesseract-ocr: Required for OCR support (pytesseract)
 # tesseract-ocr-*: Language data packs for multi-language OCR support
 # poppler-utils: Required for PDF to image conversion (pdf2image)
+# default-jre: Java Runtime Environment required by tabula-py for table extraction
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     libpq-dev \
@@ -20,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr-fra \
     tesseract-ocr-spa \
     poppler-utils \
+    default-jre \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory

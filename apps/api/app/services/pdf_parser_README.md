@@ -13,9 +13,12 @@ The PDF Parser Service extracts text from PDF documents while preserving:
 
 - **Dual library support**: PyPDF2 (primary) with pdfplumber fallback
 - **Section detection**: Regex patterns for numbered sections and uppercase headings
+- **Table extraction**: Structured extraction of tabular data using tabula-py
+- **OCR support**: Scanned PDF processing with pytesseract
 - **Database caching**: Stores parsed data in `parsed_documents` table
 - **Error handling**: Detects encrypted and corrupt PDFs
-- **Structured output**: Returns JSON with page boundaries and section names
+- **Structured output**: Returns JSON with page boundaries, section names, and tables
+- **Graceful degradation**: Features degrade gracefully when dependencies unavailable
 
 ## Usage
 
@@ -64,7 +67,17 @@ for page in result["pages"]:
             "text": "Test results show..."
         }
     ],
-    "method": "pypdf2",  # or "pdfplumber"
+    "tables": [
+        {
+            "page": 8,
+            "columns": ["Test Name", "Result", "Status"],
+            "data": [
+                {"Test Name": "Voltage Test", "Result": "5.0V", "Status": "Pass"},
+                {"Test Name": "Current Test", "Result": "2.1A", "Status": "Pass"}
+            ]
+        }
+    ],
+    "method": "pypdf2",  # or "pdfplumber" or "ocr"
     "cached": False  # True if result came from cache
 }
 ```
@@ -76,8 +89,10 @@ for page in result["pages"]:
 1. **Check cache** - Query `parsed_documents` table for existing result
 2. **Validate PDF** - Check file exists, is readable, not encrypted
 3. **Extract text** - Use PyPDF2, fallback to pdfplumber if fails
-4. **Detect sections** - Apply regex patterns to find section headings
-5. **Cache result** - Store in database with parsing method
+4. **Check for scanned PDF** - If no text, fallback to OCR (pytesseract)
+5. **Detect sections** - Apply regex patterns to find section headings
+6. **Extract tables** - Use tabula-py to extract structured table data
+7. **Cache result** - Store pages and tables in database with parsing method
 
 ### Section Detection
 
@@ -102,12 +117,53 @@ Test Results
 ============
 ```
 
+### Table Extraction
+
+Extracts structured tabular data from PDFs using tabula-py (Java-based):
+
+**Features:**
+- Automatic table detection across all pages
+- Column header inference
+- Structured JSON output with page numbers
+- Graceful degradation if Java unavailable
+
+**Example output:**
+```python
+{
+    "page": 3,
+    "columns": ["Test Name", "Result", "Status"],
+    "data": [
+        {"Test Name": "Voltage", "Result": "5.0V", "Status": "Pass"},
+        {"Test Name": "Current", "Result": "2.1A", "Status": "Pass"}
+    ]
+}
+```
+
+**Configuration:**
+```python
+# Enable/disable table extraction
+result = parser.parse_document(
+    document_id=uuid4(),
+    file_path="/path/to/document.pdf",
+    organization_id=uuid4(),
+    enable_tables=True  # Default: True
+)
+```
+
+**Performance:**
+- Adds ~1-2 seconds per document with tables
+- Minimal overhead for documents without tables
+- Processes all pages in single pass
+
 ### Caching Strategy
 
 - **Key**: `document_id` (UUID)
-- **Storage**: PostgreSQL `parsed_documents` table (JSON column)
+- **Storage**: PostgreSQL `parsed_documents` table (JSONB column)
+- **Data cached**: Pages (text + sections) and tables
+- **Format**: `{"pages": [...], "tables": [...]}`
 - **TTL**: No expiration (delete manually or with document)
 - **Invalidation**: CASCADE delete when document is deleted
+- **Backward compatibility**: Old cache format (list of pages) supported
 
 ## Error Handling
 
@@ -218,20 +274,47 @@ CREATE INDEX idx_parsed_documents_parsed_at ON parsed_documents(parsed_at);
 
 ## Future Enhancements
 
-- [ ] OCR support for scanned PDFs (pytesseract)
-- [ ] Table extraction (tabula-py)
+- [x] OCR support for scanned PDFs (pytesseract) - ✅ Implemented
+- [x] Table extraction (tabula-py) - ✅ Implemented
+- [x] Custom section detection rules (configurable patterns) - ✅ Implemented
 - [ ] Multi-column layout detection
 - [ ] Image extraction
 - [ ] DOCX parsing (python-docx)
 - [ ] Parallel page processing (asyncio)
-- [ ] Custom section detection rules (configurable patterns)
 
 ## Dependencies
 
+### Python Packages
 - **PyPDF2 3.0.1** - Primary PDF parsing
 - **pdfplumber 0.10.3** - Fallback extraction
+- **tabula-py 2.9.0** - Table extraction
+- **pytesseract 0.3.10** - OCR support
+- **pdf2image 1.17.0** - PDF to image conversion for OCR
+- **psutil 5.9.8** - Memory monitoring for OCR DPI optimization
 - **SQLAlchemy 2.0+** - Database ORM
 - **PostgreSQL 15+** - Caching storage
+
+### System Dependencies
+- **default-jre** - Java Runtime Environment (required for tabula-py)
+- **tesseract-ocr** - OCR engine (required for pytesseract)
+- **poppler-utils** - PDF utilities (required for pdf2image)
+
+### Installation
+
+**Python dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+**System dependencies (Linux/Ubuntu):**
+```bash
+apt-get install default-jre tesseract-ocr poppler-utils
+```
+
+**System dependencies (macOS):**
+```bash
+brew install openjdk tesseract poppler
+```
 
 ## Related Documentation
 

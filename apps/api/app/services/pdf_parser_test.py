@@ -1007,3 +1007,269 @@ class TestOCRSupport:
             # Assert - OCR should NOT have been called
             mock_ocr.assert_not_called()
             assert result["method"] == "pypdf2"  # Not OCR
+
+
+class TestTableExtraction:
+    """Test table extraction functionality."""
+
+    @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", True)
+    @patch("app.services.pdf_parser.tabula")
+    def test_extract_tables_success(self, mock_tabula, pdf_parser):
+        """Should extract tables from PDF successfully."""
+        # Arrange
+        import pandas as pd
+
+        # Mock tabula returning 2 tables
+        df1 = pd.DataFrame({
+            'Name': ['Alice', 'Bob'],
+            'Score': [95, 87]
+        })
+        df2 = pd.DataFrame({
+            'Product': ['Widget', 'Gadget'],
+            'Price': [10.99, 15.49]
+        })
+        mock_tabula.read_pdf.return_value = [df1, df2]
+
+        # Act
+        tables = pdf_parser._extract_tables("/fake/path.pdf")
+
+        # Assert
+        assert len(tables) == 2
+        assert tables[0]["page"] == 1
+        assert tables[0]["columns"] == ['Name', 'Score']
+        assert len(tables[0]["data"]) == 2
+        assert tables[0]["data"][0]["Name"] == "Alice"
+        assert tables[1]["page"] == 2
+        assert tables[1]["columns"] == ['Product', 'Price']
+
+    @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", False)
+    def test_extract_tables_unavailable(self, pdf_parser):
+        """Should return empty list when table extraction unavailable."""
+        # Act
+        tables = pdf_parser._extract_tables("/fake/path.pdf")
+
+        # Assert
+        assert tables == []
+
+    @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", True)
+    @patch("app.services.pdf_parser.tabula")
+    def test_extract_tables_failure_graceful(self, mock_tabula, pdf_parser):
+        """Should handle table extraction failures gracefully."""
+        # Arrange
+        mock_tabula.read_pdf.side_effect = Exception("Java error")
+
+        # Act
+        tables = pdf_parser._extract_tables("/fake/path.pdf")
+
+        # Assert - should return empty list, not raise
+        assert tables == []
+
+    @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", True)
+    @patch("app.services.pdf_parser.tabula")
+    def test_extract_tables_empty_dataframes(self, mock_tabula, pdf_parser):
+        """Should skip empty tables."""
+        # Arrange
+        import pandas as pd
+
+        df_empty = pd.DataFrame()
+        df_valid = pd.DataFrame({'Col': ['value']})
+        mock_tabula.read_pdf.return_value = [df_empty, df_valid, df_empty]
+
+        # Act
+        tables = pdf_parser._extract_tables("/fake/path.pdf")
+
+        # Assert - only 1 valid table
+        assert len(tables) == 1
+        assert tables[0]["columns"] == ['Col']
+
+    def test_parse_document_includes_tables(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
+    ):
+        """Should include tables in parse_document result."""
+        # Arrange
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4\n")
+
+        pdf_parser._get_cached_parse = Mock(return_value=None)
+
+        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader, \
+             patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.is_file', return_value=True), \
+             patch.object(pdf_parser, '_extract_tables') as mock_extract_tables:
+
+            mock_pdf = Mock()
+            mock_page = Mock()
+            mock_page.extract_text.return_value = "Sample text"
+            mock_pdf.pages = [mock_page]
+            mock_pdf.is_encrypted = False
+            mock_reader.return_value = mock_pdf
+
+            # Mock table extraction
+            mock_extract_tables.return_value = [
+                {"page": 1, "columns": ["A", "B"], "data": [{"A": "1", "B": "2"}]}
+            ]
+
+            # Act
+            result = pdf_parser.parse_document(
+                document_id=sample_document_id,
+                file_path=str(pdf_file),
+                organization_id=sample_organization_id,
+                enable_tables=True,
+            )
+
+            # Assert
+            assert "tables" in result
+            assert len(result["tables"]) == 1
+            assert result["tables"][0]["page"] == 1
+            mock_extract_tables.assert_called_once()
+
+    def test_parse_document_tables_disabled(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
+    ):
+        """Should skip table extraction when enable_tables=False."""
+        # Arrange
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4\n")
+
+        pdf_parser._get_cached_parse = Mock(return_value=None)
+
+        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader, \
+             patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.is_file', return_value=True), \
+             patch.object(pdf_parser, '_extract_tables') as mock_extract_tables:
+
+            mock_pdf = Mock()
+            mock_page = Mock()
+            mock_page.extract_text.return_value = "Sample text"
+            mock_pdf.pages = [mock_page]
+            mock_pdf.is_encrypted = False
+            mock_reader.return_value = mock_pdf
+
+            # Act
+            result = pdf_parser.parse_document(
+                document_id=sample_document_id,
+                file_path=str(pdf_file),
+                organization_id=sample_organization_id,
+                enable_tables=False,
+            )
+
+            # Assert
+            assert result["tables"] == []
+            mock_extract_tables.assert_not_called()
+
+    def test_cache_stores_tables(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
+    ):
+        """Should store tables in cache."""
+        # Arrange
+        pages = [{"page": 1, "text": "text", "section": None}]
+        tables = [{"page": 1, "columns": ["A"], "data": [{"A": "1"}]}]
+
+        # Act
+        pdf_parser._cache_parse(
+            sample_document_id,
+            sample_organization_id,
+            pages,
+            "pypdf2",
+            tables
+        )
+
+        # Assert
+        mock_db.add.assert_called_once()
+        added_doc = mock_db.add.call_args[0][0]
+        assert added_doc.parsed_data["pages"] == pages
+        assert added_doc.parsed_data["tables"] == tables
+
+    def test_cache_retrieval_includes_tables(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
+    ):
+        """Should retrieve tables from cache."""
+        # Arrange
+        cached_data = {
+            "pages": [{"page": 1, "text": "text", "section": None}],
+            "tables": [{"page": 1, "columns": ["A"], "data": [{"A": "1"}]}]
+        }
+
+        mock_cached = Mock()
+        mock_cached.parsed_data = cached_data
+        mock_cached.parsing_method = "pypdf2"
+
+        mock_query = Mock()
+        mock_query.filter.return_value.first.return_value = mock_cached
+        mock_db.query.return_value = mock_query
+
+        # Act
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert
+        assert result is not None
+        assert result["tables"] == cached_data["tables"]
+        assert result["pages"] == cached_data["pages"]
+
+    def test_cache_backward_compatibility(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
+    ):
+        """Should handle old cache format (list of pages without tables)."""
+        # Arrange - old format: just a list
+        cached_data = [{"page": 1, "text": "text", "section": None}]
+
+        mock_cached = Mock()
+        mock_cached.parsed_data = cached_data
+        mock_cached.parsing_method = "pypdf2"
+
+        mock_query = Mock()
+        mock_query.filter.return_value.first.return_value = mock_cached
+        mock_db.query.return_value = mock_query
+
+        # Act
+        result = pdf_parser._get_cached_parse(sample_document_id, sample_organization_id)
+
+        # Assert
+        assert result is not None
+        assert result["pages"] == cached_data
+        assert result["tables"] == []  # Empty for old format
+
+
+class TestJavaAvailabilityCheck:
+    """Test Java availability checking."""
+
+    @patch("subprocess.run")
+    def test_java_available(self, mock_run):
+        """Should return True when Java is available."""
+        # Arrange
+        from app.services.pdf_parser import _check_java_availability
+        mock_run.return_value = Mock(returncode=0)
+
+        # Act
+        result = _check_java_availability()
+
+        # Assert
+        assert result is True
+        mock_run.assert_called_once()
+
+    @patch("subprocess.run")
+    def test_java_not_found(self, mock_run):
+        """Should return False when Java is not installed."""
+        # Arrange
+        from app.services.pdf_parser import _check_java_availability
+        mock_run.side_effect = FileNotFoundError()
+
+        # Act
+        result = _check_java_availability()
+
+        # Assert
+        assert result is False
+
+    @patch("subprocess.run")
+    def test_java_timeout(self, mock_run):
+        """Should return False on timeout."""
+        # Arrange
+        import subprocess
+        from app.services.pdf_parser import _check_java_availability
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd='java', timeout=5)
+
+        # Act
+        result = _check_java_availability()
+
+        # Assert
+        assert result is False
