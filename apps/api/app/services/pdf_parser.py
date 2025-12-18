@@ -13,6 +13,15 @@ Features:
 - Error handling (corrupt PDFs, encrypted PDFs)
 - Configurable section patterns (custom regex per workflow)
 - OCR support (pytesseract for scanned PDFs)
+- Table extraction (tabula-py for structured table data)
+
+TODO [PR 4/4]: Parallel page processing
+- Add asyncio support for concurrent page extraction
+- Convert _extract_with_pypdf2() to async with asyncio.gather()
+- Convert _extract_with_pdfplumber() to async with asyncio.gather()
+- Preserve page order despite concurrent processing
+- Add enable_parallel parameter to parse_document()
+- Performance target: 2-3x faster for 50+ page PDFs
 """
 import re
 import logging
