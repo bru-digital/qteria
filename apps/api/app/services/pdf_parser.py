@@ -49,6 +49,18 @@ except ImportError:
     MEMORY_MONITORING_AVAILABLE = False
     logger.info("psutil not available, OCR DPI optimization disabled")
 
+# TODO [PR 3/4]: Add table extraction dependencies (tabula-py)
+# This will be implemented as part of PR #3 for table extraction support
+# Optional table extraction dependencies (graceful degradation if not available)
+# try:
+#     import tabula
+#     import subprocess
+#     JAVA_AVAILABLE = _check_java_availability()
+#     TABLE_EXTRACTION_AVAILABLE = JAVA_AVAILABLE
+# except ImportError:
+#     TABLE_EXTRACTION_AVAILABLE = False
+#     logger.warning("tabula-py not available. Table extraction will be disabled.")
+
 # Configuration constants
 # OCR configuration
 SCANNED_PDF_CHAR_THRESHOLD = 100  # Min chars to consider PDF as having text
