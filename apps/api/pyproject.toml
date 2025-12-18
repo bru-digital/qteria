@@ -41,6 +41,8 @@ ruff = "^0.1.14"
 mypy = "^1.8.0"
 types-passlib = "^1.7.7"
 types-python-jose = "^3.3.4"
+types-psutil = "^5.9.5"
+types-tabula-py = "^2.9.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -117,7 +119,7 @@ warn_unused_ignores = true
 warn_no_return = true
 check_untyped_defs = true
 strict_equality = true
-plugins = ["pydantic.mypy"]
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
 
 [[tool.mypy.overrides]]
 module = [
@@ -125,6 +127,9 @@ module = [
     "PyPDF2.*",
     "pdfplumber.*",
     "reportlab.*",
+    "vercel_blob.*",
+    "pytesseract.*",
+    "python_magic.*",
 ]
 ignore_missing_imports = true
 

@@ -12,7 +12,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ValidationInfo
 
 
 class BucketCreate(BaseModel):
@@ -155,15 +155,15 @@ class WorkflowCreate(BaseModel):
 
     @field_validator("criteria")
     @classmethod
-    def validate_bucket_references(cls, v: List[CriteriaCreate], values) -> List[CriteriaCreate]:
+    def validate_bucket_references(cls, v: List[CriteriaCreate], info: ValidationInfo) -> List[CriteriaCreate]:
         """
         Validate that criteria bucket references are valid indexes.
 
         Criteria can reference buckets by index in the buckets array.
         This validates that all referenced indexes exist.
         """
-        # Get buckets from values (Pydantic v2 uses info.data)
-        buckets = values.data.get("buckets", [])
+        # Get buckets from info.data (Pydantic v2 API)
+        buckets = info.data.get("buckets", [])
         bucket_count = len(buckets) if buckets else 0
 
         for criteria in v:

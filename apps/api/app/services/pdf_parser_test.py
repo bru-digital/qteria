@@ -16,6 +16,7 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
 from uuid import uuid4, UUID
+from typing import Any
 
 from app.services.pdf_parser import (
     PDFParserService,
@@ -27,7 +28,7 @@ from app.models.models import ParsedDocument
 
 
 @pytest.fixture
-def mock_db():
+def mock_db() -> Mock:
     """Mock SQLAlchemy database session."""
     db = Mock()
     db.query = Mock(return_value=Mock())
@@ -39,19 +40,19 @@ def mock_db():
 
 
 @pytest.fixture
-def pdf_parser(mock_db):
+def pdf_parser(mock_db: Mock) -> PDFParserService:
     """PDF parser service instance with mocked database."""
     return PDFParserService(db=mock_db)
 
 
 @pytest.fixture
-def sample_document_id():
+def sample_document_id() -> UUID:
     """Sample document UUID for testing."""
     return uuid4()
 
 
 @pytest.fixture
-def sample_organization_id():
+def sample_organization_id() -> UUID:
     """Sample organization UUID for testing."""
     return uuid4()
 
@@ -61,7 +62,7 @@ class TestPyPDF2Extraction:
 
     @patch("app.services.pdf_parser.PyPDF2.PdfReader")
     @patch("builtins.open", create=True)
-    def test_extract_simple_pdf(self, mock_open, mock_reader, pdf_parser):
+    def test_extract_simple_pdf(self, mock_open: Any, mock_reader: Any, pdf_parser: PDFParserService) -> None:
         """Should extract text from simple single-page PDF."""
         # Arrange
         mock_page = Mock()
@@ -82,7 +83,7 @@ class TestPyPDF2Extraction:
 
     @patch("app.services.pdf_parser.PyPDF2.PdfReader")
     @patch("builtins.open", create=True)
-    def test_extract_multi_page_pdf_preserves_boundaries(self, mock_open, mock_reader, pdf_parser):
+    def test_extract_multi_page_pdf_preserves_boundaries(self, mock_open: Any, mock_reader: Any, pdf_parser: PDFParserService) -> None:
         """Should preserve page boundaries across multiple pages."""
         # Arrange
         mock_pages = []
@@ -107,7 +108,7 @@ class TestPyPDF2Extraction:
 
     @patch("app.services.pdf_parser.PyPDF2.PdfReader")
     @patch("builtins.open", create=True)
-    def test_encrypted_pdf_raises_error(self, mock_open, mock_reader, pdf_parser):
+    def test_encrypted_pdf_raises_error(self, mock_open: Any, mock_reader: Any, pdf_parser: PDFParserService) -> None:
         """Should raise EncryptedPDFError for password-protected PDF."""
         # Arrange
         mock_reader_instance = Mock()
@@ -120,7 +121,7 @@ class TestPyPDF2Extraction:
 
     @patch("app.services.pdf_parser.PyPDF2.PdfReader")
     @patch("builtins.open", create=True)
-    def test_corrupt_pdf_raises_error(self, mock_open, mock_reader, pdf_parser):
+    def test_corrupt_pdf_raises_error(self, mock_open: Any, mock_reader: Any, pdf_parser: PDFParserService) -> None:
         """Should raise CorruptPDFError for malformed PDF."""
         # Arrange
         import PyPDF2.errors
@@ -136,7 +137,7 @@ class TestPdfplumberFallback:
     """Test pdfplumber fallback extraction."""
 
     @patch("app.services.pdf_parser.pdfplumber.open")
-    def test_fallback_extraction(self, mock_pdfplumber, pdf_parser):
+    def test_fallback_extraction(self, mock_pdfplumber: Any, pdf_parser: PDFParserService) -> None:
         """Should extract text using pdfplumber as fallback."""
         # Arrange
         mock_page = Mock()
@@ -155,7 +156,7 @@ class TestPdfplumberFallback:
         assert pages[0]["text"] == "Text from pdfplumber"
 
     @patch("app.services.pdf_parser.pdfplumber.open")
-    def test_pdfplumber_failure_raises_error(self, mock_pdfplumber, pdf_parser):
+    def test_pdfplumber_failure_raises_error(self, mock_pdfplumber: Any, pdf_parser: PDFParserService) -> None:
         """Should raise CorruptPDFError if pdfplumber also fails."""
         # Arrange
         mock_pdfplumber.side_effect = Exception("pdfplumber error")
@@ -168,7 +169,7 @@ class TestPdfplumberFallback:
 class TestSectionDetection:
     """Test section detection with various patterns."""
 
-    def test_detect_numbered_sections(self, pdf_parser):
+    def test_detect_numbered_sections(self, pdf_parser: PDFParserService) -> None:
         """Should detect numbered sections like '1.', '2.3', '3.2.1'."""
         # Arrange
         pages = [
@@ -187,7 +188,7 @@ class TestSectionDetection:
         assert result[2]["section"] == "2.3 Test Results"
         assert result[3]["section"] == "3.2.1 Detailed Analysis"
 
-    def test_detect_uppercase_headings(self, pdf_parser):
+    def test_detect_uppercase_headings(self, pdf_parser: PDFParserService) -> None:
         """Should detect ALL CAPS headings."""
         # Arrange
         pages = [
@@ -202,7 +203,7 @@ class TestSectionDetection:
         assert result[0]["section"] == "TECHNICAL SPECIFICATIONS"
         assert result[1]["section"] == "TECHNICAL SPECIFICATIONS"
 
-    def test_section_persists_across_pages(self, pdf_parser):
+    def test_section_persists_across_pages(self, pdf_parser: PDFParserService) -> None:
         """Should maintain section name across pages until new section found."""
         # Arrange
         pages = [
@@ -221,7 +222,7 @@ class TestSectionDetection:
         assert result[2]["section"] == "1. Introduction"
         assert result[3]["section"] == "2. Methods"
 
-    def test_no_section_detected_defaults_to_none(self, pdf_parser):
+    def test_no_section_detected_defaults_to_none(self, pdf_parser: PDFParserService) -> None:
         """Should leave section as None if no pattern matches."""
         # Arrange
         pages = [
@@ -239,8 +240,8 @@ class TestCaching:
     """Test database caching logic."""
 
     def test_cache_hit_skips_parsing(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID
+    ) -> None:
         """Should return cached result without parsing if cache hit."""
         # Arrange
         cached_doc = ParsedDocument(
@@ -262,8 +263,8 @@ class TestCaching:
         assert result["method"] == "pypdf2"
 
     def test_cache_miss_returns_none(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID
+    ) -> None:
         """Should return None if no cached result found."""
         # Arrange
         mock_query = Mock()
@@ -277,8 +278,8 @@ class TestCaching:
         assert result is None
 
     def test_cache_stores_parsed_data(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID
+    ) -> None:
         """Should store parsed data in database."""
         # Arrange
         parsed_data = [{"page": 1, "text": "New text", "section": "1. Intro"}]
@@ -302,7 +303,7 @@ class TestValidation:
     """Test PDF validation logic."""
 
     @patch("app.services.pdf_parser.Path")
-    def test_validate_pdf_file_not_found(self, mock_path, pdf_parser):
+    def test_validate_pdf_file_not_found(self, mock_path: Any, pdf_parser: PDFParserService) -> None:
         """Should raise CorruptPDFError if file doesn't exist."""
         # Arrange
         mock_path_instance = Mock()
@@ -314,7 +315,7 @@ class TestValidation:
             pdf_parser._validate_pdf("/fake/missing.pdf")
 
     @patch("app.services.pdf_parser.Path")
-    def test_validate_pdf_not_a_file(self, mock_path, pdf_parser):
+    def test_validate_pdf_not_a_file(self, mock_path: Any, pdf_parser: PDFParserService) -> None:
         """Should raise CorruptPDFError if path is not a file."""
         # Arrange
         mock_path_instance = Mock()
@@ -328,7 +329,7 @@ class TestValidation:
 
     @patch("app.services.pdf_parser.PDFParserService._is_encrypted")
     @patch("app.services.pdf_parser.Path")
-    def test_validate_pdf_encrypted(self, mock_path, mock_is_encrypted, pdf_parser):
+    def test_validate_pdf_encrypted(self, mock_path: Any, mock_is_encrypted: Any, pdf_parser: PDFParserService) -> None:
         """Should raise EncryptedPDFError if PDF is encrypted."""
         # Arrange
         mock_path_instance = Mock()
@@ -347,7 +348,7 @@ class TestEncryptionCheck:
 
     @patch("app.services.pdf_parser.PyPDF2.PdfReader")
     @patch("builtins.open", create=True)
-    def test_is_encrypted_true(self, mock_open, mock_reader, pdf_parser):
+    def test_is_encrypted_true(self, mock_open: Any, mock_reader: Any, pdf_parser: PDFParserService) -> None:
         """Should return True if PDF is encrypted."""
         # Arrange
         mock_reader_instance = Mock()
@@ -362,7 +363,7 @@ class TestEncryptionCheck:
 
     @patch("app.services.pdf_parser.PyPDF2.PdfReader")
     @patch("builtins.open", create=True)
-    def test_is_encrypted_false(self, mock_open, mock_reader, pdf_parser):
+    def test_is_encrypted_false(self, mock_open: Any, mock_reader: Any, pdf_parser: PDFParserService) -> None:
         """Should return False if PDF is not encrypted."""
         # Arrange
         mock_reader_instance = Mock()
@@ -377,7 +378,7 @@ class TestEncryptionCheck:
 
     @patch("app.services.pdf_parser.PyPDF2.PdfReader")
     @patch("builtins.open", create=True)
-    def test_is_encrypted_handles_errors_gracefully(self, mock_open, mock_reader, pdf_parser):
+    def test_is_encrypted_handles_errors_gracefully(self, mock_open: Any, mock_reader: Any, pdf_parser: PDFParserService) -> None:
         """Should return False if encryption check fails (assume not encrypted)."""
         # Arrange
         mock_reader.side_effect = Exception("Cannot read PDF")
@@ -399,15 +400,15 @@ class TestParsingMethodRecorded:
     @patch("app.services.pdf_parser.PDFParserService._cache_parse")
     def test_pypdf2_method_recorded(
         self,
-        mock_cache_parse,
-        mock_get_cached,
-        mock_detect,
-        mock_extract,
-        mock_validate,
-        pdf_parser,
-        sample_document_id,
-        sample_organization_id,
-    ):
+        mock_cache_parse: Any,
+        mock_get_cached: Any,
+        mock_detect: Any,
+        mock_extract: Any,
+        mock_validate: Any,
+        pdf_parser: PDFParserService,
+        sample_document_id: UUID,
+        sample_organization_id: UUID,
+    ) -> None:
         """Should record 'pypdf2' as parsing method when PyPDF2 succeeds."""
         # Arrange
         mock_get_cached.return_value = None
@@ -432,16 +433,16 @@ class TestParsingMethodRecorded:
     @patch("app.services.pdf_parser.PDFParserService._cache_parse")
     def test_pdfplumber_method_recorded_on_fallback(
         self,
-        mock_cache_parse,
-        mock_get_cached,
-        mock_detect,
-        mock_pdfplumber,
-        mock_pypdf2,
-        mock_validate,
-        pdf_parser,
-        sample_document_id,
-        sample_organization_id,
-    ):
+        mock_cache_parse: Any,
+        mock_get_cached: Any,
+        mock_detect: Any,
+        mock_pdfplumber: Any,
+        mock_pypdf2: Any,
+        mock_validate: Any,
+        pdf_parser: PDFParserService,
+        sample_document_id: UUID,
+        sample_organization_id: UUID,
+    ) -> None:
         """Should record 'pdfplumber' when PyPDF2 fails and pdfplumber succeeds."""
         # Arrange
         mock_get_cached.return_value = None
@@ -469,14 +470,14 @@ class TestErrorHandling:
     @patch("app.services.pdf_parser.PDFParserService._get_cached_parse")
     def test_both_parsers_fail_raises_error(
         self,
-        mock_get_cached,
-        mock_pdfplumber,
-        mock_pypdf2,
-        mock_validate,
-        pdf_parser,
-        sample_document_id,
-        sample_organization_id,
-    ):
+        mock_get_cached: Any,
+        mock_pdfplumber: Any,
+        mock_pypdf2: Any,
+        mock_validate: Any,
+        pdf_parser: PDFParserService,
+        sample_document_id: UUID,
+        sample_organization_id: UUID,
+    ) -> None:
         """Should raise PDFParsingError if both PyPDF2 and pdfplumber fail."""
         # Arrange
         mock_get_cached.return_value = None
@@ -492,8 +493,8 @@ class TestMultiTenancy:
     """Test multi-tenancy isolation for parsed documents."""
 
     def test_get_cached_parse_filters_by_organization(
-        self, pdf_parser, sample_document_id, sample_organization_id
-    ):
+        self, pdf_parser: PDFParserService, sample_document_id: UUID, sample_organization_id: UUID
+    ) -> None:
         """Should filter cached results by organization_id."""
         # Arrange
         other_org_id = uuid4()
@@ -515,7 +516,7 @@ class TestMultiTenancy:
         filter_call = mock_query.filter.call_args
         assert filter_call is not None
 
-    def test_get_cached_parse_returns_none_for_different_org(self, pdf_parser, sample_document_id):
+    def test_get_cached_parse_returns_none_for_different_org(self, pdf_parser: PDFParserService, sample_document_id: UUID) -> None:
         """Should return None when cache exists but belongs to different organization."""
         # Arrange
         org_a = uuid4()
@@ -542,8 +543,8 @@ class TestMultiTenancy:
         assert result is None  # Should not return cached data from different org
 
     def test_cache_parse_stores_organization_id(
-        self, pdf_parser, sample_document_id, sample_organization_id
-    ):
+        self, pdf_parser: PDFParserService, sample_document_id: UUID, sample_organization_id: UUID
+    ) -> None:
         """Should store organization_id when caching parsed document."""
         # Arrange
         parsed_data = [{"page": 1, "text": "Test", "section": None}]
@@ -565,7 +566,7 @@ class TestMultiTenancy:
 class TestCustomSectionPatterns:
     """Tests for custom section pattern functionality."""
 
-    def test_compile_valid_custom_patterns(self, pdf_parser):
+    def test_compile_valid_custom_patterns(self, pdf_parser: PDFParserService) -> None:
         """Should compile valid custom regex patterns successfully."""
         # Arrange
         patterns = [
@@ -581,7 +582,7 @@ class TestCustomSectionPatterns:
         assert len(compiled) == 3
         assert all(hasattr(p, "search") for p in compiled)  # All are compiled regex
 
-    def test_custom_patterns_used_in_section_detection(self, pdf_parser):
+    def test_custom_patterns_used_in_section_detection(self, pdf_parser: PDFParserService) -> None:
         """Should use custom patterns for section detection when provided."""
         # Arrange
         pages = [
@@ -597,7 +598,7 @@ class TestCustomSectionPatterns:
         assert result[0]["section"] == "SECTION 1: Introduction"
         assert result[1]["section"] == "SECTION 2: Methods"
 
-    def test_default_patterns_when_no_custom_patterns(self, pdf_parser):
+    def test_default_patterns_when_no_custom_patterns(self, pdf_parser: PDFParserService) -> None:
         """Should use default patterns when no custom patterns provided."""
         # Arrange
         pages = [
@@ -612,7 +613,7 @@ class TestCustomSectionPatterns:
         assert result[0]["section"] == "1. Introduction"
         assert result[1]["section"] == "2. Methods"
 
-    def test_pattern_too_long_raises_error(self, pdf_parser):
+    def test_pattern_too_long_raises_error(self, pdf_parser: PDFParserService) -> None:
         """Should reject patterns exceeding MAX_PATTERN_LENGTH."""
         # Arrange - Pattern longer than 1000 chars
         long_pattern = "a" * 1001
@@ -621,7 +622,7 @@ class TestCustomSectionPatterns:
         with pytest.raises(PDFParsingError, match="Pattern too long"):
             pdf_parser._compile_section_patterns([long_pattern])
 
-    def test_too_many_patterns_raises_error(self, pdf_parser):
+    def test_too_many_patterns_raises_error(self, pdf_parser: PDFParserService) -> None:
         """Should reject more than MAX_CUSTOM_PATTERNS."""
         # Arrange - 101 patterns (max is 100)
         patterns = [r"^test\d+" for _ in range(101)]
@@ -630,7 +631,7 @@ class TestCustomSectionPatterns:
         with pytest.raises(PDFParsingError, match="Too many custom patterns"):
             pdf_parser._compile_section_patterns(patterns)
 
-    def test_invalid_regex_raises_error(self, pdf_parser):
+    def test_invalid_regex_raises_error(self, pdf_parser: PDFParserService) -> None:
         """Should reject invalid regex patterns."""
         # Arrange - Invalid regex (unmatched parenthesis)
         invalid_pattern = r"^test(unclosed"
@@ -639,7 +640,7 @@ class TestCustomSectionPatterns:
         with pytest.raises(PDFParsingError, match="Invalid regex pattern"):
             pdf_parser._compile_section_patterns([invalid_pattern])
 
-    def test_redos_nested_quantifiers_blocked(self, pdf_parser):
+    def test_redos_nested_quantifiers_blocked(self, pdf_parser: PDFParserService) -> None:
         """Should block nested quantifiers to prevent ReDoS attacks."""
         # Arrange - Dangerous nested quantifiers
         dangerous_patterns = [
@@ -653,7 +654,7 @@ class TestCustomSectionPatterns:
             with pytest.raises(PDFParsingError, match="nested quantifiers"):
                 pdf_parser._validate_redos_safety(pattern)
 
-    def test_redos_multiple_quantifiers_blocked(self, pdf_parser):
+    def test_redos_multiple_quantifiers_blocked(self, pdf_parser: PDFParserService) -> None:
         """Should block multiple consecutive quantifiers."""
         # Arrange
         dangerous_patterns = [
@@ -667,7 +668,7 @@ class TestCustomSectionPatterns:
             with pytest.raises(PDFParsingError, match="multiple consecutive quantifiers"):
                 pdf_parser._validate_redos_safety(pattern)
 
-    def test_redos_alternation_with_quantifier_warning(self, pdf_parser):
+    def test_redos_alternation_with_quantifier_warning(self, pdf_parser: PDFParserService) -> None:
         """Should warn (not block) alternations with quantifiers."""
         # Arrange - Potentially dangerous but not always
         pattern = r"(a|ab)*"
@@ -680,7 +681,7 @@ class TestCustomSectionPatterns:
         except PDFParsingError:
             pytest.fail("Should not block alternation patterns, only warn")
 
-    def test_safe_patterns_pass_validation(self, pdf_parser):
+    def test_safe_patterns_pass_validation(self, pdf_parser: PDFParserService) -> None:
         """Should allow safe regex patterns."""
         # Arrange - Safe patterns
         safe_patterns = [
@@ -695,7 +696,7 @@ class TestCustomSectionPatterns:
         compiled = pdf_parser._compile_section_patterns(safe_patterns)
         assert len(compiled) == 5
 
-    def test_redos_validation_with_max_length_constraint(self, pdf_parser):
+    def test_redos_validation_with_max_length_constraint(self, pdf_parser: PDFParserService) -> None:
         """Should enforce REDOS_NESTED_QUANTIFIER_MAX_LENGTH correctly."""
         # Arrange - Pattern with nested quantifiers within length limit (should block)
         pattern_within_limit = r"(a{1,10}){1,5}+"  # Within 50 chars
@@ -704,7 +705,7 @@ class TestCustomSectionPatterns:
         with pytest.raises(PDFParsingError, match="nested quantifiers"):
             pdf_parser._validate_redos_safety(pattern_within_limit)
 
-    def test_custom_patterns_empty_list(self, pdf_parser):
+    def test_custom_patterns_empty_list(self, pdf_parser: PDFParserService) -> None:
         """Should handle empty custom patterns list gracefully."""
         # Arrange
         pages = [{"page": 1, "text": "1. Introduction\nText"}]
@@ -717,8 +718,8 @@ class TestCustomSectionPatterns:
         assert len(compiled) == 0
 
     def test_custom_patterns_integration_parse_document(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID, tmp_path: Any
+    ) -> None:
         """Should pass custom_patterns through parse_document flow."""
         # Arrange - Create a real PDF file (mocked)
         pdf_file = tmp_path / "test.pdf"
@@ -757,7 +758,7 @@ class TestCustomSectionPatterns:
 class TestOCRSupport:
     """Tests for OCR support functionality."""
 
-    def test_is_scanned_pdf_empty_text(self, pdf_parser):
+    def test_is_scanned_pdf_empty_text(self, pdf_parser: PDFParserService) -> None:
         """Should detect scanned PDF when total text is below threshold."""
         # Arrange - PDF with very little text (< 100 chars total)
         pages = [
@@ -773,7 +774,7 @@ class TestOCRSupport:
         assert is_scanned is True
         assert "total_chars=" in reason  # Verify reason provided for debugging
 
-    def test_is_scanned_pdf_sufficient_text(self, pdf_parser):
+    def test_is_scanned_pdf_sufficient_text(self, pdf_parser: PDFParserService) -> None:
         """Should NOT detect as scanned when PDF has sufficient text."""
         # Arrange - PDF with plenty of text (> 100 chars)
         pages = [
@@ -791,7 +792,7 @@ class TestOCRSupport:
         assert is_scanned is False
         assert reason == "sufficient_text"  # Verify reason indicates non-scanned
 
-    def test_is_scanned_pdf_most_pages_empty(self, pdf_parser):
+    def test_is_scanned_pdf_most_pages_empty(self, pdf_parser: PDFParserService) -> None:
         """Should detect scanned PDF when >50% of pages lack text."""
         # Arrange - 4 pages, 3 empty (75% empty)
         pages = [
@@ -808,7 +809,7 @@ class TestOCRSupport:
         assert is_scanned is True  # >50% pages lack text
         assert "pages have text" in reason  # Verify reason indicates page-based detection
 
-    def test_ocr_language_validation_valid(self, pdf_parser):
+    def test_ocr_language_validation_valid(self, pdf_parser: PDFParserService) -> None:
         """Should accept valid 3-letter language codes."""
         # Arrange
         valid_languages = ["eng", "deu", "fra", "spa", "ita"]
@@ -835,7 +836,7 @@ class TestOCRSupport:
                 result = pdf_parser._extract_with_ocr("/fake/path.pdf", language=lang)
                 assert len(result) == 1
 
-    def test_ocr_language_validation_combined_languages(self, pdf_parser):
+    def test_ocr_language_validation_combined_languages(self, pdf_parser: PDFParserService) -> None:
         """Should accept combined language codes like eng+deu."""
         # Arrange
         combined_lang = "eng+deu"
@@ -859,7 +860,7 @@ class TestOCRSupport:
             result = pdf_parser._extract_with_ocr("/fake/path.pdf", language=combined_lang)
             assert len(result) == 1
 
-    def test_ocr_language_validation_invalid_code(self, pdf_parser):
+    def test_ocr_language_validation_invalid_code(self, pdf_parser: PDFParserService) -> None:
         """Should reject invalid language codes to prevent command injection."""
         # Arrange - Invalid/malicious language codes
         invalid_languages = [
@@ -879,7 +880,7 @@ class TestOCRSupport:
                 with patch("app.services.pdf_parser.OCR_AVAILABLE", True):
                     pdf_parser._extract_with_ocr("/fake/path.pdf", language=invalid_lang)
 
-    def test_ocr_unavailable_raises_error(self, pdf_parser):
+    def test_ocr_unavailable_raises_error(self, pdf_parser: PDFParserService) -> None:
         """Should raise error when OCR dependencies not available."""
         # Arrange
         with patch("app.services.pdf_parser.OCR_AVAILABLE", False):
@@ -887,7 +888,7 @@ class TestOCRSupport:
             with pytest.raises(PDFParsingError, match="OCR dependencies not available"):
                 pdf_parser._extract_with_ocr("/fake/path.pdf")
 
-    def test_ocr_page_count_validation(self, pdf_parser):
+    def test_ocr_page_count_validation(self, pdf_parser: PDFParserService) -> None:
         """Should reject PDFs exceeding MAX_PAGE_COUNT."""
         # Arrange - Mock PDF with too many pages
         with (
@@ -904,7 +905,7 @@ class TestOCRSupport:
             with pytest.raises(PDFParsingError, match="PDF too large"):
                 pdf_parser._extract_with_ocr("/fake/path.pdf")
 
-    def test_get_optimal_dpi_low_memory(self, pdf_parser):
+    def test_get_optimal_dpi_low_memory(self, pdf_parser: PDFParserService) -> None:
         """Should return low DPI when memory is constrained."""
         # Arrange - Mock low available memory
         with (
@@ -929,7 +930,7 @@ class TestOCRSupport:
             # Assert - Should use low DPI due to memory constraints
             assert dpi == 150  # OCR_LOW_MEMORY_DPI
 
-    def test_get_optimal_dpi_sufficient_memory(self, pdf_parser):
+    def test_get_optimal_dpi_sufficient_memory(self, pdf_parser: PDFParserService) -> None:
         """Should return default DPI when memory is sufficient."""
         # Arrange - Mock high available memory
         with (
@@ -955,8 +956,8 @@ class TestOCRSupport:
             assert dpi == 300  # OCR_DEFAULT_DPI
 
     def test_ocr_integration_scanned_pdf_detected(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID, tmp_path: Any
+    ) -> None:
         """Should detect scanned PDF and fall back to OCR."""
         # Arrange - Create a fake PDF
         pdf_file = tmp_path / "scanned.pdf"
@@ -997,8 +998,8 @@ class TestOCRSupport:
             assert result["pages"][0]["text"] == "OCR extracted text"
 
     def test_ocr_disabled_skips_ocr(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID, tmp_path: Any
+    ) -> None:
         """Should skip OCR when enable_ocr=False."""
         # Arrange
         pdf_file = tmp_path / "scanned.pdf"
@@ -1038,7 +1039,7 @@ class TestTableExtraction:
 
     @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", True)
     @patch("app.services.pdf_parser.tabula")
-    def test_extract_tables_success(self, mock_tabula, pdf_parser):
+    def test_extract_tables_success(self, mock_tabula: Any, pdf_parser: PDFParserService) -> None:
         """Should extract tables from PDF successfully."""
         # Arrange
         import pandas as pd
@@ -1061,7 +1062,7 @@ class TestTableExtraction:
         assert tables[1]["columns"] == ["Product", "Price"]
 
     @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", False)
-    def test_extract_tables_unavailable(self, pdf_parser):
+    def test_extract_tables_unavailable(self, pdf_parser: PDFParserService) -> None:
         """Should return empty list when table extraction unavailable."""
         # Act
         tables = pdf_parser._extract_tables("/fake/path.pdf")
@@ -1071,7 +1072,7 @@ class TestTableExtraction:
 
     @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", True)
     @patch("app.services.pdf_parser.tabula")
-    def test_extract_tables_failure_graceful(self, mock_tabula, pdf_parser):
+    def test_extract_tables_failure_graceful(self, mock_tabula: Any, pdf_parser: PDFParserService) -> None:
         """Should handle table extraction failures gracefully."""
         # Arrange
         mock_tabula.read_pdf.side_effect = Exception("Java error")
@@ -1084,7 +1085,7 @@ class TestTableExtraction:
 
     @patch("app.services.pdf_parser.TABLE_EXTRACTION_AVAILABLE", True)
     @patch("app.services.pdf_parser.tabula")
-    def test_extract_tables_empty_dataframes(self, mock_tabula, pdf_parser):
+    def test_extract_tables_empty_dataframes(self, mock_tabula: Any, pdf_parser: PDFParserService) -> None:
         """Should skip empty tables."""
         # Arrange
         import pandas as pd
@@ -1101,8 +1102,8 @@ class TestTableExtraction:
         assert tables[0]["columns"] == ["Col"]
 
     def test_parse_document_includes_tables(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID, tmp_path: Any
+    ) -> None:
         """Should include tables in parse_document result."""
         # Arrange
         pdf_file = tmp_path / "test.pdf"
@@ -1144,8 +1145,8 @@ class TestTableExtraction:
             mock_extract_tables.assert_called_once()
 
     def test_parse_document_tables_disabled(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID, tmp_path: Any
+    ) -> None:
         """Should skip table extraction when enable_tables=False."""
         # Arrange
         pdf_file = tmp_path / "test.pdf"
@@ -1180,8 +1181,8 @@ class TestTableExtraction:
             mock_extract_tables.assert_not_called()
 
     def test_cache_stores_tables(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID
+    ) -> None:
         """Should store tables in cache."""
         # Arrange
         pages = [{"page": 1, "text": "text", "section": None}]
@@ -1197,8 +1198,8 @@ class TestTableExtraction:
         assert added_doc.parsed_data["tables"] == tables
 
     def test_cache_retrieval_includes_tables(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID
+    ) -> None:
         """Should retrieve tables from cache."""
         # Arrange
         cached_data = {
@@ -1223,8 +1224,8 @@ class TestTableExtraction:
         assert result["pages"] == cached_data["pages"]
 
     def test_cache_backward_compatibility(
-        self, pdf_parser, mock_db, sample_document_id, sample_organization_id
-    ):
+        self, pdf_parser: PDFParserService, mock_db: Mock, sample_document_id: UUID, sample_organization_id: UUID
+    ) -> None:
         """Should handle old cache format (list of pages without tables)."""
         # Arrange - old format: just a list
         cached_data = [{"page": 1, "text": "text", "section": None}]
@@ -1250,7 +1251,7 @@ class TestJavaAvailabilityCheck:
     """Test Java availability checking."""
 
     @patch("subprocess.run")
-    def test_java_available(self, mock_run):
+    def test_java_available(self, mock_run: Any) -> None:
         """Should return True when Java is available."""
         # Arrange
         from app.services.pdf_parser import _check_java_availability
@@ -1265,7 +1266,7 @@ class TestJavaAvailabilityCheck:
         mock_run.assert_called_once()
 
     @patch("subprocess.run")
-    def test_java_not_found(self, mock_run):
+    def test_java_not_found(self, mock_run: Any) -> None:
         """Should return False when Java is not installed."""
         # Arrange
         from app.services.pdf_parser import _check_java_availability
@@ -1279,7 +1280,7 @@ class TestJavaAvailabilityCheck:
         assert result is False
 
     @patch("subprocess.run")
-    def test_java_timeout(self, mock_run):
+    def test_java_timeout(self, mock_run: Any) -> None:
         """Should return False on timeout."""
         # Arrange
         import subprocess

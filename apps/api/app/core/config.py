@@ -5,7 +5,7 @@ Loads settings from environment variables using pydantic-settings.
 
 import os
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
         default=True,
         description="Enable TCP keepalive for Redis connections (prevents idle connection drops)",
     )
-    REDIS_SOCKET_KEEPALIVE_OPTIONS: dict = Field(
+    REDIS_SOCKET_KEEPALIVE_OPTIONS: Dict[str, Any] = Field(
         default_factory=dict, description="TCP keepalive options (platform-specific socket options)"
     )
 
