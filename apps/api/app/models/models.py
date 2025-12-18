@@ -13,6 +13,8 @@ This module defines all 9 core tables:
 - audit_logs: Immutable audit trail (SOC2/ISO 27001)
 """
 
+from typing import Optional
+
 from sqlalchemy import (
     Column,
     String,
@@ -27,7 +29,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Mapped, mapped_column
 import uuid
 
 from .base import Base
@@ -197,7 +199,9 @@ class Criteria(Base):
     )
     name = Column(String(255), nullable=False)
     description = Column(Text)  # Made nullable to match API schema
-    applies_to_bucket_ids = Column(ARRAY(UUID(as_uuid=True)))  # Array of bucket UUIDs
+    applies_to_bucket_ids: Mapped[Optional[list[uuid.UUID]]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=True
+    )  # Array of bucket UUIDs
     example_text = Column(Text)
     order_index = Column(Integer, default=0)  # Added for UI sorting
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
