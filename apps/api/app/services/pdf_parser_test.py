@@ -745,3 +745,265 @@ class TestCustomSectionPatterns:
 
                 # Assert - Custom pattern should have been used
                 assert result["pages"][0]["section"] == "CUSTOM 1: Title"
+
+
+class TestOCRSupport:
+    """Tests for OCR support functionality."""
+
+    def test_is_scanned_pdf_empty_text(self, pdf_parser):
+        """Should detect scanned PDF when total text is below threshold."""
+        # Arrange - PDF with very little text (< 100 chars total)
+        pages = [
+            {"page": 1, "text": "   "},  # Whitespace only
+            {"page": 2, "text": ""},     # Empty
+            {"page": 3, "text": "Page 3"},  # Minimal text
+        ]
+
+        # Act
+        is_scanned, reason = pdf_parser._is_scanned_pdf(pages)
+
+        # Assert
+        assert is_scanned is True
+        assert "total_chars=" in reason  # Verify reason provided for debugging
+
+    def test_is_scanned_pdf_sufficient_text(self, pdf_parser):
+        """Should NOT detect as scanned when PDF has sufficient text."""
+        # Arrange - PDF with plenty of text (> 100 chars)
+        pages = [
+            {"page": 1, "text": "This is a normal PDF with plenty of extractable text content."},
+            {"page": 2, "text": "More text here on page 2 with enough characters to exceed threshold."},
+        ]
+
+        # Act
+        is_scanned, reason = pdf_parser._is_scanned_pdf(pages)
+
+        # Assert
+        assert is_scanned is False
+        assert reason == "sufficient_text"  # Verify reason indicates non-scanned
+
+    def test_is_scanned_pdf_most_pages_empty(self, pdf_parser):
+        """Should detect scanned PDF when >50% of pages lack text."""
+        # Arrange - 4 pages, 3 empty (75% empty)
+        pages = [
+            {"page": 1, "text": "Some text on first page with enough characters here."},
+            {"page": 2, "text": "   "},  # Whitespace
+            {"page": 3, "text": ""},      # Empty
+            {"page": 4, "text": ""},      # Empty
+        ]
+
+        # Act
+        is_scanned, reason = pdf_parser._is_scanned_pdf(pages)
+
+        # Assert
+        assert is_scanned is True  # >50% pages lack text
+        assert "pages have text" in reason  # Verify reason indicates page-based detection
+
+    def test_ocr_language_validation_valid(self, pdf_parser):
+        """Should accept valid 3-letter language codes."""
+        # Arrange
+        valid_languages = ["eng", "deu", "fra", "spa", "ita"]
+
+        # Act & Assert - Should not raise
+        for lang in valid_languages:
+            # Use a mock to avoid actually running OCR
+            with patch('app.services.pdf_parser.OCR_AVAILABLE', True), \
+                 patch('app.services.pdf_parser.convert_from_path') as mock_convert, \
+                 patch('app.services.pdf_parser.pytesseract.image_to_string') as mock_ocr, \
+                 patch('builtins.open', create=True) as mock_open, \
+                 patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+
+                # Setup mocks
+                mock_pdf = Mock()
+                mock_pdf.pages = [Mock()]
+                mock_reader.return_value = mock_pdf
+                mock_convert.return_value = [Mock()]
+                mock_ocr.return_value = "Test text"
+
+                # Should not raise an error
+                result = pdf_parser._extract_with_ocr("/fake/path.pdf", language=lang)
+                assert len(result) == 1
+
+    def test_ocr_language_validation_combined_languages(self, pdf_parser):
+        """Should accept combined language codes like eng+deu."""
+        # Arrange
+        combined_lang = "eng+deu"
+
+        # Act & Assert - Should not raise
+        with patch('app.services.pdf_parser.OCR_AVAILABLE', True), \
+             patch('app.services.pdf_parser.convert_from_path') as mock_convert, \
+             patch('app.services.pdf_parser.pytesseract.image_to_string') as mock_ocr, \
+             patch('builtins.open', create=True) as mock_open, \
+             patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+
+            # Setup mocks
+            mock_pdf = Mock()
+            mock_pdf.pages = [Mock()]
+            mock_reader.return_value = mock_pdf
+            mock_convert.return_value = [Mock()]
+            mock_ocr.return_value = "Test text"
+
+            result = pdf_parser._extract_with_ocr("/fake/path.pdf", language=combined_lang)
+            assert len(result) == 1
+
+    def test_ocr_language_validation_invalid_code(self, pdf_parser):
+        """Should reject invalid language codes to prevent command injection."""
+        # Arrange - Invalid/malicious language codes
+        invalid_languages = [
+            "en",  # Too short (should be 3 letters)
+            "english",  # Too long
+            "eng; rm -rf /",  # Command injection attempt
+            "eng && echo pwned",  # Command injection
+            "eng|cat /etc/passwd",  # Pipe injection
+            "../../../etc/passwd",  # Path traversal
+            "eng123",  # Numbers not allowed
+            "ENG",  # Uppercase not allowed
+        ]
+
+        # Act & Assert
+        for invalid_lang in invalid_languages:
+            with pytest.raises(PDFParsingError, match="Invalid OCR language code"):
+                with patch('app.services.pdf_parser.OCR_AVAILABLE', True):
+                    pdf_parser._extract_with_ocr("/fake/path.pdf", language=invalid_lang)
+
+    def test_ocr_unavailable_raises_error(self, pdf_parser):
+        """Should raise error when OCR dependencies not available."""
+        # Arrange
+        with patch('app.services.pdf_parser.OCR_AVAILABLE', False):
+            # Act & Assert
+            with pytest.raises(PDFParsingError, match="OCR dependencies not available"):
+                pdf_parser._extract_with_ocr("/fake/path.pdf")
+
+    def test_ocr_page_count_validation(self, pdf_parser):
+        """Should reject PDFs exceeding MAX_PAGE_COUNT."""
+        # Arrange - Mock PDF with too many pages
+        with patch('app.services.pdf_parser.OCR_AVAILABLE', True), \
+             patch('builtins.open', create=True) as mock_open, \
+             patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+
+            mock_pdf = Mock()
+            mock_pdf.pages = [Mock()] * 10001  # Exceeds MAX_PAGE_COUNT (10000)
+            mock_reader.return_value = mock_pdf
+
+            # Act & Assert
+            with pytest.raises(PDFParsingError, match="PDF too large"):
+                pdf_parser._extract_with_ocr("/fake/path.pdf")
+
+    def test_get_optimal_dpi_low_memory(self, pdf_parser):
+        """Should return low DPI when memory is constrained."""
+        # Arrange - Mock low available memory
+        with patch('app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE', True), \
+             patch('app.services.pdf_parser.psutil.virtual_memory') as mock_memory, \
+             patch('builtins.open', create=True) as mock_open, \
+             patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+
+            # Setup mocks
+            mock_memory.return_value.available = 100 * 1024 * 1024  # 100 MB available
+            mock_pdf = Mock()
+            mock_page = Mock()
+            mock_page.mediabox.width = 612  # 8.5 inches * 72 (A4 width)
+            mock_page.mediabox.height = 792  # 11 inches * 72 (A4 height)
+            mock_pdf.pages = [mock_page]
+            mock_reader.return_value = mock_pdf
+
+            # Act
+            dpi = pdf_parser._get_optimal_dpi("/fake/path.pdf", page_count=50)
+
+            # Assert - Should use low DPI due to memory constraints
+            assert dpi == 150  # OCR_LOW_MEMORY_DPI
+
+    def test_get_optimal_dpi_sufficient_memory(self, pdf_parser):
+        """Should return default DPI when memory is sufficient."""
+        # Arrange - Mock high available memory
+        with patch('app.services.pdf_parser.MEMORY_MONITORING_AVAILABLE', True), \
+             patch('app.services.pdf_parser.psutil.virtual_memory') as mock_memory, \
+             patch('builtins.open', create=True) as mock_open, \
+             patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader:
+
+            # Setup mocks
+            mock_memory.return_value.available = 8 * 1024 * 1024 * 1024  # 8 GB available
+            mock_pdf = Mock()
+            mock_page = Mock()
+            mock_page.mediabox.width = 612
+            mock_page.mediabox.height = 792
+            mock_pdf.pages = [mock_page]
+            mock_reader.return_value = mock_pdf
+
+            # Act
+            dpi = pdf_parser._get_optimal_dpi("/fake/path.pdf", page_count=10)
+
+            # Assert - Should use default DPI
+            assert dpi == 300  # OCR_DEFAULT_DPI
+
+    def test_ocr_integration_scanned_pdf_detected(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
+    ):
+        """Should detect scanned PDF and fall back to OCR."""
+        # Arrange - Create a fake PDF
+        pdf_file = tmp_path / "scanned.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4\n")
+
+        # Mock cache miss
+        pdf_parser._get_cached_parse = Mock(return_value=None)
+
+        # Mock PyPDF2 returning empty text (scanned PDF)
+        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader, \
+             patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.is_file', return_value=True), \
+             patch.object(pdf_parser, '_extract_with_ocr') as mock_ocr:
+
+            mock_pdf = Mock()
+            mock_page = Mock()
+            mock_page.extract_text.return_value = ""  # No text (scanned)
+            mock_pdf.pages = [mock_page]
+            mock_pdf.is_encrypted = False
+            mock_reader.return_value = mock_pdf
+
+            # Mock OCR extraction
+            mock_ocr.return_value = [{"page": 1, "text": "OCR extracted text", "section": None}]
+
+            # Act
+            result = pdf_parser.parse_document(
+                document_id=sample_document_id,
+                file_path=str(pdf_file),
+                organization_id=sample_organization_id,
+                enable_ocr=True,
+            )
+
+            # Assert - OCR should have been called
+            mock_ocr.assert_called_once()
+            assert result["method"] == "ocr"
+            assert result["pages"][0]["text"] == "OCR extracted text"
+
+    def test_ocr_disabled_skips_ocr(
+        self, pdf_parser, mock_db, sample_document_id, sample_organization_id, tmp_path
+    ):
+        """Should skip OCR when enable_ocr=False."""
+        # Arrange
+        pdf_file = tmp_path / "scanned.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4\n")
+
+        pdf_parser._get_cached_parse = Mock(return_value=None)
+
+        with patch('app.services.pdf_parser.PyPDF2.PdfReader') as mock_reader, \
+             patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.is_file', return_value=True), \
+             patch.object(pdf_parser, '_extract_with_ocr') as mock_ocr:
+
+            mock_pdf = Mock()
+            mock_page = Mock()
+            mock_page.extract_text.return_value = ""  # No text (scanned)
+            mock_pdf.pages = [mock_page]
+            mock_pdf.is_encrypted = False
+            mock_reader.return_value = mock_pdf
+
+            # Act
+            result = pdf_parser.parse_document(
+                document_id=sample_document_id,
+                file_path=str(pdf_file),
+                organization_id=sample_organization_id,
+                enable_ocr=False,  # OCR disabled
+            )
+
+            # Assert - OCR should NOT have been called
+            mock_ocr.assert_not_called()
+            assert result["method"] == "pypdf2"  # Not OCR

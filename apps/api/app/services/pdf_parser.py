@@ -12,11 +12,12 @@ Features:
 - Database caching (stores parsed data in parsed_documents table)
 - Error handling (corrupt PDFs, encrypted PDFs)
 - Configurable section patterns (custom regex per workflow)
+- OCR support (pytesseract for scanned PDFs)
 """
 import re
 import logging
 from pathlib import Path
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 from uuid import UUID
 from datetime import datetime
 
@@ -28,10 +29,44 @@ from app.models.models import ParsedDocument
 
 logger = logging.getLogger(__name__)
 
+# Optional OCR dependencies (graceful degradation if not available)
+try:
+    import pytesseract
+    from pdf2image import convert_from_path
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+    logger.warning(
+        "OCR dependencies not available (pytesseract or pdf2image missing). "
+        "Scanned PDF support will be disabled."
+    )
+
+# Optional memory monitoring (graceful degradation if not available)
+try:
+    import psutil
+    MEMORY_MONITORING_AVAILABLE = True
+except ImportError:
+    MEMORY_MONITORING_AVAILABLE = False
+    logger.info("psutil not available, OCR DPI optimization disabled")
+
 # Configuration constants
+# OCR configuration
+SCANNED_PDF_CHAR_THRESHOLD = 100  # Min chars to consider PDF as having text
+SCANNED_PDF_PAGE_TEXT_THRESHOLD = 20  # Min chars per page for text-based PDF
+OCR_DEFAULT_DPI = 300  # Standard DPI for OCR (balances quality vs memory)
+OCR_LOW_MEMORY_DPI = 150  # DPI for memory-constrained environments
+OCR_MEMORY_MB_PER_PAGE_AT_300DPI = 5  # Estimated memory usage per page at 300 DPI
+OCR_TIMEOUT_SECONDS = 60  # Timeout per page for OCR processing (prevents hung processes)
+OCR_BYTES_PER_PIXEL_RGBA = 4  # RGBA color format uses 4 bytes per pixel
+OCR_MEMORY_SAFETY_MARGIN = 1.2  # 20% safety margin for temporary buffers and processing overhead
+
+# Pattern validation
 MAX_PATTERN_LENGTH = 1000  # Maximum allowed regex pattern length
 MAX_CUSTOM_PATTERNS = 100  # Maximum number of custom patterns allowed
 REDOS_NESTED_QUANTIFIER_MAX_LENGTH = 50  # Max chars inside nested quantifiers to prevent ReDoS
+
+# Page count validation
+MAX_PAGE_COUNT = 10000  # Maximum allowed page count (prevents integer overflow attacks)
 
 
 class PDFParsingError(Exception):
@@ -75,6 +110,8 @@ class PDFParserService:
         file_path: str,
         organization_id: UUID,
         custom_patterns: Optional[List[str]] = None,
+        enable_ocr: bool = True,
+        ocr_language: str = "eng",
     ) -> Dict[str, Any]:
         """
         Parse PDF document and return structured text with page/section info.
@@ -90,19 +127,26 @@ class PDFParserService:
             file_path: Absolute path to the PDF file
             organization_id: UUID of the organization (for multi-tenancy)
             custom_patterns: Optional custom regex patterns for section detection
+            enable_ocr: Enable OCR fallback for scanned PDFs (default: True)
+            ocr_language: Tesseract language code for OCR (default: "eng", e.g., "deu" for German, "fra" for French)
 
         Returns:
             Dict with:
                 - document_id: UUID of the document
                 - pages: List of {page_number, section, text}
-                - method: Parsing method used ('pypdf2' or 'pdfplumber')
+                - method: Parsing method used ('pypdf2', 'pdfplumber', or 'ocr')
                 - cached: Whether result came from cache
 
         Raises:
             EncryptedPDFError: If PDF is password-protected
             CorruptPDFError: If PDF is corrupt or malformed
-            PDFParsingError: For other parsing failures
+            PDFParsingError: For other parsing failures (including invalid OCR language code)
         """
+        # 0. Validate OCR language early (fail fast principle)
+        # Even if OCR might not be used, validate input immediately for consistency
+        if enable_ocr:
+            self._validate_ocr_language(ocr_language)
+
         # 1. Check cache first
         cached_result = self._get_cached_parse(document_id, organization_id)
         if cached_result:
@@ -169,10 +213,38 @@ class PDFParserService:
                     f"Both PyPDF2 and pdfplumber failed. PyPDF2: {str(e)}, pdfplumber: {str(fallback_error)}"
                 )
 
-        # 5. Detect sections across pages
+        # 5. Check if PDF is scanned (no extractable text) and use OCR if enabled
+        is_scanned, detection_reason = self._is_scanned_pdf(pages)
+        if enable_ocr and is_scanned:
+            logger.info(
+                "Scanned PDF detected, falling back to OCR",
+                extra={
+                    "event": "ocr_fallback",
+                    "document_id": str(document_id),
+                    "organization_id": str(organization_id),
+                    "ocr_language": ocr_language,
+                    "detection_reason": detection_reason,
+                },
+            )
+            try:
+                pages = self._extract_with_ocr(file_path, language=ocr_language)
+                parsing_method = "ocr"
+            except Exception as ocr_error:
+                logger.warning(
+                    "OCR extraction failed",
+                    extra={
+                        "event": "ocr_failed",
+                        "document_id": str(document_id),
+                        "organization_id": str(organization_id),
+                        "error": str(ocr_error),
+                    },
+                )
+                # Continue with empty text (graceful degradation)
+
+        # 6. Detect sections across pages
         structured_pages = self._detect_sections(pages, custom_patterns)
 
-        # 6. Cache parsed result
+        # 7. Cache parsed result
         self._cache_parse(document_id, organization_id, structured_pages, parsing_method)
 
         return {
@@ -569,3 +641,263 @@ class PDFParserService:
             )
             # Note: We log a warning but don't block, as not all such patterns are dangerous
             # A full overlap analysis would require more complex logic
+
+    def _validate_ocr_language(self, language: str) -> None:
+        """
+        Validate OCR language code to prevent command injection.
+
+        Tesseract language codes must be 3-letter ISO 639-2 codes (e.g., "eng", "deu", "fra")
+        or combined languages (e.g., "eng+deu"). This validation prevents command injection
+        attacks via the language parameter.
+
+        Args:
+            language: OCR language code to validate
+
+        Raises:
+            PDFParsingError: If language code format is invalid
+
+        Examples:
+            >>> _validate_ocr_language("eng")  # Valid
+            >>> _validate_ocr_language("eng+deu")  # Valid (combined)
+            >>> _validate_ocr_language("eng; rm -rf /")  # Raises PDFParsingError
+        """
+        if not re.match(r'^[a-z]{3}(\+[a-z]{3})*$', language):
+            raise PDFParsingError(
+                f"Invalid OCR language code: {language}. "
+                "Must be 3-letter ISO 639-2 code (e.g., 'eng', 'deu', 'fra') or combined (e.g., 'eng+deu')"
+            )
+
+    def _is_scanned_pdf(self, pages: List[Dict]) -> Tuple[bool, str]:
+        """
+        Detect if PDF contains scanned images (no extractable text).
+
+        Checks if total extractable text across all pages is below a threshold,
+        indicating the PDF is likely scanned/image-based.
+
+        Args:
+            pages: List of page dictionaries with extracted text
+
+        Returns:
+            Tuple of (is_scanned: bool, reason: str) for better debugging and observability
+        """
+        # Calculate total text length across all pages
+        total_text = "".join(page.get("text", "") for page in pages)
+        total_chars = len(total_text.strip())
+
+        # Threshold: < SCANNED_PDF_CHAR_THRESHOLD characters for entire document = likely scanned
+        # This accounts for PDFs with only metadata/headers but no body text
+        if total_chars < SCANNED_PDF_CHAR_THRESHOLD:
+            return True, f"total_chars={total_chars} < {SCANNED_PDF_CHAR_THRESHOLD}"
+
+        # Additional check: If most pages have very little text, likely scanned
+        pages_with_text = sum(
+            1 for page in pages if len(page.get("text", "").strip()) > SCANNED_PDF_PAGE_TEXT_THRESHOLD
+        )
+        if pages_with_text < len(pages) * 0.5:  # Less than 50% of pages have text
+            return True, f"only {pages_with_text}/{len(pages)} pages have text (>50% threshold)"
+
+        return False, "sufficient_text"
+
+    def _get_optimal_dpi(self, file_path: str, page_count: int) -> int:
+        """
+        Calculate optimal DPI for OCR based on available memory and page dimensions.
+
+        Memory varies by page size:
+        - A4 at 300 DPI: ~25 MB uncompressed
+        - Legal at 300 DPI: ~30 MB
+        - A3 at 300 DPI: ~50 MB
+
+        Args:
+            file_path: Path to PDF file (to read page dimensions)
+            page_count: Number of pages to process
+
+        Returns:
+            Optimal DPI value (either OCR_DEFAULT_DPI or OCR_LOW_MEMORY_DPI)
+        """
+        if not MEMORY_MONITORING_AVAILABLE:
+            # If psutil not available, use default DPI
+            return OCR_DEFAULT_DPI
+
+        try:
+            # Read first page dimensions to estimate memory accurately
+            # Note: PyPDF2 loads page metadata eagerly but page content lazily,
+            # so accessing .pages[0].mediabox is fast and doesn't load full content
+            with open(file_path, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+                if len(reader.pages) == 0:
+                    return OCR_DEFAULT_DPI
+
+                first_page = reader.pages[0]
+                # Get page dimensions in points (1/72 inch)
+                # Access all page properties inside context manager for proper semantics
+                width = float(first_page.mediabox.width)
+                height = float(first_page.mediabox.height)
+
+            # Convert to inches (PDF units are points: 1/72 inch)
+            width_inches = width / 72
+            height_inches = height / 72
+
+            # Calculate memory per page: width * height * DPI² * bytes_per_pixel / 1MB
+            # Use RGBA (4 bytes) instead of RGB (3 bytes) as pytesseract may use alpha channel
+            # Add 20% safety margin for temporary buffers and processing overhead
+            memory_mb_per_page = (
+                width_inches * height_inches * OCR_DEFAULT_DPI * OCR_DEFAULT_DPI * OCR_BYTES_PER_PIXEL_RGBA
+            ) / (1024 * 1024) * OCR_MEMORY_SAFETY_MARGIN
+
+            # Get available memory in MB
+            available_mb = psutil.virtual_memory().available / (1024 * 1024)
+
+            # Calculate estimated memory usage at 300 DPI
+            estimated_memory_mb = page_count * memory_mb_per_page
+
+            # If estimated usage exceeds available memory, use lower DPI
+            if estimated_memory_mb > available_mb:
+                logger.info(
+                    "Using low DPI for OCR due to memory constraints",
+                    extra={
+                        "event": "ocr_dpi_lowered",
+                        "page_count": page_count,
+                        "page_size_inches": f"{width_inches:.1f}x{height_inches:.1f}",
+                        "memory_per_page_mb": round(memory_mb_per_page, 1),
+                        "available_mb": int(available_mb),
+                        "estimated_mb": int(estimated_memory_mb),
+                        "dpi": OCR_LOW_MEMORY_DPI,
+                    }
+                )
+                return OCR_LOW_MEMORY_DPI
+
+            return OCR_DEFAULT_DPI
+
+        except Exception as e:
+            logger.warning(
+                f"Failed to calculate optimal DPI, using default: {e}",
+                extra={"event": "ocr_dpi_calculation_failed", "error": str(e)}
+            )
+            return OCR_DEFAULT_DPI
+
+    def _extract_with_ocr(self, file_path: str, language: str = "eng") -> List[Dict]:
+        """
+        Extract text from scanned PDF using OCR (pytesseract).
+
+        Converts PDF pages to images and runs OCR on each image.
+        Processes pages one at a time to avoid memory issues.
+
+        Args:
+            file_path: Path to PDF file
+            language: Tesseract language code (default: "eng", e.g., "deu", "fra")
+
+        Returns:
+            List of page dictionaries with OCR-extracted text
+
+        Raises:
+            PDFParsingError: If OCR dependencies unavailable or extraction fails
+        """
+        if not OCR_AVAILABLE:
+            raise PDFParsingError(
+                "OCR dependencies not available (pytesseract or pdf2image missing). "
+                "Install with: pip install pytesseract pdf2image"
+            )
+
+        # Validate language parameter to prevent command injection
+        self._validate_ocr_language(language)
+
+        try:
+            # Get page count first to avoid loading all pages into memory
+            with open(file_path, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+                page_count = len(reader.pages)
+
+            # Validate page count to prevent integer overflow attacks
+            if page_count > MAX_PAGE_COUNT:
+                raise PDFParsingError(
+                    f"PDF too large: {page_count} pages (max {MAX_PAGE_COUNT}). "
+                    "This may be a malicious PDF attempting to cause resource exhaustion."
+                )
+
+            # Calculate optimal DPI based on available memory and page dimensions
+            optimal_dpi = self._get_optimal_dpi(file_path, page_count)
+
+            # Process pages one at a time to avoid memory issues
+            # Converting 50 pages at 300 DPI = ~2.5GB memory
+            pages = []
+            for page_num in range(1, page_count + 1):
+                try:
+                    # Convert single page to image with optimal DPI
+                    # DPI choice: 300 DPI (default) balances quality (readable text) vs memory (~5-25MB/page)
+                    # Automatically lowered to 150 DPI in memory-constrained environments (Railway/Render 512MB tier)
+                    # Lower DPI reduces quality but prevents OOM errors on large PDFs
+                    images = convert_from_path(
+                        file_path,
+                        dpi=optimal_dpi,
+                        first_page=page_num,
+                        last_page=page_num
+                    )
+
+                    # Run OCR on the single page image with specified language
+                    # Defense in depth: Use explicit config to prevent arbitrary options
+                    # Add timeout to prevent hung OCR processes on malformed images
+                    try:
+                        text = pytesseract.image_to_string(
+                            images[0],
+                            lang=language,
+                            config='--psm 1',  # Automatic page segmentation with OSD (Orientation and Script Detection)
+                            timeout=OCR_TIMEOUT_SECONDS
+                        )
+                    except RuntimeError as timeout_error:
+                        # pytesseract raises RuntimeError for timeouts (not a specific exception type)
+                        # We use string matching as pytesseract doesn't provide a dedicated timeout exception
+                        # This is the recommended approach from pytesseract documentation
+                        error_msg = str(timeout_error).lower()
+                        # Check for known timeout message patterns from pytesseract
+                        is_timeout = (
+                            "timeout" in error_msg
+                            or "timed out" in error_msg
+                            or "tesseract process timeout" in error_msg
+                        )
+
+                        if is_timeout:
+                            logger.warning(
+                                f"OCR timeout on page {page_num}",
+                                extra={
+                                    "event": "ocr_timeout",
+                                    "page": page_num,
+                                    "timeout_seconds": OCR_TIMEOUT_SECONDS,
+                                    "error_message": str(timeout_error),
+                                },
+                            )
+                            text = f"[OCR timeout on page {page_num}]"
+                        else:
+                            # Re-raise non-timeout RuntimeErrors (e.g., tesseract not installed, corrupt image)
+                            # This ensures we don't silently swallow serious errors
+                            raise
+
+                    pages.append(
+                        {
+                            "page": page_num,
+                            "text": text if text else "",
+                            "section": None,
+                        }
+                    )
+                    # Image is automatically freed after each iteration
+
+                except Exception as page_error:
+                    logger.warning(
+                        f"OCR failed for page {page_num}",
+                        extra={
+                            "event": "ocr_page_failed",
+                            "page": page_num,
+                            "error": str(page_error),
+                        },
+                    )
+                    pages.append(
+                        {
+                            "page": page_num,
+                            "text": f"[Error parsing page {page_num}: {str(page_error)}]",
+                            "section": None,
+                        }
+                    )
+
+            return pages
+
+        except Exception as e:
+            raise PDFParsingError(f"OCR extraction failed: {str(e)}")
