@@ -1023,36 +1023,53 @@ class PDFParserService:
             return []
 
         try:
-            # Extract tables from all pages
-            # pages='all' extracts from every page
-            # pandas_options={'header': 'infer'} tries to detect column headers
-            tables_df = tabula.read_pdf(
-                file_path,
-                pages='all',
-                multiple_tables=True,
-                pandas_options={'header': 'infer'}
-            )
+            # Get total page count from PDF
+            with open(file_path, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+                page_count = len(reader.pages)
 
-            # Convert pandas DataFrames to structured dictionaries
+            # Extract tables page by page to maintain accurate page association
+            # This ensures each table is correctly linked to its source page
             structured_tables = []
-            for i, df in enumerate(tables_df):
-                if df.empty:
+            for page_num in range(1, page_count + 1):
+                try:
+                    # Extract tables from single page
+                    # java_options limits heap size to prevent OOM in production (Railway 512MB tier)
+                    page_tables = tabula.read_pdf(
+                        file_path,
+                        pages=page_num,
+                        multiple_tables=True,
+                        pandas_options={'header': 'infer'},
+                        java_options=["-Xmx512m"]  # Limit Java heap to 512MB
+                    )
+
+                    # Convert each table on this page to structured format
+                    for df in page_tables:
+                        if df.empty:
+                            continue
+
+                        # Convert DataFrame to list of dictionaries
+                        columns = df.columns.tolist()
+                        data = df.to_dict('records')
+
+                        structured_tables.append({
+                            "page": page_num,  # Accurate page number
+                            "columns": columns,
+                            "data": data
+                        })
+
+                except Exception as page_error:
+                    # Log but continue - don't fail entire extraction if one page fails
+                    logger.warning(
+                        f"Table extraction failed for page {page_num}",
+                        extra={
+                            "event": "table_extraction_page_failed",
+                            "file_path": file_path,
+                            "page": page_num,
+                            "error": str(page_error),
+                        }
+                    )
                     continue
-
-                # Get page number from tabula metadata (if available)
-                # Note: tabula doesn't always provide page numbers reliably,
-                # so we track by index
-                page_num = i + 1  # Simple sequential numbering
-
-                # Convert DataFrame to list of dictionaries
-                columns = df.columns.tolist()
-                data = df.to_dict('records')
-
-                structured_tables.append({
-                    "page": page_num,
-                    "columns": columns,
-                    "data": data
-                })
 
             logger.info(
                 "Table extraction completed",
