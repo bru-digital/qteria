@@ -29,7 +29,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Mapped, mapped_column
 import uuid
 
 from .base import Base
@@ -199,7 +199,7 @@ class Criteria(Base):
     )
     name = Column(String(255), nullable=False)
     description = Column(Text)  # Made nullable to match API schema
-    applies_to_bucket_ids: Optional[list[uuid.UUID]] = Column(
+    applies_to_bucket_ids: Mapped[Optional[list[uuid.UUID]]] = Column(
         ARRAY(UUID(as_uuid=True))
     )  # Array of bucket UUIDs
     example_text = Column(Text)
