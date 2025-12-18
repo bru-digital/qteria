@@ -42,7 +42,6 @@ mypy = "^1.8.0"
 types-passlib = "^1.7.7"
 types-python-jose = "^3.3.4"
 types-psutil = "^5.9.5"
-types-tabula-py = "^2.9.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -130,6 +129,7 @@ module = [
     "vercel_blob.*",
     "pytesseract.*",
     "python_magic.*",
+    "tabula.*",
 ]
 ignore_missing_imports = true
 
