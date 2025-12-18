@@ -4,7 +4,7 @@ Seed test data for pytest test suite.
 
 This script populates the qteria-test database with:
 - 2 test organizations (Org A, Org B)
-- 4 test users (process managers and admins for each org)
+- 6 test users (admins, process managers, and project handlers for each org)
 
 Run this script ONCE after creating the test database schema.
 
@@ -32,6 +32,8 @@ from tests.conftest import (
     TEST_USER_B_ID,
     TEST_USER_A_PM_ID,
     TEST_USER_B_PM_ID,
+    TEST_USER_A_PH_ID,
+    TEST_USER_B_PH_ID,
 )
 
 # Convert string UUIDs to UUID objects
@@ -41,6 +43,8 @@ USER_A_UUID = UUID(TEST_USER_A_ID)
 USER_B_UUID = UUID(TEST_USER_B_ID)
 USER_A_PM_UUID = UUID(TEST_USER_A_PM_ID)
 USER_B_PM_UUID = UUID(TEST_USER_B_PM_ID)
+USER_A_PH_UUID = UUID(TEST_USER_A_PH_ID)
+USER_B_PH_UUID = UUID(TEST_USER_B_PH_ID)
 
 
 def seed_test_data():
@@ -124,14 +128,32 @@ def seed_test_data():
             role=UserRole.PROCESS_MANAGER,
         )
 
-        db.add_all([user_a_admin, user_a_pm, user_b_admin, user_b_pm])
+        user_a_ph = User(
+            id=USER_A_PH_UUID,
+            organization_id=ORG_A_UUID,
+            email="ph@test-org-a.com",
+            name="Project Handler A",
+            role=UserRole.PROJECT_HANDLER,
+        )
+
+        user_b_ph = User(
+            id=USER_B_PH_UUID,
+            organization_id=ORG_B_UUID,
+            email="ph@test-org-b.com",
+            name="Project Handler B",
+            role=UserRole.PROJECT_HANDLER,
+        )
+
+        db.add_all([user_a_admin, user_a_pm, user_a_ph, user_b_admin, user_b_pm, user_b_ph])
         db.commit()
 
-        print("✅ Created 4 test users")
+        print("✅ Created 6 test users")
         print(f"   - {user_a_admin.name} ({user_a_admin.email}) - {user_a_admin.role}")
         print(f"   - {user_a_pm.name} ({user_a_pm.email}) - {user_a_pm.role}")
+        print(f"   - {user_a_ph.name} ({user_a_ph.email}) - {user_a_ph.role}")
         print(f"   - {user_b_admin.name} ({user_b_admin.email}) - {user_b_admin.role}")
         print(f"   - {user_b_pm.name} ({user_b_pm.email}) - {user_b_pm.role}")
+        print(f"   - {user_b_ph.name} ({user_b_ph.email}) - {user_b_ph.role}")
 
         print("\n✅ Test data seeded successfully!")
         print("\nYou can now run tests:")

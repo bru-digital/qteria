@@ -38,11 +38,13 @@ def pytest_sessionstart(session):
 
     # Only seed in CI or if DATABASE_URL points to test database
     database_url = os.getenv("DATABASE_URL", "")
-    if "qteria_test" not in database_url:
-        print(
-            "\n⚠️  Skipping test data seeding - DATABASE_URL does not contain 'qteria_test'"
-        )
+    is_ci = os.getenv("CI") == "true"
+    is_test_db = "qteria_test" in database_url or (is_ci and "neon.tech" in database_url)
+
+    if not is_test_db:
+        print("\n⚠️  Skipping test data seeding - DATABASE_URL does not point to test database")
         print(f"   Current DATABASE_URL: {database_url}")
+        print(f"   CI environment: {is_ci}")
         return
 
     try:
@@ -60,11 +62,10 @@ def pytest_sessionstart(session):
 
     except Exception as e:
         print(f"\n❌ Failed to seed test database: {e}")
-        print("   Tests may fail due to missing organization/user references.")
-        print(
-            "   To manually seed, run: python scripts/seed_test_data.py\n"
-        )
-        # Don't raise - allow tests to run and fail with more specific errors
+        print("   Tests CANNOT run without seeded organization/user references.")
+        print("   To manually seed, run: python scripts/seed_test_data.py\n")
+        # Fail fast - don't allow 107 tests to fail with cryptic foreign key errors
+        pytest.exit("Test data seeding failed - stopping all tests", returncode=1)
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -281,8 +282,10 @@ TEST_ORG_A_ID = "f52414ec-67f4-43d5-b25c-1552828ff06d"
 TEST_ORG_B_ID = "f171ee72-38bd-4a10-9682-a0c483ae365e"
 TEST_USER_A_ID = "236c7750-e281-46d9-95b8-209ae5106221"  # Admin User A
 TEST_USER_A_PM_ID = "bebffc00-a259-4fce-a873-371e6765811b"  # Process Manager A
+TEST_USER_A_PH_ID = "a4c2e8f0-1234-4a5b-9c8d-7e6f5a4b3c2d"  # Project Handler A
 TEST_USER_B_ID = "cf1a6da7-32bf-4f00-8893-0ec2e0bbbb22"  # Admin User B
 TEST_USER_B_PM_ID = "11df2007-978f-4503-b89c-7b8eaa228859"  # Process Manager B
+TEST_USER_B_PH_ID = "b5d3f9e1-2345-5b6c-ad9e-8f7e6b5c4d3e"  # Project Handler B
 
 
 @pytest.fixture
@@ -320,9 +323,21 @@ def org_a_process_manager_token() -> str:
 
 @pytest.fixture
 def org_a_project_handler_token() -> str:
-    """Project handler token for organization A."""
+    """Project handler token for organization A (uses seeded test data)."""
     return create_test_token(
-        email="ph@org-a.com",
+        user_id=TEST_USER_A_PH_ID,
+        email="ph@test-org-a.com",
         role=UserRole.PROJECT_HANDLER.value,
         organization_id=TEST_ORG_A_ID,
+    )
+
+
+@pytest.fixture
+def org_b_project_handler_token() -> str:
+    """Project handler token for organization B (uses seeded test data)."""
+    return create_test_token(
+        user_id=TEST_USER_B_PH_ID,
+        email="ph@test-org-b.com",
+        role=UserRole.PROJECT_HANDLER.value,
+        organization_id=TEST_ORG_B_ID,
     )
