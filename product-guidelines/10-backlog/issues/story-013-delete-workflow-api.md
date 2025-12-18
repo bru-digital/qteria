@@ -35,16 +35,19 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI + SQLAlchemy
 - Database: PostgreSQL (workflows table with archived flag)
 
 **Database Schema Addition**:
+
 ```sql
 ALTER TABLE workflows ADD COLUMN archived BOOLEAN DEFAULT FALSE;
 ALTER TABLE workflows ADD COLUMN archived_at TIMESTAMP;
 ```
 
 **API Endpoint** (`app/api/v1/workflows.py`):
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -97,6 +100,7 @@ async def delete_workflow(
 ```
 
 **Update List Endpoint** (exclude archived):
+
 ```python
 @router.get("", response_model=WorkflowListResponse)
 async def list_workflows(
@@ -131,6 +135,7 @@ async def list_workflows(
 **Effort**: 1 person-day
 
 **Breakdown**:
+
 - API endpoint: 0.5 days (delete logic, assessment check)
 - Schema migration: 0.25 days (add archived column)
 - Testing: 0.25 days (conflict scenarios)
@@ -155,6 +160,7 @@ async def list_workflows(
 ## Testing Requirements
 
 **Integration Tests**:
+
 - [ ] Delete workflow with no assessments → 204 No Content
 - [ ] Delete workflow with assessments → 409 Conflict
 - [ ] Deleted workflow not in list endpoint
@@ -168,9 +174,11 @@ async def list_workflows(
 ## Risks & Mitigations
 
 **Risk**: Hard delete breaks referential integrity (assessments reference deleted workflow)
+
 - **Mitigation**: Use soft delete (archive), preserve data for audit trail
 
 **Risk**: Archived workflows clutter database
+
 - **Mitigation**: For MVP, accept archived workflows; post-MVP add hard delete after retention period
 
 ---

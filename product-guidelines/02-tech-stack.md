@@ -23,6 +23,7 @@
 ### Frontend: Next.js 14+ (React, TypeScript)
 
 **Journey Requirements**:
+
 - Step 1: Process Manager creates workflows (complex form builder UI for buckets + criteria)
 - Step 2: Project Handler uploads documents (drag-drop interface, progress indicators)
 - Step 3: Results page (evidence-based display with document links, interactive)
@@ -38,11 +39,13 @@
 ✅ **Server actions** (simplify form handling for workflow creation)
 
 **Alternatives Considered**:
+
 - ❌ **React SPA (Vite)**: Could work, but Next.js provides better structure + Vercel integration. No downside since we want Vercel anyway.
 - ❌ **SvelteKit**: Smaller bundle, but React ecosystem richer for UI components (drag-drop, PDF viewers, etc.). Team familiarity matters.
 - ✅ **Next.js**: Best fit for Vercel + complex UI + future flexibility
 
 **Trade-offs**:
+
 - Slightly more complex than SPA, but journey needs structured multi-page app
 - React is heavier than Svelte, but ecosystem + component libraries worth it
 
@@ -51,6 +54,7 @@
 ### Backend: Python (FastAPI)
 
 **Journey Requirements**:
+
 - Step 2: Upload PDFs (parse, validate formats, store)
 - Step 3: AI validates documents (<10 min processing, extract text, identify pages/sections)
 - Step 3: Evidence linking (must parse PDFs to link to page X, section Y)
@@ -66,11 +70,13 @@
 ✅ **Familiar ecosystem** (solo founder can move fast with Python's simplicity)
 
 **Alternatives Considered**:
+
 - ❌ **Node.js (Express/Fastify)**: Great for real-time, but Python's PDF/AI libraries are superior. Journey needs PDF processing more than real-time collaboration.
 - ❌ **Go**: Fast, but ecosystem for PDF processing + AI is weaker than Python. Overkill for MVP scale.
 - ✅ **Python (FastAPI)**: Best fit for PDF-heavy, AI-heavy workload
 
 **Trade-offs**:
+
 - Python slower than Go/Node for pure I/O, but PDF/AI processing is the bottleneck (not framework speed)
 - FastAPI async mitigates Python's I/O limitations
 
@@ -79,6 +85,7 @@
 ### Database: PostgreSQL with JSONB
 
 **Journey Requirements**:
+
 - Step 1: Store workflows (relational: workflow → buckets → criteria)
 - Step 1: Flexible criteria definitions (different types of checks: signatures, summaries, risk matrices)
 - Step 3: Store assessment results (relational: assessment → criteria results → evidence links)
@@ -94,12 +101,14 @@
 ✅ **Vercel Postgres integration** (easy deployment with Vercel frontend)
 
 **Alternatives Considered**:
+
 - ❌ **MongoDB**: Flexible, but lose relational integrity (workflow → bucket → criteria relationships matter). PostgreSQL JSONB gives flexibility WITHOUT losing relations.
 - ❌ **MySQL**: Works, but PostgreSQL JSONB + full-text search better for this use case.
 - ❌ **SQLite**: Too limited for multi-user SaaS, no cloud hosting.
 - ✅ **PostgreSQL**: Best of both worlds (relational + flexible)
 
 **Trade-offs**:
+
 - Slightly more complex than pure document DB, but relational structure matches journey's data model
 
 ---
@@ -107,6 +116,7 @@
 ### Cache: Redis (Upstash)
 
 **Journey Requirements**:
+
 - Step 3: Background job queue (AI validation takes <10 min - need async processing)
 - Step 4: Re-assessment (track job status, show progress to user)
 
@@ -116,11 +126,13 @@
 ✅ **Session caching** (optional: cache user sessions, workflow metadata for speed)
 
 **Alternatives Considered**:
+
 - ❌ **No cache (FastAPI background tasks)**: Could work for MVP, but Celery + Redis more robust for 10-min jobs (retry logic, monitoring)
 - ❌ **PostgreSQL as queue**: Possible, but Redis purpose-built for queues
 - ✅ **Redis (Upstash)**: Industry standard, easy setup
 
 **Trade-offs**:
+
 - Adds complexity (another service), but 10-min background jobs need proper queue
 
 ---
@@ -128,6 +140,7 @@
 ### Storage: Vercel Blob (or AWS S3)
 
 **Journey Requirements**:
+
 - Step 2: Store uploaded PDFs (50+ page documents, potentially confidential)
 - Step 3: Retrieve PDFs for AI processing
 - Step 5: Serve PDFs for download/export
@@ -145,11 +158,13 @@
 ✅ **Lifecycle policies** (auto-delete old assessments to save cost)
 
 **Alternatives Considered**:
+
 - ❌ **Store in PostgreSQL (bytea)**: Bad idea for large files (bloats DB, slow queries)
 - ❌ **Local filesystem**: Doesn't work with Vercel/Railway (ephemeral)
 - ✅ **Vercel Blob → S3 if needed**: Start simple, migrate if volume requires
 
 **Trade-offs**:
+
 - Vercel Blob less mature than S3, but simpler for MVP
 
 ---
@@ -157,6 +172,7 @@
 ### AI: Claude 3.5 Sonnet (Anthropic)
 
 **Journey Requirements**:
+
 - Step 3: Validate documents against criteria in <10 min
 - Step 3: Evidence-based results (link to page X, section Y)
 - Strategy: Data privacy non-negotiable (zero-retention, SOC2/ISO 27001 path)
@@ -170,12 +186,14 @@
 ✅ **Reasoning quality** (strong at compliance-style validation: "Does this document have X?")
 
 **Alternatives Considered**:
+
 - ✅ **GPT-4**: Also excellent, offers enterprise zero-retention. Backup if Claude doesn't perform well.
 - ❌ **GPT-3.5**: Cheaper, but less accurate for compliance validation (can't risk false negatives)
 - ❌ **Self-hosted open-source (Llama, Mistral)**: User's concern about data privacy. **Evaluation**: Too expensive for MVP ($500-2000/month for GPU infra). Revisit when revenue validates ($150K+ ARR). Start with Claude enterprise agreement.
 - ✅ **Claude 3.5 Sonnet**: Best balance (accuracy + privacy + cost)
 
 **Pricing Reality Check**:
+
 - Claude Sonnet: ~$3 per million input tokens, ~$15 per million output tokens
 - Assume 50-page PDF = ~15K tokens per doc × 3 docs per assessment = 45K tokens input
 - Assume 10 criteria checks × 500 tokens output = 5K tokens output
@@ -185,6 +203,7 @@
 - Still cheaper than India team ($8,333/month for $100K/year)!
 
 **Trade-offs**:
+
 - API dependency (if Anthropic has downtime, service impacted)
 - Data privacy relies on vendor contract (but zero-retention agreement mitigates this)
 - Self-hosting would give more control but costs 10-20x more for MVP
@@ -194,6 +213,7 @@
 ### Auth: Auth.js (NextAuth) → Clerk (when revenue allows)
 
 **Journey Requirements**:
+
 - Step 1: Process Managers and Project Handlers need different permissions (RBAC)
 - Step 2: Workflow sharing (team access control)
 - Strategy Goal 4: SOC2/ISO 27001 (audit logs, MFA support)
@@ -213,16 +233,19 @@
 ✅ **Relationship manager admin** (Clerk dashboard for customer debugging)
 
 **Migration Path**:
+
 - Start with Auth.js (free, functional)
 - At $30K ARR (TÜV SÜD signed), migrate to Clerk ($25/month)
 - Clerk enables enterprise SSO when selling to BSI, DEKRA, etc.
 
 **Alternatives Considered**:
+
 - ❌ **Roll your own**: Security risk, slow to build, hard to maintain (SOC2 audit nightmare)
 - ❌ **Supabase Auth**: Good, but if not using Supabase for DB, less compelling
 - ✅ **Auth.js → Clerk**: Start free, upgrade when revenue validates
 
 **Trade-offs**:
+
 - Auth.js less polished than Clerk, but functional for MVP
 - Migration effort later, but worth saving $300/year until revenue
 
@@ -230,16 +253,16 @@
 
 ## Stack Mapping to Journey
 
-| Journey Step | Technical Requirement | Technology Solution |
-|--------------|----------------------|---------------------|
-| **Step 1: Create Workflow** | Form builder UI (buckets + criteria) | Next.js (React form components) + FastAPI (CRUD API) + PostgreSQL (relational storage) |
-| **Step 2: Upload Documents** | Drag-drop PDFs, progress indicator | Next.js (file upload UI) + Vercel Blob (storage) + FastAPI (parse, validate) |
-| **Step 3: AI Validation** | Extract text, validate criteria, link evidence (<10 min) | FastAPI (PDF parsing with PyPDF2) + Claude Sonnet (AI reasoning) + Celery + Redis (background jobs) |
-| **Step 3: Evidence Display** | Show pass/fail with page/section links | Next.js (results UI) + PostgreSQL (store evidence metadata) + Vercel Blob (serve PDFs) |
-| **Step 4: Re-run Assessment** | Update docs, re-validate | Next.js (replace document) + FastAPI (trigger new job) + Celery (re-run AI validation) |
-| **Step 5: Export Report** | Generate PDF summary | FastAPI (generate PDF with ReportLab or WeasyPrint) + Vercel Blob (serve download) |
-| **Auth & Permissions** | RBAC (Process Manager vs Project Handler) | Auth.js (session + roles) → Clerk (when revenue) |
-| **Data Privacy** | Encryption, audit logs, zero-retention AI | Vercel Blob (encryption at rest) + Claude enterprise (zero-retention) + PostgreSQL (audit log table) |
+| Journey Step                  | Technical Requirement                                    | Technology Solution                                                                                  |
+| ----------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Step 1: Create Workflow**   | Form builder UI (buckets + criteria)                     | Next.js (React form components) + FastAPI (CRUD API) + PostgreSQL (relational storage)               |
+| **Step 2: Upload Documents**  | Drag-drop PDFs, progress indicator                       | Next.js (file upload UI) + Vercel Blob (storage) + FastAPI (parse, validate)                         |
+| **Step 3: AI Validation**     | Extract text, validate criteria, link evidence (<10 min) | FastAPI (PDF parsing with PyPDF2) + Claude Sonnet (AI reasoning) + Celery + Redis (background jobs)  |
+| **Step 3: Evidence Display**  | Show pass/fail with page/section links                   | Next.js (results UI) + PostgreSQL (store evidence metadata) + Vercel Blob (serve PDFs)               |
+| **Step 4: Re-run Assessment** | Update docs, re-validate                                 | Next.js (replace document) + FastAPI (trigger new job) + Celery (re-run AI validation)               |
+| **Step 5: Export Report**     | Generate PDF summary                                     | FastAPI (generate PDF with ReportLab or WeasyPrint) + Vercel Blob (serve download)                   |
+| **Auth & Permissions**        | RBAC (Process Manager vs Project Handler)                | Auth.js (session + roles) → Clerk (when revenue)                                                     |
+| **Data Privacy**              | Encryption, audit logs, zero-retention AI                | Vercel Blob (encryption at rest) + Claude enterprise (zero-retention) + PostgreSQL (audit log table) |
 
 ---
 
@@ -247,36 +270,37 @@
 
 **Scenario**: TÜV SÜD pilot - 100 assessments/month, 5 active users
 
-| Service | Cost | Notes |
-|---------|------|-------|
-| **Vercel** (Frontend hosting) | $0 | Hobby plan (free), upgrade to Pro ($20/month) if needed |
-| **Railway** (Backend hosting) | $5-10/month | Starter plan, Python + FastAPI |
-| **Vercel Postgres** (Database) | $0 | Free tier (256MB), upgrade to Pro ($20/month) if needed |
-| **Upstash Redis** (Job queue) | $0 | Free tier (10K commands/day), enough for MVP |
-| **Vercel Blob** (PDF storage) | $0 | Free tier (1GB), ~20-50 assessments before upgrade |
-| **Claude AI** (Anthropic) | $20-30/month | 100 assessments × $0.21 each = ~$21/month |
-| **Auth.js** (Authentication) | $0 | Open source, free |
-| **Monitoring** (Sentry/LogRocket) | $0 | Free tier for MVP |
-| **Domain** (qteria.com) | $12/year | ~$1/month |
-| | | |
-| **Total (MVP)** | **$25-40/month** | **~$300-480/year** |
+| Service                           | Cost             | Notes                                                   |
+| --------------------------------- | ---------------- | ------------------------------------------------------- |
+| **Vercel** (Frontend hosting)     | $0               | Hobby plan (free), upgrade to Pro ($20/month) if needed |
+| **Railway** (Backend hosting)     | $5-10/month      | Starter plan, Python + FastAPI                          |
+| **Vercel Postgres** (Database)    | $0               | Free tier (256MB), upgrade to Pro ($20/month) if needed |
+| **Upstash Redis** (Job queue)     | $0               | Free tier (10K commands/day), enough for MVP            |
+| **Vercel Blob** (PDF storage)     | $0               | Free tier (1GB), ~20-50 assessments before upgrade      |
+| **Claude AI** (Anthropic)         | $20-30/month     | 100 assessments × $0.21 each = ~$21/month               |
+| **Auth.js** (Authentication)      | $0               | Open source, free                                       |
+| **Monitoring** (Sentry/LogRocket) | $0               | Free tier for MVP                                       |
+| **Domain** (qteria.com)           | $12/year         | ~$1/month                                               |
+|                                   |                  |                                                         |
+| **Total (MVP)**                   | **$25-40/month** | **~$300-480/year**                                      |
 
 **At Scale (Year 3: 2000 assessments/month, 10 customers)**:
 
-| Service | Cost | Notes |
-|---------|------|-------|
-| Vercel Pro | $20/month | Pro plan for better performance |
-| Railway (Backend) | $20-50/month | Scale up for concurrent AI jobs |
-| Vercel Postgres | $20/month | Pro plan for more storage |
-| Upstash Redis | $10/month | Paid tier for higher throughput |
-| Vercel Blob | $20/month | ~5GB storage for PDFs |
-| Claude AI | $420/month | 2000 assessments × $0.21 = $420/month |
-| Clerk | $25/month | B2B plan for SSO, MFA |
-| Monitoring | $50/month | Paid tier for SOC2 compliance |
-| | | |
-| **Total (Year 3)** | **$585/month** | **~$7,020/year** |
+| Service            | Cost           | Notes                                 |
+| ------------------ | -------------- | ------------------------------------- |
+| Vercel Pro         | $20/month      | Pro plan for better performance       |
+| Railway (Backend)  | $20-50/month   | Scale up for concurrent AI jobs       |
+| Vercel Postgres    | $20/month      | Pro plan for more storage             |
+| Upstash Redis      | $10/month      | Paid tier for higher throughput       |
+| Vercel Blob        | $20/month      | ~5GB storage for PDFs                 |
+| Claude AI          | $420/month     | 2000 assessments × $0.21 = $420/month |
+| Clerk              | $25/month      | B2B plan for SSO, MFA                 |
+| Monitoring         | $50/month      | Paid tier for SOC2 compliance         |
+|                    |                |                                       |
+| **Total (Year 3)** | **$585/month** | **~$7,020/year**                      |
 
 **Revenue Context**:
+
 - Year 3 revenue: $300K ARR (10 customers × $30K)
 - Infrastructure cost: $7K/year
 - **Gross margin: 97.7%** (SaaS dream!)
@@ -298,6 +322,7 @@
 ## What We DIDN'T Choose (And Why)
 
 ### Kubernetes / Docker Orchestration
+
 **Why Not**: Over-engineering for MVP and Year 3 scale (10 customers, 2000 assessments/month). Vercel + Railway handle this scale trivially. Monolith scales to millions of requests before needing microservices. Add complexity only when $1M+ ARR validates need.
 
 **Journey Reality**: Solo founder needs speed, not DevOps complexity. K8s adds weeks of setup for zero MVP benefit.
@@ -305,6 +330,7 @@
 ---
 
 ### GraphQL
+
 **Why Not**: REST is simpler. Journey doesn't show complex relational queries from frontend (no "fetch workflow + nested buckets + criteria + last 10 assessments in one query"). FastAPI REST endpoints with Pydantic models are fast to build and maintain.
 
 **Journey Reality**: Frontend knows what data it needs for each page (workflow list, workflow detail, assessment results). No over-fetching problem GraphQL solves.
@@ -312,6 +338,7 @@
 ---
 
 ### MongoDB / NoSQL
+
 **Why Not**: Journey has clear relational structure (workflows → buckets → criteria, assessments → results). PostgreSQL JSONB gives flexibility for variable criteria definitions WITHOUT losing relational integrity.
 
 **Journey Reality**: Need to query "all assessments for workflow X" (relational) but also store flexible criteria types (JSONB). PostgreSQL does both.
@@ -319,6 +346,7 @@
 ---
 
 ### React Native / Mobile App
+
 **Why Not**: Journey is web-first. Process Managers and Project Handlers work at desks (office computers). No mobile requirement. Don't build mobile until users explicitly request it.
 
 **Journey Reality**: Step 2 shows "drag-drop documents" (desktop interaction). No mobile-first signals.
@@ -326,6 +354,7 @@
 ---
 
 ### Microservices Architecture
+
 **Why Not**: Monolith (Next.js frontend + FastAPI backend) is simpler and faster to build. Journey doesn't require independent scaling of services. PDF processing and AI validation happen in same backend flow - no reason to split.
 
 **Journey Reality**: Solo founder. Microservices mean more repos, more deploys, more complexity. Monolith until $500K+ ARR.
@@ -333,7 +362,9 @@
 ---
 
 ### Self-Hosted AI (Llama, Mistral)
+
 **Why Not**: User's key concern about data privacy is valid, BUT:
+
 - **Cost**: Self-hosted GPUs cost $500-2000/month (vs. $20-420/month for Claude API)
 - **Accuracy**: Open-source models (Llama 3, Mistral) lag GPT-4/Claude for reasoning quality (critical for <1% false negative goal)
 - **Enterprise agreements**: Claude and OpenAI offer zero-retention contracts for enterprise customers
@@ -346,6 +377,7 @@
 ---
 
 ### Serverless Functions (AWS Lambda, etc.) for Backend
+
 **Why Not**: FastAPI on Railway/Render is simpler for long-running AI validation (10 min jobs). Lambda has 15-minute timeout, but cold starts + complexity not worth it for MVP.
 
 **Journey Reality**: Background jobs (Celery + Redis) easier to reason about than chaining Lambda functions. Serverless shines for spiky traffic (not our pattern - steady assessment flow).
@@ -367,15 +399,19 @@ Based on this tech stack, architecture will follow:
 ## Migration Risks & Mitigations
 
 **Risk: Claude API doesn't meet TÜV SÜD data privacy requirements**
+
 - **Mitigation**: Have GPT-4 enterprise agreement as backup. If both rejected, budget $500-1K/month for self-hosted Llama 3 (delay launch 1-2 months to set up GPU infra).
 
 **Risk: Vercel Blob limits hit (storage/bandwidth)**
+
 - **Mitigation**: Migrate to AWS S3 (straightforward code change, similar API).
 
 **Risk: FastAPI backend too slow for concurrent AI jobs**
+
 - **Mitigation**: Scale Railway/Render vertically (more RAM/CPU). If still bottleneck, add horizontal scaling (multiple backend instances behind load balancer).
 
 **Risk: PostgreSQL query performance degrades at scale**
+
 - **Mitigation**: Add indexes on common queries (workflow_id, user_id). If still slow, add Redis caching layer. PostgreSQL handles millions of rows easily.
 
 ---

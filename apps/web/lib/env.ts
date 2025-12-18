@@ -10,25 +10,27 @@
  */
 const REQUIRED_ENV_VARS = {
   // Auth.js configuration
-  NEXTAUTH_SECRET: "Used for JWT signing. Generate with: openssl rand -base64 32",
-  NEXTAUTH_URL: "Base URL for Auth.js callbacks (e.g., http://localhost:3000 or https://yourdomain.com)",
+  NEXTAUTH_SECRET: 'Used for JWT signing. Generate with: openssl rand -base64 32',
+  NEXTAUTH_URL:
+    'Base URL for Auth.js callbacks (e.g., http://localhost:3000 or https://yourdomain.com)',
 
   // Database
-  DATABASE_URL: "PostgreSQL connection string (e.g., postgresql://user:password@localhost:5432/dbname)",
+  DATABASE_URL:
+    'PostgreSQL connection string (e.g., postgresql://user:password@localhost:5432/dbname)',
 } as const
 
 /**
  * Optional environment variables with defaults
  */
 const OPTIONAL_ENV_VARS = {
-  NODE_ENV: "development",
-  NEXT_PUBLIC_API_URL: "http://localhost:8000/v1",
+  NODE_ENV: 'development',
+  NEXT_PUBLIC_API_URL: 'http://localhost:8000/v1',
 
   // OAuth providers (optional - only needed if OAuth is enabled)
-  MICROSOFT_CLIENT_ID: "",
-  MICROSOFT_CLIENT_SECRET: "",
-  GOOGLE_CLIENT_ID: "",
-  GOOGLE_CLIENT_SECRET: "",
+  MICROSOFT_CLIENT_ID: '',
+  MICROSOFT_CLIENT_SECRET: '',
+  GOOGLE_CLIENT_ID: '',
+  GOOGLE_CLIENT_SECRET: '',
 } as const
 
 /**
@@ -43,7 +45,7 @@ export function validateEnv(): void {
   for (const [key, description] of Object.entries(REQUIRED_ENV_VARS)) {
     const value = process.env[key]
 
-    if (!value || value.trim() === "") {
+    if (!value || value.trim() === '') {
       missingVars.push(key)
       errorMessages.push(`  ❌ ${key}\n     ${description}`)
     }
@@ -61,7 +63,7 @@ export function validateEnv(): void {
 
   if (process.env.DATABASE_URL) {
     const dbUrl = process.env.DATABASE_URL
-    if (!dbUrl.startsWith("postgresql://") && !dbUrl.startsWith("postgres://")) {
+    if (!dbUrl.startsWith('postgresql://') && !dbUrl.startsWith('postgres://')) {
       errorMessages.push(
         `  ⚠️  DATABASE_URL doesn't look like a PostgreSQL connection string\n     Expected format: postgresql://user:password@host:port/database`
       )
@@ -69,8 +71,10 @@ export function validateEnv(): void {
   }
 
   // OAuth validation: if one OAuth var is set, all related vars should be set
-  const hasMicrosoftClientId = process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_ID.trim() !== ""
-  const hasMicrosoftSecret = process.env.MICROSOFT_CLIENT_SECRET && process.env.MICROSOFT_CLIENT_SECRET.trim() !== ""
+  const hasMicrosoftClientId =
+    process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_ID.trim() !== ''
+  const hasMicrosoftSecret =
+    process.env.MICROSOFT_CLIENT_SECRET && process.env.MICROSOFT_CLIENT_SECRET.trim() !== ''
 
   if (hasMicrosoftClientId && !hasMicrosoftSecret) {
     errorMessages.push(
@@ -82,8 +86,10 @@ export function validateEnv(): void {
     )
   }
 
-  const hasGoogleClientId = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID.trim() !== ""
-  const hasGoogleSecret = process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CLIENT_SECRET.trim() !== ""
+  const hasGoogleClientId =
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID.trim() !== ''
+  const hasGoogleSecret =
+    process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CLIENT_SECRET.trim() !== ''
 
   if (hasGoogleClientId && !hasGoogleSecret) {
     errorMessages.push(
@@ -98,40 +104,40 @@ export function validateEnv(): void {
   // If there are any errors, throw with helpful message
   if (missingVars.length > 0 || errorMessages.length > 0) {
     const message = [
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "❌ Environment Variable Validation Failed",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "",
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '❌ Environment Variable Validation Failed',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
     ]
 
     if (missingVars.length > 0) {
-      message.push("Missing required environment variables:")
-      message.push("")
-      message.push(...errorMessages.filter(msg => msg.includes("❌")))
-      message.push("")
+      message.push('Missing required environment variables:')
+      message.push('')
+      message.push(...errorMessages.filter(msg => msg.includes('❌')))
+      message.push('')
     }
 
-    const warnings = errorMessages.filter(msg => msg.includes("⚠️"))
+    const warnings = errorMessages.filter(msg => msg.includes('⚠️'))
     if (warnings.length > 0) {
-      message.push("Environment variable warnings:")
-      message.push("")
+      message.push('Environment variable warnings:')
+      message.push('')
       message.push(...warnings)
-      message.push("")
+      message.push('')
     }
 
-    message.push("To fix this:")
-    message.push("  1. Copy .env.template to .env")
-    message.push("     cp .env.template .env")
-    message.push("")
-    message.push("  2. Edit .env and fill in the required values")
-    message.push("")
-    message.push("  3. Restart the application")
-    message.push("")
-    message.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    message.push("")
+    message.push('To fix this:')
+    message.push('  1. Copy .env.template to .env')
+    message.push('     cp .env.template .env')
+    message.push('')
+    message.push('  2. Edit .env and fill in the required values')
+    message.push('')
+    message.push('  3. Restart the application')
+    message.push('')
+    message.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    message.push('')
 
-    throw new Error(message.join("\n"))
+    throw new Error(message.join('\n'))
   }
 }
 
@@ -151,8 +157,9 @@ export function getEnv(key: keyof typeof REQUIRED_ENV_VARS): string {
   // During Next.js build phase, allow missing env vars
   // They will be validated at runtime when the app starts
   if (!value) {
-    const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' ||
-                       process.env.NODE_ENV === 'production' && !process.env[key]
+    const isBuilding =
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.NODE_ENV === 'production' && !process.env[key])
 
     if (isBuilding) {
       console.warn(`[ENV] ${key} not set during build - will be required at runtime`)
@@ -173,10 +180,7 @@ export function getEnv(key: keyof typeof REQUIRED_ENV_VARS): string {
  * @param defaultValue - Default value if not set
  * @returns Environment variable value or default
  */
-export function getOptionalEnv(
-  key: keyof typeof OPTIONAL_ENV_VARS,
-  defaultValue: string
-): string {
+export function getOptionalEnv(key: keyof typeof OPTIONAL_ENV_VARS, defaultValue: string): string {
   return process.env[key] || defaultValue
 }
 
@@ -191,9 +195,9 @@ export type OptionalEnvVar = keyof typeof OPTIONAL_ENV_VARS
 export function isMicrosoftOAuthConfigured(): boolean {
   return !!(
     process.env.MICROSOFT_CLIENT_ID &&
-    process.env.MICROSOFT_CLIENT_ID.trim() !== "" &&
+    process.env.MICROSOFT_CLIENT_ID.trim() !== '' &&
     process.env.MICROSOFT_CLIENT_SECRET &&
-    process.env.MICROSOFT_CLIENT_SECRET.trim() !== ""
+    process.env.MICROSOFT_CLIENT_SECRET.trim() !== ''
   )
 }
 
@@ -204,8 +208,8 @@ export function isMicrosoftOAuthConfigured(): boolean {
 export function isGoogleOAuthConfigured(): boolean {
   return !!(
     process.env.GOOGLE_CLIENT_ID &&
-    process.env.GOOGLE_CLIENT_ID.trim() !== "" &&
+    process.env.GOOGLE_CLIENT_ID.trim() !== '' &&
     process.env.GOOGLE_CLIENT_SECRET &&
-    process.env.GOOGLE_CLIENT_SECRET.trim() !== ""
+    process.env.GOOGLE_CLIENT_SECRET.trim() !== ''
   )
 }

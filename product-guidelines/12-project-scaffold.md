@@ -11,6 +11,7 @@
 This scaffold transforms 11 sessions of strategic planning into a working development environment. Every configuration decision traces back to the user journey: **helping Project Handlers validate certification documents 400x faster through evidence-based AI assessments**.
 
 **What's Included**:
+
 - ✅ Complete repository structure (monorepo with npm workspaces)
 - ✅ Docker Compose for local development (PostgreSQL + Redis + PgAdmin)
 - ✅ Python backend configuration (FastAPI + Celery + SQLAlchemy)
@@ -29,18 +30,21 @@ This scaffold transforms 11 sessions of strategic planning into a working develo
 ### Decision: Simple Monorepo (npm workspaces)
 
 **Why Monorepo**:
+
 - 2 services (Next.js frontend + FastAPI backend)
 - Shared types between frontend/backend
 - Solo founder needs simplicity
 - Easy to reason about (single repo, single clone)
 
 **Why NOT Turborepo/Nx** (for now):
+
 - Solo founder doesn't need build orchestration
 - 2 services is simple enough for npm workspaces
 - Can migrate to Turborepo later when team grows
 - Follows "boring technology" principle
 
 **Structure**:
+
 ```
 qteria/
 ├── apps/
@@ -61,6 +65,7 @@ qteria/
 ### Root Configuration
 
 #### package.json
+
 - **Purpose**: Root workspace configuration for npm workspaces
 - **Key Scripts**:
   - `dev` - Start Next.js dev server
@@ -72,6 +77,7 @@ qteria/
 - **Dependencies**: ESLint, Prettier, TypeScript (shared across workspace)
 
 #### docker-compose.yml
+
 - **Purpose**: Local development services
 - **Services**:
   - **PostgreSQL 15**: Database (port 5432)
@@ -81,6 +87,7 @@ qteria/
 - **Health Checks**: Ensures services are ready before backend starts
 
 #### .env.template
+
 - **Purpose**: Environment variables template (copy to .env)
 - **Critical Variables**:
   - `DATABASE_URL` - PostgreSQL connection
@@ -91,10 +98,11 @@ qteria/
 - **Design**: Comprehensive comments explain each variable, defaults for local dev
 
 #### .gitignore
+
 - **Purpose**: Prevent committing sensitive files
 - **Covers**:
-  - Environment files (.env*)
-  - Dependencies (node_modules, __pycache__)
+  - Environment files (.env\*)
+  - Dependencies (node_modules, **pycache**)
   - Build outputs (dist, .next, out)
   - IDE files (.vscode, .idea)
   - Logs, coverage, temp files
@@ -104,6 +112,7 @@ qteria/
 ### Code Quality Configuration
 
 #### .prettierrc
+
 - **Purpose**: Code formatting (JavaScript, TypeScript, JSON, Markdown)
 - **Settings**:
   - No semicolons (semi: false)
@@ -113,6 +122,7 @@ qteria/
 - **Why**: Consistent formatting across team, auto-fix on save
 
 #### .eslintrc.json
+
 - **Purpose**: Linting (TypeScript + React)
 - **Rules**:
   - Extends: eslint:recommended, @typescript-eslint/recommended, next/core-web-vitals, prettier
@@ -125,6 +135,7 @@ qteria/
 ### Backend Configuration (Python)
 
 #### apps/api/pyproject.toml
+
 - **Purpose**: Python project configuration (Poetry)
 - **Dependencies**:
   - **Web**: FastAPI, Uvicorn[standard]
@@ -143,14 +154,17 @@ qteria/
   - Pytest: coverage, async support
 
 #### apps/api/requirements.txt
+
 - **Purpose**: Production dependencies (pip install)
 - **Why**: Simple deployment (Railway/Render), no Poetry required in production
 
 #### apps/api/requirements-dev.txt
+
 - **Purpose**: Development dependencies (includes production + dev tools)
 - **Why**: Local dev needs testing/linting tools
 
 #### apps/api/alembic.ini
+
 - **Purpose**: Alembic database migration configuration
 - **Features**:
   - Migrations in `alembic/versions/`
@@ -162,6 +176,7 @@ qteria/
 ### CI/CD Configuration
 
 #### .github/workflows/ci.yml
+
 - **Purpose**: Automated testing and quality gates
 - **Jobs**:
   1. **Frontend Lint** (ESLint, Prettier, TypeScript)
@@ -174,6 +189,7 @@ qteria/
   8. **Quality Gate** (all jobs must pass)
 
 **Quality Gates** (block merge if failed):
+
 - ✅ All linters pass
 - ✅ All tests pass
 - ✅ Code coverage >= 70%
@@ -272,12 +288,14 @@ npm run dev:api      # Terminal 2: Backend
 **Decision**: Simple npm workspaces (not Turborepo)
 
 **Rationale**:
+
 - Solo founder needs speed, not complexity
 - 2 services (frontend + backend) is manageable without orchestration
 - Can migrate to Turborepo later (week of effort) if team grows
 - npm workspaces is "boring technology" - well understood, widely supported
 
 **Trade-offs**:
+
 - ❌ No build caching (Turborepo feature) - acceptable for 2 services
 - ❌ No parallel task orchestration - can run manually if needed
 - ✅ Simple mental model - less cognitive overhead
@@ -290,12 +308,14 @@ npm run dev:api      # Terminal 2: Backend
 **Decision**: PostgreSQL + Redis in Docker, not native installs
 
 **Rationale**:
+
 - Cross-platform (Mac, Linux, Windows)
 - Isolated (doesn't pollute local environment)
 - Version-pinned (PostgreSQL 15, Redis 7)
 - Easy to reset (docker-compose down -v)
 
 **Trade-offs**:
+
 - ❌ Requires Docker Desktop (100MB download, resource usage)
 - ❌ Slightly slower than native on Mac M1/M2 (acceptable for dev)
 - ✅ "Works on my machine" syndrome eliminated
@@ -308,11 +328,13 @@ npm run dev:api      # Terminal 2: Backend
 **Decision**: pyproject.toml (Poetry format) + requirements.txt (pip)
 
 **Rationale**:
+
 - Poetry for local dev (better dependency resolution, lock file)
 - pip for production deployment (Railway/Render use requirements.txt)
 - pyproject.toml is Python standard (PEP 518)
 
 **Trade-offs**:
+
 - ❌ Dual format (pyproject.toml + requirements.txt) requires manual sync
 - ✅ Best of both worlds (Poetry dev experience + pip deployment)
 - ✅ Can use `poetry export -f requirements.txt` to sync
@@ -324,11 +346,13 @@ npm run dev:api      # Terminal 2: Backend
 **Decision**: Block PRs if tests fail, coverage <70%, or security issues
 
 **Rationale**:
+
 - Compliance industry (false negatives destroy trust)
 - Solo founder needs automated safety net
 - Better to catch bugs in CI than production
 
 **Trade-offs**:
+
 - ❌ PRs take 5-10 min to validate (acceptable)
 - ✅ Confidence in code quality (no broken merges)
 - ✅ Forces test-driven development
@@ -338,6 +362,7 @@ npm run dev:api      # Terminal 2: Backend
 ## Technology Choices (From Session 2: Tech Stack)
 
 ### Why Next.js 14+ (Frontend)
+
 - **Journey Requirement**: Complex UI (workflow builder, drag-drop, results display)
 - **Decision**: Next.js App Router (not Pages Router)
   - Better structure for multi-page SaaS
@@ -345,6 +370,7 @@ npm run dev:api      # Terminal 2: Backend
   - Vercel deployment (user preference)
 
 ### Why FastAPI (Backend)
+
 - **Journey Requirement**: PDF processing + AI validation
 - **Decision**: Python + FastAPI (not Node.js)
   - Python has best PDF libraries (PyPDF2, pdfplumber)
@@ -352,6 +378,7 @@ npm run dev:api      # Terminal 2: Backend
   - FastAPI async performance good enough
 
 ### Why PostgreSQL + JSONB (Database)
+
 - **Journey Requirement**: Relational data (workflows → buckets → criteria) + flexible AI results
 - **Decision**: PostgreSQL with JSONB (not MongoDB)
   - Relational integrity for workflows
@@ -359,6 +386,7 @@ npm run dev:api      # Terminal 2: Backend
   - ACID guarantees (SOC2 requirement)
 
 ### Why Celery + Redis (Background Jobs)
+
 - **Journey Requirement**: 5-10 min AI validation (can't block frontend)
 - **Decision**: Celery + Redis (not FastAPI background tasks)
   - Robust retry logic
@@ -370,18 +398,23 @@ npm run dev:api      # Terminal 2: Backend
 ## What We DIDN'T Build (Scope Boundaries)
 
 ### Kubernetes / Docker Orchestration
+
 **Why Not**: Over-engineering for MVP and Year 3 scale (10 customers, 2000 assessments/month). Vercel + Railway handle this trivially. Add complexity only when $1M+ ARR validates need.
 
 ### Turborepo / Nx
+
 **Why Not**: 2 services is simple enough for npm workspaces. Solo founder doesn't need build orchestration yet. Can add later (1 week migration) when team grows.
 
 ### GraphQL
+
 **Why Not**: REST is simpler. Journey doesn't show complex relational queries from frontend. FastAPI REST endpoints are fast to build.
 
 ### Microservices
+
 **Why Not**: Monolith (Next.js + FastAPI) is simpler and faster to build. Journey doesn't require independent scaling. Split when $500K+ ARR validates need.
 
 ### Feature Branches Auto-Deploy (Vercel Preview)
+
 **Why Not**: Great feature but adds CI/CD complexity. MVP focus: optimize for shipping, not preview URLs. Can add later easily.
 
 ---
@@ -401,6 +434,7 @@ npm run dev:api      # Terminal 2: Backend
 - [x] Git ignores sensitive files (.env, node_modules, etc.)
 
 **Mental Test** (does this enable fast development?):
+
 1. Developer clones repo ✅
 2. Copies .env.template to .env, fills in secrets ✅
 3. Runs `npm run docker:up` (PostgreSQL + Redis start) ✅
@@ -418,11 +452,13 @@ npm run dev:api      # Terminal 2: Backend
 ### Immediate (Week 1)
 
 1. **Copy scaffold to project root**:
+
    ```bash
    cp -r product-guidelines/12-project-scaffold/* .
    ```
 
 2. **Initialize Git**:
+
    ```bash
    git init
    git add .
@@ -430,6 +466,7 @@ npm run dev:api      # Terminal 2: Backend
    ```
 
 3. **Create GitHub repository**:
+
    ```bash
    gh repo create qteria --private
    git remote add origin https://github.com/your-org/qteria.git
@@ -437,6 +474,7 @@ npm run dev:api      # Terminal 2: Backend
    ```
 
 4. **Set up local environment**:
+
    ```bash
    cp .env.template .env
    # Edit .env with actual secrets
@@ -446,6 +484,7 @@ npm run dev:api      # Terminal 2: Backend
    ```
 
 5. **Initialize Next.js app**:
+
    ```bash
    cd apps/web
    npx create-next-app@latest . --typescript --tailwind --app --src-dir
@@ -453,6 +492,7 @@ npm run dev:api      # Terminal 2: Backend
    ```
 
 6. **Initialize FastAPI app**:
+
    ```bash
    cd apps/api
    # Create initial app structure (see STORY-001 in backlog)
@@ -469,6 +509,7 @@ npm run dev:api      # Terminal 2: Backend
 ### Phase 1: Foundation (Weeks 1-2)
 
 Start implementing Epic 01 (Database & Infrastructure):
+
 - **STORY-001**: Database schema setup → Create Alembic migration from `07-database-schema.md`
 - **STORY-002**: Database migrations → Test rollback/upgrade
 - **STORY-003**: Seed data → Create test organizations, users, workflows
@@ -479,6 +520,7 @@ Reference: `product-guidelines/10-backlog/` for complete story details
 ### Phase 2: Authentication (Weeks 2-3)
 
 Implement Epic 02 (Authentication & Authorization):
+
 - Setup Auth.js in Next.js
 - Implement JWT authentication in FastAPI
 - Create RBAC (Process Manager, Project Handler, Admin roles)
@@ -487,6 +529,7 @@ Implement Epic 02 (Authentication & Authorization):
 ### Phase 3: Start Building Features (Week 4+)
 
 Follow backlog priority:
+
 - Epic 03: Workflow Management (Step 1 of journey)
 - Epic 04: Document Processing (Step 2 of journey)
 - Epic 05: AI Validation Engine (Step 3 - CRITICAL PATH)
@@ -497,6 +540,7 @@ Follow backlog priority:
 ## Reference Documentation
 
 **Cascade Outputs** (product-guidelines/):
+
 - `00-user-journey.md` - User journey and success criteria
 - `01-product-strategy.md` - Product vision and goals
 - `02-tech-stack.md` - Technology choices and rationale
@@ -508,6 +552,7 @@ Follow backlog priority:
 
 **Example Reference**:
 When implementing STORY-020 (PDF parsing):
+
 1. Check `02-tech-stack.md` for library choice (PyPDF2 + pdfplumber)
 2. Check `04-architecture.md` for parsing flow (background job)
 3. Check `09-test-strategy.md` for test requirements (95% coverage)
@@ -520,6 +565,7 @@ When implementing STORY-020 (PDF parsing):
 Every configuration file serves the core mission:
 
 **Journey Step 3** (AI validates documents in <10 min with evidence):
+
 - ✅ **Docker Compose** → PostgreSQL for evidence storage, Redis for job queue
 - ✅ **Celery** → Background jobs for 5-10 min AI processing
 - ✅ **FastAPI** → API endpoints for assessment execution
@@ -527,13 +573,16 @@ Every configuration file serves the core mission:
 - ✅ **Claude SDK** → AI validation with structured output
 
 **Journey Step 1** (Create workflow in <30 min):
+
 - ✅ **Next.js** → Complex workflow builder UI
 - ✅ **PostgreSQL** → Relational workflows → buckets → criteria
 
 **Journey Step 5** (Export validation report):
+
 - ✅ **reportlab** → PDF report generation
 
 **Product Principle** ("Simplicity Over Features"):
+
 - ✅ **Simple monorepo** (not microservices)
 - ✅ **npm workspaces** (not Turborepo)
 - ✅ **Docker Compose** (not Kubernetes)

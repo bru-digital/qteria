@@ -1,15 +1,18 @@
-import type { NextAuthConfig } from "next-auth"
-import Credentials from "@auth/core/providers/credentials"
-import MicrosoftEntraID from "@auth/core/providers/microsoft-entra-id"
-import Google from "@auth/core/providers/google"
-import { prisma } from "@/lib/prisma"
-import { PrismaClientKnownRequestError, PrismaClientInitializationError } from "@prisma/client/runtime/library"
-import bcrypt from "bcrypt"
-import { baseAuthConfig } from "./auth-config-base"
-import { createAuditLog, AuditAction } from "@/lib/audit"
-import { isMicrosoftOAuthConfigured, isGoogleOAuthConfigured } from "@/lib/env"
-import { getRequestContext } from "@/lib/request-context"
-import { normalizeAndValidateEmail } from "@/lib/email-utils"
+import type { NextAuthConfig } from 'next-auth'
+import Credentials from '@auth/core/providers/credentials'
+import MicrosoftEntraID from '@auth/core/providers/microsoft-entra-id'
+import Google from '@auth/core/providers/google'
+import { prisma } from '@/lib/prisma'
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientInitializationError,
+} from '@prisma/client/runtime/library'
+import bcrypt from 'bcrypt'
+import { baseAuthConfig } from './auth-config-base'
+import { createAuditLog, AuditAction } from '@/lib/audit'
+import { isMicrosoftOAuthConfigured, isGoogleOAuthConfigured } from '@/lib/env'
+import { getRequestContext } from '@/lib/request-context'
+import { normalizeAndValidateEmail } from '@/lib/email-utils'
 
 /**
  * System organization UUID for audit logging security events.
@@ -44,7 +47,7 @@ interface OAuthProfile {
  * Tech debt: Remove type assertions when next-auth v5 stable releases.
  */
 
-import NextAuth from "next-auth"
+import NextAuth from 'next-auth'
 
 /**
  * Full Auth.js configuration for API routes (Node.js runtime).
@@ -60,7 +63,7 @@ export const authOptions = {
     ...baseAuthConfig.callbacks,
     async signIn({ user, account, profile }) {
       // OAuth providers (Microsoft Entra ID or Google)
-      if (account?.provider === "microsoft-entra-id" || account?.provider === "google") {
+      if (account?.provider === 'microsoft-entra-id' || account?.provider === 'google') {
         const oauthProfile = profile as OAuthProfile
         const rawEmail = user.email || oauthProfile?.email
 
@@ -71,7 +74,7 @@ export const authOptions = {
             hasUser: !!user,
             hasProfile: !!profile,
           })
-          return "/login?error=oauth_no_email"
+          return '/login?error=oauth_no_email'
         }
 
         // Normalize and validate email format
@@ -81,14 +84,14 @@ export const authOptions = {
             provider: account.provider,
             rawEmail,
           })
-          return "/login?error=oauth_invalid_email"
+          return '/login?error=oauth_invalid_email'
         }
 
         try {
           // Check if user exists
           const existingUser = await prisma.user.findUnique({
             where: { email },
-            include: { organization: true }
+            include: { organization: true },
           })
 
           if (!existingUser) {
@@ -108,7 +111,7 @@ export const authOptions = {
                 actionMetadata: {
                   email,
                   provider: account.provider,
-                  reason: "oauth_user_not_found"
+                  reason: 'oauth_user_not_found',
                 },
                 ipAddress,
                 userAgent,
@@ -117,7 +120,7 @@ export const authOptions = {
               console.error('[AUTH] Failed to create audit log for OAuth failure:', auditError)
             }
 
-            return "/login?error=oauth_user_not_found"
+            return '/login?error=oauth_user_not_found'
           }
 
           // Update user with OAuth provider info only if data has changed
@@ -131,7 +134,7 @@ export const authOptions = {
                 where: { email },
                 data: {
                   name: oauthName,
-                }
+                },
               })
 
               // Only set profileChanges if update succeeded
@@ -143,7 +146,7 @@ export const authOptions = {
               console.error('[AUTH] Failed to update user profile during OAuth login:', {
                 error: updateError,
                 email,
-                attemptedName: oauthName
+                attemptedName: oauthName,
               })
               // profileChanges remains empty, so audit log won't claim profile was updated
               // Login will still succeed with existing user data
@@ -160,11 +163,11 @@ export const authOptions = {
               email: existingUser.email,
               name: existingUser.name,
               provider: account.provider,
-              authMethod: "oauth",
+              authMethod: 'oauth',
               ...(nameChanged && {
                 profileUpdated: true,
-                changes: profileChanges
-              })
+                changes: profileChanges,
+              }),
             },
             ipAddress,
             userAgent,
@@ -177,33 +180,33 @@ export const authOptions = {
             provider: account.provider,
             email,
             errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            errorType: error?.constructor?.name
+            errorType: error?.constructor?.name,
           })
 
           // Return specific error based on error type
           if (error instanceof PrismaClientInitializationError) {
             // Database connection/initialization errors
             console.error('[AUTH] Database connection failed during OAuth login:', error)
-            return "/login?error=oauth_database_error"
+            return '/login?error=oauth_database_error'
           }
 
           if (error instanceof PrismaClientKnownRequestError) {
             // Known Prisma errors (constraint violations, record not found, etc.)
             console.error('[AUTH] Prisma error during OAuth login:', {
               code: error.code,
-              meta: error.meta
+              meta: error.meta,
             })
-            return "/login?error=oauth_database_error"
+            return '/login?error=oauth_database_error'
           }
 
           // Generic OAuth error for other cases (network, auth provider errors, etc.)
-          return "/login?error=oauth_error"
+          return '/login?error=oauth_error'
         }
       }
 
       // Credentials provider - no additional checks needed
       return true
-    }
+    },
   },
   providers: [
     // Conditionally add OAuth providers only if configured
@@ -218,10 +221,10 @@ export const authOptions = {
             issuer: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID || 'common'}/v2.0`,
             authorization: {
               params: {
-                prompt: "select_account",
-                scope: "openid profile email"
-              }
-            }
+                prompt: 'select_account',
+                scope: 'openid profile email',
+              },
+            },
           }) as unknown as any,
         ]
       : []),
@@ -236,21 +239,21 @@ export const authOptions = {
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
             authorization: {
               params: {
-                prompt: "select_account",
-                access_type: "offline",
-                response_type: "code"
-              }
-            }
+                prompt: 'select_account',
+                access_type: 'offline',
+                response_type: 'code',
+              },
+            },
           }) as unknown as any,
         ]
       : []),
 
     // Email/Password authentication (always available)
     Credentials({
-      name: "Email",
+      name: 'Email',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -267,7 +270,7 @@ export const authOptions = {
         // Find user by email
         const user = await prisma.user.findUnique({
           where: { email },
-          include: { organization: true }
+          include: { organization: true },
         })
 
         // Always perform bcrypt comparison to prevent timing attacks
@@ -303,10 +306,10 @@ export const authOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
-          organizationId: user.organizationId
+          organizationId: user.organizationId,
         }
-      }
-    })
+      },
+    }),
   ],
 } satisfies NextAuthConfig
 

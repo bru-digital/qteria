@@ -7,6 +7,7 @@ You are tasked with implementing a GitHub issue that has an approved implementat
 The issue MUST have an approved implementation plan (either in issue description or comments). If no plan exists, STOP and run `/plan-issue {issue-number}` first.
 
 **CRITICAL - Context Already in Plan:**
+
 - DO NOT read product-guidelines files during implementation
 - DO NOT search for additional context beyond the plan
 - The `/plan-issue` command already collected ALL relevant guidelines and context
@@ -44,6 +45,7 @@ gh issue view {issue-number} --repo bru-digital/qteria --json title,body,labels,
 ```
 
 Extract the implementation plan from either:
+
 - Issue body (look for "## Implementation Plan" section)
 - Latest comment containing the plan
 - Linked comment with plan
@@ -88,6 +90,7 @@ For each step in the plan:
 5. **Mark complete**: Move to next step
 
 If ANY step fails:
+
 - STOP immediately
 - Report the failure with full error details
 - Ask user: "Plan step X failed. Should I: (1) Debug and continue, (2) Stop and revise plan?"
@@ -115,6 +118,7 @@ All must pass. Fix any failures before proceeding.
 ## Step 4: Verify Success Criteria
 
 Check each success criterion from the plan. Provide evidence:
+
 - ✅ Criterion 1: [evidence - test output, screenshot, API response]
 - ✅ Criterion 2: [evidence]
 - ❌ Criterion 3: [failure reason]
@@ -197,6 +201,7 @@ Output a summary:
 **PR:** {pr-url}
 
 **Changes:**
+
 - {file1}: {change}
 - {file2}: {change}
 - {file3}: {change}
@@ -205,6 +210,7 @@ Output a summary:
 **Breaking Changes:** {Yes/No - summary}
 
 **Next Steps:**
+
 1. Review PR: {pr-url}
 2. Merge when approved
 3. {Migration step 1}
@@ -214,6 +220,7 @@ Output a summary:
 ## Error Handling
 
 If implementation cannot be completed:
+
 1. **Commit partial work** to feature branch with WIP marker
 2. **Document blockers** clearly
 3. **Update issue** with status comment

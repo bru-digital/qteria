@@ -36,45 +36,44 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Frontend: Next.js 14+ (App Router), Auth.js (NextAuth v5)
 - Session Storage: PostgreSQL (NextAuth Prisma adapter)
 - Authentication: JWT (stored in httpOnly cookies)
 
 **Auth.js Configuration** (`app/api/auth/[...nextauth]/route.ts`):
+
 ```typescript
-import NextAuth from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "@/lib/prisma"
-import bcrypt from "bcrypt"
+import NextAuth from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import { prisma } from '@/lib/prisma'
+import bcrypt from 'bcrypt'
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
-      name: "Email",
+      name: 'Email',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         // Validate credentials
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-          include: { organization: true }
+          include: { organization: true },
         })
 
         if (!user || !user.password_hash) {
-          throw new Error("Invalid credentials")
+          throw new Error('Invalid credentials')
         }
 
-        const valid = await bcrypt.compare(
-          credentials.password,
-          user.password_hash
-        )
+        const valid = await bcrypt.compare(credentials.password, user.password_hash)
 
         if (!valid) {
-          throw new Error("Invalid credentials")
+          throw new Error('Invalid credentials')
         }
 
         return {
@@ -82,14 +81,14 @@ export const authOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
-          organizationId: user.organization_id
+          organizationId: user.organization_id,
         }
-      }
-    })
+      },
+    }),
   ],
   session: {
-    strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60 // 7 days
+    strategy: 'jwt',
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -104,12 +103,12 @@ export const authOptions = {
       session.user.role = token.role
       session.user.organizationId = token.organizationId
       return session
-    }
+    },
   },
   pages: {
-    signIn: "/login",
-    error: "/login"
-  }
+    signIn: '/login',
+    error: '/login',
+  },
 }
 
 const handler = NextAuth(authOptions)
@@ -117,6 +116,7 @@ export { handler as GET, handler as POST }
 ```
 
 **Login Page** (`app/login/page.tsx`):
+
 ```typescript
 "use client"
 import { signIn } from "next-auth/react"
@@ -170,21 +170,23 @@ export default function LoginPage() {
 ```
 
 **Protected Route Middleware** (`middleware.ts`):
+
 ```typescript
-import { withAuth } from "next-auth/middleware"
+import { withAuth } from 'next-auth/middleware'
 
 export default withAuth({
   pages: {
-    signIn: "/login"
-  }
+    signIn: '/login',
+  },
 })
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/workflows/:path*", "/assessments/:path*"]
+  matcher: ['/dashboard/:path*', '/workflows/:path*', '/assessments/:path*'],
 }
 ```
 
 **Database Schema Addition** (users table needs password_hash):
+
 ```sql
 ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);
 ```
@@ -207,6 +209,7 @@ ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);
 **Effort**: 2 person-days
 
 **Breakdown**:
+
 - Auth.js setup: 0.5 days (install, configure, database adapter)
 - Login UI: 0.5 days (form, styling, error handling)
 - JWT session logic: 0.5 days (callbacks, token payload)
@@ -233,6 +236,7 @@ ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);
 ## Testing Requirements
 
 **Functional Tests**:
+
 - [ ] Login with valid credentials → redirect to dashboard
 - [ ] Login with invalid email → show error "Invalid email or password"
 - [ ] Login with invalid password → show error
@@ -241,6 +245,7 @@ ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);
 - [ ] Access protected route without login → redirect to login
 
 **Security Tests**:
+
 - [ ] JWT stored in httpOnly cookie (not accessible via JavaScript)
 - [ ] Cookie has Secure flag (HTTPS only)
 - [ ] Cookie has SameSite=Lax (CSRF protection)
@@ -248,6 +253,7 @@ ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);
 - [ ] JWT cannot be tampered with (signature validation)
 
 **Integration Tests**:
+
 - [ ] Login → call FastAPI endpoint with JWT → 200 OK
 - [ ] Login → logout → call API with old JWT → 401 Unauthorized
 
@@ -256,15 +262,19 @@ ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);
 ## Risks & Mitigations
 
 **Risk**: XSS attack steals JWT from localStorage
+
 - **Mitigation**: Store JWT in httpOnly cookie (JavaScript cannot access)
 
 **Risk**: CSRF attack using stolen cookie
+
 - **Mitigation**: Use SameSite=Lax cookie attribute, implement CSRF tokens for state-changing operations
 
 **Risk**: Sessions not persisting (database adapter misconfigured)
+
 - **Mitigation**: Test thoroughly with PostgreSQL adapter, verify sessions table populated
 
 **Risk**: Password stored in plaintext (security disaster)
+
 - **Mitigation**: Hash passwords with bcrypt (salt rounds=10), never log passwords
 
 ---

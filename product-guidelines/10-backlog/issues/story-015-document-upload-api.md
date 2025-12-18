@@ -36,11 +36,13 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI (multipart/form-data handling)
 - Storage: Vercel Blob (encrypted, 1GB free tier)
 - Database: PostgreSQL (assessment_documents table)
 
 **API Endpoint** (`app/api/v1/documents.py`):
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -127,6 +129,7 @@ async def upload_document(
 ```
 
 **Vercel Blob Service** (`app/services/blob_storage.py`):
+
 ```python
 from vercel_blob import put
 import os
@@ -160,6 +163,7 @@ async def upload_to_vercel_blob(
 ```
 
 **Example Request**:
+
 ```
 POST /v1/documents
 Authorization: Bearer <jwt_token>
@@ -170,6 +174,7 @@ bucket_id: bucket_xyz
 ```
 
 **Example Response**:
+
 ```json
 {
   "id": "doc_abc123",
@@ -200,6 +205,7 @@ bucket_id: bucket_xyz
 **Effort**: 2 person-days
 
 **Breakdown**:
+
 - API endpoint: 0.5 days (multipart handling)
 - File validation: 0.5 days (type/size checks)
 - Vercel Blob integration: 0.5 days (upload service)
@@ -227,6 +233,7 @@ bucket_id: bucket_xyz
 ## Testing Requirements
 
 **Integration Tests**:
+
 - [ ] Upload valid PDF → 201 Created, file in Vercel Blob
 - [ ] Upload DOCX → 201 Created
 - [ ] Upload invalid file type (JPG) → 400 Bad Request
@@ -236,6 +243,7 @@ bucket_id: bucket_xyz
 - [ ] Document metadata stored with correct organization_id
 
 **Performance Tests**:
+
 - [ ] Upload 10MB PDF → <10 seconds
 - [ ] Upload 5 documents concurrently → all succeed
 
@@ -244,12 +252,15 @@ bucket_id: bucket_xyz
 ## Risks & Mitigations
 
 **Risk**: Large file uploads timeout
+
 - **Mitigation**: Increase timeout to 60 seconds, use chunked upload if needed
 
 **Risk**: Vercel Blob storage limits exceeded (1GB free)
+
 - **Mitigation**: Monitor usage, upgrade to paid tier or migrate to S3
 
 **Risk**: Malicious file upload (virus, script injection)
+
 - **Mitigation**: Validate file type with magic bytes (not just extension), consider virus scanning
 
 ---

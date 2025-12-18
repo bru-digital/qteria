@@ -6,10 +6,7 @@ export function TableSkeleton({ rows = 5 }: TableSkeletonProps) {
   return (
     <div className="space-y-3">
       {Array.from({ length: rows }).map((_, i) => (
-        <div
-          key={i}
-          className="h-16 bg-gray-100 rounded-lg animate-pulse"
-        />
+        <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
       ))}
     </div>
   )

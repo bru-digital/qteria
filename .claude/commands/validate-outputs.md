@@ -9,6 +9,7 @@ You are helping the user validate their Stack-Driven cascade outputs for quality
 ## When to Use This
 
 **Use during or after the cascade** when:
+
 - You want to verify outputs meet Stack-Driven quality standards
 - You're unsure if your outputs are specific enough (not generic)
 - You want to check journey alignment before continuing
@@ -36,6 +37,7 @@ Track which sessions are complete vs. incomplete.
 #### Step 2: Read All Existing Outputs
 
 Read all files that exist in `product-guidelines/`:
+
 - Core cascade files (00-14)
 - Post-cascade extensions (15-22)
 - Backlog directory if exists
@@ -52,6 +54,7 @@ For each output file that exists, check against these criteria:
 #### A. Journey Alignment (Critical)
 
 **Check if outputs:**
+
 - [ ] Reference specific user journey steps
 - [ ] Trace decisions back to user value
 - [ ] Include quantified value ratio (e.g., "4 hours → 60 seconds = 240x")
@@ -59,6 +62,7 @@ For each output file that exists, check against these criteria:
 - [ ] Serve the critical path (Steps 1-3 of journey)
 
 **Red flags:**
+
 - Generic statements that could apply to any product
 - Technology choices without journey justification
 - Features that don't serve specific journey steps
@@ -67,6 +71,7 @@ For each output file that exists, check against these criteria:
 #### B. Philosophy Adherence (Critical)
 
 **Check if outputs demonstrate:**
+
 - [ ] **User-first thinking**: Decisions trace to user value (not tech preferences)
 - [ ] **Generative approach**: Specific to this product (not templated/prescriptive)
 - [ ] **Journey-driven**: Tech/strategy chosen based on journey requirements
@@ -74,6 +79,7 @@ For each output file that exists, check against these criteria:
 - [ ] **Boring is beautiful**: Proven tech over exotic tech (unless journey requires it)
 
 **Red flags:**
+
 - "We chose X because it's trendy/new/cool"
 - Technology-first thinking ("Let's use GraphQL" vs "Journey needs flexible queries → GraphQL")
 - Resume-driven development (Kubernetes when not needed)
@@ -82,6 +88,7 @@ For each output file that exists, check against these criteria:
 #### C. Completeness & Structure (Important)
 
 **Check if outputs include:**
+
 - [ ] All required sections from template
 - [ ] "What We DIDN'T Choose" sections (minimum 2 alternatives)
 - [ ] Decision rationale for major choices
@@ -90,6 +97,7 @@ For each output file that exists, check against these criteria:
 - [ ] Trade-offs acknowledged
 
 **Red flags:**
+
 - Missing "What We DIDN'T Choose" sections
 - Sections filled with placeholder text or "TBD"
 - No alternatives considered
@@ -98,6 +106,7 @@ For each output file that exists, check against these criteria:
 #### D. Consistency Across Cascade (Important)
 
 **Check cross-file consistency:**
+
 - [ ] Tech choices (Session 3) align with journey requirements (Session 1)
 - [ ] Mission statement (Session 4) promises value from aha moment (Session 1)
 - [ ] Metrics (Session 4) measure mission fulfillment
@@ -108,6 +117,7 @@ For each output file that exists, check against these criteria:
 - [ ] Test strategy (Session 9) covers critical journey paths
 
 **Red flags:**
+
 - Tech stack doesn't match journey requirements
 - Mission doesn't align with aha moment
 - Metrics don't measure mission
@@ -117,16 +127,19 @@ For each output file that exists, check against these criteria:
 #### E. Specificity vs. Genericity (Critical)
 
 **Good (Specific):**
+
 - "Compliance officers (user) spend 4 hours reviewing documents (pain) → 60 seconds with AI (solution) = 240x faster"
 - "PostgreSQL chosen because journey needs complex compliance framework relationships with JSONB flexibility"
 - "Blue color palette because brand personality is 'trustworthy professional' for compliance industry"
 
 **Bad (Generic):**
+
 - "Users want to save time" (which users? how much time?)
 - "PostgreSQL is a good database" (why? what requirements?)
 - "Blue is a nice color" (why blue? what does it communicate?)
 
 **Check outputs for:**
+
 - [ ] Specific user personas (not "users")
 - [ ] Quantified improvements (not "better/faster")
 - [ ] Named journey steps (not "improved experience")
@@ -135,6 +148,7 @@ For each output file that exists, check against these criteria:
 #### F. Technical Soundness (Important)
 
 **For technical sessions (7-14), check:**
+
 - [ ] Database schema has proper relationships and indexes
 - [ ] API contracts include error responses (not just happy path)
 - [ ] Test strategy covers multiple levels (unit, integration, E2E)
@@ -143,6 +157,7 @@ For each output file that exists, check against these criteria:
 - [ ] Architecture principles are actionable (not buzzwords)
 
 **Red flags:**
+
 - Missing error handling in API contracts
 - No indexes in database schema
 - Test strategy says "write tests" without specifics
@@ -152,6 +167,7 @@ For each output file that exists, check against these criteria:
 #### G. Depth vs. Superficiality (Important)
 
 **Sufficient depth includes:**
+
 - [ ] Analysis of multiple options (not just one)
 - [ ] Trade-offs explained for major decisions
 - [ ] Cost implications considered
@@ -160,6 +176,7 @@ For each output file that exists, check against these criteria:
 - [ ] Migration/transition plans for technical changes
 
 **Red flags:**
+
 - Single-sentence explanations for major decisions
 - No trade-offs discussed
 - "Just use X" without considering alternatives
@@ -178,12 +195,13 @@ Provide a comprehensive quality report with this structure:
 ## Summary
 
 ✅ Outputs validated: [X] files
-⚠️  Issues found: [Y] critical, [Z] important
+⚠️ Issues found: [Y] critical, [Z] important
 🎯 Overall quality: [Excellent / Good / Needs Improvement / Needs Significant Work]
 
 ## Critical Issues (Must Address)
 
 ### 1. [Issue Title]
+
 **File**: `product-guidelines/[filename]`
 **Problem**: [Specific issue description]
 **Impact**: [Why this matters]
@@ -194,6 +212,7 @@ Provide a comprehensive quality report with this structure:
 ## Important Suggestions (Should Address)
 
 ### 1. [Issue Title]
+
 **File**: `product-guidelines/[filename]`
 **Problem**: [Specific issue description]
 **Recommendation**: [How to improve]
@@ -203,12 +222,14 @@ Provide a comprehensive quality report with this structure:
 ## Quality Checklist Results
 
 ### Journey Alignment ✅/⚠️/❌
+
 - [✅/⚠️/❌] References specific user journey
 - [✅/⚠️/❌] Decisions trace to user value
 - [✅/⚠️/❌] Quantified value ratio included
 - [✅/⚠️/❌] Serves critical path (Steps 1-3)
 
 ### Philosophy Adherence ✅/⚠️/❌
+
 - [✅/⚠️/❌] User-first thinking (not tech-first)
 - [✅/⚠️/❌] Generative (specific, not generic)
 - [✅/⚠️/❌] Journey-driven decisions
@@ -216,6 +237,7 @@ Provide a comprehensive quality report with this structure:
 - [✅/⚠️/❌] Boring is beautiful (proven tech)
 
 ### Completeness ✅/⚠️/❌
+
 - [✅/⚠️/❌] All template sections filled
 - [✅/⚠️/❌] "What We DIDN'T Choose" sections (2+ alternatives)
 - [✅/⚠️/❌] Decision rationale provided
@@ -223,6 +245,7 @@ Provide a comprehensive quality report with this structure:
 - [✅/⚠️/❌] Trade-offs acknowledged
 
 ### Consistency ✅/⚠️/❌
+
 - [✅/⚠️/❌] Tech aligns with journey requirements
 - [✅/⚠️/❌] Mission promises aha moment value
 - [✅/⚠️/❌] Metrics measure mission fulfillment
@@ -230,6 +253,7 @@ Provide a comprehensive quality report with this structure:
 - [✅/⚠️/❌] No contradictions between sessions
 
 ### Specificity ✅/⚠️/❌
+
 - [✅/⚠️/❌] Specific personas (not "users")
 - [✅/⚠️/❌] Quantified improvements
 - [✅/⚠️/❌] Concrete examples
@@ -237,7 +261,9 @@ Provide a comprehensive quality report with this structure:
 - [✅/⚠️/❌] Could NOT apply to different product
 
 ### Technical Soundness ✅/⚠️/❌
+
 (Only for technical sessions 7-14)
+
 - [✅/⚠️/❌] Database: relationships, indexes, constraints
 - [✅/⚠️/❌] APIs: error responses, validation
 - [✅/⚠️/❌] Tests: multiple levels, edge cases
@@ -247,11 +273,14 @@ Provide a comprehensive quality report with this structure:
 ## File-by-File Assessment
 
 ### 00-user-journey.md [✅/⚠️/❌]
+
 **Quality**: [Excellent/Good/Needs Improvement]
 **Strengths**:
+
 - [What's done well]
 
 **Areas to Improve**:
+
 - [Specific improvements needed]
 
 [Repeat for each file]
@@ -259,6 +288,7 @@ Provide a comprehensive quality report with this structure:
 ## What's Done Well ✨
 
 [Highlight strong aspects across all outputs]
+
 - [Specific praise]
 - [What demonstrates quality]
 - [Good examples to maintain]
@@ -266,14 +296,17 @@ Provide a comprehensive quality report with this structure:
 ## Recommended Actions
 
 ### Priority 1: Critical (Do First)
+
 1. [Specific action for critical issue]
 2. [Another critical action]
 
 ### Priority 2: Important (Do Soon)
+
 1. [Specific action for important issue]
 2. [Another important action]
 
 ### Priority 3: Enhancements (Nice to Have)
+
 1. [Optional improvement]
 2. [Another enhancement]
 
@@ -282,12 +315,15 @@ Provide a comprehensive quality report with this structure:
 Based on issues found, consider re-running these sessions:
 
 **Must regenerate**:
+
 - `/[command]` - [Reason why]
 
 **Should regenerate**:
+
 - `/[command]` - [Reason why]
 
 **Optional refinement**:
+
 - `/[command]` - [Reason why]
 
 ## Overall Assessment
@@ -295,12 +331,15 @@ Based on issues found, consider re-running these sessions:
 [Detailed summary of output quality]
 
 **Strengths**:
+
 - [What's working well]
 
 **Weaknesses**:
+
 - [What needs work]
 
 **Next Steps**:
+
 1. [Most important action]
 2. [Second most important]
 3. [Third priority]
@@ -308,6 +347,7 @@ Based on issues found, consider re-running these sessions:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Need help addressing issues? You can:
+
 - Re-run specific sessions: `/[command]`
 - Check examples: `examples/compliance-saas/`
 - Review philosophy: Read PHILOSOPHY.md
@@ -379,6 +419,7 @@ When identifying issues, always provide:
 ### If No Outputs Exist Yet
 
 **Message**:
+
 ```
 No cascade outputs found in product-guidelines/ directory.
 
@@ -390,6 +431,7 @@ Can't validate what doesn't exist yet! 😊
 ### If Only Some Sessions Complete
 
 **Message**:
+
 ```
 Partial cascade detected. Validating [X] completed sessions...
 
@@ -401,6 +443,7 @@ Run `/cascade-status` to see which sessions remain.
 ### If Outputs Are Excellent
 
 **Message**:
+
 ```
 🎉 Excellent Quality!
 

@@ -1,12 +1,20 @@
-"use client"
+'use client'
 
-import { use, useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { ChevronLeft, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, ExternalLink } from "lucide-react"
-import { TopNav } from "@/components/navigation/TopNav"
-import { Breadcrumb } from "@/components/navigation/Breadcrumb"
-import { CardSkeleton } from "@/components/ui/LoadingSkeleton"
-import type { Assessment, AssessmentResultsResponse, AssessmentResult } from "@/types/app"
+import { use, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  ChevronLeft,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+} from 'lucide-react'
+import { TopNav } from '@/components/navigation/TopNav'
+import { Breadcrumb } from '@/components/navigation/Breadcrumb'
+import { CardSkeleton } from '@/components/ui/LoadingSkeleton'
+import type { Assessment, AssessmentResultsResponse, AssessmentResult } from '@/types/app'
 
 // TODO(API Integration): Replace with React Query hook when backend is ready
 // Expected endpoint: GET /v1/assessments/:id
@@ -69,12 +77,12 @@ function ResultCard({ result }: { result: AssessmentResult }) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   const icons = {
-    pass: { Icon: CheckCircle, color: "text-green-500" },
-    fail: { Icon: XCircle, color: "text-red-500" },
-    uncertain: { Icon: AlertTriangle, color: "text-yellow-500" },
+    pass: { Icon: CheckCircle, color: 'text-green-500' },
+    fail: { Icon: XCircle, color: 'text-red-500' },
+    uncertain: { Icon: AlertTriangle, color: 'text-yellow-500' },
   }
 
-  const status = result.pass ? "pass" : result.confidence === "low" ? "uncertain" : "fail"
+  const status = result.pass ? 'pass' : result.confidence === 'low' ? 'uncertain' : 'fail'
   const { Icon, color } = icons[status]
 
   return (
@@ -147,7 +155,7 @@ export default function AssessmentDetailPage({ params }: Props) {
   const { id } = use(params)
   const router = useRouter()
   const { data: assessment, isLoading } = useAssessmentQuery(id)
-  const { data: results } = useAssessmentResults(id, assessment?.status === "completed")
+  const { data: results } = useAssessmentResults(id, assessment?.status === 'completed')
 
   // Polling for assessment status updates
   // TODO(API Integration): Implement refetch logic when backend API is connected
@@ -155,7 +163,7 @@ export default function AssessmentDetailPage({ params }: Props) {
   // Endpoint: GET /v1/assessments/:id
   // Trigger: Every 30 seconds while status === "processing"
   useEffect(() => {
-    if (assessment?.status === "processing") {
+    if (assessment?.status === 'processing') {
       const interval = setInterval(() => {
         // Refresh page data to check for status updates
         // When React Query is implemented, use queryClient.invalidateQueries(['assessment', id]) instead
@@ -185,10 +193,11 @@ export default function AssessmentDetailPage({ params }: Props) {
           <div className="text-center py-12">
             <h2 className="text-xl font-semibold text-gray-900">Assessment not found</h2>
             <p className="text-sm text-gray-600 mt-2">
-              The assessment you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
+              The assessment you&apos;re looking for doesn&apos;t exist or you don&apos;t have
+              access to it.
             </p>
             <button
-              onClick={() => router.push("/assessments")}
+              onClick={() => router.push('/assessments')}
               className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
             >
               Back to Assessments
@@ -199,7 +208,7 @@ export default function AssessmentDetailPage({ params }: Props) {
     )
   }
 
-  const isProcessing = assessment.status === "processing" || assessment.status === "pending"
+  const isProcessing = assessment.status === 'processing' || assessment.status === 'pending'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -208,8 +217,8 @@ export default function AssessmentDetailPage({ params }: Props) {
       <main className="max-w-7xl mx-auto px-8 py-6">
         <Breadcrumb
           items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Assessments", href: "/assessments" },
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Assessments', href: '/assessments' },
             { label: `Assessment ${id.slice(0, 8)}...` },
           ]}
         />
@@ -232,31 +241,36 @@ export default function AssessmentDetailPage({ params }: Props) {
                 Started {new Date(assessment.created_at).toLocaleString()}
               </p>
             </div>
-            <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-              assessment.status === "completed"
-                ? "bg-green-100 text-green-700"
-                : assessment.status === "processing"
-                ? "bg-blue-100 text-blue-700"
-                : "bg-gray-100 text-gray-700"
-            }`}>
+            <span
+              className={`px-3 py-1 text-sm font-medium rounded-full ${
+                assessment.status === 'completed'
+                  ? 'bg-green-100 text-green-700'
+                  : assessment.status === 'processing'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 text-gray-700'
+              }`}
+            >
               {assessment.status}
             </span>
           </div>
 
-          {assessment.status === "completed" && (
+          {assessment.status === 'completed' && (
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="text-sm text-gray-500">Overall Result</div>
-                <div className={`text-2xl font-semibold mt-1 ${
-                  assessment.overall_pass ? "text-green-600" : "text-red-600"
-                }`}>
-                  {assessment.overall_pass ? "PASS" : "FAIL"}
+                <div
+                  className={`text-2xl font-semibold mt-1 ${
+                    assessment.overall_pass ? 'text-green-600' : 'text-red-600'
+                  }`}
+                >
+                  {assessment.overall_pass ? 'PASS' : 'FAIL'}
                 </div>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="text-sm text-gray-500">Criteria Passed</div>
                 <div className="text-2xl font-semibold text-gray-900 mt-1">
-                  {assessment.criteria_passed ?? 0}/{(assessment.criteria_passed ?? 0) + (assessment.criteria_failed ?? 0)}
+                  {assessment.criteria_passed ?? 0}/
+                  {(assessment.criteria_passed ?? 0) + (assessment.criteria_failed ?? 0)}
                 </div>
               </div>
             </div>
@@ -266,14 +280,14 @@ export default function AssessmentDetailPage({ params }: Props) {
         {isProcessing && (
           <ProgressIndicator
             percent={assessment.progress_percent || 0}
-            message={assessment.progress_message || "Initializing assessment..."}
+            message={assessment.progress_message || 'Initializing assessment...'}
           />
         )}
 
-        {assessment.status === "completed" && results && (
+        {assessment.status === 'completed' && results && (
           <div className="space-y-3">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Validation Results</h2>
-            {results.results?.map((result) => (
+            {results.results?.map(result => (
               <ResultCard key={result.criteria_id} result={result} />
             ))}
           </div>

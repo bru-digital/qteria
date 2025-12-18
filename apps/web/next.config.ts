@@ -1,8 +1,8 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@qteria/types"],
-};
+  transpilePackages: ['@qteria/types'],
+}
 
-export default nextConfig;
+export default nextConfig

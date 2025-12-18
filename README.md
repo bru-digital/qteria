@@ -79,6 +79,7 @@ python scripts/seed_data.py
 ```
 
 **What gets created:**
+
 - 1 demo organization: "TÜV SÜD Demo"
 - 2 users with different roles:
   - Process Manager: `process.manager@tuvsud-demo.com`
@@ -88,6 +89,7 @@ python scripts/seed_data.py
   - Medical Device Regulation (EU) 2017/745 (2 buckets, 4 criteria)
 
 **Script options:**
+
 ```bash
 python scripts/seed_data.py           # Idempotent - skips if data exists
 python scripts/seed_data.py --reset   # Reset database and reseed
@@ -229,6 +231,7 @@ python scripts/seed_data.py --reset  # Reset and reseed
 ## Tech Stack
 
 ### Frontend
+
 - **Next.js 14+** (React 18, App Router)
 - **TypeScript** (strict mode)
 - **Tailwind CSS** (styling)
@@ -238,6 +241,7 @@ python scripts/seed_data.py --reset  # Reset and reseed
 - **Zustand** (state management)
 
 ### Backend
+
 - **FastAPI** (Python web framework)
 - **SQLAlchemy 2.0** (ORM)
 - **Alembic** (database migrations)
@@ -248,6 +252,7 @@ python scripts/seed_data.py --reset  # Reset and reseed
 - **Claude 3.5 Sonnet** (AI validation)
 
 ### Infrastructure
+
 - **PostgreSQL 15** (database)
 - **Redis 7** (cache + queue)
 - **Vercel** (frontend hosting)
@@ -373,10 +378,12 @@ npx playwright test --ui
 ### CI/CD Testing
 
 Tests run automatically on:
+
 - **Every PR**: Lint, type-check, unit tests, integration tests, E2E smoke tests
 - **Every merge to main**: Full test suite + security scans
 
 Quality gates (must pass to merge):
+
 - ✅ All tests passing
 - ✅ Code coverage >= 70%
 - ✅ No ESLint/Ruff errors
@@ -391,22 +398,22 @@ See `.env.template` for all available environment variables.
 
 ### Required Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/qteria_dev` |
-| `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
-| `NEXTAUTH_SECRET` | NextAuth.js secret (32+ chars) | Generate: `openssl rand -base64 32` |
-| `JWT_SECRET` | JWT signing secret (32+ chars) | Generate: `openssl rand -base64 32` |
-| `ANTHROPIC_API_KEY` | Claude API key | `sk-ant-...` from https://console.anthropic.com/ |
+| Variable            | Description                    | Example                                                    |
+| ------------------- | ------------------------------ | ---------------------------------------------------------- |
+| `DATABASE_URL`      | PostgreSQL connection string   | `postgresql://postgres:postgres@localhost:5432/qteria_dev` |
+| `REDIS_URL`         | Redis connection string        | `redis://localhost:6379/0`                                 |
+| `NEXTAUTH_SECRET`   | NextAuth.js secret (32+ chars) | Generate: `openssl rand -base64 32`                        |
+| `JWT_SECRET`        | JWT signing secret (32+ chars) | Generate: `openssl rand -base64 32`                        |
+| `ANTHROPIC_API_KEY` | Claude API key                 | `sk-ant-...` from https://console.anthropic.com/           |
 
 ### Optional Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_API_URL` | API base URL for frontend | `http://localhost:8000/v1` |
-| `LOG_LEVEL` | Logging level | `INFO` |
-| `SENTRY_DSN` | Sentry error tracking | (none) |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token | (none - required for production) |
+| Variable                | Description               | Default                          |
+| ----------------------- | ------------------------- | -------------------------------- |
+| `NEXT_PUBLIC_API_URL`   | API base URL for frontend | `http://localhost:8000/v1`       |
+| `LOG_LEVEL`             | Logging level             | `INFO`                           |
+| `SENTRY_DSN`            | Sentry error tracking     | (none)                           |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token         | (none - required for production) |
 
 ---
 
@@ -429,6 +436,7 @@ vercel --prod
 ```
 
 Environment variables to set in Vercel dashboard:
+
 - `NEXT_PUBLIC_API_URL`
 - `NEXTAUTH_SECRET`
 - `DATABASE_URL` (Vercel Postgres)
@@ -451,6 +459,7 @@ railway up
 ```
 
 Environment variables to set in Railway dashboard:
+
 - `DATABASE_URL`
 - `REDIS_URL`
 - `JWT_SECRET`
@@ -569,6 +578,7 @@ Proprietary - All rights reserved
 ## Support
 
 For issues or questions:
+
 - **Documentation**: `/docs` folder
 - **GitHub Issues**: https://github.com/your-org/qteria/issues
 - **Email**: support@qteria.com

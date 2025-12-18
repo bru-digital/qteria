@@ -9,11 +9,13 @@ You are helping the user create a comprehensive observability strategy including
 ## When to Use This
 
 **Run AFTER Session 13** (`/plan-deployment`):
+
 - You've planned deployment and now need monitoring strategy
 - You want observability from day one
 - You need to define SLOs and error budgets
 
 **This is now a CORE session** because:
+
 - You can't improve what you can't measure
 - Observability is essential for reliable production systems
 - Monitoring ensures continuous delivery of journey value
@@ -25,31 +27,39 @@ Create a comprehensive observability strategy using the prompt in `/prompts/oper
 ### Steps to Execute
 
 1. **Read the observability prompt**:
+
    ```bash
    Read /prompts/operations/monitoring.md
    ```
 
 2. **Read the template structure**:
+
    ```bash
    Read templates/14-observability-strategy-template.md
    ```
 
 3. **Check for architecture from Session 4** (recommended):
+
    ```bash
    Read product-guidelines/04-architecture.md
    ```
+
    - Understand system components to monitor
 
 4. **Check for metrics from Session 4** (recommended):
+
    ```bash
    Read product-guidelines/04-metrics.md
    ```
+
    - Business metrics inform technical monitoring
 
 5. **Check for deployment plan** (recommended):
+
    ```bash
    Read product-guidelines/13-deployment-plan.md
    ```
+
    - Monitoring integrates with deployment
 
 6. **Interview the user** following the observability prompt:
@@ -89,6 +99,7 @@ Create a comprehensive observability strategy using the prompt in `/prompts/oper
 `product-guidelines/14-observability-strategy.md`
 
 This will be used by:
+
 - Engineers implementing monitoring
 - SRE/DevOps teams managing production
 - On-call engineers responding to incidents
@@ -98,6 +109,7 @@ This will be used by:
 ## Template Structure
 
 The output follows this structure:
+
 - Observability Philosophy (principles and goals)
 - Golden Signals (latency, traffic, errors, saturation)
 - Logging Strategy (what, format, retention)
@@ -201,11 +213,13 @@ Ready to implement? Start with golden signals and critical alerts.
 ## After This Session
 
 **Implementation priority**:
+
 1. **Phase 1**: Golden signals + critical alerts (Week 1)
 2. **Phase 2**: Dashboards + SLOs (Week 2)
 3. **Phase 3**: Distributed tracing + runbooks (Week 3+)
 
 **Use this document**:
+
 - When implementing monitoring code
 - When setting up dashboards and alerts
 - When responding to incidents (runbooks)

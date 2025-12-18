@@ -11,24 +11,31 @@ This document defines the brand messaging framework that guides all customer com
 ## How This Traces to User Journey
 
 **Journey audience** (from `product-guidelines/00-user-journey.md`):
+
 - [Who are they? What's their role/context?]
 
 **Journey problem** (from `product-guidelines/00-user-journey.md`):
+
 - [What do they struggle with? Where does friction occur?]
 
 **Journey transformation** (from `product-guidelines/00-user-journey.md`):
+
 - [From what state → to what state?]
 
 **Journey value** (from `product-guidelines/00-user-journey.md`):
+
 - [What value gets delivered? When is the "aha moment"?]
 
 **Mission foundation** (from `product-guidelines/02-mission.md`):
+
 - [Your mission statement]
 
 **Brand voice** (from `product-guidelines/08-brand-strategy.md`):
+
 - [Key personality traits - how you sound]
 
 **Messaging Goal**:
+
 - Communicate [journey transformation] to [journey audience] in [brand voice]
 - Every message connects back to the user journey
 
@@ -51,11 +58,13 @@ This document defines the brand messaging framework that guides all customer com
 **Who they are**: [Title, role, company size, industry]
 
 **Their context**:
+
 - Where they work: [Environment]
 - What they do: [Responsibilities]
 - What they care about: [Goals and motivations]
 
 **Their pain points**:
+
 1. [Pain point 1]
 2. [Pain point 2]
 3. [Pain point 3]
@@ -75,21 +84,24 @@ This document defines the brand messaging framework that guides all customer com
 ## Elevator Pitches
 
 ### 15-Second Version
-*For initial introductions, social bios*
+
+_For initial introductions, social bios_
 
 [2-3 sentences max. Who you serve, what you deliver, why it matters.]
 
 ---
 
 ### 30-Second Version
-*For networking, quick conversations*
+
+_For networking, quick conversations_
 
 [3-4 sentences. Audience + problem + solution + differentiation.]
 
 ---
 
 ### 1-Minute Version
-*For deeper conversations, demos, pitches*
+
+_For deeper conversations, demos, pitches_
 
 [5-6 sentences. Context + problem + solution + how it works + benefits + proof point.]
 
@@ -106,6 +118,7 @@ This document defines the brand messaging framework that guides all customer com
 **Why it matters**: [Why customers care about this]
 
 **Supporting points**:
+
 - [Point 1]
 - [Point 2]
 - [Point 3]
@@ -123,6 +136,7 @@ This document defines the brand messaging framework that guides all customer com
 **Why it matters**: [Why customers care]
 
 **Supporting points**:
+
 - [Point 1]
 - [Point 2]
 - [Point 3]
@@ -140,6 +154,7 @@ This document defines the brand messaging framework that guides all customer com
 **Why it matters**: [Why customers care]
 
 **Supporting points**:
+
 - [Point 1]
 - [Point 2]
 - [Point 3]
@@ -150,13 +165,14 @@ This document defines the brand messaging framework that guides all customer com
 
 ---
 
-### Pillar 4: [Theme Name] *(optional)*
+### Pillar 4: [Theme Name] _(optional)_
 
 **Core message**: [One sentence]
 
 **Why it matters**: [Why customers care]
 
 **Supporting points**:
+
 - [Point 1]
 - [Point 2]
 - [Point 3]
@@ -170,33 +186,37 @@ This document defines the brand messaging framework that guides all customer com
 ## Voice and Tone Guidelines
 
 ### Our Voice
-*Consistent personality across all communication*
+
+_Consistent personality across all communication_
 
 **How we sound**: [3-5 adjectives describing your voice]
 
 **What we do**:
+
 - ✅ [We do this]
 - ✅ [We do this]
 - ✅ [We do this]
 
 **What we don't do**:
+
 - ❌ [We don't do this]
 - ❌ [We don't do this]
 - ❌ [We don't do this]
 
 ### Tone Variations
-*How voice adapts to context*
 
-| Context | Tone | Example |
-|---------|------|---------|
-| **Default** | [Adjective] | [Sample sentence] |
-| **Success/Celebration** | [Adjective] | [Sample sentence] |
-| **Error/Failure** | [Adjective] | [Sample sentence] |
+_How voice adapts to context_
+
+| Context                           | Tone        | Example           |
+| --------------------------------- | ----------- | ----------------- |
+| **Default**                       | [Adjective] | [Sample sentence] |
+| **Success/Celebration**           | [Adjective] | [Sample sentence] |
+| **Error/Failure**                 | [Adjective] | [Sample sentence] |
 | **Sensitive (payment, personal)** | [Adjective] | [Sample sentence] |
-| **Urgent/Critical** | [Adjective] | [Sample sentence] |
-| **Educational** | [Adjective] | [Sample sentence] |
-| **Marketing** | [Adjective] | [Sample sentence] |
-| **Support** | [Adjective] | [Sample sentence] |
+| **Urgent/Critical**               | [Adjective] | [Sample sentence] |
+| **Educational**                   | [Adjective] | [Sample sentence] |
+| **Marketing**                     | [Adjective] | [Sample sentence] |
+| **Support**                       | [Adjective] | [Sample sentence] |
 
 ---
 
@@ -280,8 +300,8 @@ This document defines the brand messaging framework that guides all customer com
 
 ### Words We Use
 
-| Instead of... | We say... | Because... |
-|---------------|-----------|------------|
+| Instead of...  | We say...  | Because...  |
+| -------------- | ---------- | ----------- |
 | [Generic term] | [Our term] | [Reasoning] |
 | [Generic term] | [Our term] | [Reasoning] |
 | [Generic term] | [Our term] | [Reasoning] |
@@ -289,10 +309,10 @@ This document defines the brand messaging framework that guides all customer com
 ### Words We Avoid
 
 | Word/Phrase | Why We Avoid |
-|-------------|--------------|
-| [Word] | [Reason] |
-| [Word] | [Reason] |
-| [Word] | [Reason] |
+| ----------- | ------------ |
+| [Word]      | [Reason]     |
+| [Word]      | [Reason]     |
+| [Word]      | [Reason]     |
 
 ---
 
@@ -300,11 +320,11 @@ This document defines the brand messaging framework that guides all customer com
 
 ### How We Position vs. Competitors
 
-| Competitor | Their Message | Our Counter-Position |
-|------------|---------------|---------------------|
+| Competitor     | Their Message       | Our Counter-Position   |
+| -------------- | ------------------- | ---------------------- |
 | [Competitor 1] | [How they position] | [How we differentiate] |
 | [Competitor 2] | [How they position] | [How we differentiate] |
-| [Alternative] | [How they position] | [How we differentiate] |
+| [Alternative]  | [How they position] | [How we differentiate] |
 
 ---
 

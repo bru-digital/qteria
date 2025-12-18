@@ -39,11 +39,13 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Frontend: Next.js 14+ (App Router), React Hook Form, Zod validation
 - UI Library: Tailwind CSS, Shadcn UI (form components)
 - State Management: React Hook Form (form state)
 
 **Workflow Builder Page** (`app/workflows/new/page.tsx`):
+
 ```typescript
 "use client"
 import { useForm, useFieldArray } from "react-hook-form"
@@ -263,6 +265,7 @@ export default function NewWorkflowPage() {
 **Effort**: 3 person-days
 
 **Breakdown**:
+
 - UI layout: 1 day (form structure, styling)
 - Dynamic fields logic: 1 day (add/remove buckets/criteria)
 - Form validation: 0.5 days (Zod schema, error messages)
@@ -289,6 +292,7 @@ export default function NewWorkflowPage() {
 ## Testing Requirements
 
 **E2E Tests** (critical flow):
+
 - [ ] Fill out form → click "Create Workflow" → workflow created
 - [ ] Add 3 buckets, 5 criteria → all saved
 - [ ] Remove bucket → bucket not included in API request
@@ -297,6 +301,7 @@ export default function NewWorkflowPage() {
 - [ ] Create workflow → redirect to details page
 
 **Usability Tests**:
+
 - [ ] Time to create workflow <30 minutes (target metric)
 - [ ] Process Manager can complete without help
 - [ ] Error messages clear and actionable
@@ -306,9 +311,11 @@ export default function NewWorkflowPage() {
 ## Risks & Mitigations
 
 **Risk**: UI too complex, takes >30 minutes to create workflow
+
 - **Mitigation**: Usability test with TÜV SÜD, simplify UI, provide examples
 
 **Risk**: Form validation errors not clear
+
 - **Mitigation**: Show inline error messages, highlight required fields
 
 ---

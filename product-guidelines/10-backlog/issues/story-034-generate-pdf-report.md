@@ -30,16 +30,19 @@
 ## Technical Details
 
 **Tech Stack**:
+
 - Library: ReportLab or WeasyPrint (Python PDF generation)
 - Storage: Vercel Blob
 - Template: HTML → PDF conversion
 
 **API Endpoint**:
+
 ```python
 POST /v1/assessments/{assessment_id}/reports
 ```
 
 **Implementation**:
+
 ```python
 from weasyprint import HTML, CSS
 
@@ -80,6 +83,7 @@ async def generate_report(
 ```
 
 **Report Template Structure**:
+
 ```
 ┌─────────────────────────────────────────┐
 │ Qteria Validation Report                │

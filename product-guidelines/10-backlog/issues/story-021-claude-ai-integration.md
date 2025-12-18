@@ -35,11 +35,13 @@
 ## Technical Approach
 
 **Tech Stack Components**:
+
 - AI: Claude 3.5 Sonnet via Anthropic API
 - Prompt Engineering: Structured prompts with examples
 - Error Handling: Retry logic, timeouts, fallbacks
 
 **Claude Integration** (`app/services/claude_validator.py`):
+
 ```python
 import anthropic
 import os
@@ -190,6 +192,7 @@ Now validate the criteria against the provided document."""
 **Effort**: 5 person-days
 
 **Breakdown**:
+
 - Claude API integration: 1 day
 - Prompt engineering: 2 days (critical for accuracy)
 - Error handling: 1 day
@@ -214,12 +217,14 @@ Now validate the criteria against the provided document."""
 ## Testing Requirements
 
 **Accuracy Tests** (20 real documents):
+
 - [ ] 10 clear PASS cases → AI returns pass=true
 - [ ] 10 clear FAIL cases → AI returns pass=false
 - [ ] Measure false positives (<5%)
 - [ ] Measure false negatives (<1%)
 
 **Performance Tests**:
+
 - [ ] Single criteria validation <30 seconds
 - [ ] API timeout handling works
 
@@ -228,9 +233,11 @@ Now validate the criteria against the provided document."""
 ## Risks & Mitigations
 
 **Risk**: AI accuracy <95%
+
 - **Mitigation**: Extensive prompt engineering, few-shot examples, test with TÜV SÜD
 
 **Risk**: Claude API downtime
+
 - **Mitigation**: Retry logic, clear error messages
 
 ---

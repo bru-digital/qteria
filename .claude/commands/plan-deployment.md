@@ -9,11 +9,13 @@ You are helping the user create a comprehensive deployment strategy including CI
 ## When to Use This
 
 **Run AFTER Session 12** (`/scaffold-project`):
+
 - You have a working development environment and need deployment strategy
 - You're ready to plan production infrastructure
 - You want CI/CD automation from day one
 
 **This is now a CORE session** because:
+
 - Every product needs a deployment strategy to ship
 - CI/CD and infrastructure decisions are foundational, not optional
 - Deployment planning ensures reliable delivery of journey value
@@ -25,26 +27,32 @@ Create a comprehensive deployment strategy using the prompt in `/prompts/operati
 ### Steps to Execute
 
 1. **Read the deployment prompt**:
+
    ```bash
    Read /prompts/operations/deployment.md
    ```
 
 2. **Read the template structure**:
+
    ```bash
    Read templates/13-deployment-plan-template.md
    ```
 
 3. **Check for architecture from Session 4** (recommended):
+
    ```bash
    Read product-guidelines/04-architecture.md
    ```
+
    - Understand system components and dependencies
    - Identify deployment requirements
 
 4. **Check for tech stack from Session 3** (recommended):
+
    ```bash
    Read product-guidelines/02-tech-stack.md
    ```
+
    - Know what needs to be deployed (frontend, backend, database, etc.)
 
 5. **Interview the user** following the deployment prompt:
@@ -82,6 +90,7 @@ Create a comprehensive deployment strategy using the prompt in `/prompts/operati
 `product-guidelines/13-deployment-plan.md`
 
 This will be used by:
+
 - Engineers setting up CI/CD
 - DevOps/Platform teams managing infrastructure
 - Product managers understanding deploy cadence
@@ -90,6 +99,7 @@ This will be used by:
 ## Template Structure
 
 The output follows this structure:
+
 - Deployment Strategy Overview
 - Environment Architecture (dev, staging, prod)
 - CI/CD Pipeline Specifications
@@ -185,6 +195,7 @@ Ready to implement? Start with the CI/CD pipeline setup.
 ## After This Session
 
 **Implementation steps**:
+
 1. Set up CI/CD pipeline (GitHub Actions, CircleCI, etc.)
 2. Create infrastructure as code (Terraform, Pulumi, etc.)
 3. Configure environments (dev, staging, prod)
@@ -193,6 +204,7 @@ Ready to implement? Start with the CI/CD pipeline setup.
 6. Document runbooks for your team
 
 **Use this document**:
+
 - When setting up new services
 - When onboarding engineers
 - When debugging deployment issues

@@ -28,6 +28,7 @@
 ## Technical Details
 
 **API Endpoints**:
+
 ```python
 POST /v1/reports/{report_id}/share  # Create public token
 GET /public/reports/{token}          # Public access (no auth)
@@ -35,6 +36,7 @@ DELETE /v1/reports/{report_id}/share # Revoke
 ```
 
 **Implementation**:
+
 ```python
 import secrets
 

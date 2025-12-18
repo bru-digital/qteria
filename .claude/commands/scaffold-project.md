@@ -21,6 +21,7 @@ You are a senior engineer setting up a new project. Your job is to:
 **This is where strategy meets reality.**
 
 After 11 sessions, users have:
+
 - ✅ Validated user journey
 - ✅ Validated product strategy
 - ✅ Chosen optimal tech stack
@@ -53,12 +54,14 @@ Read: product-guidelines/10-backlog/BACKLOG.md
 ```
 
 **Context Optimization**: We read essentials versions for significant context reduction:
+
 - `11-product-strategy-essentials.md` (~65% smaller) - Contains vision, positioning, goals, principles, and roadmap themes
 - `07-database-schema-essentials.md` (~56% smaller) - Contains table list, ERD, relationships sufficient for scaffold generation
 - `08-api-contracts-essentials.md` (~80% smaller) - Contains endpoint list organized by journey step
 - `09-test-strategy-essentials.md` (~66% smaller) - Contains coverage targets, test types, and quality gates
 
 **Extract**:
+
 - **Project name** (from journey)
 - **Tech stack choices** (languages, frameworks, databases, tools)
 - **Architecture decisions** (monorepo vs multi-repo, patterns, modules)
@@ -67,6 +70,7 @@ Read: product-guidelines/10-backlog/BACKLOG.md
 ### Step 2: Determine Repository Structure
 
 **Read architecture decision** (from `05-architecture.md`):
+
 - Monorepo or multi-repo?
 - Microservices or monolith?
 - Number of distinct services?
@@ -95,6 +99,7 @@ Read: product-guidelines/10-backlog/BACKLOG.md
 ```
 
 **Example (compliance-saas):**
+
 - **Services**: Web app (Next.js), Background worker (Python)
 - **Shared code**: Data models, API contracts, validation schemas
 - **Team size**: 2 developers
@@ -134,6 +139,7 @@ If monorepo chosen:
 **Example structures:**
 
 **JavaScript/TypeScript Monorepo (Turborepo):**
+
 ```
 project-name/
 ├── apps/
@@ -159,6 +165,7 @@ project-name/
 ```
 
 **Python Monorepo:**
+
 ```
 project-name/
 ├── apps/
@@ -179,6 +186,7 @@ project-name/
 ```
 
 **Simple Single-Repo (No monorepo tool):**
+
 ```
 project-name/
 ├── src/                    # Application code
@@ -214,10 +222,7 @@ For EACH file, create ACTUAL working configuration (not templates).
     "db:migrate": "cd packages/database && prisma migrate dev",
     "db:studio": "cd packages/database && prisma studio"
   },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": ["apps/*", "packages/*"],
   "devDependencies": {
     "turbo": "^1.10.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
@@ -282,11 +287,11 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -295,11 +300,11 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -311,7 +316,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
-      - "5050:80"
+      - '5050:80'
     depends_on:
       postgres:
         condition: service_healthy
@@ -322,6 +327,7 @@ volumes:
 ```
 
 **Customize based on tech stack:**
+
 - PostgreSQL → Use above
 - MongoDB → Replace with mongo:7 image
 - MySQL → Replace with mysql:8 image
@@ -365,6 +371,7 @@ NODE_ENV=development
 ```
 
 **Add variables based on:**
+
 - Tech stack integrations (Stripe, OpenAI, etc.)
 - Authentication method (Clerk, Auth0, etc.)
 - Deployment target (Vercel, AWS, etc.)
@@ -473,28 +480,30 @@ jobs:
 ```
 
 **Customize based on tech stack:**
+
 - Python: Use `setup-python` action, `pip install`, `pytest`
 - Go: Use `setup-go` action, `go test`, `go build`
 - Multi-language: Add multiple jobs for each language
 
 **Add deployment job** (if architecture specifies):
-```yaml
-  deploy:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [lint, test, build]
-    if: github.ref == 'refs/heads/develop'
 
-    steps:
-      - uses: actions/checkout@v4
-      # Add deployment steps based on target (Vercel, AWS, Railway, etc.)
+```yaml
+deploy:
+  name: Deploy to Staging
+  runs-on: ubuntu-latest
+  needs: [lint, test, build]
+  if: github.ref == 'refs/heads/develop'
+
+  steps:
+    - uses: actions/checkout@v4
+    # Add deployment steps based on target (Vercel, AWS, Railway, etc.)
 ```
 
 #### E. Development Documentation (README.md)
 
 **Create comprehensive setup instructions:**
 
-```markdown
+````markdown
 # [Project Name]
 
 [One-sentence description from user journey]
@@ -514,29 +523,35 @@ jobs:
    git clone <repo-url>
    cd project-name
    ```
+````
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.template .env
    # Edit .env with your local values
    ```
 
 4. **Start local services**
+
    ```bash
    docker-compose up -d
    ```
 
 5. **Run database migrations**
+
    ```bash
    npm run db:migrate
    ```
 
 6. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -575,7 +590,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines.
 ## License
 
 [License information]
-```
+
+````
 
 #### F. Additional Configuration Files
 
@@ -601,16 +617,13 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines.
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
-```
+````
 
 **ESLint Configuration (.eslintrc.json):**
+
 ```json
 {
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
   "root": true,
@@ -622,6 +635,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines.
 ```
 
 **Prettier Configuration (.prettierrc):**
+
 ```json
 {
   "semi": false,
@@ -633,6 +647,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines.
 ```
 
 **.gitignore:**
+
 ```gitignore
 # Dependencies
 node_modules/
@@ -681,7 +696,7 @@ Create two outputs:
 
 #### A. Documentation (product-guidelines/12-project-scaffold.md)
 
-```markdown
+````markdown
 # Project Scaffold
 
 **Generated**: [Date]
@@ -690,17 +705,20 @@ Create two outputs:
 ## Decisions Made
 
 ### Repository Structure
+
 **Decision**: [Monorepo/Multi-repo/Simple]
 **Tool**: [Turborepo/Nx/Poetry/None]
 **Reasoning**: [Why this structure fits the architecture and team]
 
 ### Development Environment
+
 **Services**: [List Docker services]
 **Database**: [PostgreSQL/MongoDB/etc.]
 **Caching**: [Redis/Memcached/None]
 **Message Queue**: [RabbitMQ/SQS/None]
 
 ### CI/CD Pipeline
+
 **Platform**: GitHub Actions
 **Jobs**: Lint, Test, Build, [Deploy if applicable]
 **Test Database**: [How tests run]
@@ -709,6 +727,7 @@ Create two outputs:
 ## Generated Files
 
 ### Configuration
+
 - ✅ `package.json` (or `pyproject.toml`)
 - ✅ `docker-compose.yml`
 - ✅ `.env.template`
@@ -719,12 +738,15 @@ Create two outputs:
 - ✅ `.gitignore`
 
 ### CI/CD
+
 - ✅ `.github/workflows/ci.yml`
 
 ### Documentation
+
 - ✅ `README.md`
 
 ### Directory Structure
+
 [Full tree from Step 3]
 
 ## Setup Instructions
@@ -745,8 +767,10 @@ After copying the scaffold:
    git add .
    git commit -m "Initial commit: Project scaffold"
    ```
+````
 
 2. **Set up GitHub repository**
+
    ```bash
    gh repo create project-name --private
    git remote add origin <repo-url>
@@ -762,6 +786,7 @@ After copying the scaffold:
    - Set up deployment target (Vercel/AWS/etc.)
    - Add deployment secrets to GitHub
    - Update CI/CD to deploy on merge to main
+
 ```
 
 #### B. Actual Files (product-guidelines/12-project-scaffold/)
@@ -769,6 +794,7 @@ After copying the scaffold:
 Create a directory with ALL generated files:
 
 ```
+
 product-guidelines/12-project-scaffold/
 ├── package.json
 ├── docker-compose.yml
@@ -779,11 +805,12 @@ product-guidelines/12-project-scaffold/
 ├── .prettierrc
 ├── .gitignore
 ├── .github/
-│   └── workflows/
-│       └── ci.yml
+│ └── workflows/
+│ └── ci.yml
 ├── README.md
 └── apps/ (or src/)
-    └── .gitkeep
+└── .gitkeep
+
 ```
 
 ---
@@ -916,6 +943,7 @@ product-guidelines/12-project-scaffold/
 ## After Generation
 
 ```
+
 ✅ Session 8 complete! Development environment ready.
 
 Your Scaffold:
@@ -926,12 +954,14 @@ Your Scaffold:
 🐳 Local development services (Docker Compose)
 
 Next Steps:
+
 1. Copy files from product-guidelines/12-project-scaffold/ to your project root
 2. Follow README.md setup instructions
 3. Verify environment works (docker-compose up, npm run dev)
 4. Start implementing P0 stories from product-guidelines/10-backlog/
 
 When ready, start building or run: /cascade-status
+
 ```
 
 ---
@@ -954,3 +984,4 @@ When ready, start building or run: /cascade-status
 ---
 
 **Now, bridge the gap from strategy to working code! Generate a complete development environment!**
+```

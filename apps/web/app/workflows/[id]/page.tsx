@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import { use } from "react"
-import { useRouter } from "next/navigation"
-import { Archive, Trash2, ChevronLeft } from "lucide-react"
-import { TopNav } from "@/components/navigation/TopNav"
-import { Breadcrumb } from "@/components/navigation/Breadcrumb"
-import { CardSkeleton } from "@/components/ui/LoadingSkeleton"
-import { useToast } from "@/components/ui/Toast"
-import { useState, useEffect } from "react"
-import type { Workflow, Bucket, Criterion } from "@/types/app"
+import { use } from 'react'
+import { useRouter } from 'next/navigation'
+import { Archive, Trash2, ChevronLeft } from 'lucide-react'
+import { TopNav } from '@/components/navigation/TopNav'
+import { Breadcrumb } from '@/components/navigation/Breadcrumb'
+import { CardSkeleton } from '@/components/ui/LoadingSkeleton'
+import { useToast } from '@/components/ui/Toast'
+import { useState, useEffect } from 'react'
+import type { Workflow, Bucket, Criterion } from '@/types/app'
 
 /**
  * useWorkflowQuery Hook
@@ -54,7 +54,7 @@ const useWorkflowQuery = (id: string) => {
           // Check cancelled after await before throwing
           if (cancelled) return
 
-          throw new Error(errorData.error?.message || "Failed to fetch workflow")
+          throw new Error(errorData.error?.message || 'Failed to fetch workflow')
         }
 
         const data = await response.json()
@@ -65,7 +65,7 @@ const useWorkflowQuery = (id: string) => {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unknown error")
+          setError(err instanceof Error ? err.message : 'Unknown error')
           setIsLoading(false)
         }
       }
@@ -99,11 +99,11 @@ export default function WorkflowDetailPage({ params }: Props) {
     try {
       // TODO: Implement archive API call (connects to PATCH /v1/workflows/:id/archive)
       // GitHub Issue: TBD
-      await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
-      showToast("success", "Workflow archived successfully")
-      router.push("/workflows")
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      showToast('success', 'Workflow archived successfully')
+      router.push('/workflows')
     } catch (error) {
-      showToast("error", "Failed to archive workflow")
+      showToast('error', 'Failed to archive workflow')
       setIsArchiving(false)
     }
   }
@@ -113,12 +113,12 @@ export default function WorkflowDetailPage({ params }: Props) {
     try {
       // TODO: Implement delete API call (connects to DELETE /v1/workflows/:id)
       // GitHub Issue: TBD
-      await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
-      showToast("success", "Workflow deleted successfully")
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      showToast('success', 'Workflow deleted successfully')
       setShowDeleteDialog(false)
-      router.push("/workflows")
+      router.push('/workflows')
     } catch (error) {
-      showToast("error", "Failed to delete workflow")
+      showToast('error', 'Failed to delete workflow')
       setIsDeleting(false)
     }
   }
@@ -143,12 +143,10 @@ export default function WorkflowDetailPage({ params }: Props) {
         <main className="max-w-7xl mx-auto px-8 py-6">
           <div className="text-center py-12">
             <h2 className="text-xl font-semibold text-red-900">Error Loading Workflow</h2>
-            <p className="text-sm text-gray-600 mt-2">
-              {error}
-            </p>
+            <p className="text-sm text-gray-600 mt-2">{error}</p>
             <div className="flex items-center justify-center space-x-4 mt-4">
               <button
-                onClick={() => router.push("/workflows")}
+                onClick={() => router.push('/workflows')}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
                 Back to Workflows
@@ -174,10 +172,11 @@ export default function WorkflowDetailPage({ params }: Props) {
           <div className="text-center py-12">
             <h2 className="text-xl font-semibold text-gray-900">Workflow not found</h2>
             <p className="text-sm text-gray-600 mt-2">
-              The workflow you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
+              The workflow you&apos;re looking for doesn&apos;t exist or you don&apos;t have access
+              to it.
             </p>
             <button
-              onClick={() => router.push("/workflows")}
+              onClick={() => router.push('/workflows')}
               className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
             >
               Back to Workflows
@@ -195,8 +194,8 @@ export default function WorkflowDetailPage({ params }: Props) {
       <main className="max-w-7xl mx-auto px-8 py-6">
         <Breadcrumb
           items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Workflows", href: "/workflows" },
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Workflows', href: '/workflows' },
             { label: workflow.name },
           ]}
         />
@@ -216,8 +215,8 @@ export default function WorkflowDetailPage({ params }: Props) {
               disabled={isArchiving || isDeleting}
               className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Archive className={`h-4 w-4 ${isArchiving ? "animate-pulse" : ""}`} />
-              <span>{isArchiving ? "Archiving..." : "Archive"}</span>
+              <Archive className={`h-4 w-4 ${isArchiving ? 'animate-pulse' : ''}`} />
+              <span>{isArchiving ? 'Archiving...' : 'Archive'}</span>
             </button>
 
             <button
@@ -261,7 +260,7 @@ export default function WorkflowDetailPage({ params }: Props) {
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Document Buckets</h2>
             <div className="space-y-3">
-              {workflow.buckets?.map((bucket) => (
+              {workflow.buckets?.map(bucket => (
                 <div key={bucket.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -284,7 +283,7 @@ export default function WorkflowDetailPage({ params }: Props) {
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Validation Criteria</h2>
             <div className="space-y-3">
-              {workflow.criteria?.map((criterion) => (
+              {workflow.criteria?.map(criterion => (
                 <div key={criterion.id} className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-medium text-gray-900">{criterion.name}</h3>
                   {criterion.description && (
@@ -317,7 +316,7 @@ export default function WorkflowDetailPage({ params }: Props) {
                 disabled={isDeleting}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isDeleting ? "Deleting..." : "Delete"}
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

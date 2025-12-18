@@ -27,6 +27,7 @@ Read: product-guidelines/04-architecture.md (for architecture principles)
 ### Step 2: Extract Brand Personality & Visual Direction
 
 **From Brand Strategy** (`product-guidelines/05-brand-strategy.md`):
+
 - **Brand Personality**: What attributes are defined? (Professional, playful, trustworthy, innovative, etc.)
 - **Core Values**: What values should the design express? (Speed, clarity, trust, creativity, etc.)
 - **Visual Direction**: What aesthetic guidance is provided? (Color preferences, mood, style)
@@ -37,25 +38,30 @@ Use these as the foundation for design decisions. Don't infer brand—read it fr
 ### Step 3: Map Brand to Design Needs
 
 **Apply Brand Personality to Design**:
+
 - Trustworthy + Professional → Blues, clear hierarchy, conservative spacing
 - Playful + Creative → Vibrant colors, organic shapes, generous whitespace
 - Efficient + Technical → Monochrome + accent, tight spacing, monospace fonts
 
 **Component Requirements** (from journey steps):
+
 - Step 1 (Upload)? → File upload component, drag-drop zone
 - Step 3 (AI processing)? → Progress indicators, status displays
 - Step 4 (Results review)? → Data tables, filtering, expandable cards
 
 **Interaction Patterns**:
+
 - Fast/efficiency-focused? → Keyboard shortcuts, minimal animations
 - Exploratory? → Hover states, progressive disclosure
 - Careful/high-stakes? → Confirmation dialogs, undo capabilities
 
 **Accessibility**:
+
 - Industry standards? (Healthcare/finance often require WCAG AA)
 - User needs? (Older users, accessibility-first contexts)
 
 **Accessibility Requirements** (detailed in Step 6 below):
+
 - WCAG 2.1 AA compliance for most products
 - WCAG AAA for government/healthcare
 - Color contrast ratios: 4.5:1 (text), 3:1 (large text/UI)
@@ -65,11 +71,13 @@ Use these as the foundation for design decisions. Don't infer brand—read it fr
 ### Step 4: Define Design Tokens
 
 **Colors**: Implement brand personality from Session 5
+
 - Trust-focused? → Blues
 - Creative? → Vibrant multi-color
 - Efficient? → Monochrome + accent
 
 **Typography**: Match use case
+
 - Dense information? → High legibility (Inter, etc.)
 - Marketing-heavy? → Distinctive brand fonts
 - Technical? → Monospace for code/data
@@ -77,6 +85,7 @@ Use these as the foundation for design decisions. Don't infer brand—read it fr
 **Typography Scale** (modular scale approach):
 
 Choose scale ratio based on brand personality:
+
 - **1.125 (Major Second)**: Conservative, dense (B2B tools, dashboards)
 - **1.250 (Major Third)**: Balanced (most products)
 - **1.333 (Perfect Fourth)**: Moderate contrast (content-heavy)
@@ -84,6 +93,7 @@ Choose scale ratio based on brand personality:
 - **1.618 (Golden Ratio)**: Maximum contrast (landing pages)
 
 **Example Scale (1.250 ratio, 16px base)**:
+
 ```
 xs:   12px (0.75rem)  → Captions, helper text
 sm:   14px (0.875rem) → Secondary text, labels
@@ -95,21 +105,25 @@ xl:   25px (1.563rem) → Section headings
 ```
 
 **Journey Mapping**:
+
 - Step instructions: `lg` (20px) - needs visibility
 - Form labels: `sm` (14px) - standard
 - Button text: `base` (16px) - readable at distance
 - Error messages: `sm` (14px) with bold weight
 
 **Font Pairing**:
+
 - **Headings**: Inter (B2B), Poppins (friendly), IBM Plex Sans (technical)
 - **Body**: Inter, system fonts, or Source Sans Pro
 - **Monospace**: Fira Code, JetBrains Mono (for code/data display)
 
 **Spacing**: Match information density needs
+
 - Power users? → Tighter spacing (more on screen)
 - Casual users? → Generous spacing (less overwhelming)
 
 **Spacing Scale** (8px base system):
+
 ```
 0:   0px      → No spacing
 1:   4px      → Tight (icon + label)
@@ -123,6 +137,7 @@ xl:   25px (1.563rem) → Section headings
 ```
 
 **Journey Step Spacing**:
+
 - Within forms (Step 1, 2): `space-4` (16px) between fields
 - Between journey steps: `space-6` (32px) visual separation
 - Card padding: `space-4` (mobile), `space-5` (desktop)
@@ -143,6 +158,7 @@ Create table showing:
 Apply these rules to determine when to create reusable components vs inline implementations:
 
 **Component Creation Rules**:
+
 ```
 Does this pattern appear 3+ times in the journey?
 ├─ YES → Create reusable component
@@ -154,6 +170,7 @@ Does this pattern appear 3+ times in the journey?
 ```
 
 **Variant vs New Component**:
+
 ```
 Does new design differ only in:
   • Color/size?
@@ -202,11 +219,13 @@ Does new design differ only in:
 Accessibility is non-negotiable for journey-critical actions. Define standards based on your user context:
 
 **WCAG Compliance Level** (choose based on context):
+
 - **WCAG 2.1 AA**: Standard for most B2B/B2C products
 - **WCAG 2.1 AAA**: Required for government, healthcare, education
 - **Section 508**: US federal accessibility requirements
 
 **Color Contrast Requirements**:
+
 ```
 Text Contrast (WCAG AA):
   • Normal text (< 18pt): 4.5:1 minimum
@@ -222,6 +241,7 @@ Journey-Critical Elements:
 **Keyboard Navigation Patterns**:
 
 Map to journey steps:
+
 1. **Tab order** follows journey flow (Step 1 → Step 2 → Step 3)
 2. **Journey-critical actions** accessible via keyboard:
    - File upload: `Enter` to trigger, `Esc` to cancel
@@ -233,18 +253,21 @@ Map to journey steps:
 **ARIA Labels for Journey Actions**:
 
 Label patterns by journey step:
+
 - **Step 1 (Upload)**: `aria-label="Upload compliance documents"`, `aria-describedby="file-requirements"`
 - **Step 2 (Selection)**: `aria-label="Select frameworks for assessment"`, `role="listbox"`
 - **Step 3 (Processing)**: `role="status"`, `aria-live="polite"` for progress updates
 - **Step 4 (Results)**: `aria-label="Assessment results"`, `role="region"` for result cards
 
 **Screen Reader Considerations**:
+
 - Use semantic HTML: `<button>`, `<nav>`, `<main>`, `<aside>`
 - Don't use `div` with `onclick` → Use `<button>`
 - Loading states: Announce "Processing assessment" to screen readers
 - Error messages: `role="alert"` for journey-blocking errors
 
 **Testing Checklist**:
+
 - [ ] All journey steps navigable with keyboard only
 - [ ] Color contrast passes for all text/UI elements
 - [ ] Screen reader announces journey progress
@@ -256,6 +279,7 @@ Label patterns by journey step:
 Define responsive behavior based on which journey steps happen on mobile vs desktop:
 
 **Journey Step Analysis**:
+
 ```
 Which steps happen on mobile?
 ├─ ALL steps → Mobile-first approach
@@ -264,6 +288,7 @@ Which steps happen on mobile?
 ```
 
 **Compliance SaaS Example**:
+
 - Step 1 (Upload): Mostly desktop (uploading large policy docs)
 - Step 2 (Selection): Both (mobile for quick selections, desktop for detailed)
 - Step 3 (Processing): Both (passive waiting)
@@ -274,25 +299,27 @@ Which steps happen on mobile?
 **Breakpoint Philosophy**:
 
 **Mobile-First** (progressive enhancement):
+
 - Base styles: 320px+ (mobile)
 - Tablet: 768px+ (add columns, expand spacing)
 - Desktop: 1024px+ (full feature set)
 
 **Desktop-First** (graceful degradation):
+
 - Base styles: 1440px (desktop)
 - Tablet: 1024px and down (simplify layouts)
 - Mobile: 768px and down (single column, essential features)
 
 **Responsive Component Behavior** (map to journey):
 
-| Component | Mobile Behavior | Desktop Behavior |
-|-----------|----------------|------------------|
-| File Upload | Camera + file picker | Drag-drop zone |
-| Framework Selector | Accordion (collapsed) | Multi-column grid |
-| Progress Indicator | Full-width bar | Inline with details |
-| Assessment Card | Stack (single column) | Grid (2-3 columns) |
-| Data Table | Horizontal scroll OR card view | Full table |
-| Navigation | Hamburger menu | Full horizontal nav |
+| Component          | Mobile Behavior                | Desktop Behavior    |
+| ------------------ | ------------------------------ | ------------------- |
+| File Upload        | Camera + file picker           | Drag-drop zone      |
+| Framework Selector | Accordion (collapsed)          | Multi-column grid   |
+| Progress Indicator | Full-width bar                 | Inline with details |
+| Assessment Card    | Stack (single column)          | Grid (2-3 columns)  |
+| Data Table         | Horizontal scroll OR card view | Full table          |
+| Navigation         | Hamburger menu                 | Full horizontal nav |
 
 **Responsive Patterns**:
 
@@ -313,6 +340,7 @@ Which steps happen on mobile?
    - Desktop: Table with sorting/filtering
 
 **Breakpoint Values** (choose based on journey):
+
 ```
 Standard (B2B tools):
   sm: 640px
@@ -334,6 +362,7 @@ Expand beyond basic components with real journey-specific patterns:
 **1. File Upload Component (Step 1 - Upload Documents)**
 
 States & Variants:
+
 - **Default**: Drag-drop zone with "Upload policy documents" label
 - **Dragging**: Border highlight, "Drop files here" feedback
 - **Uploading**: Progress bar, filename, cancel button
@@ -342,6 +371,7 @@ States & Variants:
 - **Disabled**: Grayed out (when processing Step 3)
 
 Design tokens:
+
 - Border: 2px dashed, color: `gray-300` (default) / `blue-500` (dragging)
 - Padding: `space-6` (48px) for large hit area
 - Min height: 200px (easy targeting)
@@ -349,6 +379,7 @@ Design tokens:
 **2. Framework Selector (Step 2 - Choose Compliance Frameworks)**
 
 Pattern: Multi-select checkbox grid with search
+
 - **Component**: `<FrameworkCard>` with checkbox, logo, description
 - **Layout**: CSS Grid, 3 columns (desktop) / 1 column (mobile)
 - **States**:
@@ -358,6 +389,7 @@ Pattern: Multi-select checkbox grid with search
   - Disabled: Grayed out (e.g., "Premium framework - Upgrade required")
 
 Design considerations:
+
 - Each card shows: Framework name, description (2 lines), estimated time
 - Selected count: "3 frameworks selected" sticky header
 - Quick filters: "Show all", "Popular", "My saved"
@@ -365,6 +397,7 @@ Design considerations:
 **3. Processing Status (Step 3 - AI Assessment)**
 
 Pattern: Indeterminate → Determinate progress
+
 - **Phase 1**: Spinner + "Initializing assessment..."
 - **Phase 2**: Progress bar + "Analyzing documents (45% complete)"
 - **Phase 3**: Status updates:
@@ -374,6 +407,7 @@ Pattern: Indeterminate → Determinate progress
 - **Complete**: Success animation → Auto-transition to Step 4
 
 Design tokens:
+
 - Progress bar: Height 8px, rounded, animated gradient
 - Status text: `text-sm`, `text-gray-600`, updates every 2-3 seconds
 - Container: `space-8` padding, centered on page
@@ -381,11 +415,13 @@ Design tokens:
 **4. Assessment Results Card (Step 4 - Review Results)**
 
 Variant patterns:
+
 - **Collapsed**: Framework name, overall score (83%), expand icon
 - **Expanded**: Requirements list, gap analysis, action items
 - **With Actions**: "Export PDF", "Share", "Start remediation"
 
 Visual hierarchy:
+
 - Score badge: Large (48px), color-coded (red <60%, yellow 60-80%, green >80%)
 - Requirements: Nested checklist with icons (✓ pass, ⚠ partial, ✗ fail)
 - Action buttons: Secondary (ghost), aligned right
@@ -393,6 +429,7 @@ Visual hierarchy:
 **5. Empty States**
 
 Journey-specific empty states:
+
 - **No documents uploaded**: "Upload your first policy document to get started"
   - Illustration: Document icon
   - Primary CTA: "Upload document"
@@ -430,6 +467,7 @@ Document the decisions you made and alternatives you rejected. This prevents fut
 **What we chose**: [Based on tech stack from Session 2]
 
 Examples:
+
 - **Tailwind CSS**: Utility-first, fast prototyping, small bundle
   - ✅ Choose if: Speed-focused, startup, small team
   - ❌ Avoid if: Need strict design consistency, complex themes
@@ -443,6 +481,7 @@ Examples:
   - ❌ Avoid if: Need dynamic styles or theming
 
 **Decision for Compliance SaaS**: Tailwind CSS
+
 - Rationale: Fast iteration, design tokens via config, team familiar
 - Trade-off: Less custom styling, utility class proliferation
 
@@ -451,16 +490,19 @@ Examples:
 **What we chose**: Design token system (CSS variables or Tailwind config)
 
 Why tokens matter:
+
 - **With tokens**: Change `--color-primary` once → updates everywhere
 - **Without tokens**: Find/replace 47 instances of `#3B82F6` (error-prone)
 
 **Decision**: Tailwind theme config as source of truth
+
 - Colors, spacing, typography defined centrally
 - Can export to Figma tokens for designer handoff
 
 **3. Component Library: MUI / Chakra / shadcn/ui vs Custom**
 
 **Options**:
+
 - **Material UI (MUI)**: Full component library, opinionated design
   - ✅ Choose if: Need rapid development, Material Design acceptable
   - ❌ Avoid if: Need custom brand, concerned about bundle size
@@ -478,6 +520,7 @@ Why tokens matter:
   - ❌ Avoid if: Small team, tight timeline
 
 **Decision for Compliance SaaS**: shadcn/ui + custom journey components
+
 - Rationale: Flexibility for unique journey flows (upload, assessment)
 - Use shadcn for generic (buttons, forms), custom for journey-specific
 - Trade-off: More maintenance, but full control over critical path
@@ -485,6 +528,7 @@ Why tokens matter:
 **4. Icon System: Icon Font vs SVG Components vs Icon Library**
 
 **Options**:
+
 - **Heroicons / Lucide**: SVG component library
   - ✅ Choose if: React/Vue, want tree-shaking, modern approach
 - **Font Awesome**: Icon font, wide selection
@@ -493,6 +537,7 @@ Why tokens matter:
   - ✅ Choose if: Performance-critical, limited icon needs
 
 **Decision**: Lucide React
+
 - Rationale: Tree-shakeable, consistent style, good coverage
 - Journey needs: Upload, check, alert, loading, download (~15 icons)
 
@@ -501,6 +546,7 @@ Why tokens matter:
 **Philosophy**: Animations should serve journey clarity, not delight
 
 **Decision**: Minimal CSS transitions + loading states
+
 - Button hover: 150ms ease
 - Modal enter/exit: 200ms fade
 - Loading states: Spinner for <2s, progress bar for >2s

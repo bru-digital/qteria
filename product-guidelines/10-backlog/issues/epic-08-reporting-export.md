@@ -28,16 +28,19 @@ Generate PDF validation reports that Project Handlers can download and forward t
 ## Stories in This Epic
 
 ### STORY-034: Generate PDF Report API [P1, 2 days]
+
 Implement `POST /v1/assessments/:id/reports` endpoint that generates PDF report (using ReportLab or WeasyPrint) with assessment results, evidence, and metadata. Returns report_id.
 
 **RICE**: R:80 × I:2 × C:80% ÷ E:2 = **64**
 
 ### STORY-035: Download Report API [P1, 1 day]
+
 Implement `GET /v1/reports/:id/download` endpoint that streams generated PDF. Store reports in Vercel Blob (same as documents).
 
 **RICE**: R:80 × I:1 × C:100% ÷ E:1 = **80**
 
 ### STORY-036: Shareable Public Report Links [P2, 1 day]
+
 Implement `POST /v1/reports/:id/share` endpoint that creates public token (expires in 7 days). Public URL: `/public/reports/:token` (no auth required).
 
 **RICE**: R:40 × I:1 × C:60% ÷ E:1 = **24**
@@ -49,6 +52,7 @@ Implement `POST /v1/reports/:id/share` endpoint that creates public token (expir
 **4 person-days** (1 week for solo founder)
 
 **Breakdown**:
+
 - Backend: 3 days (PDF generation, download, public links)
 - Frontend: 0.5 days (download button, share UI)
 - Testing: 0.5 days (integration tests)
@@ -60,6 +64,7 @@ Implement `POST /v1/reports/:id/share` endpoint that creates public token (expir
 **Blocks**: Nothing (optional polish)
 
 **Blocked By**:
+
 - STORY-027: Results display (needs results data to generate report)
 
 ---
@@ -67,11 +72,13 @@ Implement `POST /v1/reports/:id/share` endpoint that creates public token (expir
 ## Technical Approach
 
 **Tech Stack**:
+
 - Backend: FastAPI + ReportLab or WeasyPrint (Python PDF generation)
 - Storage: Vercel Blob (store generated reports)
 - Frontend: Next.js (download button)
 
 **Report Content**:
+
 ```
 ┌─────────────────────────────────────────┐
 │ Qteria Validation Report                │
@@ -100,6 +107,7 @@ Implement `POST /v1/reports/:id/share` endpoint that creates public token (expir
 ```
 
 **Report Generation Flow**:
+
 1. User clicks "Export Report" on results page
 2. Frontend calls `POST /v1/assessments/:id/reports`
 3. Backend generates PDF (ReportLab, 5-10 seconds)
@@ -110,6 +118,7 @@ Implement `POST /v1/reports/:id/share` endpoint that creates public token (expir
 8. User clicks "Download" → `GET /v1/reports/:id/download` streams PDF
 
 **Public Sharing** (STORY-036 - optional):
+
 - User clicks "Share Report"
 - Backend creates token (UUID), expires in 7 days
 - Public URL: `https://qteria.com/public/reports/abc123xyz`
@@ -123,11 +132,13 @@ Implement `POST /v1/reports/:id/share` endpoint that creates public token (expir
 ## Success Metrics
 
 **User Experience**:
+
 - Reports generated per assessment: >50%
 - Report generation time: <10 seconds
 - Download success rate: >98%
 
 **Technical**:
+
 - PDF file size: <1MB (keep small for email attachments)
 - Report storage costs: <$1/month (expire old reports after 90 days)
 
@@ -149,12 +160,15 @@ Implement `POST /v1/reports/:id/share` endpoint that creates public token (expir
 ## Risks & Mitigations
 
 **Risk**: PDF generation slow (>10 seconds)
+
 - **Mitigation**: Async generation (Celery job), cache generated reports
 
 **Risk**: PDF file size too large (>5MB)
+
 - **Mitigation**: Compress images, use simple formatting
 
 **Risk**: Public links exploited (spam, abuse)
+
 - **Mitigation**: Time-limited expiration (7 days), rate limiting on public endpoint
 
 ---
@@ -162,6 +176,7 @@ Implement `POST /v1/reports/:id/share` endpoint that creates public token (expir
 ## Testing Requirements
 
 **Integration Tests** (70% coverage):
+
 - [ ] POST /v1/assessments/:id/reports generates PDF
 - [ ] GET /v1/reports/:id/download streams PDF
 - [ ] POST /v1/reports/:id/share creates public link
@@ -169,6 +184,7 @@ Implement `POST /v1/reports/:id/share` endpoint that creates public token (expir
 - [ ] Expired token returns 404
 
 **E2E Tests**:
+
 - [ ] Complete reporting flow (Journey Step 5)
 - [ ] Generate → Download → View PDF in browser
 

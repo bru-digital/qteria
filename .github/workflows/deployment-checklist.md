@@ -29,6 +29,7 @@
 Verify all required environment variables are set in Railway dashboard:
 
 **Required:**
+
 - [ ] `DATABASE_URL` - Neon PostgreSQL connection string
   - Format: `postgresql://user:pass@host/dbname?sslmode=require`
   - Database: `qteria_prod` (NOT `qteria_dev` or `qteria_test`)
@@ -40,20 +41,24 @@ Verify all required environment variables are set in Railway dashboard:
 - [ ] `PYTHON_ENV` - Set to `production` (CRITICAL: NOT `ENVIRONMENT`)
 
 **Optional:**
+
 - [ ] `REDIS_URL` - Upstash Redis connection string (for background jobs)
 
 **Do NOT Set:**
+
 - [ ] ~~`PORT`~~ - Railway does NOT provide PORT env var, backend uses hardcoded port 8000
 
 ### 3. Database Migrations
 
 - [ ] **Check Migration Status**
+
   ```bash
   # Connect to production database
   DATABASE_URL="postgresql://..." alembic current
   ```
 
 - [ ] **Apply Pending Migrations (if needed)**
+
   ```bash
   # Run migrations against production database
   DATABASE_URL="postgresql://..." alembic upgrade head
@@ -72,6 +77,7 @@ Verify all required environment variables are set in Railway dashboard:
 ### 1. Trigger Deployment
 
 - [ ] **Push to Main Branch**
+
   ```bash
   git checkout main
   git pull origin main
@@ -110,13 +116,15 @@ Verify all required environment variables are set in Railway dashboard:
 ### 1. Health Check
 
 - [ ] **Quick Health Check**
+
   ```bash
   curl https://qteriaappapi-production.up.railway.app/health
   ```
 
   **Expected Output:**
+
   ```json
-  {"status":"healthy","environment":"production"}
+  { "status": "healthy", "environment": "production" }
   ```
 
 - [ ] **Verify Environment Variable**
@@ -126,12 +134,14 @@ Verify all required environment variables are set in Railway dashboard:
 ### 2. CORS Configuration
 
 - [ ] **Test CORS Headers**
+
   ```bash
   curl -I -H "Origin: https://qteria.vercel.app" \
     https://qteriaappapi-production.up.railway.app/health
   ```
 
   **Expected Headers:**
+
   ```
   access-control-allow-origin: https://qteria.vercel.app
   access-control-allow-methods: GET, POST, PUT, DELETE, OPTIONS
@@ -149,6 +159,7 @@ Verify all required environment variables are set in Railway dashboard:
 ### 3. API Endpoints
 
 - [ ] **Test Unauthenticated Endpoint (should return 401)**
+
   ```bash
   curl https://qteriaappapi-production.up.railway.app/v1/workflows
   ```
@@ -156,6 +167,7 @@ Verify all required environment variables are set in Railway dashboard:
   **Expected:** 401 Unauthorized (proves endpoint exists and auth is enforced)
 
 - [ ] **Verify Error Format**
+
   ```bash
   curl https://qteriaappapi-production.up.railway.app/v1/invalid-endpoint
   ```
@@ -165,12 +177,14 @@ Verify all required environment variables are set in Railway dashboard:
 ### 4. Comprehensive Integration Tests
 
 - [ ] **Run Integration Test Script**
+
   ```bash
   cd apps/web
   API_URL=https://qteriaappapi-production.up.railway.app npm run verify:integration
   ```
 
   **Expected Output:**
+
   ```
   ✓ Backend Health Check
   ✓ CORS Configuration
@@ -190,6 +204,7 @@ Verify all required environment variables are set in Railway dashboard:
   - No connection timeout errors
 
 - [ ] **Test Database Read**
+
   ```bash
   curl https://qteriaappapi-production.up.railway.app/v1/workflows
   ```
@@ -201,6 +216,7 @@ Verify all required environment variables are set in Railway dashboard:
 ### 6. Performance Check
 
 - [ ] **Response Time Verification**
+
   ```bash
   time curl https://qteriaappapi-production.up.railway.app/health
   ```
@@ -294,6 +310,7 @@ If deployment fails or introduces critical bugs:
 ### Method 2: Git Revert
 
 - [ ] **Revert Problematic Commit**
+
   ```bash
   git log --oneline  # Find commit to revert
   git revert <commit-hash>
@@ -317,6 +334,7 @@ If deployment fails or introduces critical bugs:
 ### Issue: Health check fails with 500 error
 
 **Quick Fix:**
+
 1. Check Railway logs for Python traceback
 2. Most common: Missing environment variable
 3. Verify all required env vars are set (see checklist above)
@@ -325,6 +343,7 @@ If deployment fails or introduces critical bugs:
 ### Issue: CORS errors in browser
 
 **Quick Fix:**
+
 1. Verify `CORS_ORIGINS` includes all Vercel domains
 2. Add `https://*.vercel.app` for preview deployments
 3. Redeploy backend after updating CORS_ORIGINS
@@ -332,6 +351,7 @@ If deployment fails or introduces critical bugs:
 ### Issue: Database connection timeout
 
 **Quick Fix:**
+
 1. Verify `DATABASE_URL` is correct
 2. Check Neon PostgreSQL allows connections from anywhere
 3. Test connection: `psql $DATABASE_URL -c "SELECT 1"`
@@ -340,6 +360,7 @@ If deployment fails or introduces critical bugs:
 ### Issue: Application crashes on startup
 
 **Quick Fix:**
+
 1. Check Railway logs for error message
 2. Common causes:
    - Missing system dependency (libmagic1)
@@ -368,11 +389,13 @@ Deployment is considered successful when:
 ## Lessons Learned
 
 **Deployment Evolution:**
+
 1. **Nixpacks (Failed):** Python 3.14 detection, complex config
 2. **railway.json + Nixpacks (Failed):** Port binding, env var confusion
 3. **Dockerfile (Success):** Simple, testable, reliable
 
 **Key Takeaways:**
+
 - Dockerfile is more reliable than Nixpacks for complex Python apps
 - Railway does NOT provide PORT env var in all scenarios (hardcode port 8000)
 - Use `PYTHON_ENV` instead of `ENVIRONMENT` for environment detection

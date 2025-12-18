@@ -34,11 +34,13 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI middleware
 - ORM: SQLAlchemy query filters
 - JWT: organization_id in token payload
 
 **Multi-Tenant Middleware** (`app/middleware/multi_tenant.py`):
+
 ```python
 from fastapi import Request
 from app.dependencies.auth import get_current_user
@@ -60,6 +62,7 @@ class MultiTenantMiddleware:
 ```
 
 **SQLAlchemy Session Scoping** (`app/database.py`):
+
 ```python
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import event
@@ -94,6 +97,7 @@ class OrganizationFilterMixin:
 ```
 
 **Alternative: Query Wrapper** (`app/models/base.py`):
+
 ```python
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -121,6 +125,7 @@ class OrganizationScopedModel:
 ```
 
 **Protected Endpoint Example** (`app/api/workflows.py`):
+
 ```python
 @router.get("/workflows/{workflow_id}")
 async def get_workflow(
@@ -143,6 +148,7 @@ async def get_workflow(
 ```
 
 **Security Test Example**:
+
 ```python
 def test_multi_tenant_isolation():
     """User from org A cannot access org B's data"""
@@ -181,6 +187,7 @@ def test_multi_tenant_isolation():
 **Effort**: 1 person-day
 
 **Breakdown**:
+
 - Middleware setup: 0.25 days (extract org_id from JWT)
 - SQLAlchemy filtering: 0.5 days (automatic query scoping)
 - Testing: 0.25 days (multi-tenant isolation tests)
@@ -204,6 +211,7 @@ def test_multi_tenant_isolation():
 ## Testing Requirements
 
 **Security Tests** (100% coverage required):
+
 - [ ] User A tries to GET user B's workflow → 404 Not Found
 - [ ] User A tries to DELETE user B's workflow → 404 Not Found
 - [ ] User A tries to UPDATE user B's assessment → 404 Not Found
@@ -212,12 +220,14 @@ def test_multi_tenant_isolation():
 - [ ] Admin from org A cannot see org B's data (admins are org-scoped)
 
 **Edge Cases**:
+
 - [ ] Workflow with same UUID in both orgs → correct org's workflow returned
 - [ ] Join queries (workflow + buckets) → both filtered by org_id
 - [ ] Aggregation queries (count assessments) → scoped to org
 - [ ] User switches organizations → new JWT with new org_id → sees new org's data
 
 **Performance Tests**:
+
 - [ ] Query filtering adds <5ms latency
 - [ ] Index on organization_id exists (fast filtering)
 
@@ -226,15 +236,19 @@ def test_multi_tenant_isolation():
 ## Risks & Mitigations
 
 **Risk**: Developer forgets to filter by organization_id → data leak
+
 - **Mitigation**: Enforce at middleware level (automatic filtering), use base model with built-in org checks, 100% test coverage
 
 **Risk**: SQL injection bypasses organization filter
+
 - **Mitigation**: Use ORM (SQLAlchemy) for all queries (parameterized queries), never use raw SQL
 
 **Risk**: JOIN queries leak data from other organizations
+
 - **Mitigation**: Ensure all joined tables also filtered by organization_id, test all relationships
 
 **Risk**: Admin bypasses multi-tenancy to see all orgs (intentional backdoor)
+
 - **Mitigation**: NO super-admin role in MVP - admins are org-scoped, add super-admin cautiously in Year 2 with strict audit logs
 
 ---

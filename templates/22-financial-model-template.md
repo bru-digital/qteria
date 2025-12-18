@@ -3,6 +3,7 @@
 > **Context**: Comprehensive financial model grounded in user journey and market analysis. Created: [Date]
 >
 > **Derived from**:
+>
 > - `product-guidelines/00-user-journey.md` (Journey economics and value delivery)
 > - `product-guidelines/01-product-strategy.md` (Market size and competitive landscape)
 > - `product-guidelines/04-monetization.md` (Pricing structure and ARPU)
@@ -16,6 +17,7 @@
 **Business Model**: [SaaS subscription / Usage-based / Freemium / Hybrid]
 
 **Unit Economics** (Base Case):
+
 - **LTV**: $[X,XXX] per customer
 - **CAC**: $[XXX] blended across channels
 - **LTV:CAC Ratio**: [X.X]:1 ([Assessment: Excellent/Healthy/Concerning])
@@ -23,21 +25,25 @@
 - **Gross Margin**: [XX]%
 
 **Revenue Projections**:
+
 - **Year 1**: $[XXX]k ARR ([X] customers)
 - **Year 2**: $[X.X]M ARR ([XX]% YoY growth)
 - **Year 3**: $[X.X]M ARR ([XX]% YoY growth)
 
 **Profitability**:
+
 - **Break-even**: Month [XX]
 - **Burn Rate**: $[XX]k/month (current), declining to $[X]k/month by Month [XX]
 - **Funding Required**: $[XXX]k to reach profitability + 6-month buffer
 
 **Key Assumptions**:
+
 1. [Critical assumption 1 - e.g., "10% free-to-paid conversion rate"]
 2. [Critical assumption 2 - e.g., "2% monthly churn"]
 3. [Critical assumption 3 - e.g., "$500 blended CAC from SEO + paid channels"]
 
 **Top Risks**:
+
 1. [Risk 1 - e.g., "Market education required may extend CAC payback"]
 2. [Risk 2 - e.g., "Competitive pressure on pricing"]
 3. [Risk 3 - e.g., "Channel saturation earlier than projected"]
@@ -50,14 +56,15 @@
 
 **Channel Breakdown**:
 
-| Channel | % of New Customers | CAC | Source/Rationale |
-|---------|-------------------|-----|------------------|
-| [Channel 1] | [XX]% | $[XXX] | [How calculated / Industry benchmark] |
-| [Channel 2] | [XX]% | $[XXX] | [How calculated / Industry benchmark] |
-| [Channel 3] | [XX]% | $[XXX] | [How calculated / Industry benchmark] |
-| **Blended CAC** | **100%** | **$[XXX]** | **Weighted average** |
+| Channel         | % of New Customers | CAC        | Source/Rationale                      |
+| --------------- | ------------------ | ---------- | ------------------------------------- |
+| [Channel 1]     | [XX]%              | $[XXX]     | [How calculated / Industry benchmark] |
+| [Channel 2]     | [XX]%              | $[XXX]     | [How calculated / Industry benchmark] |
+| [Channel 3]     | [XX]%              | $[XXX]     | [How calculated / Industry benchmark] |
+| **Blended CAC** | **100%**           | **$[XXX]** | **Weighted average**                  |
 
 **CAC Components**:
+
 ```
 Marketing Spend:        $[XX,XXX]/month
 Sales Spend:            $[XX,XXX]/month (if applicable)
@@ -71,6 +78,7 @@ Blended CAC:            $[XXX] per customer
 ```
 
 **Validation**:
+
 - [ ] CAC includes all costs (marketing, sales, tools)
 - [ ] Benchmarked against [competitor/industry] ($[XXX]-$[XXX] range)
 - [ ] Channel mix reflects growth strategy priorities
@@ -81,6 +89,7 @@ Blended CAC:            $[XXX] per customer
 ### Lifetime Value (LTV)
 
 **Calculation**:
+
 ```
 ARPU (Average Revenue Per User):     $[XXX]/month
 Gross Margin:                         [XX]%
@@ -93,13 +102,13 @@ LTV = ($[XXX] × [XX]%) × [XX] months = $[X,XXX]
 
 #### 1. ARPU (Blended Across Tiers)
 
-| Tier | % of Customers | Price | Contribution to ARPU |
-|------|----------------|-------|----------------------|
-| Free | [XX]% | $0 | $0 |
-| [Starter] | [XX]% | $[XX]/mo | $[XX] |
-| [Pro] | [XX]% | $[XXX]/mo | $[XX] |
-| [Enterprise] | [X]% | $[XXX]/mo | $[XX] |
-| **Blended ARPU** | **100%** | | **$[XXX]/month** |
+| Tier             | % of Customers | Price     | Contribution to ARPU |
+| ---------------- | -------------- | --------- | -------------------- |
+| Free             | [XX]%          | $0        | $0                   |
+| [Starter]        | [XX]%          | $[XX]/mo  | $[XX]                |
+| [Pro]            | [XX]%          | $[XXX]/mo | $[XX]                |
+| [Enterprise]     | [X]%           | $[XXX]/mo | $[XX]                |
+| **Blended ARPU** | **100%**       |           | **$[XXX]/month**     |
 
 **Rationale for tier distribution**: [Why this mix? Based on journey complexity, pricing psychology, competitive positioning]
 
@@ -121,12 +130,12 @@ Gross Margin:             [XX]%
 
 #### 3. Customer Lifetime (Churn)
 
-| Customer Segment | Monthly Churn | Avg. Lifetime | Source |
-|------------------|---------------|---------------|--------|
-| Free tier | [XX]% | [X] months | [Assumption/Benchmark] |
-| Paid tier | [X]% | [XX] months | [Assumption/Benchmark] |
-| Enterprise | [X]% | [XX] months | [Assumption/Benchmark] |
-| **Blended** | **[X]%** | **[XX] months** | **Weighted average** |
+| Customer Segment | Monthly Churn | Avg. Lifetime   | Source                 |
+| ---------------- | ------------- | --------------- | ---------------------- |
+| Free tier        | [XX]%         | [X] months      | [Assumption/Benchmark] |
+| Paid tier        | [X]%          | [XX] months     | [Assumption/Benchmark] |
+| Enterprise       | [X]%          | [XX] months     | [Assumption/Benchmark] |
+| **Blended**      | **[X]%**      | **[XX] months** | **Weighted average**   |
 
 **Churn assumption rationale**: [Why this churn rate? Based on journey stickiness, competitive differentiation, switching costs]
 
@@ -143,9 +152,11 @@ Ratio:   [X.X]:1
 ```
 
 **Assessment**:
+
 - ✅ **[Excellent / Healthy / Concerning / Unsustainable]**
 
 **Industry Benchmark Comparison**:
+
 ```
 < 1:1    → Losing money on every customer (unsustainable)
 1-3:1    → Barely profitable (concerning)
@@ -158,6 +169,7 @@ Our ratio: [X.X]:1 → [Assessment and implications]
 ```
 
 **If ratio < 3:1, improvement plan**:
+
 - [ ] Increase LTV: [Specific tactics - upsells, reduce churn, increase prices]
 - [ ] Decrease CAC: [Specific tactics - optimize channels, improve conversion, build loops]
 - [ ] Timeline: [When will ratio improve to 3:1+?]
@@ -167,6 +179,7 @@ Our ratio: [X.X]:1 → [Assessment and implications]
 ### Payback Period
 
 **Calculation**:
+
 ```
 Payback Period = CAC / (ARPU × Gross Margin)
 
@@ -174,9 +187,11 @@ Payback = $[XXX] / ($[XXX] × [XX]%) = [X.X] months
 ```
 
 **Assessment**:
+
 - ✅ **[Excellent / Good / Concerning / Problematic]**
 
 **Benchmark**:
+
 ```
 < 12 months   → Excellent (VC-backable, strong cashflow)
 12-18 months  → Good (manageable)
@@ -187,6 +202,7 @@ Our payback: [X] months → [Assessment]
 ```
 
 **Cashflow Implications**:
+
 - To grow from [X] → [Y] customers requires $[XXX]k in working capital
 - Monthly cashflow: [New customers × CAC] - [Total customers × margin] = $[±XX]k
 
@@ -197,6 +213,7 @@ Our payback: [X] months → [Assessment]
 ### Customer Acquisition Model
 
 **Growth assumptions** (from growth strategy):
+
 - **Primary channels**: [Channel 1, Channel 2, Channel 3]
 - **Growth model**: [Content-driven / Paid / Viral / Sales-driven / Hybrid]
 - **Ramp timeline**: [When channels reach maturity]
@@ -204,15 +221,16 @@ Our payback: [X] months → [Assessment]
 **Monthly projections** (Year 1):
 
 | Month | Signups | Conversion Rate | New Customers | Churned | Net New | Total Customers |
-|-------|---------|-----------------|---------------|---------|---------|-----------------|
-| M1 | [XXX] | [X]% | [XX] | 0 | [XX] | [XX] |
-| M2 | [XXX] | [X]% | [XX] | [X] | [XX] | [XX] |
-| M3 | [XXX] | [X]% | [XX] | [X] | [XX] | [XX] |
-| M6 | [XXX] | [X]% | [XX] | [XX] | [XX] | [XXX] |
-| M9 | [XXX] | [X]% | [XX] | [XX] | [XX] | [XXX] |
-| M12 | [XXX] | [X]% | [XX] | [XX] | [XX] | [XXX] |
+| ----- | ------- | --------------- | ------------- | ------- | ------- | --------------- |
+| M1    | [XXX]   | [X]%            | [XX]          | 0       | [XX]    | [XX]            |
+| M2    | [XXX]   | [X]%            | [XX]          | [X]     | [XX]    | [XX]            |
+| M3    | [XXX]   | [X]%            | [XX]          | [X]     | [XX]    | [XX]            |
+| M6    | [XXX]   | [X]%            | [XX]          | [XX]    | [XX]    | [XXX]           |
+| M9    | [XXX]   | [X]%            | [XX]          | [XX]    | [XX]    | [XXX]           |
+| M12   | [XXX]   | [X]%            | [XX]          | [XX]    | [XX]    | [XXX]           |
 
 **Growth rate justification**:
+
 ```
 Month 1-3:   [X]% MoM growth
 Why: [Early traction, initial marketing, manual outreach]
@@ -225,6 +243,7 @@ Why: [Compounding content, growth loops activating, channel maturity]
 ```
 
 **Conversion funnel**:
+
 ```
 Website Visitors:     [X,XXX]/month
   ↓ [X]% to signup
@@ -241,13 +260,13 @@ New Customers:        [XX]/month
 
 #### Year 1: Foundation & Initial Traction
 
-| Quarter | New Customers | Total Customers | MRR | ARR Run Rate |
-|---------|---------------|-----------------|-----|--------------|
-| Q1 | [XXX] | [XXX] | $[XX]k | $[XXX]k |
-| Q2 | [XXX] | [XXX] | $[XX]k | $[XXX]k |
-| Q3 | [XXX] | [XXX] | $[XX]k | $[XXX]k |
-| Q4 | [XXX] | [XXX] | $[XX]k | $[XXX]k |
-| **Year 1 Total** | **[X,XXX]** | **[X,XXX]** | **$[XX]k** | **$[XXX]k ARR** |
+| Quarter          | New Customers | Total Customers | MRR        | ARR Run Rate    |
+| ---------------- | ------------- | --------------- | ---------- | --------------- |
+| Q1               | [XXX]         | [XXX]           | $[XX]k     | $[XXX]k         |
+| Q2               | [XXX]         | [XXX]           | $[XX]k     | $[XXX]k         |
+| Q3               | [XXX]         | [XXX]           | $[XX]k     | $[XXX]k         |
+| Q4               | [XXX]         | [XXX]           | $[XX]k     | $[XXX]k         |
+| **Year 1 Total** | **[X,XXX]**   | **[X,XXX]**     | **$[XX]k** | **$[XXX]k ARR** |
 
 **Focus**: Product-market fit, channel validation, initial customer base
 
@@ -255,13 +274,13 @@ New Customers:        [XX]/month
 
 #### Year 2: Growth & Scaling
 
-| Quarter | New Customers | Total Customers | MRR | ARR Run Rate |
-|---------|---------------|-----------------|-----|--------------|
-| Q1 | [XXX] | [X,XXX] | $[XXX]k | $[X.X]M |
-| Q2 | [XXX] | [X,XXX] | $[XXX]k | $[X.X]M |
-| Q3 | [XXX] | [X,XXX] | $[XXX]k | $[X.X]M |
-| Q4 | [XXX] | [X,XXX] | $[XXX]k | $[X.X]M |
-| **Year 2 Total** | **[X,XXX]** | **[XX,XXX]** | **$[XXX]k** | **$[X.X]M ARR** |
+| Quarter          | New Customers | Total Customers | MRR         | ARR Run Rate    |
+| ---------------- | ------------- | --------------- | ----------- | --------------- |
+| Q1               | [XXX]         | [X,XXX]         | $[XXX]k     | $[X.X]M         |
+| Q2               | [XXX]         | [X,XXX]         | $[XXX]k     | $[X.X]M         |
+| Q3               | [XXX]         | [X,XXX]         | $[XXX]k     | $[X.X]M         |
+| Q4               | [XXX]         | [X,XXX]         | $[XXX]k     | $[X.X]M         |
+| **Year 2 Total** | **[X,XXX]**   | **[XX,XXX]**    | **$[XXX]k** | **$[X.X]M ARR** |
 
 **Growth**: [XXX]% YoY
 
@@ -271,13 +290,13 @@ New Customers:        [XX]/month
 
 #### Year 3: Acceleration & Market Leadership
 
-| Quarter | New Customers | Total Customers | MRR | ARR Run Rate |
-|---------|---------------|-----------------|-----|--------------|
-| Q1 | [XXX] | [XX,XXX] | $[XXX]k | $[X.X]M |
-| Q2 | [XXX] | [XX,XXX] | $[XXX]k | $[X.X]M |
-| Q3 | [XXX] | [XX,XXX] | $[X.X]M | $[XX]M |
-| Q4 | [XXX] | [XX,XXX] | $[X.X]M | $[XX]M |
-| **Year 3 Total** | **[XX,XXX]** | **[XXX,XXX]** | **$[X.X]M** | **$[XX]M ARR** |
+| Quarter          | New Customers | Total Customers | MRR         | ARR Run Rate   |
+| ---------------- | ------------- | --------------- | ----------- | -------------- |
+| Q1               | [XXX]         | [XX,XXX]        | $[XXX]k     | $[X.X]M        |
+| Q2               | [XXX]         | [XX,XXX]        | $[XXX]k     | $[X.X]M        |
+| Q3               | [XXX]         | [XX,XXX]        | $[X.X]M     | $[XX]M         |
+| Q4               | [XXX]         | [XX,XXX]        | $[X.X]M     | $[XX]M         |
+| **Year 3 Total** | **[XX,XXX]**  | **[XXX,XXX]**   | **$[X.X]M** | **$[XX]M ARR** |
 
 **Growth**: [XXX]% YoY
 
@@ -289,13 +308,13 @@ New Customers:        [XX]/month
 
 **Year 3 ARR Composition**:
 
-| Segment | Customers | ARPU | Annual Revenue | % of Total |
-|---------|-----------|------|----------------|------------|
-| Free (upsell pipeline) | [XX,XXX] | $0 | $0 | 0% |
-| [Starter tier] | [XX,XXX] | $[XX] | $[X.X]M | [XX]% |
-| [Pro tier] | [X,XXX] | $[XXX] | $[X.X]M | [XX]% |
-| [Enterprise tier] | [XXX] | $[X,XXX] | $[X.X]M | [XX]% |
-| **Total Paid** | **[XX,XXX]** | **$[XXX]** | **$[XX]M** | **100%** |
+| Segment                | Customers    | ARPU       | Annual Revenue | % of Total |
+| ---------------------- | ------------ | ---------- | -------------- | ---------- |
+| Free (upsell pipeline) | [XX,XXX]     | $0         | $0             | 0%         |
+| [Starter tier]         | [XX,XXX]     | $[XX]      | $[X.X]M        | [XX]%      |
+| [Pro tier]             | [X,XXX]      | $[XXX]     | $[X.X]M        | [XX]%      |
+| [Enterprise tier]      | [XXX]        | $[X,XXX]   | $[X.X]M        | [XX]%      |
+| **Total Paid**         | **[XX,XXX]** | **$[XXX]** | **$[XX]M**     | **100%**   |
 
 ---
 
@@ -319,6 +338,7 @@ NRR = $[XXX]k / $[XXX]k = [XXX]%
 **Target**: [XXX]% NRR ([Interpretation: <100% = net churn, 100-110% = stable, 110%+ = expansion])
 
 **Expansion tactics**:
+
 1. [Tactic 1 - e.g., "Automatic tier upgrades when usage limits hit"]
 2. [Tactic 2 - e.g., "Team/seat expansion as companies grow"]
 3. [Tactic 3 - e.g., "Premium features (integrations, advanced analytics)"]
@@ -331,18 +351,19 @@ NRR = $[XXX]k / $[XXX]k = [XXX]%
 
 **Per-customer costs** (scales with customer count):
 
-| Cost Category | Per Customer/Month | Annual (at [X,XXX] customers) | % of Revenue |
-|---------------|-------------------|-------------------------------|--------------|
-| Hosting/Compute | $[XX] | $[XXX]k | [X]% |
-| Database/Storage | $[X] | $[XX]k | [X]% |
-| Third-party APIs | $[XX] | $[XXX]k | [X]% |
-| Payment Processing | $[X] | $[XX]k | 3% |
-| Customer Support (allocated) | $[XX] | $[XXX]k | [X]% |
-| **Total COGS** | **$[XX]** | **$[XXX]k** | **[XX]%** |
+| Cost Category                | Per Customer/Month | Annual (at [X,XXX] customers) | % of Revenue |
+| ---------------------------- | ------------------ | ----------------------------- | ------------ |
+| Hosting/Compute              | $[XX]              | $[XXX]k                       | [X]%         |
+| Database/Storage             | $[X]               | $[XX]k                        | [X]%         |
+| Third-party APIs             | $[XX]              | $[XXX]k                       | [X]%         |
+| Payment Processing           | $[X]               | $[XX]k                        | 3%           |
+| Customer Support (allocated) | $[XX]              | $[XXX]k                       | [X]%         |
+| **Total COGS**               | **$[XX]**          | **$[XXX]k**                   | **[XX]%**    |
 
 **Gross Margin**: [XX]% (Revenue - COGS)
 
 **Cost assumptions**:
+
 - **Hosting**: [Platform] at $[X]/[unit], estimate [X units] per customer
 - **APIs**: [List key APIs - e.g., "Anthropic Claude API $X per 1M tokens, estimate X calls/customer/month"]
 - **Support**: [X] FTE support for every [XXX] customers = $[XX] per customer/month
@@ -355,51 +376,51 @@ NRR = $[XXX]k / $[XXX]k = [XXX]%
 
 #### Year 1 (Foundation)
 
-| Category | Headcount | Cost/Month | Annual |
-|----------|-----------|------------|--------|
-| **Engineering** | [X] | $[XX]k | $[XXX]k |
-| **Product/Design** | [X] | $[XX]k | $[XXX]k |
-| **Marketing** | [X] | $[XX]k | $[XXX]k |
-| **Sales** (if applicable) | [X] | $[XX]k | $[XXX]k |
-| **Operations/Admin** | [X] | $[XX]k | $[XXX]k |
-| **Software/Tools** | - | $[X]k | $[XX]k |
-| **Marketing Budget** | - | $[XX]k | $[XXX]k |
-| **Office/Misc** | - | $[X]k | $[XX]k |
-| **Total OpEx** | **[X] people** | **$[XX]k/mo** | **$[XXX]k** |
+| Category                  | Headcount      | Cost/Month    | Annual      |
+| ------------------------- | -------------- | ------------- | ----------- |
+| **Engineering**           | [X]            | $[XX]k        | $[XXX]k     |
+| **Product/Design**        | [X]            | $[XX]k        | $[XXX]k     |
+| **Marketing**             | [X]            | $[XX]k        | $[XXX]k     |
+| **Sales** (if applicable) | [X]            | $[XX]k        | $[XXX]k     |
+| **Operations/Admin**      | [X]            | $[XX]k        | $[XXX]k     |
+| **Software/Tools**        | -              | $[X]k         | $[XX]k      |
+| **Marketing Budget**      | -              | $[XX]k        | $[XXX]k     |
+| **Office/Misc**           | -              | $[X]k         | $[XX]k      |
+| **Total OpEx**            | **[X] people** | **$[XX]k/mo** | **$[XXX]k** |
 
 ---
 
 #### Year 2 (Growth)
 
-| Category | Headcount | Cost/Month | Annual |
-|----------|-----------|------------|--------|
-| **Engineering** | [X] | $[XXX]k | $[X.X]M |
-| **Product/Design** | [X] | $[XX]k | $[XXX]k |
-| **Marketing** | [X] | $[XX]k | $[XXX]k |
-| **Sales** | [X] | $[XX]k | $[XXX]k |
-| **Customer Success** | [X] | $[XX]k | $[XXX]k |
-| **Operations/Admin** | [X] | $[XX]k | $[XXX]k |
-| **Software/Tools** | - | $[XX]k | $[XXX]k |
-| **Marketing Budget** | - | $[XX]k | $[XXX]k |
-| **Office/Misc** | - | $[X]k | $[XX]k |
-| **Total OpEx** | **[XX] people** | **$[XXX]k/mo** | **$[X.X]M** |
+| Category             | Headcount       | Cost/Month     | Annual      |
+| -------------------- | --------------- | -------------- | ----------- |
+| **Engineering**      | [X]             | $[XXX]k        | $[X.X]M     |
+| **Product/Design**   | [X]             | $[XX]k         | $[XXX]k     |
+| **Marketing**        | [X]             | $[XX]k         | $[XXX]k     |
+| **Sales**            | [X]             | $[XX]k         | $[XXX]k     |
+| **Customer Success** | [X]             | $[XX]k         | $[XXX]k     |
+| **Operations/Admin** | [X]             | $[XX]k         | $[XXX]k     |
+| **Software/Tools**   | -               | $[XX]k         | $[XXX]k     |
+| **Marketing Budget** | -               | $[XX]k         | $[XXX]k     |
+| **Office/Misc**      | -               | $[X]k          | $[XX]k      |
+| **Total OpEx**       | **[XX] people** | **$[XXX]k/mo** | **$[X.X]M** |
 
 ---
 
 #### Year 3 (Scale)
 
-| Category | Headcount | Cost/Month | Annual |
-|----------|-----------|------------|--------|
-| **Engineering** | [XX] | $[XXX]k | $[X.X]M |
-| **Product/Design** | [X] | $[XXX]k | $[X.X]M |
-| **Marketing** | [X] | $[XXX]k | $[X.X]M |
-| **Sales** | [XX] | $[XXX]k | $[X.X]M |
-| **Customer Success** | [X] | $[XXX]k | $[X.X]M |
-| **Operations/Admin** | [X] | $[XXX]k | $[X.X]M |
-| **Software/Tools** | - | $[XX]k | $[XXX]k |
-| **Marketing Budget** | - | $[XXX]k | $[X.X]M |
-| **Office/Misc** | - | $[XX]k | $[XXX]k |
-| **Total OpEx** | **[XX] people** | **$[XXX]k/mo** | **$[X.X]M** |
+| Category             | Headcount       | Cost/Month     | Annual      |
+| -------------------- | --------------- | -------------- | ----------- |
+| **Engineering**      | [XX]            | $[XXX]k        | $[X.X]M     |
+| **Product/Design**   | [X]             | $[XXX]k        | $[X.X]M     |
+| **Marketing**        | [X]             | $[XXX]k        | $[X.X]M     |
+| **Sales**            | [XX]            | $[XXX]k        | $[X.X]M     |
+| **Customer Success** | [X]             | $[XXX]k        | $[X.X]M     |
+| **Operations/Admin** | [X]             | $[XXX]k        | $[X.X]M     |
+| **Software/Tools**   | -               | $[XX]k         | $[XXX]k     |
+| **Marketing Budget** | -               | $[XXX]k        | $[X.X]M     |
+| **Office/Misc**      | -               | $[XX]k         | $[XXX]k     |
+| **Total OpEx**       | **[XX] people** | **$[XXX]k/mo** | **$[X.X]M** |
 
 ---
 
@@ -415,6 +436,7 @@ $500k → $1M+ MRR:  [XX+] people (full team - all functions)
 ```
 
 **Hiring priorities**:
+
 1. [Month X]: [Role] - [Why needed at this stage]
 2. [Month X]: [Role] - [Why needed at this stage]
 3. [Month X]: [Role] - [Why needed at this stage]
@@ -425,23 +447,24 @@ $500k → $1M+ MRR:  [XX+] people (full team - all functions)
 
 ### Profit & Loss Summary
 
-| | Year 1 | Year 2 | Year 3 |
-|------------------------|------------|------------|------------|
-| **Revenue** | $[XXX]k | $[X.X]M | $[XX]M |
-| **COGS** | -$[XX]k | -$[XXX]k | -$[X.X]M |
-| **Gross Profit** | $[XXX]k | $[X.X]M | $[XX]M |
-| **Gross Margin** | [XX]% | [XX]% | [XX]% |
-| | | | |
-| **Operating Expenses** | -$[XXX]k | -$[X.X]M | -$[X.X]M |
-| | | | |
-| **EBITDA** | -$[XXX]k | -$[XXX]k / +$[XX]k | +$[X.X]M |
-| **EBITDA Margin** | -[XXX]% | -[XX]% / +[X]% | +[XX]% |
+|                        | Year 1   | Year 2             | Year 3   |
+| ---------------------- | -------- | ------------------ | -------- |
+| **Revenue**            | $[XXX]k  | $[X.X]M            | $[XX]M   |
+| **COGS**               | -$[XX]k  | -$[XXX]k           | -$[X.X]M |
+| **Gross Profit**       | $[XXX]k  | $[X.X]M            | $[XX]M   |
+| **Gross Margin**       | [XX]%    | [XX]%              | [XX]%    |
+|                        |          |                    |          |
+| **Operating Expenses** | -$[XXX]k | -$[X.X]M           | -$[X.X]M |
+|                        |          |                    |          |
+| **EBITDA**             | -$[XXX]k | -$[XXX]k / +$[XX]k | +$[X.X]M |
+| **EBITDA Margin**      | -[XXX]%  | -[XX]% / +[X]%     | +[XX]%   |
 
 ---
 
 ### Break-Even Analysis
 
 **Break-even calculation**:
+
 ```
 Fixed Costs:                $[XX]k/month
 Contribution Margin/Customer: $[XX]/month (ARPU × Gross Margin - variable cost)
@@ -452,19 +475,20 @@ At [X]% conversion rate:    Need [X,XXX] signups/month
 ```
 
 **Break-even timeline**:
+
 - **Target month**: Month [XX]
 - **Customers at break-even**: [XXX] customers
 - **MRR at break-even**: $[XX]k
 
 **Path to break-even**:
 
-| Milestone | Month | Customers | MRR | Status |
-|-----------|-------|-----------|-----|--------|
-| First $ | M[X] | [X] | $[X]k | [How we get here] |
-| $10k MRR | M[X] | [XXX] | $10k | [Validation milestone] |
-| $50k MRR | M[XX] | [XXX] | $50k | [Scale readiness] |
-| **Break-even** | **M[XX]** | **[XXX]** | **$[XX]k** | **Cashflow positive** |
-| $100k MRR | M[XX] | [X,XXX] | $100k | [Series A readiness] |
+| Milestone      | Month     | Customers | MRR        | Status                 |
+| -------------- | --------- | --------- | ---------- | ---------------------- |
+| First $        | M[X]      | [X]       | $[X]k      | [How we get here]      |
+| $10k MRR       | M[X]      | [XXX]     | $10k       | [Validation milestone] |
+| $50k MRR       | M[XX]     | [XXX]     | $50k       | [Scale readiness]      |
+| **Break-even** | **M[XX]** | **[XXX]** | **$[XX]k** | **Cashflow positive**  |
+| $100k MRR      | M[XX]     | [X,XXX]   | $100k      | [Series A readiness]   |
 
 ---
 
@@ -472,14 +496,15 @@ At [X]% conversion rate:    Need [X,XXX] signups/month
 
 **Monthly burn rate** (revenue - total costs):
 
-| Period | Revenue | Costs | Burn Rate | Cumulative Burn |
-|--------|---------|-------|-----------|-----------------|
-| Month 1-3 | $[X]k/mo | $[XX]k/mo | -$[XX]k/mo | -$[XXX]k |
-| Month 4-6 | $[XX]k/mo | $[XX]k/mo | -$[XX]k/mo | -$[XXX]k |
-| Month 7-12 | $[XX]k/mo | $[XX]k/mo | -$[X]k/mo | -$[XXX]k |
-| **Total Year 1** | **$[XXX]k** | **$[X.X]M** | | **-$[XXX]k** |
+| Period           | Revenue     | Costs       | Burn Rate  | Cumulative Burn |
+| ---------------- | ----------- | ----------- | ---------- | --------------- |
+| Month 1-3        | $[X]k/mo    | $[XX]k/mo   | -$[XX]k/mo | -$[XXX]k        |
+| Month 4-6        | $[XX]k/mo   | $[XX]k/mo   | -$[XX]k/mo | -$[XXX]k        |
+| Month 7-12       | $[XX]k/mo   | $[XX]k/mo   | -$[X]k/mo  | -$[XXX]k        |
+| **Total Year 1** | **$[XXX]k** | **$[X.X]M** |            | **-$[XXX]k**    |
 
 **Runway calculation**:
+
 ```
 Starting Capital:        $[XXX]k
 Monthly Burn Rate:       $[XX]k/month (average)
@@ -488,6 +513,7 @@ Runway:                  [XX] months
 ```
 
 **Burn reduction timeline**:
+
 - Month [X]: Burn peaks at $[XX]k/month (team ramp-up)
 - Month [X]: Burn reduces to $[XX]k/month (revenue growing faster than costs)
 - Month [X]: Break-even (burn = $0)
@@ -528,6 +554,7 @@ ELSE IF Series A (>$1M ARR, 3x YoY growth)
 **Our recommendation**: [Strategy and rationale based on model]
 
 **Milestones for next funding round**:
+
 - [ ] Reach $[XXX]k ARR ([X]x from current)
 - [ ] Demonstrate [XX]% YoY growth
 - [ ] Achieve LTV:CAC ≥ [X]:1
@@ -540,16 +567,16 @@ ELSE IF Series A (>$1M ARR, 3x YoY growth)
 
 ### Scenario Comparison
 
-| Metric | Conservative (70%) | Realistic (50%) | Aggressive (30%) |
-|--------|-------------------|-----------------|------------------|
-| **Year 1 ARR** | $[XXX]k | $[XXX]k | $[XXX]k |
-| **Year 3 ARR** | $[X.X]M | $[XX]M | $[XX]M |
-| **LTV** | $[X,XXX] | $[X,XXX] | $[X,XXX] |
-| **CAC** | $[XXX] | $[XXX] | $[XXX] |
-| **LTV:CAC** | [X.X]:1 | [X.X]:1 | [X.X]:1 |
-| **Break-even Month** | Month [XX] | Month [XX] | Month [XX] |
-| **Funding Needed** | $[X.X]M | $[XXX]k | $[XXX]k |
-| **Customers (Year 3)** | [XX,XXX] | [XXX,XXX] | [XXX,XXX] |
+| Metric                 | Conservative (70%) | Realistic (50%) | Aggressive (30%) |
+| ---------------------- | ------------------ | --------------- | ---------------- |
+| **Year 1 ARR**         | $[XXX]k            | $[XXX]k         | $[XXX]k          |
+| **Year 3 ARR**         | $[X.X]M            | $[XX]M          | $[XX]M           |
+| **LTV**                | $[X,XXX]           | $[X,XXX]        | $[X,XXX]         |
+| **CAC**                | $[XXX]             | $[XXX]          | $[XXX]           |
+| **LTV:CAC**            | [X.X]:1            | [X.X]:1         | [X.X]:1          |
+| **Break-even Month**   | Month [XX]         | Month [XX]      | Month [XX]       |
+| **Funding Needed**     | $[X.X]M            | $[XXX]k         | $[XXX]k          |
+| **Customers (Year 3)** | [XX,XXX]           | [XXX,XXX]       | [XXX,XXX]        |
 
 ---
 
@@ -558,6 +585,7 @@ ELSE IF Series A (>$1M ARR, 3x YoY growth)
 **"What if things go slower than expected?"**
 
 **Assumptions** (relative to realistic):
+
 - Conversion rates: -30% ([X]% → [X]%)
 - Churn rates: +30% ([X]% → [X]%)
 - CAC: +30% ($[XXX] → $[XXX])
@@ -565,6 +593,7 @@ ELSE IF Series A (>$1M ARR, 3x YoY growth)
 - Time to break-even: +50% (Month [XX] → Month [XX])
 
 **Key metrics**:
+
 - **Year 1 ARR**: $[XXX]k (vs. $[XXX]k realistic)
 - **Year 3 ARR**: $[X.X]M (vs. $[XX]M realistic)
 - **LTV:CAC**: [X.X]:1 (vs. [X.X]:1 realistic)
@@ -572,14 +601,17 @@ ELSE IF Series A (>$1M ARR, 3x YoY growth)
 - **Funding needed**: $[X.X]M (vs. $[XXX]k realistic)
 
 **Can we survive this scenario?**
+
 - [✅ / ⚠️ / ❌] [Assessment: e.g., "Yes with additional $XXXk bridge funding"]
 
 **What would trigger this scenario?**
+
 1. [Trigger 1 - e.g., "Market education takes longer than expected"]
 2. [Trigger 2 - e.g., "Competitive pressure on pricing"]
 3. [Trigger 3 - e.g., "Channel saturation sooner than projected"]
 
 **Early warning signs** (metrics to watch):
+
 - Month 3: If MRR < $[X]k, we're tracking conservative
 - Month 6: If churn > [X]%, tightening product-market fit needed
 - Month 9: If CAC > $[XXX], channel strategy needs revision
@@ -593,12 +625,14 @@ ELSE IF Series A (>$1M ARR, 3x YoY growth)
 This is the main projection detailed in previous sections.
 
 **Based on**:
+
 - Journey-informed conversion rates
 - Market-benchmarked churn and CAC
 - Realistic channel growth curves
 - Conservative assumptions on unknowns
 
 **Key metrics**:
+
 - **Year 1 ARR**: $[XXX]k
 - **Year 3 ARR**: $[XX]M
 - **LTV:CAC**: [X.X]:1
@@ -612,6 +646,7 @@ This is the main projection detailed in previous sections.
 **"What if everything goes right?"**
 
 **Assumptions** (relative to realistic):
+
 - Conversion rates: +30% ([X]% → [X]%)
 - Churn rates: -30% ([X]% → [X]%)
 - CAC: -20% ($[XXX] → $[XXX])
@@ -619,6 +654,7 @@ This is the main projection detailed in previous sections.
 - Time to break-even: -40% (Month [XX] → Month [XX])
 
 **Key metrics**:
+
 - **Year 1 ARR**: $[XXX]k (vs. $[XXX]k realistic)
 - **Year 3 ARR**: $[XX]M (vs. $[XX]M realistic)
 - **LTV:CAC**: [X.X]:1 (vs. [X.X]:1 realistic)
@@ -626,11 +662,13 @@ This is the main projection detailed in previous sections.
 - **Funding needed**: $[XXX]k (vs. $[XXX]k realistic)
 
 **What would need to be true?**
+
 1. [Condition 1 - e.g., "Viral coefficient > 1.2 (strong word-of-mouth)"]
 2. [Condition 2 - e.g., "Journey delivers 20x value (raises willingness to pay)"]
 3. [Condition 3 - e.g., "SEO compounds faster (domain authority)"]
 
 **Upside opportunities**:
+
 - [Opportunity 1 - e.g., "Strategic partnership accelerates distribution"]
 - [Opportunity 2 - e.g., "Market tailwind (new regulation drives demand)"]
 - [Opportunity 3 - e.g., "Product-led growth loop stronger than expected"]
@@ -646,16 +684,19 @@ This is the main projection detailed in previous sections.
 **What we assumed**: [Specific assumption - e.g., "10% free-to-paid conversion rate"]
 
 **Why we believe it**:
+
 - [Data source / benchmark - e.g., "B2B SaaS average is 8-12% (ChartMogul)"]
 - [Journey rationale - e.g., "Our time-to-value is faster than average"]
 - [Competitive analysis - e.g., "Competitors report similar rates"]
 
 **How to validate** (next 90 days):
+
 - [Validation method 1 - e.g., "Launch freemium, measure actual 30/60/90-day conversion"]
 - [Validation method 2 - e.g., "A/B test pricing page variants"]
 - [Validation method 3 - e.g., "Interview 10 free users who didn't convert"]
 
 **If we're wrong** (sensitivity analysis):
+
 ```
 IF conversion is 7% (30% lower):
   → Year 1 ARR: $[XXX]k → $[XXX]k (-30%)
@@ -683,20 +724,24 @@ IF conversion is 13% (30% higher):
 **Description**: [What could go wrong?]
 
 **Impact on model**:
+
 - [Financial impact - e.g., "Increases CAC by 50%, extends payback to 18 months"]
 - [Timeline impact - e.g., "Delays break-even by 6 months"]
 - [Funding impact - e.g., "Requires additional $XXXk"]
 
 **Early warning signs**:
+
 - [Sign 1 - e.g., "Month 3: If conversion < 5%"]
 - [Sign 2 - e.g., "Month 6: If CAC > $XXX"]
 
 **Mitigation strategy**:
+
 1. [Action 1 - e.g., "Invest in education content upfront"]
 2. [Action 2 - e.g., "Build ROI calculator to demonstrate value"]
 3. [Action 3 - e.g., "Offer free assessments to prove value"]
 
 **Contingency plan** (if risk materializes):
+
 - [Contingency 1 - e.g., "Pivot messaging to pain-first approach"]
 - [Contingency 2 - e.g., "Add 'done-for-you' service tier"]
 - [Contingency 3 - e.g., "Extend runway, reduce burn rate"]
@@ -713,15 +758,16 @@ IF conversion is 13% (30% higher):
 
 **Impact of +/- 20% change in key variables**:
 
-| Variable | -20% | Base | +20% | Most Sensitive Outcome |
-|----------|------|------|------|------------------------|
-| **Conversion Rate** | $[XXX]k ARR | $[XXX]k ARR | $[XXX]k ARR | [Impact] |
-| **Churn Rate** | $[XXX]k ARR | $[XXX]k ARR | $[XXX]k ARR | [Impact] |
-| **CAC** | $[XXX]k funding | $[XXX]k funding | $[XXX]k funding | [Impact] |
-| **ARPU** | $[XXX]k ARR | $[XXX]k ARR | $[XXX]k ARR | [Impact] |
-| **Growth Rate** | Month [XX] BE | Month [XX] BE | Month [XX] BE | [Impact] |
+| Variable            | -20%            | Base            | +20%            | Most Sensitive Outcome |
+| ------------------- | --------------- | --------------- | --------------- | ---------------------- |
+| **Conversion Rate** | $[XXX]k ARR     | $[XXX]k ARR     | $[XXX]k ARR     | [Impact]               |
+| **Churn Rate**      | $[XXX]k ARR     | $[XXX]k ARR     | $[XXX]k ARR     | [Impact]               |
+| **CAC**             | $[XXX]k funding | $[XXX]k funding | $[XXX]k funding | [Impact]               |
+| **ARPU**            | $[XXX]k ARR     | $[XXX]k ARR     | $[XXX]k ARR     | [Impact]               |
+| **Growth Rate**     | Month [XX] BE   | Month [XX] BE   | Month [XX] BE   | [Impact]               |
 
 **Most sensitive variables** (biggest impact on outcomes):
+
 1. [Variable 1] - [Why most sensitive]
 2. [Variable 2] - [Why most sensitive]
 3. [Variable 3] - [Why most sensitive]
@@ -737,17 +783,20 @@ IF conversion is 13% (30% higher):
 **Goal**: First paying customer (validates willingness to pay)
 
 **Success Criteria**:
+
 - [ ] ≥1 paying customer
 - [ ] $[X]+ MRR
 - [ ] Customer completes journey (activation → value delivery)
 
 **Requirements to hit**:
+
 - Product: [What product state needed]
 - Team: [What team composition needed]
 - Marketing: [What marketing/sales needed]
 - Funding: [How much capital deployed]
 
 **What this validates**:
+
 - Journey delivers value (someone will pay)
 - Pricing is acceptable (at least to one persona)
 - Path to revenue exists
@@ -761,18 +810,21 @@ IF conversion is 13% (30% higher):
 **Goal**: Repeatability proven (validates business model)
 
 **Success Criteria**:
+
 - [ ] $10,000 MRR
 - [ ] [XXX]+ active customers
 - [ ] [X]% monthly churn or lower
 - [ ] At least 2 acquisition channels working
 
 **Requirements to hit**:
+
 - Product: [Product state needed]
 - Team: [Team size/composition]
 - Marketing: [Marketing/sales state]
 - Funding: $[XXX]k deployed
 
 **What this validates**:
+
 - Multiple customers see value (not a fluke)
 - Acquisition channels work
 - Business model is viable
@@ -786,6 +838,7 @@ IF conversion is 13% (30% higher):
 **Goal**: Cashflow positive (sustainable without funding)
 
 **Success Criteria**:
+
 - [ ] Revenue ≥ Total Costs
 - [ ] $[XX]k+ MRR
 - [ ] [XXX]+ customers
@@ -793,12 +846,14 @@ IF conversion is 13% (30% higher):
 - [ ] Churn ≤ [X]%
 
 **Requirements to hit**:
+
 - Product: [Product maturity]
 - Team: [X] people
 - Marketing: [Marketing state]
 - Funding: $[XXX]k total deployed
 
 **What this validates**:
+
 - Business is sustainable
 - Unit economics work at scale
 - Can grow without external capital (choose to vs. need to)
@@ -812,6 +867,7 @@ IF conversion is 13% (30% higher):
 **Goal**: Scale readiness (Series A fundable)
 
 **Success Criteria**:
+
 - [ ] $100,000 MRR ($1.2M ARR)
 - [ ] [X,XXX]+ customers
 - [ ] [XX]%+ YoY growth
@@ -819,12 +875,14 @@ IF conversion is 13% (30% higher):
 - [ ] NRR ≥ [XXX]%
 
 **Requirements to hit**:
+
 - Product: [Product state]
 - Team: [XX] people
 - Marketing: [Marketing state]
 - Funding: $[XXX]k total deployed
 
 **What this validates**:
+
 - Proven channel-market fit
 - Scalable customer acquisition
 - Ready for growth capital
@@ -838,6 +896,7 @@ IF conversion is 13% (30% higher):
 **Goal**: Market validation (category leadership)
 
 **Success Criteria**:
+
 - [ ] $1,000,000 ARR
 - [ ] [XX,XXX]+ customers
 - [ ] Market leader or #2 in category
@@ -845,12 +904,14 @@ IF conversion is 13% (30% higher):
 - [ ] Brand recognition in target market
 
 **Requirements to hit**:
+
 - Product: [Product state]
 - Team: [XX]+ people
 - Marketing: [Marketing state]
 - Funding: $[X]M+ total deployed
 
 **What this validates**:
+
 - Significant market opportunity
 - Sustainable competitive advantage
 - Long-term business viability
@@ -862,26 +923,29 @@ IF conversion is 13% (30% higher):
 ## Model Validation & Updates
 
 **This model should be updated**:
+
 - ✅ Monthly: Update actuals vs. projections
 - ✅ Quarterly: Revise assumptions based on learnings
 - ✅ Annually: Rebuild model with actual data
 
 **Tracking against model**:
 
-| Metric | Projected (Month X) | Actual (Month X) | Variance | Action |
-|--------|---------------------|------------------|----------|--------|
-| MRR | $[XX]k | $[XX]k | +/- [X]% | [What to do] |
-| Customers | [XXX] | [XXX] | +/- [X]% | [What to do] |
-| CAC | $[XXX] | $[XXX] | +/- [X]% | [What to do] |
-| Churn | [X]% | [X]% | +/- [X]% | [What to do] |
-| Burn Rate | $[XX]k | $[XX]k | +/- [X]% | [What to do] |
+| Metric    | Projected (Month X) | Actual (Month X) | Variance | Action       |
+| --------- | ------------------- | ---------------- | -------- | ------------ |
+| MRR       | $[XX]k              | $[XX]k           | +/- [X]% | [What to do] |
+| Customers | [XXX]               | [XXX]            | +/- [X]% | [What to do] |
+| CAC       | $[XXX]              | $[XXX]           | +/- [X]% | [What to do] |
+| Churn     | [X]%                | [X]%             | +/- [X]% | [What to do] |
+| Burn Rate | $[XX]k              | $[XX]k           | +/- [X]% | [What to do] |
 
 **Variance thresholds**:
+
 - ± 10%: Normal variance, continue monitoring
 - ± 20%: Investigate cause, may need model adjustment
 - ± 30%+: Significant variance, revise assumptions
 
 **Model evolution**:
+
 - **Months 0-6**: Heavy assumptions, low confidence, update frequently
 - **Months 6-12**: Some actuals, medium confidence, monthly updates
 - **Months 12-24**: Strong actuals, high confidence, quarterly updates

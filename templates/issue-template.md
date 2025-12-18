@@ -6,6 +6,7 @@
 **RICE Score**: [Score] (R:[X] × I:[X] × C:[X]% ÷ E:[X])
 
 > **Context**: Reference `product-guidelines/` for strategic context:
+>
 > - `00-user-journey.md` - User journey and value delivery
 > - `02-tech-stack.md` - Technology choices and rationale
 > - `06-design-system.md` - Design components and patterns
@@ -36,6 +37,7 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Frontend: [Technology]
 - Backend: [Technology]
 - Database: [Schema/tables]
@@ -47,6 +49,7 @@
 ## Design Notes
 
 **Components Needed**:
+
 - [Component from design system]
 - [Component from design system]
 
@@ -66,6 +69,7 @@
 **Effort**: [1-5 days] person-days
 
 **Breakdown**:
+
 - Design: [X] days
 - Frontend: [Y] days
 - Backend: [Z] days

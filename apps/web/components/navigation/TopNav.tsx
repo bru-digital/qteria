@@ -1,10 +1,10 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
-import { LogOut, User, Settings } from "lucide-react"
-import { useState, useCallback, useEffect, useRef } from "react"
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
+import { LogOut, User, Settings } from 'lucide-react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 export function TopNav() {
   const pathname = usePathname()
@@ -14,27 +14,27 @@ export function TopNav() {
 
   const isActive = useCallback(
     (path: string) => {
-      if (path === "/dashboard") {
-        return pathname === "/dashboard"
+      if (path === '/dashboard') {
+        return pathname === '/dashboard'
       }
       return pathname.startsWith(path)
     },
     [pathname]
   )
 
-  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "process_manager"
+  const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'process_manager'
 
   // Handle Escape key to close dropdown and return focus to button
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && showUserMenu) {
+      if (event.key === 'Escape' && showUserMenu) {
         setShowUserMenu(false)
         buttonRef.current?.focus()
       }
     }
 
-    document.addEventListener("keydown", handleEscape)
-    return () => document.removeEventListener("keydown", handleEscape)
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
   }, [showUserMenu])
 
   return (
@@ -49,9 +49,9 @@ export function TopNav() {
             <Link
               href="/workflows"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive("/workflows")
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                isActive('/workflows')
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               Workflows
@@ -60,9 +60,9 @@ export function TopNav() {
             <Link
               href="/assessments"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive("/assessments")
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                isActive('/assessments')
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               Assessments
@@ -72,9 +72,9 @@ export function TopNav() {
               <Link
                 href="/admin/users"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive("/admin")
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  isActive('/admin')
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
                 Admin
@@ -114,7 +114,7 @@ export function TopNav() {
                   <span>Settings</span>
                 </Link>
                 <button
-                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  onClick={() => signOut({ callbackUrl: '/login' })}
                   className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   <LogOut className="h-4 w-4" />

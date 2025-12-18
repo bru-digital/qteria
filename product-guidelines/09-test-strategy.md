@@ -13,6 +13,7 @@
 **Product Risk Level**: **HIGH**
 
 **Why High Risk**:
+
 - Customers (TIC notified bodies) depend on accurate document validation for certification decisions
 - False negatives (missing real issues) = customer embarrassment, certification failures, reputational damage
 - False positives (flagging non-issues) = wasted time, loss of trust in AI
@@ -20,6 +21,7 @@
 - Multi-tenant isolation = one organization must never see another's data
 
 **Journey Critical Path** (Must Work Perfectly):
+
 - **Step 3**: AI validation with evidence-based results (Aha moment)
   - Parse PDFs correctly (extract text, detect pages/sections)
   - Validate criteria accurately (<5% false positives, <1% false negatives)
@@ -27,6 +29,7 @@
   - Process in <10 minutes (user expectation)
 
 **Testing Mindset**: **Pragmatic TDD**
+
 - Write tests for critical paths FIRST (TDD for business logic)
 - Test user value delivery, not framework internals
 - 70% coverage overall, 95%+ for critical modules
@@ -39,6 +42,7 @@
 ### 1. Test Critical Paths, Not Everything
 
 **Priority 1 (Must Test):**
+
 - AI validation accuracy (assessment scoring, criteria evaluation)
 - Evidence extraction (page/section linking)
 - Multi-tenant data isolation (security boundary)
@@ -47,6 +51,7 @@
 - Background job processing (Celery task execution)
 
 **Priority 2 (Should Test):**
+
 - API endpoint request/response validation
 - Database query correctness (CRUD operations)
 - Workflow creation logic
@@ -54,11 +59,13 @@
 - Error handling and edge cases
 
 **Priority 3 (Nice to Test):**
+
 - UI component rendering
 - Utility functions
 - Configuration files
 
 **Don't Test:**
+
 - Framework code (FastAPI, Next.js internals)
 - External libraries (SQLAlchemy, Pydantic)
 - Simple getters/setters
@@ -69,6 +76,7 @@
 ### 2. Fast Feedback Over Complete Coverage
 
 **Speed Targets:**
+
 - Unit tests: < 2 minutes (run on every save)
 - Integration tests: < 5 minutes (run on every commit)
 - E2E smoke tests: < 10 minutes (run on every PR)
@@ -81,6 +89,7 @@
 ### 3. Test Behavior, Not Implementation
 
 **Good Test** (tests behavior):
+
 ```python
 def test_assessment_fails_when_criteria_not_met():
     """Assessment should fail if any required criteria fails"""
@@ -93,6 +102,7 @@ def test_assessment_fails_when_criteria_not_met():
 ```
 
 **Bad Test** (tests implementation):
+
 ```python
 def test_assessment_calls_calculate_score_method():
     """Don't test internal method calls"""
@@ -198,6 +208,7 @@ def test_workflow():
 ### Backend Unit Tests (Python/FastAPI)
 
 **Tools:**
+
 - pytest (test runner)
 - pytest-asyncio (async test support)
 - pytest-cov (coverage reporting)
@@ -326,6 +337,7 @@ def test_admin_cannot_bypass_organization_isolation():
 ### Frontend Unit Tests (React/Next.js)
 
 **Tools:**
+
 - Vitest (test runner, Jest-compatible)
 - @testing-library/react (component testing)
 - @testing-library/user-event (user interactions)
@@ -774,6 +786,7 @@ def test_workflow_with_assessments_cannot_be_deleted(test_db):
 ### E2E Test Setup
 
 **Tools:**
+
 - Playwright (cross-browser E2E testing)
 - Test database (seeded with realistic data)
 - Mock Claude API (fast, deterministic responses)
@@ -782,7 +795,7 @@ def test_workflow_with_assessments_cannot_be_deleted(test_db):
 
 ```typescript
 // playwright.config.ts
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -814,7 +827,7 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },
-});
+})
 ```
 
 ---
@@ -825,135 +838,136 @@ export default defineConfig({
 
 ```typescript
 // tests/e2e/complete-assessment-flow.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
 test.describe('Complete Assessment Flow', () => {
   test.beforeEach(async ({ page }) => {
     // Seed test database with user and workflow
-    await setupTestData();
+    await setupTestData()
 
     // Login
-    await page.goto('/login');
-    await page.fill('[data-testid="email"]', 'handler@test.com');
-    await page.fill('[data-testid="password"]', 'password123');
-    await page.click('[data-testid="login-button"]');
-    await expect(page).toHaveURL('/dashboard');
-  });
+    await page.goto('/login')
+    await page.fill('[data-testid="email"]', 'handler@test.com')
+    await page.fill('[data-testid="password"]', 'password123')
+    await page.click('[data-testid="login-button"]')
+    await expect(page).toHaveURL('/dashboard')
+  })
 
   test('project handler completes full assessment workflow', async ({ page }) => {
     // Step 1: Select existing workflow
-    await page.click('[data-testid="workflow-card"]');
-    await expect(page).toHaveURL(/\/workflows\/.+/);
+    await page.click('[data-testid="workflow-card"]')
+    await expect(page).toHaveURL(/\/workflows\/.+/)
 
     // Verify workflow details displayed
-    await expect(page.locator('h1')).toContainText('Medical Device - Class II');
-    await expect(page.getByText('Technical Documentation')).toBeVisible();
-    await expect(page.getByText('Test Reports')).toBeVisible();
+    await expect(page.locator('h1')).toContainText('Medical Device - Class II')
+    await expect(page.getByText('Technical Documentation')).toBeVisible()
+    await expect(page.getByText('Test Reports')).toBeVisible()
 
     // Step 2: Upload documents
-    await page.click('[data-testid="start-assessment-button"]');
+    await page.click('[data-testid="start-assessment-button"]')
 
     // Upload to bucket 1 (Technical Documentation)
-    const bucket1Input = page.locator('[data-testid="bucket-0-upload"]');
-    await bucket1Input.setInputFiles('tests/fixtures/technical-spec.pdf');
-    await expect(page.getByText('technical-spec.pdf')).toBeVisible();
+    const bucket1Input = page.locator('[data-testid="bucket-0-upload"]')
+    await bucket1Input.setInputFiles('tests/fixtures/technical-spec.pdf')
+    await expect(page.getByText('technical-spec.pdf')).toBeVisible()
 
     // Upload to bucket 2 (Test Reports)
-    const bucket2Input = page.locator('[data-testid="bucket-1-upload"]');
-    await bucket2Input.setInputFiles('tests/fixtures/test-report.pdf');
-    await expect(page.getByText('test-report.pdf')).toBeVisible();
+    const bucket2Input = page.locator('[data-testid="bucket-1-upload"]')
+    await bucket2Input.setInputFiles('tests/fixtures/test-report.pdf')
+    await expect(page.getByText('test-report.pdf')).toBeVisible()
 
     // Step 3: Start assessment
-    await page.click('[data-testid="submit-assessment-button"]');
+    await page.click('[data-testid="submit-assessment-button"]')
 
     // Verify redirect to assessment status page
-    await expect(page).toHaveURL(/\/assessments\/.+/);
-    await expect(page.getByText('Assessment in progress')).toBeVisible();
+    await expect(page).toHaveURL(/\/assessments\/.+/)
+    await expect(page.getByText('Assessment in progress')).toBeVisible()
 
     // Wait for completion (mock Claude API returns quickly)
     await page.waitForSelector('[data-testid="assessment-complete"]', {
-      timeout: 30000
-    });
+      timeout: 30000,
+    })
 
     // Step 4: View results (Aha moment!)
-    await expect(page.getByText('Assessment Complete')).toBeVisible();
+    await expect(page.getByText('Assessment Complete')).toBeVisible()
 
     // Verify overall status
-    const overallStatus = page.locator('[data-testid="overall-status"]');
-    await expect(overallStatus).toContainText(/PASS|FAIL/);
+    const overallStatus = page.locator('[data-testid="overall-status"]')
+    await expect(overallStatus).toContainText(/PASS|FAIL/)
 
     // Verify criteria results displayed
-    await expect(page.getByText('All documents must be signed')).toBeVisible();
-    await expect(page.getByText('Test summary must be present')).toBeVisible();
+    await expect(page.getByText('All documents must be signed')).toBeVisible()
+    await expect(page.getByText('Test summary must be present')).toBeVisible()
 
     // Check for evidence link (if any criteria failed)
-    const failedCriteria = page.locator('[data-testid="criteria-fail"]');
-    if (await failedCriteria.count() > 0) {
+    const failedCriteria = page.locator('[data-testid="criteria-fail"]')
+    if ((await failedCriteria.count()) > 0) {
       // Evidence link should be present
-      const evidenceLink = page.locator('[data-testid="evidence-link"]').first();
-      await expect(evidenceLink).toContainText(/page \d+/i);
+      const evidenceLink = page.locator('[data-testid="evidence-link"]').first()
+      await expect(evidenceLink).toContainText(/page \d+/i)
 
       // Click evidence link
-      await evidenceLink.click();
+      await evidenceLink.click()
 
       // Verify PDF viewer opens (new tab or modal)
-      const pdfViewer = page.locator('[data-testid="pdf-viewer"]');
-      await expect(pdfViewer).toBeVisible();
+      const pdfViewer = page.locator('[data-testid="pdf-viewer"]')
+      await expect(pdfViewer).toBeVisible()
     }
 
     // Step 5: Download report
-    await page.goto(`/assessments/${await getAssessmentId(page)}`);
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('[data-testid="download-report-button"]');
-    const download = await downloadPromise;
-    expect(download.suggestedFilename()).toContain('assessment-report');
-    expect(download.suggestedFilename()).toContain('.pdf');
-  });
-});
+    await page.goto(`/assessments/${await getAssessmentId(page)}`)
+    const downloadPromise = page.waitForEvent('download')
+    await page.click('[data-testid="download-report-button"]')
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toContain('assessment-report')
+    expect(download.suggestedFilename()).toContain('.pdf')
+  })
+})
 ```
 
 **Example: Re-run Assessment After Fix**
 
 ```typescript
 // tests/e2e/rerun-assessment.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
 test('project handler fixes issues and re-runs assessment', async ({ page }) => {
   // Use pre-seeded assessment with one failed criteria
-  await page.goto('/assessments/test-assessment-failed');
+  await page.goto('/assessments/test-assessment-failed')
 
   // Verify failed status
-  await expect(page.locator('[data-testid="overall-status"]')).toContainText('FAIL');
+  await expect(page.locator('[data-testid="overall-status"]')).toContainText('FAIL')
 
   // See failed criteria with evidence
-  const failedCriteria = page.locator('[data-testid="criteria-fail"]').first();
-  await expect(failedCriteria).toContainText('Test summary must be present');
-  await expect(failedCriteria).toContainText('test-report.pdf, page 8');
+  const failedCriteria = page.locator('[data-testid="criteria-fail"]').first()
+  await expect(failedCriteria).toContainText('Test summary must be present')
+  await expect(failedCriteria).toContainText('test-report.pdf, page 8')
 
   // Click "Re-run Assessment" button
-  await page.click('[data-testid="rerun-assessment-button"]');
+  await page.click('[data-testid="rerun-assessment-button"]')
 
   // Replace failing document
-  await page.locator('[data-testid="replace-document-test-report"]').setInputFiles(
-    'tests/fixtures/test-report-fixed.pdf'
-  );
+  await page
+    .locator('[data-testid="replace-document-test-report"]')
+    .setInputFiles('tests/fixtures/test-report-fixed.pdf')
 
   // Submit re-run
-  await page.click('[data-testid="submit-rerun-button"]');
+  await page.click('[data-testid="submit-rerun-button"]')
 
   // Wait for new assessment to complete
   await page.waitForSelector('[data-testid="assessment-complete"]', {
-    timeout: 30000
-  });
+    timeout: 30000,
+  })
 
   // Verify assessment now passes
-  await expect(page.locator('[data-testid="overall-status"]')).toContainText('PASS');
+  await expect(page.locator('[data-testid="overall-status"]')).toContainText('PASS')
 
   // Previously failed criteria should now pass
-  const previouslyFailedCriteria = page.getByText('Test summary must be present');
-  await expect(previouslyFailedCriteria.locator('[data-testid="criteria-status"]'))
-    .toContainText('PASS');
-});
+  const previouslyFailedCriteria = page.getByText('Test summary must be present')
+  await expect(previouslyFailedCriteria.locator('[data-testid="criteria-status"]')).toContainText(
+    'PASS'
+  )
+})
 ```
 
 ---
@@ -966,18 +980,18 @@ test('project handler fixes issues and re-runs assessment', async ({ page }) => 
 
 **Coverage by Component:**
 
-| Component | Target | Rationale |
-|-----------|--------|-----------|
-| AI Validation Logic | 95% | Critical business logic, accuracy matters |
-| Evidence Extraction | 90% | Accuracy critical for aha moment |
-| Multi-Tenancy | 100% | Security boundary, zero tolerance |
-| PDF Parsing | 85% | Reliability critical, handles edge cases |
-| API Routes | 80% | High user interaction |
-| Background Jobs | 90% | Async processing must be reliable |
-| Database Queries | 70% | Data integrity matters |
-| Business Logic | 85% | Core app functionality |
-| UI Components | 50% | Focus on complex components |
-| Utilities | 80% | Reused across app |
+| Component           | Target | Rationale                                 |
+| ------------------- | ------ | ----------------------------------------- |
+| AI Validation Logic | 95%    | Critical business logic, accuracy matters |
+| Evidence Extraction | 90%    | Accuracy critical for aha moment          |
+| Multi-Tenancy       | 100%   | Security boundary, zero tolerance         |
+| PDF Parsing         | 85%    | Reliability critical, handles edge cases  |
+| API Routes          | 80%    | High user interaction                     |
+| Background Jobs     | 90%    | Async processing must be reliable         |
+| Database Queries    | 70%    | Data integrity matters                    |
+| Business Logic      | 85%    | Core app functionality                    |
+| UI Components       | 50%    | Focus on complex components               |
+| Utilities           | 80%    | Reused across app                         |
 
 **Coverage by Test Type:**
 
@@ -1179,7 +1193,7 @@ name: Nightly Tests
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # 2 AM UTC
+    - cron: '0 2 * * *' # 2 AM UTC
 
 jobs:
   full-e2e-suite:
@@ -1724,6 +1738,7 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 **What**: Require every line of code to be tested
 
 **Why Not**:
+
 - Diminishing returns (last 20% takes 80% of effort)
 - Coverage ≠ quality (can have 100% coverage with bad tests)
 - Slows development (testing getters/setters wasteful)
@@ -1738,6 +1753,7 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 **What**: Automatically modify code to verify tests catch changes
 
 **Why Not**:
+
 - Very slow (10-100x longer than normal tests)
 - High effort for edge case findings
 - Better to test critical paths well than find every possible bug
@@ -1752,6 +1768,7 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 **What**: Generate random inputs to test properties (e.g., "sorting always returns sorted list")
 
 **Why Not**:
+
 - Harder to write and understand
 - Overkill for CRUD operations (predictable inputs)
 - Better for algorithms/libraries than business logic
@@ -1766,6 +1783,7 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 **What**: Run all E2E tests on every pull request
 
 **Why Not**:
+
 - Too slow (20-30 min delays feedback)
 - Expensive CI minutes
 - Most PRs don't affect entire flow
@@ -1780,6 +1798,7 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 **What**: Screenshot every component, detect visual changes
 
 **Why Not**:
+
 - Maintenance burden (update screenshots on every design change)
 - Flaky (timing, fonts, rendering differences)
 - Expensive (Percy/Chromatic cost money)
@@ -1794,6 +1813,7 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 **What**: Test API contracts between consumer and provider
 
 **Why Not**:
+
 - Monolith architecture (frontend + backend owned by same team)
 - Integration tests cover API contracts
 - More useful for microservices with multiple teams
@@ -1808,6 +1828,7 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 **What**: Deliberately inject failures in production
 
 **Why Not**:
+
 - Too risky for small team (one mistake = downtime)
 - MVP stage (premature optimization)
 - Better to test resilience in staging first
@@ -1822,6 +1843,7 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 **Testing Philosophy**: Test what matters (critical paths, data accuracy, security), not everything.
 
 **Coverage Targets**:
+
 - Overall: 70%
 - AI validation: 95%
 - Evidence extraction: 90%
@@ -1830,17 +1852,20 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 - UI components: 50%
 
 **Test Types**:
+
 - Unit tests: Business logic, utilities (60% coverage)
 - Integration tests: API, database, services (20% coverage)
 - E2E tests: Critical journeys (10% coverage, all steps)
 
 **Quality Gates**:
+
 - All unit/integration tests pass (< 5 min)
 - Coverage >= 70%, no decrease vs main
 - E2E smoke tests pass (< 10 min on PR)
 - No high/critical vulnerabilities
 
 **Tools**:
+
 - Backend: Pytest + pytest-asyncio + pytest-cov
 - Frontend: Vitest + Testing Library
 - E2E: Playwright (cross-browser)
@@ -1848,6 +1873,7 @@ def test_issue_123_assessment_score_is_100_when_all_criteria_pass():
 - Security: Snyk + Bandit + OWASP ZAP
 
 **Speed Targets**:
+
 - Unit tests: < 2 min
 - Integration tests: < 5 min
 - E2E smoke: < 10 min

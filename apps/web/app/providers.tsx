@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import { SessionProvider } from "next-auth/react"
-import { ReactNode } from "react"
-import { ToastProvider } from "@/components/ui/Toast"
+import { SessionProvider } from 'next-auth/react'
+import { ReactNode } from 'react'
+import { ToastProvider } from '@/components/ui/Toast'
 
 interface ProvidersProps {
   children: ReactNode
@@ -11,9 +11,7 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <SessionProvider>
-      <ToastProvider>
-        {children}
-      </ToastProvider>
+      <ToastProvider>{children}</ToastProvider>
     </SessionProvider>
   )
 }

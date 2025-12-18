@@ -1,6 +1,6 @@
-import NextAuth, { DefaultSession } from "next-auth"
-import { JWT } from "next-auth/jwt"
-import { UserRoleType } from "@/lib/rbac"
+import NextAuth, { DefaultSession } from 'next-auth'
+import { JWT } from 'next-auth/jwt'
+import { UserRoleType } from '@/lib/rbac'
 
 /**
  * NAMING CONVENTION MAPPING:
@@ -15,13 +15,13 @@ import { UserRoleType } from "@/lib/rbac"
  * conventions, ensuring type safety and consistency with language best practices.
  */
 
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session {
     user: {
       id: string
       role: UserRoleType
-      organizationId: string  // CamelCase for TypeScript conventions
-    } & DefaultSession["user"]
+      organizationId: string // CamelCase for TypeScript conventions
+    } & DefaultSession['user']
   }
 
   interface User {
@@ -29,13 +29,13 @@ declare module "next-auth" {
     email: string
     name: string | null
     role: UserRoleType
-    organizationId: string  // CamelCase for TypeScript conventions
+    organizationId: string // CamelCase for TypeScript conventions
   }
 }
 
-declare module "next-auth/jwt" {
+declare module 'next-auth/jwt' {
   interface JWT {
     role?: UserRoleType
-    org_id?: string  // Snake_case to match backend API contract
+    org_id?: string // Snake_case to match backend API contract
   }
 }

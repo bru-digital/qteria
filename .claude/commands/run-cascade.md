@@ -9,6 +9,7 @@ You are orchestrating the Stack-Driven cascade. Your job is to **automatically e
 ## Your Role
 
 You will:
+
 1. **Check current progress** - Determine which files exist
 2. **Identify next sessions** - Based on cascade decision logic
 3. **Execute sessions automatically** - Run slash commands in sequence
@@ -32,6 +33,7 @@ ls -la product-guidelines/
 ```
 
 Identify which sessions are complete based on these files:
+
 - `00-user-journey.md` → Session 1 complete
 - `01-product-strategy.md` + `11-product-strategy-essentials.md` → Session 2 complete
 - `02-tech-stack.md` → Session 3 complete
@@ -51,30 +53,37 @@ Identify which sessions are complete based on these files:
 Use this decision logic to determine what to execute:
 
 **If no files exist:**
+
 - Start with Session 1: `/refine-journey`
 - Then ask user if they want to continue to Session 2
 
 **If only 00-user-journey.md exists:**
+
 - Run Session 2: `/create-product-strategy`
 - Then ask user if they want to continue
 
 **If 00-01-11 exist:**
+
 - Run Session 3: `/choose-tech-stack`
 - Then ask user if they want to continue
 
 **If 00-02 exist:**
+
 - Run Session 4: `/generate-strategy`
 - Then ask user if they want to continue
 
 **If 00-04 architecture exists (Session 4 complete):**
+
 - Run Session 5: `/create-brand-strategy`
 - Then ask user if they want to continue
 
 **If 00-05 brand exists (Session 5 complete):**
+
 - Run Session 6: `/create-design`
 - Then ask user if they want to continue
 
 **If 00-06 design exists (Session 6 complete):**
+
 - User has reached first major milestone
 - Ask: "Continue with Session 7 (/design-database-schema) or explore optional extensions?"
 - Options:
@@ -83,34 +92,42 @@ Use this decision logic to determine what to execute:
   - Stop here
 
 **If 00-07 exist:**
+
 - Run Session 8: `/generate-api-contracts`
 - Then ask user if they want to continue
 
 **If 00-08 exist:**
+
 - Run Session 9: `/create-test-strategy`
 - Then ask user if they want to continue
 
 **If 00-09 exist:**
+
 - Run Session 10: `/generate-backlog`
 - Then ask user if they want to continue
 
 **If 00-10 backlog exists:**
+
 - Ask user: "Run Session 11 to push to GitHub? (/create-gh-issues)"
 - This requires GitHub access, so confirm first
 
 **If 00-11 GitHub issues complete:**
+
 - Run Session 12: `/scaffold-project`
 - Then ask user if they want to continue
 
 **If 00-12 scaffold exists:**
+
 - Run Session 13: `/plan-deployment`
 - Then ask user if they want to continue
 
 **If 00-13 deployment exists:**
+
 - Run Session 14: `/design-observability`
 - After completion, celebrate - core cascade complete!
 
 **If all 14 core sessions complete:**
+
 - Congratulate user
 - Suggest optional post-cascade extensions
 - Suggest they start building
@@ -120,6 +137,7 @@ Use this decision logic to determine what to execute:
 For each session you're about to run:
 
 1. **Announce the session:**
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🚀 Executing Session X: [Session Name]
@@ -140,6 +158,7 @@ For each session you're about to run:
    - Examples: `/refine-journey`, `/create-product-strategy`, etc.
 
 3. **After session completes, show progress:**
+
 ```
 ✅ Session X Complete!
 
@@ -152,6 +171,7 @@ Created:
 ```
 
 4. **Ask about continuation:**
+
 ```
 Continue to next session? (yes/no/status)
 - yes: Continue to Session [X+1]
@@ -162,6 +182,7 @@ Continue to next session? (yes/no/status)
 ### Step 4: Handle Natural Stopping Points
 
 **Major Milestones** (pause and ask user):
+
 1. **After Session 1** - Journey defined, ask if ready to continue
 2. **After Session 4** - Tactical foundation complete, continue to brand
 3. **After Session 6** - Brand & design complete, offer optional extensions or continue
@@ -173,6 +194,7 @@ Continue to next session? (yes/no/status)
 ### Step 5: Handle Edge Cases
 
 **If user says "stop" or "pause":**
+
 ```
 ⏸️ Cascade paused after Session X
 
@@ -188,6 +210,7 @@ To continue: /run-cascade
 ```
 
 **If session encounters an error:**
+
 ```
 ⚠️ Session X encountered an issue
 
@@ -200,6 +223,7 @@ Options:
 ```
 
 **If user has skipped sessions (missing files):**
+
 ```
 ⚠️ Warning: Cascade order broken
 
@@ -229,21 +253,27 @@ What would you like to do?
 ## Execution Modes
 
 ### Default Mode (Sequential from Current Point)
+
 When user runs `/run-cascade` with no arguments:
+
 - Check current progress
 - Start from next incomplete session
 - Execute sessions one by one with confirmations
 - Stop at major milestones
 
 ### Batch Mode (User Specifies Range)
+
 If user says "run sessions X to Y" or "complete the cascade":
+
 - Confirm the range
 - Execute sessions in sequence
 - Still pause at major milestones
 - Show consolidated progress
 
 ### Resume Mode (Auto-detect)
+
 When `/run-cascade` is run after a pause:
+
 - Detect where user left off
 - Offer to resume
 - Continue from that point
@@ -251,12 +281,14 @@ When `/run-cascade` is run after a pause:
 ## Communication Style
 
 **Be concise but clear:**
+
 - Show what's happening now
 - Show what's next
 - Show overall progress
 - Ask clear yes/no questions
 
 **Progress indicators:**
+
 ```
 Core Cascade Progress: ████████░░░░░░ 57% (8/14 sessions)
 ```
@@ -342,6 +374,7 @@ Continue? (yes/no)
 ## Reference
 
 **Core cascade order:**
+
 1. `/refine-journey` → 00-user-journey.md
 2. `/create-product-strategy` → 01, 11
 3. `/choose-tech-stack` → 02
@@ -358,12 +391,14 @@ Continue? (yes/no)
 14. `/design-observability` → 14-observability-strategy
 
 **Optional extensions** (offer after Session 6 or 10):
+
 - `/design-user-experience`, `/setup-analytics`, `/design-growth-strategy`, `/create-financial-model`
 - `/discover-naming`, `/define-messaging`, `/design-brand-identity`, `/create-content-guidelines`
 
 ## Implementation Notes
 
 **Key Differences from /cascade-status:**
+
 - `/cascade-status` = SHOWS progress, recommends next step
 - `/run-cascade` = EXECUTES sessions automatically in sequence
 

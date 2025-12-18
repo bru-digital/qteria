@@ -9,16 +9,19 @@ This is a **post-core extension** that creates a comprehensive, data-driven grow
 ## When to Run This
 
 **Run AFTER Session 4+** when you have:
+
 - ✅ User journey defined (`product-guidelines/00-user-journey.md`)
 - ✅ Product strategy validated (`product-guidelines/01-product-strategy.md`)
 - ✅ Metrics established (`product-guidelines/04-metrics.md`)
 - ✅ Monetization model defined (`product-guidelines/04-monetization.md`)
 
 **Ideally after Session 7+** when you also have:
+
 - ✅ Backlog generated (`product-guidelines/09-backlog/`)
 - So growth experiments can be prioritized in development
 
 **Skip this** if:
+
 - You're pre-product-market-fit and need to focus purely on product iteration
 - Your growth model is purely enterprise sales-driven (though retention strategies still apply)
 
@@ -48,33 +51,41 @@ You are a growth strategist creating a data-driven growth plan. Your job is to:
 This command READS previous outputs to ground growth strategy in reality:
 
 1. **Read the user journey**:
+
    ```bash
    Read product-guidelines/00-user-journey.md
    ```
+
    - What's the "aha moment"? (activation target)
    - Where does value get delivered? (retention hook)
    - What makes it shareable? (viral potential)
 
 2. **Read the product strategy**:
+
    ```bash
    Read product-guidelines/01-product-strategy.md
    ```
+
    - Who's the target audience? (channel selection)
    - What's the competitive landscape? (positioning in channels)
    - What's the market size? (growth ceiling)
 
 3. **Read the metrics**:
+
    ```bash
    Read product-guidelines/04-metrics.md
    ```
+
    - What's the North Star metric? (primary growth goal)
    - What are the input metrics? (growth levers)
    - What are counter-metrics? (quality guardrails)
 
 4. **Read the monetization model**:
+
    ```bash
    Read product-guidelines/04-monetization.md
    ```
+
    - What's the pricing model? (freemium, trial, paid)
    - Where's the conversion point? (free→paid optimization)
    - What's the value metric? (expansion strategy)
@@ -83,6 +94,7 @@ This command READS previous outputs to ground growth strategy in reality:
    ```bash
    Read product-guidelines/17-analytics-plan.md
    ```
+
    - What events are tracked? (measurement capability)
    - What funnels exist? (conversion tracking)
 
@@ -95,6 +107,7 @@ Your growth strategy connects journey → channels → loops → metrics.
 Use the Read tool to read all cascade inputs listed above.
 
 **Extract key insights**:
+
 - Journey aha moment (Step 3 usually)
 - Target user persona and behavior
 - North Star metric and input metrics
@@ -138,6 +151,7 @@ ELSE
 ```
 
 **Example** (Compliance SaaS):
+
 ```
 Journey: Upload doc → AI assessment → Review results
 Aha moment: First assessment completed in <2 min
@@ -155,6 +169,7 @@ Why:
 **Channel selection criteria** (journey-informed):
 
 For EACH potential channel, ask:
+
 1. **Audience match**: Where does [journey persona] look for solutions?
 2. **Intent alignment**: Do users have high intent when they find you here?
 3. **Cost efficiency**: Can you acquire users at <30% of LTV?
@@ -162,17 +177,18 @@ For EACH potential channel, ask:
 
 **Primary channels** (pick 2-3 to start):
 
-| Channel | Good For | Bad For | Example Tactics |
-|---------|----------|---------|-----------------|
-| **SEO/Content** | High-intent searches, educational content | Quick results, low-intent keywords | Problem-focused blog posts, comparison pages, docs |
-| **Paid (SEM/Social)** | Fast testing, retargeting | Long-term cost efficiency | Google Ads on competitor terms, LinkedIn for B2B |
-| **Product-led** | Freemium, self-serve | Enterprise, complex setup | Generous free tier, in-product invites |
-| **Community** | Developer tools, niche audiences | Broad consumer | Open source, Slack/Discord, office hours |
-| **Partnerships** | Integrations, complementary tools | Control, attribution | Integration marketplace, co-marketing |
-| **Content/Viral** | Shareable outputs, templates | Complex B2B workflows | Share buttons, public galleries, embeds |
-| **Sales/Outbound** | Enterprise, high ACV | Low ACV, high volume | SDR outreach, account-based marketing |
+| Channel               | Good For                                  | Bad For                            | Example Tactics                                    |
+| --------------------- | ----------------------------------------- | ---------------------------------- | -------------------------------------------------- |
+| **SEO/Content**       | High-intent searches, educational content | Quick results, low-intent keywords | Problem-focused blog posts, comparison pages, docs |
+| **Paid (SEM/Social)** | Fast testing, retargeting                 | Long-term cost efficiency          | Google Ads on competitor terms, LinkedIn for B2B   |
+| **Product-led**       | Freemium, self-serve                      | Enterprise, complex setup          | Generous free tier, in-product invites             |
+| **Community**         | Developer tools, niche audiences          | Broad consumer                     | Open source, Slack/Discord, office hours           |
+| **Partnerships**      | Integrations, complementary tools         | Control, attribution               | Integration marketplace, co-marketing              |
+| **Content/Viral**     | Shareable outputs, templates              | Complex B2B workflows              | Share buttons, public galleries, embeds            |
+| **Sales/Outbound**    | Enterprise, high ACV                      | Low ACV, high volume               | SDR outreach, account-based marketing              |
 
 **Decision tree example**:
+
 ```
 IF journey persona = developers
   → Primary: SEO (docs/guides), Community (GitHub/Discord), Product-led
@@ -192,6 +208,7 @@ IF journey output = shareable/embeddable
 Document 2-4 channels you're NOT pursuing initially:
 
 **Example**:
+
 ```
 ❌ TV/Radio Advertising
 Why not: Journey persona (compliance officers) doesn't discover B2B SaaS via broadcast media. Intent too low, attribution impossible, cost too high for our ACV ($3k/year).
@@ -233,6 +250,7 @@ When to reconsider: If moving upmarket (ACV >$15k, multi-team deals) where 1:1 s
    - Example: Slack integration → Slack users discover tool
 
 **Decision tree**:
+
 ```
 IF journey involves collaboration
   → Design VIRAL loop (team invites, multiplayer features)
@@ -252,6 +270,7 @@ IF journey uses other tools
 ```
 
 **Example** (Compliance SaaS):
+
 ```
 Primary Loop: Content Loop (Weak)
 - Users generate assessment reports
@@ -271,6 +290,7 @@ Implication: Can't rely on loops alone, need strong channel strategy
 **What We DIDN'T Choose (And Why)**:
 
 **Example**:
+
 ```
 ❌ Referral Program ($50 credit for referring a friend)
 Why not: Journey value is compliance trust, not discounts. Users don't refer because of financial incentives in this domain. Referrals happen through organic advocacy (consultant recommendations).
@@ -286,11 +306,13 @@ When to reconsider: If users consistently request custom frameworks and we can't
 **Acquisition Funnel** (awareness → consideration → trial):
 
 Map journey stages to marketing:
+
 1. **Awareness**: How do [journey users] discover solutions to [journey problem]?
 2. **Consideration**: What convinces them to try [your solution] vs. [alternatives]?
 3. **Trial**: What's the lowest-friction path to [journey aha moment]?
 
 **Example funnel**:
+
 ```
 Awareness (Top of Funnel)
 ├─ SEO: "how to assess GDPR compliance" (3,200/mo searches)
@@ -365,6 +387,7 @@ Retention tactics:
 ```
 
 **Example retention strategy**:
+
 ```
 Retention model: Episodic (assessments needed quarterly for audits)
 
@@ -428,6 +451,7 @@ Expansion tactics:
 **What We DIDN'T Choose (And Why)**:
 
 **Example**:
+
 ```
 ❌ Flat Monthly Pricing ($99/month unlimited)
 Why not: Journey value scales with usage (more assessments = more value). Flat pricing misaligns incentives—high-usage users get subsidized by low-usage, creating churn risk. Usage-based ($0.10/assessment) aligns cost with value.
@@ -462,6 +486,7 @@ When to reconsider: If collaboration features become primary value (multiplayer 
 **Prioritization** (ICE framework: Impact × Confidence × Ease):
 
 For EACH experiment:
+
 - **Impact** (1-10): How much will this move North Star?
 - **Confidence** (1-10): How certain are we it will work?
 - **Ease** (1-10): How easy to implement and measure?
@@ -568,6 +593,7 @@ Write product-guidelines/21-growth-strategy.md
 Use the template structure and fill in all sections with journey-informed, data-driven decisions.
 
 **Key sections**:
+
 1. Growth Model & Philosophy (tied to journey and business model)
 2. Primary Growth Channels (2-3 channels with rationale)
 3. Growth Loops (1-2 loops with mechanics and metrics)
@@ -584,6 +610,7 @@ Use the template structure and fill in all sections with journey-informed, data-
 `product-guidelines/21-growth-strategy.md`
 
 This will be read by:
+
 - `/generate-backlog` - Growth experiments can be prioritized as stories
 - `/setup-analytics` - Growth metrics inform event tracking
 - Development teams - Prioritize growth features
@@ -593,6 +620,7 @@ Use this to align team on growth strategy and prioritize growth experiments.
 ## Quality Checklist
 
 Before writing output:
+
 - [ ] All channels trace to journey persona behavior?
 - [ ] Growth loops identified from journey mechanics?
 - [ ] Activation target = journey aha moment (Step 3)?
@@ -614,16 +642,19 @@ Before writing output:
 ## What We DIDN'T Choose (And Why)
 
 ### Prescriptive Growth Tactics
+
 **Why not**: Every product has unique journey, users, and value delivery. "10 Growth Hacks That Always Work" is cargo cult. Growth strategy must derive from YOUR journey, not generic playbooks.
 
 **When to reconsider**: Never blindly copy tactics. Always ask: "Does [tactic] fit [our journey] for [our users]?"
 
 ### Growth Before Product-Market Fit
+
 **Why not**: If retention is <40% or NPS <30, growth amplifies a leaky bucket. Fix product-journey fit first.
 
 **When to reconsider**: Run this command when retention is healthy (>50% D30) and users are advocating (NPS >40). Otherwise, focus on product iteration.
 
 ### Spray-and-Pray Multi-Channel
+
 **Why not**: Splitting effort across 8 channels means none get enough attention to succeed. Better to dominate 2 channels than be mediocre in 8.
 
 **When to reconsider**: After mastering 2-3 primary channels and hitting scale limits. Then layer on secondary channels strategically.
@@ -676,11 +707,13 @@ Or check progress: /cascade-status
 ## After This Session
 
 **Recommended next**:
+
 - `/generate-backlog` - Include growth experiments in prioritized backlog
 - `/setup-analytics` - Ensure growth metrics are trackable
 - `/create-test-strategy` - Include growth experiment framework in testing
 
 **Use this for**:
+
 - Team alignment on growth priorities
 - Quarterly growth planning
 - Hiring (growth PM, growth eng, marketing roles)

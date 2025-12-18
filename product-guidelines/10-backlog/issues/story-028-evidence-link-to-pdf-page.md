@@ -31,12 +31,14 @@
 ## Technical Details
 
 **Tech Stack**:
+
 - Frontend: Next.js (evidence link click handler)
 - Backend: FastAPI (`GET /v1/documents/:id?page=X`)
 - Storage: Vercel Blob (document retrieval)
 - PDF Display: Browser native (with `#page=` anchor)
 
 **Evidence Link Flow**:
+
 1. User clicks evidence link (e.g., "📄 test-report.pdf, page 8")
 2. Frontend calls `GET /v1/documents/doc_123?page=8`
 3. Backend streams PDF from Vercel Blob
@@ -44,6 +46,7 @@
 5. Browser scrolls to page 8 automatically
 
 **API Implementation**:
+
 ```python
 # backend/app/api/v1/documents.py
 
@@ -73,41 +76,41 @@ async def get_document(
 ```
 
 **Frontend Implementation**:
+
 ```tsx
 // frontend/components/EvidenceLink.tsx
 
 interface EvidenceLinkProps {
-  documentId: string;
-  documentName: string;
-  page: number;
-  section?: string;
+  documentId: string
+  documentName: string
+  page: number
+  section?: string
 }
 
 export function EvidenceLink({ documentId, documentName, page, section }: EvidenceLinkProps) {
   const handleClick = async () => {
     // Open PDF in new tab with page anchor
-    const url = `/api/documents/${documentId}?page=${page}#page=${page}`;
-    window.open(url, '_blank');
-  };
+    const url = `/api/documents/${documentId}?page=${page}#page=${page}`
+    window.open(url, '_blank')
+  }
 
   return (
-    <button
-      onClick={handleClick}
-      className="text-blue-600 hover:underline flex items-center gap-1"
-    >
+    <button onClick={handleClick} className="text-blue-600 hover:underline flex items-center gap-1">
       📄 {documentName} (page {page}
       {section && `, section ${section}`})
     </button>
-  );
+  )
 }
 ```
 
 **Browser PDF Display**:
+
 - Use native browser PDF viewer (Chrome/Firefox/Safari)
 - URL anchor `#page=8` scrolls to page automatically
 - Fallback: If browser doesn't support, download PDF
 
 **Alternative Approach** (if native viewer unreliable):
+
 - Embed PDF.js library for custom PDF viewer
 - More control but adds complexity (~50KB bundle)
 - Only implement if native viewer fails in testing
@@ -117,9 +120,11 @@ export function EvidenceLink({ documentId, documentName, page, section }: Eviden
 ## Dependencies
 
 **Blocks**:
+
 - None (nice-to-have feature, improves UX)
 
 **Blocked By**:
+
 - STORY-015: Document upload (needs documents in storage)
 - STORY-027: Results display (needs evidence links UI)
 
@@ -128,23 +133,27 @@ export function EvidenceLink({ documentId, documentName, page, section }: Eviden
 ## Testing Requirements
 
 **Unit Tests** (50% coverage):
+
 - [ ] EvidenceLink component renders correctly
 - [ ] Click handler generates correct URL
 - [ ] Page parameter appended to URL
 - [ ] Section displayed if available
 
 **Integration Tests**:
+
 - [ ] GET /v1/documents/:id streams PDF
 - [ ] GET /v1/documents/:id?page=8 includes page parameter
 - [ ] 403 if user lacks access to document
 
 **E2E Tests** (critical):
+
 - [ ] Click evidence link from results page
 - [ ] PDF opens in new tab
 - [ ] Browser scrolls to specified page
 - [ ] Test across Chrome, Firefox, Safari
 
 **Browser Compatibility**:
+
 - [ ] Chrome: PDF displays with #page= anchor
 - [ ] Firefox: PDF displays with #page= anchor
 - [ ] Safari: PDF displays (Safari sometimes inconsistent)
@@ -154,6 +163,7 @@ export function EvidenceLink({ documentId, documentName, page, section }: Eviden
 ## Design Reference
 
 **Evidence Link Style**:
+
 ```
 📄 test-report.pdf (page 8, section 3.2)
    ^               ^       ^            ^
@@ -161,6 +171,7 @@ export function EvidenceLink({ documentId, documentName, page, section }: Eviden
 ```
 
 **Hover State**:
+
 - Underline on hover
 - Pointer cursor
 - Blue color (#2563eb from design system)
@@ -198,13 +209,16 @@ export function EvidenceLink({ documentId, documentName, page, section }: Eviden
 ## Risks & Mitigations
 
 **Risk**: Browser PDF viewer inconsistent across browsers (Safari issues)
+
 - **Mitigation**: Test across all browsers; fallback to download if display fails
 - **Alternative**: Embed PDF.js for custom viewer (adds complexity)
 
 **Risk**: Large PDFs load slowly (>10MB files)
+
 - **Mitigation**: Stream PDF (don't load entire file); show loading indicator
 
 **Risk**: Page anchor doesn't work (browser ignores #page=)
+
 - **Mitigation**: Test extensively; use PDF.js if native anchors unreliable
 
 ---

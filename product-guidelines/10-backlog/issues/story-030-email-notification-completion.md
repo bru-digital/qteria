@@ -30,27 +30,21 @@
 ## Technical Details
 
 **Tech Stack**:
+
 - Email Service: Resend or SendGrid
 - Trigger: Celery job completion callback
 - Template: HTML email with plain text fallback
 
 **Email Template**:
+
 ```html
-Subject: Assessment Complete: Medical Device - Class II
-
-Hi [User Name],
-
-Your assessment for "Medical Device - Class II" is complete.
-
-Results: 3/5 criteria passed ✅❌
-
-View full results: https://qteria.com/assessments/assess_123/results
-
----
-Qteria - AI-Powered Certification Validation
+Subject: Assessment Complete: Medical Device - Class II Hi [User Name], Your assessment for "Medical
+Device - Class II" is complete. Results: 3/5 criteria passed ✅❌ View full results:
+https://qteria.com/assessments/assess_123/results --- Qteria - AI-Powered Certification Validation
 ```
 
 **Implementation**:
+
 ```python
 # backend/app/services/email_service.py
 
@@ -121,6 +115,7 @@ def process_assessment(assessment_id: str):
 **Blocks**: None (nice-to-have feature)
 
 **Blocked By**:
+
 - STORY-023: Background job queue (triggers email)
 - STORY-005: User login (needs user email)
 
@@ -129,12 +124,14 @@ def process_assessment(assessment_id: str):
 ## Testing Requirements
 
 **Integration Tests**:
+
 - [ ] Email sent when assessment completes
 - [ ] Email includes correct data (passed/total, link)
 - [ ] Email not sent if user email missing
 - [ ] Email delivery confirmed (Resend webhook)
 
 **E2E Tests**:
+
 - [ ] Complete assessment → Email received within 1 min
 - [ ] Click email link → Redirects to results page
 

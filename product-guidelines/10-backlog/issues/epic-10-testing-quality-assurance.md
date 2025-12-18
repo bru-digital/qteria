@@ -28,11 +28,13 @@ Implement comprehensive test suite (unit, integration, E2E) and CI/CD automation
 ## Stories in This Epic
 
 ### STORY-040: E2E Test Suite (Playwright) [P0, 3 days]
+
 Implement E2E tests for complete user journey: Login → Create workflow → Upload documents → Start assessment → View results → Download report. Use Playwright for cross-browser testing.
 
 **RICE**: R:100 × I:3 × C:90% ÷ E:3 = **90**
 
 ### STORY-041: CI/CD Pipeline (GitHub Actions) [P0, 2 days]
+
 Set up GitHub Actions workflow: Run tests on PR, enforce coverage >70%, deploy to staging on merge to main, deploy to production on release tag.
 
 **RICE**: R:100 × I:2 × C:100% ÷ E:2 = **100**
@@ -44,6 +46,7 @@ Set up GitHub Actions workflow: Run tests on PR, enforce coverage >70%, deploy t
 **5 person-days** (1 week for solo founder)
 
 **Breakdown**:
+
 - Testing: 3 days (E2E suite, coverage)
 - DevOps: 2 days (CI/CD setup)
 
@@ -60,6 +63,7 @@ Set up GitHub Actions workflow: Run tests on PR, enforce coverage >70%, deploy t
 ## Technical Approach
 
 **Tech Stack**:
+
 - Unit Tests: pytest (backend), Vitest (frontend)
 - Integration Tests: FastAPI TestClient, pytest-postgresql
 - E2E Tests: Playwright (cross-browser)
@@ -67,6 +71,7 @@ Set up GitHub Actions workflow: Run tests on PR, enforce coverage >70%, deploy t
 - Coverage: pytest-cov, Vitest coverage
 
 **E2E Test Coverage** (STORY-040):
+
 1. **Test: Complete Assessment Flow**
    - Login as Process Manager
    - Create workflow with 2 buckets, 3 criteria
@@ -96,6 +101,7 @@ Set up GitHub Actions workflow: Run tests on PR, enforce coverage >70%, deploy t
    - Create workflow → Success
 
 **CI/CD Pipeline** (STORY-041):
+
 ```yaml
 # .github/workflows/ci.yml
 name: CI/CD
@@ -136,6 +142,7 @@ jobs:
 ```
 
 **Quality Gates**:
+
 - ✅ All unit tests pass (< 2 min)
 - ✅ All integration tests pass (< 5 min)
 - ✅ Code coverage >= 70% overall, >= 95% for AI validation
@@ -151,11 +158,13 @@ jobs:
 ## Success Metrics
 
 **Testing Metrics**:
+
 - Code coverage: >70% overall (95% AI validation, 100% security)
 - Test suite execution time: <10 minutes (CI/CD)
 - E2E test stability: >95% (not flaky)
 
 **Quality Metrics**:
+
 - Production bugs per release: <2 (caught by tests)
 - Regression bugs: 0 (E2E tests prevent)
 - Security vulnerabilities: 0 high/critical
@@ -179,12 +188,15 @@ jobs:
 ## Risks & Mitigations
 
 **Risk**: E2E tests flaky (fail intermittently)
+
 - **Mitigation**: Explicit waits (not sleep), retry logic, stable test data
 
 **Risk**: Test suite too slow (>10 min)
+
 - **Mitigation**: Parallelize tests, run smoke tests on PR (full suite nightly)
 
 **Risk**: False positives (tests pass but code broken)
+
 - **Mitigation**: Test real workflows with TÜV SÜD data, manual QA before release
 
 ---
@@ -192,6 +204,7 @@ jobs:
 ## Testing Requirements
 
 **E2E Tests** (Playwright):
+
 - [ ] Complete assessment flow (Journey Steps 1-5)
 - [ ] Re-assessment flow (Journey Step 4)
 - [ ] Multi-tenant isolation (security)
@@ -199,6 +212,7 @@ jobs:
 - [ ] Error handling (invalid inputs, API failures)
 
 **CI/CD Automation**:
+
 - [ ] GitHub Actions workflow configured
 - [ ] Tests run on every PR
 - [ ] Coverage gates enforced

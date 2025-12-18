@@ -38,17 +38,20 @@ Read: product-guidelines/02-tech-stack.md
 **Context Optimization**: We read the essentials version of product strategy (~65% smaller). It contains vision, positioning, strategic goals, and product principles—sufficient for generating mission, metrics, monetization, and architecture without detailed market analysis.
 
 **Extract from Journey**:
+
 - Step 3 (aha moment) - where primary value is delivered
 - Economic value (time/money saved, ROI)
 - Primary user persona
 - Success metrics already defined
 
 **Extract from Product Strategy**:
+
 - Product vision (3-5 year aspirational future)
 - Strategic goals
 - Product principles
 
 **Extract from Tech Stack**:
+
 - Core technologies chosen
 - Journey-tech mappings
 - Technical constraints/capabilities
@@ -58,16 +61,19 @@ Read: product-guidelines/02-tech-stack.md
 **Formula**: "We help [user persona] [achieve outcome] by [unique approach]"
 
 **How to Derive**:
+
 1. User persona: From journey (primary user)
 2. Achieve outcome: From journey Step 3 (aha moment value)
 3. Unique approach: From tech stack + journey (how you deliver value differently)
 
 **Example**:
+
 - Journey Step 3: "Compliance officer gets assessment results in 2 minutes instead of 2 hours"
 - Tech Stack: Claude API + FastAPI for AI-powered analysis
 - Mission: "We help compliance officers approve documents 10x faster by transforming framework requirements into automated AI assessments"
 
 **Validation**:
+
 - Does it reference the journey aha moment? ✅
 - Is it specific (not generic)? ✅
 - Does it promise measurable outcome? ✅
@@ -77,25 +83,30 @@ Read: product-guidelines/02-tech-stack.md
 **Formula**: North Star = [Core Action] in journey
 
 **How to Derive**:
+
 1. What action represents Step 3 value delivery?
 2. That's your North Star
 
 **Example**:
+
 - Journey Step 3: AI assessment completed
 - North Star: "Weekly Active Assessments" (measures mission fulfillment)
 
 **Input Metrics** (what drives North Star):
+
 - Break down North Star into components
 - Example: `Active Assessments = Active Users × Assessments per User × Completion Rate`
 - Define 3-5 input metrics
 
 **Health Metrics**:
+
 - Retention (D7, D30)
 - NPS
 - Error rates
 - API performance
 
 **Counter-Metrics**:
+
 - What won't you sacrifice to improve North Star?
 - Example: Won't improve assessment speed by reducing accuracy
 
@@ -104,22 +115,26 @@ Read: product-guidelines/02-tech-stack.md
 **Principle**: Charge where value is delivered (journey Step 3)
 
 **How to Derive**:
+
 1. Identify value delivery moment: Journey Step 3
 2. What unit of value? (per assessment, per user, per feature unlocked?)
 3. Calculate value ratio: What user gets ÷ What user pays (target: 10:1+)
 
 **Model Selection**:
+
 - **Freemium**: If low marginal cost, viral potential
 - **Pay-as-you-go**: If variable usage, clear value per unit
 - **Subscription**: If predictable usage, enterprise customers
 - **Hybrid**: Combine for flexibility
 
 **Pricing Tiers**:
+
 - Free: Generous enough to validate, limited enough to convert
 - Paid: Aligned with value metric, clear upgrade path
 - Enterprise: Custom for specific needs (SSO, SLA, etc.)
 
 **Example**:
+
 - Value delivered: Each assessment saves 2-4 hours ($150-300 value)
 - Pricing: $0.10 per assessment
 - Value ratio: 1,500x - 3,000x
@@ -130,14 +145,17 @@ Read: product-guidelines/02-tech-stack.md
 **How to Derive** (from journey + tech stack):
 
 **Critical Path Optimization**:
+
 - Journey Step 3 is critical → Optimize this path
 - Example: "Assessment processing <60 seconds" → Async architecture, progress indicators
 
 **Tech Stack Patterns**:
+
 - Based on chosen tech, establish patterns
 - Example: "PostgreSQL JSONB for flexible assessment results, Redis for framework caching"
 
 **Principles** (typically 3-5):
+
 1. Journey-step optimization (optimize critical path, not theoretical scale)
 2. Boring technology + strategic innovation (proven tech 90%, innovate 10%)
 3. API-first design (enables integrations)
@@ -153,6 +171,7 @@ Create 4 files:
 Use `/templates/03-mission-template.md`.
 
 **Key Sections**:
+
 - Mission statement (one sentence)
 - Who we serve, value delivered, how we're different
 - Mission tests (feature, partnership, hiring decisions)
@@ -163,6 +182,7 @@ Use `/templates/03-mission-template.md`.
 Use `/templates/04-metrics-template.md`.
 
 **Key Sections**:
+
 - North Star metric (definition, why, targets)
 - Input metrics (3-5 that drive North Star, with formula)
 - Health metrics (engagement, retention, revenue, product health)
@@ -174,6 +194,7 @@ Use `/templates/04-metrics-template.md`.
 Use `/templates/04-monetization-template.md`.
 
 **Key Sections**:
+
 - Pricing model (with rationale from journey)
 - Pricing tiers (Free, Paid, Enterprise with clear purpose)
 - Value metric justification (why this unit, value ratio calculation)
@@ -186,6 +207,7 @@ Use `/templates/04-monetization-template.md`.
 Use `/templates/04-architecture-template.md`.
 
 **Key Sections**:
+
 - Architecture overview (diagram if helpful)
 - Core principles (3-5, journey-derived)
 - Data flow for critical journey step
@@ -196,6 +218,7 @@ Use `/templates/04-architecture-template.md`.
 ## Validation Checklist
 
 Before writing files:
+
 - [ ] Mission references journey aha moment?
 - [ ] North Star measures mission outcome?
 - [ ] Monetization charges where value delivered?
@@ -206,6 +229,7 @@ Before writing files:
 ## After Generation
 
 Show summary:
+
 ```
 ✅ Session 4 complete! Tactical foundation established.
 

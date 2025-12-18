@@ -35,7 +35,7 @@ export interface Assessment {
   id: string
   workflow_id: string
   workflow_name: string
-  status: "pending" | "processing" | "completed" | "failed"
+  status: 'pending' | 'processing' | 'completed' | 'failed'
   overall_pass?: boolean
   criteria_passed?: number
   criteria_failed?: number
@@ -58,7 +58,7 @@ export interface AssessmentResult {
   criteria_id: string
   criteria_name: string
   pass: boolean
-  confidence: "high" | "medium" | "low"
+  confidence: 'high' | 'medium' | 'low'
   reasoning: string
   evidence?: AssessmentEvidence
 }

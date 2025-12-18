@@ -14,20 +14,24 @@ This document defines the product strategy for Qteria, an AI-driven document pre
 ## How This Traces to User Journey
 
 **Journey audience** (from `product-guidelines/00-user-journey.md`):
+
 - Project Handlers at TIC notified bodies running 15-20 assessments/day
 - Process Managers creating validation workflows for certification types
 
 **Journey problem** (from `product-guidelines/00-user-journey.md`):
+
 - 1-2 day wait for India outsourcing teams ($100K/year)
 - Quality anxiety from errors slipping through to Certification Person
 - Hard to experiment with new validation criteria
 
 **Journey solution** (from `product-guidelines/00-user-journey.md`):
+
 - AI validation in <10 minutes with evidence-based results
 - Simple workflow creation (buckets + criteria)
 - Iterative refinement of validation rules
 
 **Strategy Goal**:
+
 - Validate that TIC notified bodies represent viable beachhead market
 - Confirm document pre-assessment pain is significant enough to pay $30K/year
 - Differentiate through radical simplicity + data privacy + white-glove support
@@ -46,18 +50,21 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 ### Why This Vision Matters
 
 **For customers**:
+
 - Project Handlers reclaim 400x time savings per assessment (1-2 days → 10 minutes)
 - Process Managers scale their expertise into reusable, refineable validation workflows
 - Certification Persons receive higher-quality documents with fewer clarification rounds
 - Notified bodies save $70K/year per body while accelerating certification pipelines
 
 **For the company**:
+
 - Sustainable, profitable business supporting founder's family and wealth creation
 - High-margin SaaS model ($30K/customer, ~$3-5K marginal cost)
 - Deep customer relationships with dedicated account management
 - Reputation as the quality leader in regulated document validation
 
 **For the market**:
+
 - Transforms certification industry from manual → AI-assisted validation
 - Creates new business model: Compliance experts monetize workflows via marketplace
 - Raises quality bar across TIC industry (fewer errors, faster turnarounds)
@@ -70,6 +77,7 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 ### Market Size
 
 **TAM (Total Addressable Market)**:
+
 - **Definition**: All organizations that pre-assess documents against compliance criteria globally
 - **Size**: ~$10M/year
 - **Calculation**:
@@ -79,6 +87,7 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 - **Note**: Conservative estimate focused on beachhead; actual TAM likely larger
 
 **SAM (Serviceable Addressable Market)**:
+
 - **Definition**: Large TIC notified bodies in Europe reachable via direct sales
 - **Size**: ~$600-900K/year
 - **Calculation**:
@@ -87,6 +96,7 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 - **Rationale**: Focus on Europe first (most notified bodies concentrated here), large bodies first (budget + pain)
 
 **SOM (Serviceable Obtainable Market)**:
+
 - **Definition**: Realistic revenue capture in 3 years
 - **Size**: ~$300K ARR by Year 3
 - **Calculation**:
@@ -98,16 +108,19 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 ### Market Dynamics
 
 **Growth rate**:
+
 - Document compliance market growing at ~8-12% annually (regulatory complexity increasing)
 - AI adoption in enterprise accelerating post-2023 (ChatGPT moment)
 - TIC industry slow to adopt new tech, but cost pressure driving change
 
 **Key trends**:
+
 1. **AI mainstreaming in enterprise**: Post-2023, executives expect AI solutions. "Why are we still using India teams when AI can do this?" becomes a boardroom question.
 2. **Data privacy regulations tightening**: GDPR, ISO 27001, SOC2 becoming table-stakes. Notified bodies can't risk data leaks to third-party AI vendors.
 3. **Certification pipeline pressure**: Medical device approvals, product certifications taking longer. Industry pressure to speed up without compromising quality.
 
 **Market forces**:
+
 - **Enablers**:
   - LLM capability maturation (GPT-4, Claude 3.5 can read PDFs accurately)
   - Enterprise AI adoption mindset shift
@@ -126,15 +139,16 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 
 ### Direct Competitors
 
-| Competitor | Positioning | Strengths | Weaknesses | Pricing |
-|------------|-------------|-----------|------------|---------|
-| **Complicated AI Doc Tools** (e.g., general AI document processors) | "AI-powered document intelligence platform" | Feature-rich, ML capabilities, integrations | Feature creep, overwhelming UX, not specialized for compliance workflows | $50K-200K/year enterprise |
-| **Internal Tools** (notified bodies' homegrown systems) | Custom-built for specific needs | Tailored to exact workflow | Hard to maintain, no AI, slow iteration | Internal dev cost ~$150K/year |
-| **India Outsourcing Teams** (current baseline) | "Offshore pre-assessment services" | Human judgment, flexible | Slow (1-2 days), expensive ($100K/year), hard to iterate | $100K/year for 2-3 people |
+| Competitor                                                          | Positioning                                 | Strengths                                   | Weaknesses                                                               | Pricing                       |
+| ------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
+| **Complicated AI Doc Tools** (e.g., general AI document processors) | "AI-powered document intelligence platform" | Feature-rich, ML capabilities, integrations | Feature creep, overwhelming UX, not specialized for compliance workflows | $50K-200K/year enterprise     |
+| **Internal Tools** (notified bodies' homegrown systems)             | Custom-built for specific needs             | Tailored to exact workflow                  | Hard to maintain, no AI, slow iteration                                  | Internal dev cost ~$150K/year |
+| **India Outsourcing Teams** (current baseline)                      | "Offshore pre-assessment services"          | Human judgment, flexible                    | Slow (1-2 days), expensive ($100K/year), hard to iterate                 | $100K/year for 2-3 people     |
 
 ### Indirect Competitors / Alternatives
 
 **How customers solve this today without you**:
+
 - **Status quo - India teams**: Most common alternative (our baseline to beat)
 - **General-purpose AI tools**: DocuSign AI, Adobe Acrobat AI - not specialized for compliance
 - **Manual in-house**: Certification Person does pre-check themselves (slow, expensive)
@@ -164,17 +178,20 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 ### Market Gap / White Space
 
 **Underserved segment**:
+
 - Mid-to-large TIC notified bodies who need specialized compliance validation (not generic document AI)
 - Organizations that require data privacy/security (can't use consumer AI APIs freely)
 - Teams that value simplicity over features (Process Managers, not IT departments)
 
 **Unmet need**:
+
 - Fast (<10 min), evidence-based AI validation for compliance criteria
 - Simple workflow creation without feature bloat
 - Data privacy guarantees for confidential certification documents
 - White-glove support (relationship managers, not ticket queues)
 
 **Our opportunity**:
+
 - **Specialized + Simple + Secure**: Focus on compliance workflows (not generic docs), radical UX simplicity (not feature creep), enterprise data privacy (not consumer AI)
 - **White-glove service model**: Dedicated relationship manager per customer = sticky, high-NPS relationships
 - **Expertise scaling**: Validation workflows become reusable assets (future marketplace play)
@@ -207,6 +224,7 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 5. **Expertise Scaling**: Validation workflows are shareable, refineable assets. Process Managers experiment and improve criteria over time (future: monetize via marketplace).
 
 **Why it's defensible**:
+
 - Simplicity is a hard discipline (competitors add features, we subtract)
 - Evidence-based AI requires specialized engineering (not just API wrapper)
 - White-glove service doesn't scale to thousands of customers (but perfect for 20-50 enterprise accounts)
@@ -225,21 +243,25 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 **Why it matters**: Validates product-market fit, provides reference customer for other notified bodies, generates initial revenue
 
 **Success criteria**:
+
 - **Contract signed**: $30K/year ARR by Q2 2026
 - **Active usage**: 10+ validation workflows created, 100+ assessments run/month
 - **User satisfaction**: NPS 50+ from Project Handlers and Process Managers
 
 **Key initiatives**:
+
 - Build MVP with TÜV SÜD co-development (their feedback shapes roadmap)
 - White-glove onboarding with dedicated support
 - Iterate rapidly based on real-world usage
 
 **Dependencies**:
+
 - MVP feature completeness (workflow creation, AI validation, results page)
 - Data security approval from TÜV SÜD IT/compliance team
 - Pricing negotiation and contract execution
 
 **Risks**:
+
 - TÜV SÜD internal politics delay procurement
 - AI validation accuracy insufficient for production use
 - Data privacy concerns block deployment
@@ -253,21 +275,25 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 **Why it matters**: Trust is everything. If AI flags non-issues (false positives) or misses real issues (false negatives), users abandon the tool.
 
 **Success criteria**:
+
 - **False positive rate**: <5% (AI says "fail" but human says "pass")
 - **False negative rate**: <1% (AI says "pass" but human says "fail")
 - **User trust score**: 95%+ of users "trust AI validation results"
 
 **Key initiatives**:
+
 - Feedback loop: Users flag incorrect AI results, improve model
 - Confidence scoring: Green (high confidence pass), Yellow (uncertain), Red (fail)
 - Continuous model refinement based on real-world data
 
 **Dependencies**:
+
 - Access to quality AI models (GPT-4, Claude 3.5, or fine-tuned alternatives)
 - User feedback collection system
 - Sufficient assessment volume to measure accuracy
 
 **Risks**:
+
 - AI models not accurate enough for compliance use cases
 - Edge cases (handwritten signatures, scanned docs) cause high error rates
 - Users don't provide feedback, can't improve model
@@ -281,22 +307,26 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 **Why it matters**: Differentiation is "exceptional UX" - must be measurably better than competitors. Simplicity is the brand promise.
 
 **Success criteria**:
+
 - **Workflow creation time**: <30 minutes from login to first workflow created
 - **Time to first assessment**: <1 hour from signup to first AI validation complete
 - **NPS**: 50+ (world-class for B2B SaaS)
 - **User sentiment**: "It just works" appears in feedback
 
 **Key initiatives**:
+
 - User testing with TÜV SÜD Process Managers (iterate on UX)
 - Minimalist design: Remove features, don't add them
 - Performance optimization: <10 min AI validation, fast page loads
 
 **Dependencies**:
+
 - Design resources (founder + potential contractor)
 - User testing access at TÜV SÜD
 - Analytics to measure time-to-value
 
 **Risks**:
+
 - Simplicity sacrifices necessary features (too simple = unusable)
 - Performance bottlenecks (large PDFs, complex criteria slow AI down)
 - Onboarding friction (authentication, setup, first workflow)
@@ -310,21 +340,25 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 **Why it matters**: Notified bodies handle confidential certification documents. Without security certification, cannot sell to enterprise customers.
 
 **Success criteria**:
+
 - **Certification achieved**: SOC2 Type II or ISO 27001 by Q4 2026
 - **Security audit passed**: TÜV SÜD (and other customers) approve security review
 - **Zero data breaches**: No security incidents in first 12 months
 
 **Key initiatives**:
+
 - Implement SOC2/ISO 27001 controls from day one (encryption, access logs, audit trails)
 - Third-party security audit and certification
 - Document security policies and incident response plans
 
 **Dependencies**:
+
 - Security expertise (founder + consultant/contractor)
 - Budget for certification audit (~$15-30K)
 - Infrastructure that supports compliance (encrypted storage, logging, etc.)
 
 **Risks**:
+
 - Certification costs too high for early-stage startup
 - AI API providers (OpenAI, Anthropic) don't meet data privacy requirements → need self-hosted models (expensive)
 - Security audit uncovers critical gaps, delays launch
@@ -338,21 +372,25 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 **Why it matters**: Validates that TÜV SÜD success is repeatable. Diversifies revenue, reduces single-customer risk.
 
 **Success criteria**:
+
 - **Customer count**: 5 notified bodies paying $30K/year each
 - **ARR**: $150K by Q4 2027
 - **Retention**: 100% of Year 1 customers renew
 
 **Key initiatives**:
+
 - Reference selling: Use TÜV SÜD case study to sell BSI, TÜV Rheinland, DEKRA
 - White-glove onboarding: Dedicated relationship manager per customer
 - Template workflows: Pre-built workflows for common certification types (Medical Device Class II, etc.)
 
 **Dependencies**:
+
 - TÜV SÜD success and willingness to be reference customer
 - Sales/BD capacity (founder initially, may need BD hire)
 - Onboarding process documented and scalable
 
 **Risks**:
+
 - TÜV SÜD success doesn't translate to other notified bodies (unique workflows, culture)
 - Sales cycle too long (9-12 months enterprise sales)
 - Pricing too high ($30K) or too low (can't sustain white-glove service)
@@ -439,6 +477,7 @@ Slower iteration speed vs. competitors who "move fast and break things." But in 
 **Why now**: Need functional product to co-develop with TÜV SÜD and validate product-market fit
 
 **Example initiatives**:
+
 - Workflow creation UI (name workflow, add buckets, define criteria)
 - Document upload (drag-drop PDFs, support DOCX)
 - AI validation engine (GPT-4 or Claude 3.5 API, pass/fail per criteria)
@@ -457,6 +496,7 @@ TÜV SÜD Process Manager can create workflow in <30 minutes, Project Handler ca
 **Why now**: Initial MVP proves flow works, now optimize core value (AI accuracy)
 
 **Example initiatives**:
+
 - Reduce false positive/negative rates (<5% / <1% targets)
 - Confidence scoring (green pass, yellow uncertain, red fail)
 - Feedback loop (users flag incorrect results, model improves)
@@ -475,6 +515,7 @@ Users trust AI results 95%+ of the time, rare edge cases are flagged as "uncerta
 **Why now**: TÜV SÜD usage growing, need security certification to sell to other notified bodies
 
 **Example initiatives**:
+
 - SOC2 Type II or ISO 27001 certification process
 - Private AI deployment (evaluate self-hosted vs. zero-retention API)
 - Audit trails and activity logging (who accessed what, when)
@@ -494,6 +535,7 @@ Pass TÜV SÜD security audit, achieve SOC2/ISO 27001 certification, zero securi
 **Why now**: Product proven with TÜV SÜD, ready to sell to BSI, TÜV Rheinland, DEKRA, others
 
 **Example initiatives**:
+
 - White-glove onboarding process (documented playbook)
 - Relationship manager tools (usage dashboards, customer health metrics)
 - Template workflows (pre-built for Medical Device Class II, ISO 13485, etc.)
@@ -512,6 +554,7 @@ Pass TÜV SÜD security audit, achieve SOC2/ISO 27001 certification, zero securi
 **Why now**: Basics work, now optimize for "exceptional UX" brand promise
 
 **Example initiatives**:
+
 - Sub-5-minute validation for typical assessments (optimize AI pipeline)
 - Mobile-responsive design (Project Handlers on tablets, not just desktop)
 - Workflow versioning (Process Managers iterate on criteria, track changes)
@@ -530,6 +573,7 @@ Best-in-class UX, industry reputation as "the tool that just works," user testim
 **Why now**: Core product stable with 5+ customers, ready to expand value proposition beyond internal use
 
 **Example initiatives**:
+
 - Public workflow marketplace (browse, preview, purchase workflows)
 - Workflow licensing and payment (creators earn revenue per usage/license)
 - Workflow collaboration tools (co-authors, versioning, comments)
@@ -573,15 +617,15 @@ First 5 consultants publishing workflows, first notified body purchases third-pa
 
 ### Major Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| **AI accuracy insufficient** - False positives/negatives too high, users don't trust results | Medium | High | Pilot with TÜV SÜD, measure rigorously, iterate on prompts/models, consider hybrid human-in-loop |
-| **Data privacy blocks sales** - Notified bodies reject AI APIs, require self-hosted (expensive) | Medium | High | Negotiate zero-retention with AI vendors, budget for self-hosted option, get security certification early |
-| **TÜV SÜD deal falls through** - Internal politics, budget cuts, or competitive product delays first customer | Low | High | Cultivate backup first customers (BSI, DEKRA), diversify early sales pipeline |
-| **Sales cycle too long** - Enterprise B2B takes 9-12 months, burns runway before revenue | Medium | Medium | Aggressive pilot/trial approach, leverage TÜV SÜD reference early, consider lower-tier customers for faster close |
-| **Competitive response** - Incumbents add AI features or new entrants copy approach | Low | Medium | Move fast on simplicity + security differentiation, build sticky customer relationships (white-glove support) |
-| **Feature creep** - Customers request features that violate "simplicity" principle | High | Low | Strictly enforce product principles, educate customers on focus strategy, say "no" often |
-| **Founder burnout** - Solo founder juggles product, sales, support, dev - unsustainable | Medium | Medium | Timebox customer support (relationship manager ≠ 24/7 on-call), consider co-founder or early hire for CS/sales |
+| Risk                                                                                                          | Likelihood | Impact | Mitigation                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------- | ---------- | ------ | ----------------------------------------------------------------------------------------------------------------- |
+| **AI accuracy insufficient** - False positives/negatives too high, users don't trust results                  | Medium     | High   | Pilot with TÜV SÜD, measure rigorously, iterate on prompts/models, consider hybrid human-in-loop                  |
+| **Data privacy blocks sales** - Notified bodies reject AI APIs, require self-hosted (expensive)               | Medium     | High   | Negotiate zero-retention with AI vendors, budget for self-hosted option, get security certification early         |
+| **TÜV SÜD deal falls through** - Internal politics, budget cuts, or competitive product delays first customer | Low        | High   | Cultivate backup first customers (BSI, DEKRA), diversify early sales pipeline                                     |
+| **Sales cycle too long** - Enterprise B2B takes 9-12 months, burns runway before revenue                      | Medium     | Medium | Aggressive pilot/trial approach, leverage TÜV SÜD reference early, consider lower-tier customers for faster close |
+| **Competitive response** - Incumbents add AI features or new entrants copy approach                           | Low        | Medium | Move fast on simplicity + security differentiation, build sticky customer relationships (white-glove support)     |
+| **Feature creep** - Customers request features that violate "simplicity" principle                            | High       | Low    | Strictly enforce product principles, educate customers on focus strategy, say "no" often                          |
+| **Founder burnout** - Solo founder juggles product, sales, support, dev - unsustainable                       | Medium     | Medium | Timebox customer support (relationship manager ≠ 24/7 on-call), consider co-founder or early hire for CS/sales    |
 
 ---
 
@@ -599,23 +643,24 @@ Captures actual value delivery. If Project Handlers are running assessments mont
 **Current**: 0 (pre-launch)
 
 **Target**:
+
 - Q2 2026: 100 assessments/month (TÜV SÜD pilot)
 - Q4 2026: 500 assessments/month (TÜV SÜD production)
 - Q4 2027: 2,000 assessments/month (5 customers)
 
 ### Key Performance Indicators
 
-| Category | Metric | Current | 2026 Target | 2027 Target | Frequency |
-|----------|--------|---------|-------------|-------------|-----------|
-| **Acquisition** | New customers signed | 0 | 1 (TÜV SÜD) | 5 total | Monthly |
-| **Activation** | Time to first assessment | N/A | <1 hour | <30 min | Weekly |
-| **Engagement** | Assessments per customer/month | 0 | 100 | 400 | Weekly |
-| **Quality** | False positive rate | N/A | <5% | <3% | Weekly |
-| **Quality** | False negative rate | N/A | <1% | <0.5% | Weekly |
-| **Trust** | User trust score ("I trust AI results") | N/A | 95% | 98% | Monthly |
-| **Retention** | Monthly active users (Project Handlers) | 0 | 5 | 25 | Weekly |
-| **Revenue** | ARR | $0 | $30K | $150K | Monthly |
-| **Satisfaction** | NPS | N/A | 50+ | 60+ | Quarterly |
+| Category         | Metric                                  | Current | 2026 Target | 2027 Target | Frequency |
+| ---------------- | --------------------------------------- | ------- | ----------- | ----------- | --------- |
+| **Acquisition**  | New customers signed                    | 0       | 1 (TÜV SÜD) | 5 total     | Monthly   |
+| **Activation**   | Time to first assessment                | N/A     | <1 hour     | <30 min     | Weekly    |
+| **Engagement**   | Assessments per customer/month          | 0       | 100         | 400         | Weekly    |
+| **Quality**      | False positive rate                     | N/A     | <5%         | <3%         | Weekly    |
+| **Quality**      | False negative rate                     | N/A     | <1%         | <0.5%       | Weekly    |
+| **Trust**        | User trust score ("I trust AI results") | N/A     | 95%         | 98%         | Monthly   |
+| **Retention**    | Monthly active users (Project Handlers) | 0       | 5           | 25          | Weekly    |
+| **Revenue**      | ARR                                     | $0      | $30K        | $150K       | Monthly   |
+| **Satisfaction** | NPS                                     | N/A     | 50+         | 60+         | Quarterly |
 
 ---
 
@@ -643,10 +688,12 @@ Captures actual value delivery. If Project Handlers are running assessments mont
 **Approach**: Annual contract, sales-led (no self-service initially)
 
 **Tiers**:
+
 - Single tier for MVP: $30K/year per notified body (unlimited users, unlimited workflows, unlimited assessments)
 - Future: May introduce usage-based pricing ($X per assessment) or tiered pricing (small/medium/large bodies)
 
 **Value proposition**:
+
 - Pay $30K, save $70K (vs. $100K India outsourcing)
 - ROI: 3:1 direct cost savings + 400x time savings + quality improvements
 

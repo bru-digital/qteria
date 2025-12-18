@@ -36,12 +36,14 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI + Uvicorn (ASGI server)
 - ORM: SQLAlchemy + asyncpg (async PostgreSQL driver)
 - Deployment: Railway (backend hosting)
 - Database: Vercel Postgres (connection via DATABASE_URL)
 
 **Project Structure**:
+
 ```
 backend/
 ├── app/
@@ -63,6 +65,7 @@ backend/
 ```
 
 **FastAPI Application Setup** (`app/main.py`):
+
 ```python
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -99,6 +102,7 @@ async def shutdown():
 ```
 
 **Health Check Endpoint** (`app/api/health.py`):
+
 ```python
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -118,6 +122,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 ```
 
 **Database Connection Pool** (`app/database.py`):
+
 ```python
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -140,6 +145,7 @@ async def get_db():
 ```
 
 **Environment Configuration** (`app/config.py`):
+
 ```python
 from pydantic_settings import BaseSettings
 
@@ -155,6 +161,7 @@ settings = Settings()
 ```
 
 **Railway Deployment**:
+
 - Add `Procfile`: `web: uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Configure environment variables in Railway dashboard (DATABASE_URL, CORS_ORIGINS)
 - Connect GitHub repo for auto-deployment
@@ -175,6 +182,7 @@ settings = Settings()
 **Effort**: 1.5 person-days
 
 **Breakdown**:
+
 - FastAPI setup: 0.5 days (app initialization, project structure)
 - Database connection pool: 0.25 days (SQLAlchemy async setup)
 - Health check endpoint: 0.25 days (endpoint + database test)
@@ -203,6 +211,7 @@ settings = Settings()
 ## Testing Requirements
 
 **Functional Tests**:
+
 - [ ] `GET /health` returns 200 OK with `{"status": "healthy", "database": "connected"}`
 - [ ] `GET /health` returns 503 Service Unavailable if database unreachable
 - [ ] CORS headers present in response (Access-Control-Allow-Origin)
@@ -210,11 +219,13 @@ settings = Settings()
 - [ ] Unhandled exception → returns 500 with JSON error message (not HTML)
 
 **Performance Tests**:
+
 - [ ] Health check response time <50ms (P95)
 - [ ] Database connection pool handles 20 concurrent requests
 - [ ] Connection pool doesn't exhaust under load (max_overflow works)
 
 **Integration Tests**:
+
 - [ ] Deploy to Railway → health check accessible via public URL
 - [ ] Environment variables loaded correctly in Railway
 - [ ] Database connection works with Vercel Postgres (production DB)
@@ -224,15 +235,19 @@ settings = Settings()
 ## Risks & Mitigations
 
 **Risk**: Connection pool exhausted under high load
+
 - **Mitigation**: Set pool_size=20, max_overflow=10, add connection pool monitoring
 
 **Risk**: Health check passes but database queries fail
+
 - **Mitigation**: Health check executes actual query (`SELECT 1`), not just connection test
 
 **Risk**: Railway deployment fails (missing dependencies)
+
 - **Mitigation**: Test Dockerfile locally, pin all dependencies in requirements.txt
 
 **Risk**: CORS misconfigured, frontend cannot connect
+
 - **Mitigation**: Test CORS with curl from frontend URL, allow credentials for cookies
 
 ---

@@ -15,7 +15,7 @@
  * - Uses HS256 algorithm with JWT_SECRET from environment
  */
 
-import { sign } from "jsonwebtoken"
+import { sign } from 'jsonwebtoken'
 
 /**
  * JWT payload structure expected by the FastAPI backend.
@@ -88,8 +88,8 @@ export function generateBackendJWT(session: { user: SessionUser }): string {
   const secret = process.env.JWT_SECRET
   if (!secret) {
     throw new Error(
-      "JWT_SECRET environment variable is required for backend authentication. " +
-      "Generate one with: openssl rand -hex 32"
+      'JWT_SECRET environment variable is required for backend authentication. ' +
+        'Generate one with: openssl rand -hex 32'
     )
   }
 
@@ -98,7 +98,7 @@ export function generateBackendJWT(session: { user: SessionUser }): string {
 
   const payload: BackendJWTPayload = {
     sub: session.user.id,
-    email: session.user.email || "",
+    email: session.user.email || '',
     role: session.user.role,
     org_id: session.user.organizationId, // ✅ CORRECT: Backend expects snake_case
     name: session.user.name || null,
@@ -106,7 +106,7 @@ export function generateBackendJWT(session: { user: SessionUser }): string {
     exp: now + expiresIn,
   }
 
-  return sign(payload, secret, { algorithm: "HS256" })
+  return sign(payload, secret, { algorithm: 'HS256' })
 }
 
 /**
@@ -117,26 +117,26 @@ export function generateBackendJWT(session: { user: SessionUser }): string {
  * @returns true if session has valid user fields, false otherwise
  */
 export function isValidSession(session: unknown): session is { user: SessionUser } {
-  if (typeof session !== "object" || session === null) {
+  if (typeof session !== 'object' || session === null) {
     return false
   }
 
-  if (!("user" in session)) {
+  if (!('user' in session)) {
     return false
   }
 
   const user = (session as { user: unknown }).user
 
-  if (typeof user !== "object" || user === null) {
+  if (typeof user !== 'object' || user === null) {
     return false
   }
 
   return (
-    "id" in user &&
-    "role" in user &&
-    "organizationId" in user &&
-    typeof (user as { id: unknown }).id === "string" &&
-    typeof (user as { role: unknown }).role === "string" &&
-    typeof (user as { organizationId: unknown }).organizationId === "string"
+    'id' in user &&
+    'role' in user &&
+    'organizationId' in user &&
+    typeof (user as { id: unknown }).id === 'string' &&
+    typeof (user as { role: unknown }).role === 'string' &&
+    typeof (user as { organizationId: unknown }).organizationId === 'string'
   )
 }

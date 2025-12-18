@@ -9,15 +9,18 @@ You are helping the user create a comprehensive content style guide that covers 
 ## When to Use This
 
 **Run AFTER branding sessions** if:
+
 - You've completed `/define-messaging` and need detailed implementation guidance
 - You're ready to write content and need consistency guidelines
 - You have multiple content creators who need a shared reference
 
 **Or run AFTER Session 3** if:
+
 - You skipped branding but now need content guidance
 - You're building marketing site or content-heavy product
 
 **Skip this** if:
+
 - Your product has minimal UI text
 - You prefer to evolve content voice organically
 - You don't have multiple content creators yet
@@ -29,26 +32,32 @@ Create a detailed content style guide using the prompt in `/prompts/branding/con
 ### Steps to Execute
 
 1. **Read the content guidelines prompt**:
+
    ```bash
    Read /prompts/branding/content-guidelines.md
    ```
 
 2. **Read the template structure**:
+
    ```bash
    Read templates/18-content-guidelines-template.md
    ```
 
 3. **Check for messaging inputs** (recommended):
+
    ```bash
    Read product-guidelines/10-brand-messaging.md
    ```
+
    - If exists: Expand messaging framework into detailed guidelines
    - If not exists: Create guidelines from scratch with user input
 
 4. **Check for design system** (optional):
+
    ```bash
    Read product-guidelines/06-design-system.md
    ```
+
    - If exists: Ensure content guidelines align with visual design tone
 
 5. **Interview the user** following the content guidelines prompt:
@@ -79,6 +88,7 @@ Create a detailed content style guide using the prompt in `/prompts/branding/con
 `product-guidelines/18-content-guidelines.md`
 
 This will be used by:
+
 - Content writers and marketers
 - Product designers writing UI copy
 - Developers writing error messages
@@ -88,6 +98,7 @@ This will be used by:
 ## Template Structure
 
 The output follows this structure:
+
 - Voice and Tone (foundation + context variations)
 - Grammar and Mechanics (specific rules)
 - Word List (preferred/avoided terms)
@@ -154,6 +165,7 @@ Try writing a form error message using these guidelines - does it feel on-brand?
 ## After This Session
 
 **Use this document**:
+
 - When writing any customer-facing content
 - When reviewing pull requests with UI text changes
 - When onboarding new content creators

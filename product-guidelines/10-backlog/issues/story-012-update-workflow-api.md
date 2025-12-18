@@ -40,10 +40,12 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI + SQLAlchemy
 - Database: PostgreSQL (workflows, buckets, criteria tables)
 
 **API Endpoint** (`app/api/v1/workflows.py`):
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -156,6 +158,7 @@ async def update_workflow(
 ```
 
 **Pydantic Schema** (`app/schemas/workflow.py`):
+
 ```python
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -180,6 +183,7 @@ class WorkflowUpdate(BaseModel):
 ```
 
 **Example Request** (rename workflow, add bucket, delete criteria):
+
 ```json
 PUT /v1/workflows/wf_abc123
 Authorization: Bearer <jwt_token>
@@ -235,6 +239,7 @@ Content-Type: application/json
 **Effort**: 2 person-days
 
 **Breakdown**:
+
 - API endpoint: 1 day (complex update logic for nested resources)
 - Schema: 0.5 days (update models with optional IDs)
 - Testing: 0.5 days (add/edit/delete scenarios)
@@ -260,6 +265,7 @@ Content-Type: application/json
 ## Testing Requirements
 
 **Integration Tests**:
+
 - [ ] Update workflow name → name changed
 - [ ] Add new bucket → bucket created with new ID
 - [ ] Update existing bucket → bucket modified
@@ -276,9 +282,11 @@ Content-Type: application/json
 ## Risks & Mitigations
 
 **Risk**: Deleting bucket breaks existing assessments (references invalid bucket_id)
+
 - **Mitigation**: For MVP, allow deletion (assessments preserve bucket snapshot); post-MVP add validation
 
 **Risk**: Complex update logic has bugs (orphaned buckets/criteria)
+
 - **Mitigation**: Use database transaction, test thoroughly, validate foreign keys
 
 ---

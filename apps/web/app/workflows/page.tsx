@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import Link from "next/link"
-import { Plus, FileText, Search } from "lucide-react"
-import { TopNav } from "@/components/navigation/TopNav"
-import { Breadcrumb } from "@/components/navigation/Breadcrumb"
-import { EmptyState } from "@/components/ui/EmptyState"
-import { TableSkeleton } from "@/components/ui/LoadingSkeleton"
-import { useRouter } from "next/navigation"
-import type { Workflow } from "@/types/app"
+import { useState } from 'react'
+import Link from 'next/link'
+import { Plus, FileText, Search } from 'lucide-react'
+import { TopNav } from '@/components/navigation/TopNav'
+import { Breadcrumb } from '@/components/navigation/Breadcrumb'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
+import { useRouter } from 'next/navigation'
+import type { Workflow } from '@/types/app'
 
 // TODO(API Integration): Replace with React Query hook when backend is ready
 // Expected endpoint: GET /v1/workflows
@@ -25,9 +25,9 @@ const useWorkflowsQuery = () => {
 export default function WorkflowsPage() {
   const router = useRouter()
   const { data: workflows, isLoading } = useWorkflowsQuery()
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const filteredWorkflows = workflows?.filter((workflow) =>
+  const filteredWorkflows = workflows?.filter(workflow =>
     workflow.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -36,12 +36,7 @@ export default function WorkflowsPage() {
       <TopNav />
 
       <main className="max-w-7xl mx-auto px-8 py-6">
-        <Breadcrumb
-          items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Workflows" },
-          ]}
-        />
+        <Breadcrumb items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Workflows' }]} />
 
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -68,7 +63,7 @@ export default function WorkflowsPage() {
                 type="text"
                 placeholder="Search workflows..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -83,8 +78,8 @@ export default function WorkflowsPage() {
             title="No workflows yet"
             description="Create your first validation workflow to start assessing documents."
             action={{
-              label: "Create Workflow",
-              onClick: () => router.push("/workflows/new"),
+              label: 'Create Workflow',
+              onClick: () => router.push('/workflows/new'),
             }}
           />
         ) : (
@@ -110,7 +105,7 @@ export default function WorkflowsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredWorkflows?.map((workflow) => (
+                {filteredWorkflows?.map(workflow => (
                   <tr
                     key={workflow.id}
                     onClick={() => router.push(`/workflows/${workflow.id}`)}

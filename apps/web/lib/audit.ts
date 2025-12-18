@@ -7,27 +7,27 @@
  * - Administrative actions
  */
 
-import { prisma } from "@/lib/prisma"
+import { prisma } from '@/lib/prisma'
 
 /**
  * Audit log action types
  */
 export const AuditAction = {
   // Authentication
-  LOGIN_SUCCESS: "login_success",
-  LOGIN_FAILED: "login_failed",
-  LOGOUT: "logout",
+  LOGIN_SUCCESS: 'login_success',
+  LOGIN_FAILED: 'login_failed',
+  LOGOUT: 'logout',
 
   // Resource actions (for future use)
-  WORKFLOW_CREATE: "workflow_create",
-  WORKFLOW_UPDATE: "workflow_update",
-  WORKFLOW_DELETE: "workflow_delete",
-  ASSESSMENT_CREATE: "assessment_create",
-  ASSESSMENT_VIEW: "assessment_view",
-  DOCUMENT_UPLOAD: "document_upload",
+  WORKFLOW_CREATE: 'workflow_create',
+  WORKFLOW_UPDATE: 'workflow_update',
+  WORKFLOW_DELETE: 'workflow_delete',
+  ASSESSMENT_CREATE: 'assessment_create',
+  ASSESSMENT_VIEW: 'assessment_view',
+  DOCUMENT_UPLOAD: 'document_upload',
 } as const
 
-export type AuditActionType = typeof AuditAction[keyof typeof AuditAction]
+export type AuditActionType = (typeof AuditAction)[keyof typeof AuditAction]
 
 /**
  * Parameters for creating an audit log entry
@@ -79,7 +79,7 @@ export async function createAuditLog(params: CreateAuditLogParams) {
     return auditLog
   } catch (error) {
     // Log error but don't throw - audit logging should not break the main flow
-    console.error("[AUDIT] Failed to create audit log:", error)
+    console.error('[AUDIT] Failed to create audit log:', error)
     return null
   }
 }
@@ -93,21 +93,21 @@ export async function createAuditLog(params: CreateAuditLogParams) {
  */
 export function extractIpAddress(headers: Headers): string | null {
   // Check common proxy headers in order of priority
-  const xForwardedFor = headers.get("x-forwarded-for")
+  const xForwardedFor = headers.get('x-forwarded-for')
   if (xForwardedFor) {
     // x-forwarded-for can contain multiple IPs (client, proxy1, proxy2, ...)
     // The first one is the original client IP
-    const ips = xForwardedFor.split(",").map(ip => ip.trim())
+    const ips = xForwardedFor.split(',').map(ip => ip.trim())
     return ips[0] || null
   }
 
-  const xRealIp = headers.get("x-real-ip")
+  const xRealIp = headers.get('x-real-ip')
   if (xRealIp) {
     return xRealIp
   }
 
   // Vercel-specific header
-  const cfConnectingIp = headers.get("cf-connecting-ip")
+  const cfConnectingIp = headers.get('cf-connecting-ip')
   if (cfConnectingIp) {
     return cfConnectingIp
   }
@@ -124,7 +124,7 @@ export function extractIpAddress(headers: Headers): string | null {
  * @returns User agent string or null if not available
  */
 export function extractUserAgent(headers: Headers): string | null {
-  return headers.get("user-agent")
+  return headers.get('user-agent')
 }
 
 /**

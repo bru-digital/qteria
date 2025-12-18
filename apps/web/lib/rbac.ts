@@ -151,10 +151,7 @@ export const ROLE_PERMISSIONS: Record<UserRoleType, Set<PermissionType>> = {
  * @param permission - The permission to check
  * @returns true if the role has the permission
  */
-export function hasPermission(
-  role: UserRoleType | undefined,
-  permission: PermissionType
-): boolean {
+export function hasPermission(role: UserRoleType | undefined, permission: PermissionType): boolean {
   if (!role) return false
 
   const rolePerms = ROLE_PERMISSIONS[role]
@@ -173,10 +170,7 @@ export function hasPermission(
  * @param allowedRoles - Array of allowed roles
  * @returns true if the user's role is in the allowed list
  */
-export function hasRole(
-  role: UserRoleType | undefined,
-  allowedRoles: UserRoleType[]
-): boolean {
+export function hasRole(role: UserRoleType | undefined, allowedRoles: UserRoleType[]): boolean {
   if (!role) return false
 
   // Admin always has access

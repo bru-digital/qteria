@@ -17,6 +17,7 @@ This document defines the deployment strategy including environments, CI/CD pipe
 **Deployment frequency**: [Multiple times per day / Daily / Weekly]
 
 **Key principles**:
+
 1. **[Principle 1 - e.g., "Automate everything"]**: [Why this matters]
 2. **[Principle 2 - e.g., "Deploy small changes frequently"]**: [Why this matters]
 3. **[Principle 3 - e.g., "Always have a rollback plan"]**: [Why this matters]
@@ -35,12 +36,12 @@ This document defines the deployment strategy including environments, CI/CD pipe
 
 ### Environment Strategy
 
-| Environment | Purpose | Data | Access | Deployment |
-|-------------|---------|------|--------|------------|
-| **Local** | Development | Fake/seeded | All engineers | Manual |
-| **Development** | Integration testing | Fake/seeded | All engineers | Auto on merge to `develop` |
-| **Staging** | Pre-production testing | Production-like or copy | Internal team | Auto on merge to `main` |
-| **Production** | Live system | Real customer data | Admins only | Manual approval required |
+| Environment     | Purpose                | Data                    | Access        | Deployment                 |
+| --------------- | ---------------------- | ----------------------- | ------------- | -------------------------- |
+| **Local**       | Development            | Fake/seeded             | All engineers | Manual                     |
+| **Development** | Integration testing    | Fake/seeded             | All engineers | Auto on merge to `develop` |
+| **Staging**     | Pre-production testing | Production-like or copy | Internal team | Auto on merge to `main`    |
+| **Production**  | Live system            | Real customer data      | Admins only   | Manual approval required   |
 
 ### Additional Environments (Optional)
 
@@ -57,6 +58,7 @@ This document defines the deployment strategy including environments, CI/CD pipe
 **Infrastructure**: Docker Compose / Local services
 
 **Services**:
+
 - [Service 1]: [How it runs locally]
 - [Service 2]: [How it runs locally]
 - Database: [PostgreSQL via Docker]
@@ -74,6 +76,7 @@ This document defines the deployment strategy including environments, CI/CD pipe
 **URL**: `https://dev.example.com`
 
 **Services**:
+
 - [Service 1]: [Configuration]
 - [Service 2]: [Configuration]
 - Database: [RDS/managed DB]
@@ -107,6 +110,7 @@ This document defines the deployment strategy including environments, CI/CD pipe
 **URL**: `https://example.com`
 
 **Services**:
+
 - [Service 1]: [Configuration]
 - [Service 2]: [Configuration]
 - Database: [Configuration]
@@ -173,6 +177,7 @@ Trigger CI/CD (GitHub Actions / CircleCI / etc.)
 #### Build Stage
 
 **Linting**:
+
 ```yaml
 - name: Lint
   run: npm run lint
@@ -180,6 +185,7 @@ Trigger CI/CD (GitHub Actions / CircleCI / etc.)
 ```
 
 **Testing**:
+
 ```yaml
 - name: Unit Tests
   run: npm test
@@ -195,6 +201,7 @@ Trigger CI/CD (GitHub Actions / CircleCI / etc.)
 ```
 
 **Build**:
+
 ```yaml
 - name: Build
   run: npm run build
@@ -208,6 +215,7 @@ Trigger CI/CD (GitHub Actions / CircleCI / etc.)
 #### Security Stage
 
 **Dependency scanning**:
+
 ```yaml
 - name: Dependency Audit
   run: npm audit --audit-level=moderate
@@ -215,6 +223,7 @@ Trigger CI/CD (GitHub Actions / CircleCI / etc.)
 ```
 
 **SAST (Static Application Security Testing)**:
+
 ```yaml
 - name: SAST
   uses: [tool-like-snyk-or-sonarqube]
@@ -222,6 +231,7 @@ Trigger CI/CD (GitHub Actions / CircleCI / etc.)
 ```
 
 **Secrets scanning**:
+
 ```yaml
 - name: Secrets Scan
   uses: trufflesecurity/trufflehog
@@ -235,6 +245,7 @@ Trigger CI/CD (GitHub Actions / CircleCI / etc.)
 #### Package Stage
 
 **Docker build**:
+
 ```dockerfile
 # Multi-stage build for optimization
 FROM node:18-alpine AS builder
@@ -253,6 +264,7 @@ CMD ["node", "dist/server.js"]
 ```
 
 **Image tagging**:
+
 - `latest` (latest from main)
 - `v1.2.3` (semantic version)
 - `sha-abc123` (git commit SHA)
@@ -266,6 +278,7 @@ CMD ["node", "dist/server.js"]
 #### Deploy Stage
 
 **Development**:
+
 ```yaml
 - name: Deploy to Dev
   if: github.ref == 'refs/heads/develop'
@@ -275,6 +288,7 @@ CMD ["node", "dist/server.js"]
 ```
 
 **Staging**:
+
 ```yaml
 - name: Deploy to Staging
   if: github.ref == 'refs/heads/main'
@@ -284,6 +298,7 @@ CMD ["node", "dist/server.js"]
 ```
 
 **Production**:
+
 ```yaml
 - name: Deploy to Production
   if: github.ref == 'refs/heads/main'
@@ -301,6 +316,7 @@ CMD ["node", "dist/server.js"]
 #### Verify Stage
 
 **Health checks**:
+
 ```bash
 # Check service is responding
 curl https://[env].example.com/health
@@ -310,6 +326,7 @@ curl https://[env].example.com/health
 ```
 
 **Smoke tests**:
+
 ```bash
 # Run critical path tests
 npm run test:smoke
@@ -322,6 +339,7 @@ npm run test:smoke
 ```
 
 **Monitoring alerts**:
+
 - Check error rate (should be < 1%)
 - Check latency (p95 < 500ms)
 - Check traffic (expected levels)
@@ -338,24 +356,28 @@ npm run test:smoke
 
 ---
 
-### Pattern 1: Rolling Deployment *(if chosen)*
+### Pattern 1: Rolling Deployment _(if chosen)_
 
 **How it works**:
+
 1. Deploy to subset of servers (e.g., 1 at a time)
 2. Wait for health checks
 3. Continue to next servers
 4. Complete when all servers updated
 
 **Pros**:
+
 - Zero downtime
 - Simple infrastructure
 - Gradual rollout
 
 **Cons**:
+
 - Temporary mixed versions
 - Harder to rollback all at once
 
 **Configuration**:
+
 ```yaml
 strategy:
   rollingUpdate:
@@ -365,24 +387,28 @@ strategy:
 
 ---
 
-### Pattern 2: Blue-Green Deployment *(if chosen)*
+### Pattern 2: Blue-Green Deployment _(if chosen)_
 
 **How it works**:
+
 1. Deploy new version to "green" environment
 2. Test green environment
 3. Switch traffic from "blue" to "green"
 4. Keep blue for quick rollback
 
 **Pros**:
+
 - Instant rollback (switch back to blue)
 - Full testing before traffic switch
 - No mixed versions
 
 **Cons**:
+
 - Requires double infrastructure
 - Database migrations tricky
 
 **Configuration**:
+
 ```yaml
 # Two identical environments
 # Traffic switching via load balancer/DNS
@@ -390,34 +416,38 @@ strategy:
 
 ---
 
-### Pattern 3: Canary Deployment *(if chosen)*
+### Pattern 3: Canary Deployment _(if chosen)_
 
 **How it works**:
+
 1. Deploy new version to small % of traffic (e.g., 5%)
 2. Monitor metrics (errors, latency, conversion)
 3. If healthy, increase to 25%, 50%, 100%
 4. If unhealthy, rollback immediately
 
 **Pros**:
+
 - Lowest risk (limited blast radius)
 - Gradual validation with real traffic
 - Auto-rollback on errors
 
 **Cons**:
+
 - Complex infrastructure
 - Requires feature flags
 - Longer deployment time
 
 **Configuration**:
+
 ```yaml
 canary:
   steps:
-    - setWeight: 5  # 5% traffic
-    - pause: {duration: 10m}
+    - setWeight: 5 # 5% traffic
+    - pause: { duration: 10m }
     - setWeight: 25
-    - pause: {duration: 10m}
+    - pause: { duration: 10m }
     - setWeight: 50
-    - pause: {duration: 10m}
+    - pause: { duration: 10m }
     - setWeight: 100
 ```
 
@@ -432,6 +462,7 @@ canary:
 **Repository**: `infrastructure/` or separate repo
 
 **Structure**:
+
 ```
 infrastructure/
 ├── modules/
@@ -484,12 +515,14 @@ resource "aws_ecs_service" "api" {
 **Tool**: [AWS Secrets Manager / HashiCorp Vault / Doppler]
 
 **What goes in secrets**:
+
 - ✅ Database credentials
 - ✅ API keys (third-party services)
 - ✅ Encryption keys
 - ✅ OAuth client secrets
 
 **What goes in environment variables** (not secret):
+
 - ✅ Feature flags
 - ✅ Public API endpoints
 - ✅ Environment name
@@ -501,6 +534,7 @@ resource "aws_ecs_service" "api" {
 ### Configuration Management
 
 **Environment variables**:
+
 ```bash
 # .env.development
 NODE_ENV=development
@@ -514,11 +548,13 @@ LOG_LEVEL=info
 ```
 
 **Never commit**:
+
 - ❌ `.env` files (use `.env.example`)
 - ❌ Secrets or credentials
 - ❌ API keys
 
 **Access control**:
+
 - Developers: Read access to dev/staging secrets
 - Ops: Read/write access to all environments
 - CI/CD: Read access via service account
@@ -532,6 +568,7 @@ LOG_LEVEL=info
 **Migration workflow**:
 
 1. **Develop migration** (in feature branch):
+
    ```sql
    -- migrations/001_add_user_email.sql
    ALTER TABLE users ADD COLUMN email VARCHAR(255);
@@ -551,27 +588,32 @@ LOG_LEVEL=info
 **For breaking changes**:
 
 **Step 1**: Add new column (backward compatible)
+
 ```sql
 ALTER TABLE users ADD COLUMN email_new VARCHAR(255);
 ```
 
 **Step 2**: Dual write (code writes to both columns)
+
 ```javascript
-user.email = email;
-user.email_new = email; // Dual write
+user.email = email
+user.email_new = email // Dual write
 ```
 
 **Step 3**: Backfill data
+
 ```sql
 UPDATE users SET email_new = email WHERE email_new IS NULL;
 ```
 
 **Step 4**: Switch reads (code reads from new column)
+
 ```javascript
-const email = user.email_new || user.email;
+const email = user.email_new || user.email
 ```
 
 **Step 5**: Drop old column (after verification)
+
 ```sql
 ALTER TABLE users DROP COLUMN email;
 ALTER TABLE users RENAME COLUMN email_new TO email;
@@ -586,12 +628,14 @@ ALTER TABLE users RENAME COLUMN email_new TO email;
 ### When to Rollback
 
 **Automatic rollback triggers**:
+
 - Error rate > [5%]
 - Latency p95 > [2x baseline]
 - Health checks failing
 - Database connection errors
 
 **Manual rollback decision**:
+
 - Critical bug discovered
 - Data corruption detected
 - Security vulnerability
@@ -599,6 +643,7 @@ ALTER TABLE users RENAME COLUMN email_new TO email;
 ### Rollback Methods
 
 **Method 1: Revert deployment**
+
 ```bash
 # Kubernetes example
 kubectl rollout undo deployment/api-deployment
@@ -607,6 +652,7 @@ kubectl rollout undo deployment/api-deployment
 ```
 
 **Method 2: Deploy previous version**
+
 ```bash
 # Deploy specific version
 ./deploy.sh --version v1.2.2 --env production
@@ -615,6 +661,7 @@ kubectl rollout undo deployment/api-deployment
 ```
 
 **Method 3: Traffic switch** (Blue-Green)
+
 ```bash
 # Switch load balancer to previous environment
 aws elbv2 modify-listener --listener-arn [ARN] --default-actions TargetGroupArn=[blue-target-group]
@@ -623,9 +670,10 @@ aws elbv2 modify-listener --listener-arn [ARN] --default-actions TargetGroupArn=
 ```
 
 **Method 4: Feature flag kill switch**
+
 ```javascript
 // Disable feature immediately
-featureFlags.disable('new-checkout-flow');
+featureFlags.disable('new-checkout-flow')
 
 // Expected duration: < 10 seconds
 ```
@@ -654,6 +702,7 @@ When rolling back:
 Before deploying to production:
 
 ### Code Quality
+
 - [ ] All tests passing
 - [ ] Code reviewed and approved
 - [ ] No merge conflicts
@@ -661,28 +710,33 @@ Before deploying to production:
 - [ ] Test coverage meets minimum ([X%])
 
 ### Testing
+
 - [ ] Manual testing in staging complete
 - [ ] Smoke tests passing
 - [ ] No critical bugs
 - [ ] Performance tests passing (if applicable)
 
 ### Migrations
+
 - [ ] Database migrations reviewed
 - [ ] Migration tested in staging
 - [ ] Rollback plan for migrations
 
 ### Communication
+
 - [ ] Team notified of deploy
 - [ ] Customers notified (if breaking changes)
 - [ ] On-call engineer available
 - [ ] Rollback plan documented
 
 ### Infrastructure
+
 - [ ] Infrastructure changes applied (if any)
 - [ ] Secrets updated (if needed)
 - [ ] Environment variables configured
 
 ### Monitoring
+
 - [ ] Alerts configured
 - [ ] Dashboards ready
 - [ ] On-call rotation scheduled
@@ -694,6 +748,7 @@ Before deploying to production:
 After deploying:
 
 ### Immediate (0-5 minutes)
+
 - [ ] Health checks passing
 - [ ] Smoke tests passing
 - [ ] Error rate normal
@@ -701,12 +756,14 @@ After deploying:
 - [ ] No alerts firing
 
 ### Short-term (5-30 minutes)
+
 - [ ] User actions succeeding (login, core action)
 - [ ] Database queries performing well
 - [ ] Third-party integrations working
 - [ ] Background jobs running
 
 ### Medium-term (30 minutes - 2 hours)
+
 - [ ] Conversion rates normal
 - [ ] No increase in support tickets
 - [ ] No customer complaints
@@ -719,16 +776,19 @@ After deploying:
 ### Runbook 1: Database Connection Failure
 
 **Symptoms**:
+
 - Health checks failing
 - API returning 500 errors
 - Logs show "Cannot connect to database"
 
 **Diagnosis**:
+
 1. Check database status in AWS RDS console
 2. Check security groups (DB accessible from app?)
 3. Check credentials in secrets manager
 
 **Fix**:
+
 - If DB down: Restore from backup or wait for AWS to restore
 - If credentials wrong: Rotate credentials, redeploy
 - If network issue: Fix security group rules
@@ -740,16 +800,19 @@ After deploying:
 ### Runbook 2: High Error Rate After Deploy
 
 **Symptoms**:
+
 - Error rate > 5%
 - Customers reporting issues
 - Alerts firing
 
 **Diagnosis**:
+
 1. Check logs for common errors
 2. Check which endpoints failing
 3. Check if specific to new code
 
 **Fix**:
+
 - If new code: Rollback immediately
 - If bad data: Fix data, may not need rollback
 - If third-party: Wait for third-party, consider feature flag disable
@@ -761,16 +824,19 @@ After deploying:
 ### Runbook 3: Slow Performance After Deploy
 
 **Symptoms**:
+
 - Latency p95 > [baseline × 2]
 - Customers reporting slowness
 - Latency alerts firing
 
 **Diagnosis**:
+
 1. Check APM tool for slow endpoints
 2. Check database query times
 3. Check if new code introduced N+1 queries
 
 **Fix**:
+
 - If new code: Rollback and optimize
 - If database: Add index, optimize query
 - If third-party: Cache or disable feature
@@ -779,7 +845,7 @@ After deploying:
 
 ---
 
-*[Add 5-10 runbooks for common issues]*
+_[Add 5-10 runbooks for common issues]_
 
 ---
 
@@ -788,17 +854,20 @@ After deploying:
 ### Access Control
 
 **Who can deploy**:
+
 - **Development**: All engineers (via CI/CD)
 - **Staging**: All engineers (via CI/CD)
 - **Production**: [Ops team / Senior engineers] (manual approval)
 
 **Service accounts**:
+
 - CI/CD service account (least privilege)
 - Monitoring service account (read-only)
 
 ### Secrets Management
 
 **Best practices**:
+
 - ✅ Rotate secrets every 90 days
 - ✅ Use unique secrets per environment
 - ✅ Never log secrets
@@ -808,11 +877,13 @@ After deploying:
 ### Network Security
 
 **Firewall rules**:
+
 - Database: Only accessible from app servers
 - App servers: Only accessible from load balancer
 - SSH: Only accessible from VPN/bastion
 
 **Encryption**:
+
 - ✅ TLS 1.3 for all traffic
 - ✅ Data encrypted at rest
 - ✅ Secrets encrypted in transit and at rest
@@ -826,6 +897,7 @@ After deploying:
 **Current monthly cost**: $[X]
 
 **Breakdown**:
+
 - Compute: $[X] ([Y]%)
 - Database: $[X] ([Y]%)
 - Storage: $[X] ([Y]%)
@@ -845,11 +917,13 @@ After deploying:
 ## Future Improvements
 
 **Short-term** (next 3 months):
+
 - [ ] [Improvement 1 - e.g., "Add preview environments for PRs"]
 - [ ] [Improvement 2 - e.g., "Implement feature flags"]
 - [ ] [Improvement 3]
 
 **Long-term** (6-12 months):
+
 - [ ] [Improvement 1 - e.g., "Multi-region deployment"]
 - [ ] [Improvement 2 - e.g., "Automated canary analysis"]
 - [ ] [Improvement 3]

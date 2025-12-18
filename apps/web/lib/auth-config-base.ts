@@ -1,7 +1,7 @@
-import type { NextAuthConfig } from "next-auth"
-import type { JWT } from "next-auth/jwt"
-import type { Session, User } from "next-auth"
-import type { UserRoleType } from "./rbac"
+import type { NextAuthConfig } from 'next-auth'
+import type { JWT } from 'next-auth/jwt'
+import type { Session, User } from 'next-auth'
+import type { UserRoleType } from './rbac'
 
 // Get NEXTAUTH_SECRET from environment
 // During build, this might be empty - it will be validated at runtime
@@ -28,7 +28,7 @@ if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-productio
  */
 interface ExtendedJWT extends JWT {
   role?: UserRoleType
-  org_id?: string  // Snake_case to match backend API contract
+  org_id?: string // Snake_case to match backend API contract
 }
 
 /**
@@ -47,7 +47,7 @@ interface ExtendedSession extends Session {
     email: string
     name: string | null
     role: UserRoleType
-    organizationId: string  // CamelCase to match TypeScript conventions
+    organizationId: string // CamelCase to match TypeScript conventions
   }
 }
 
@@ -63,8 +63,8 @@ interface ExtendedSession extends Session {
 export const baseAuthConfig = {
   providers: [], // Empty array - providers added in full config
   session: {
-    strategy: "jwt" as const,
-    maxAge: 7 * 24 * 60 * 60 // 7 days
+    strategy: 'jwt' as const,
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   callbacks: {
     async jwt({ token, user }: { token: JWT; user?: User }): Promise<JWT> {
@@ -84,18 +84,18 @@ export const baseAuthConfig = {
 
       // Add custom fields to session
       if (session.user) {
-        (session.user as any).id = token.sub as string
+        ;(session.user as any).id = token.sub as string
         ;(session.user as any).role = extendedToken.role as UserRoleType
         // Map JWT org_id (snake_case) back to Session organizationId (camelCase)
         // This ensures frontend code follows TypeScript naming conventions
         ;(session.user as any).organizationId = extendedToken.org_id as string
       }
       return session
-    }
+    },
   },
   pages: {
-    signIn: "/login",
-    error: "/login"
+    signIn: '/login',
+    error: '/login',
   },
   secret: NEXTAUTH_SECRET,
 } satisfies NextAuthConfig

@@ -9,11 +9,13 @@ You are helping the user create a comprehensive testing strategy including unit 
 ## When to Use This
 
 **This is Session 9** in the core Stack-Driven cascade. Run it:
+
 - After Session 8 (`/generate-api-contracts` - API surface)
 - Before Session 10 (`/generate-backlog` - implementation planning)
 - When you need to define testing strategy based on journey, architecture, database, and APIs
 
 **Skip this** if:
+
 - You're pre-MVP and validating quickly (test later)
 - You have a QA team that defines testing strategy
 - Your product doesn't require high reliability (internal tools, prototypes)
@@ -21,6 +23,7 @@ You are helping the user create a comprehensive testing strategy including unit 
 ## Your Task
 
 Create comprehensive testing strategy including:
+
 - Testing philosophy (why we test, what we test)
 - Unit testing strategy (scope, patterns, coverage)
 - Integration testing strategy (API, database, services)
@@ -50,6 +53,7 @@ Read: product-guidelines/08-api-contracts-essentials.md (from Session 8)
 ```
 
 **Context Optimization**: We read essentials versions for significant context reduction:
+
 - `07-database-schema-essentials.md` (~56% smaller) - Contains table list, ERD, relationships sufficient for test planning
 - `08-api-contracts-essentials.md` (~80% smaller) - Contains endpoint list organized by journey step, sufficient for test coverage planning
 
@@ -61,12 +65,14 @@ Read: product-guidelines/12-project-scaffold.md (if exists - scaffold comes afte
 ```
 
 **Extract from Journey**:
+
 - What are the critical path operations? (These need highest test coverage)
 - What user actions MUST work reliably? (These need E2E tests)
 - What are the edge cases in the user flow? (These need specific test cases)
 - Where is data entered by users? (These need validation testing)
 
 **Extract from Tech Stack**:
+
 - Frontend framework (React, Vue, Svelte) → Component testing tools
 - Backend framework (FastAPI, Express, Django) → API testing tools
 - Database (PostgreSQL, MongoDB) → Integration test setup
@@ -74,18 +80,21 @@ Read: product-guidelines/12-project-scaffold.md (if exists - scaffold comes afte
 - CI/CD platform (GitHub Actions, CircleCI, GitLab CI)
 
 **Extract from Architecture**:
+
 - System boundaries (what needs integration tests?)
 - External dependencies (what needs mocking/stubbing?)
 - Performance requirements (what needs performance tests?)
 - Security requirements (what needs security tests?)
 
 **Extract from Backlog (if available)**:
+
 - What features are P0? (These need tests first)
 - What features are complex? (These need more test coverage)
 - What features handle critical data? (These need thorough testing)
 - Note: Backlog is generated AFTER this session, so focus on journey and architecture if backlog doesn't exist yet
 
 **Example (from compliance-saas):**
+
 - Journey critical path: Upload document → Select frameworks → View assessment → Share report
 - Tech stack: React (frontend), FastAPI (backend), PostgreSQL (database), Pytest, Playwright
 - Architecture: Multi-tenant, async processing, RESTful API
@@ -485,63 +494,63 @@ Tools (from tech stack):
 
 ```typescript
 // tests/e2e/assessment-flow.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
 test('complete assessment flow', async ({ page }) => {
   // Step 1: Sign in
-  await page.goto('/login');
-  await page.fill('[data-testid="email-input"]', 'test@example.com');
-  await page.fill('[data-testid="password-input"]', 'password123');
-  await page.click('[data-testid="login-button"]');
+  await page.goto('/login')
+  await page.fill('[data-testid="email-input"]', 'test@example.com')
+  await page.fill('[data-testid="password-input"]', 'password123')
+  await page.click('[data-testid="login-button"]')
 
   // Wait for redirect to dashboard
-  await expect(page).toHaveURL('/dashboard');
+  await expect(page).toHaveURL('/dashboard')
 
   // Step 2: Upload document
-  await page.click('[data-testid="upload-button"]');
-  const fileInput = await page.locator('input[type="file"]');
-  await fileInput.setInputFiles('tests/fixtures/privacy-policy.pdf');
+  await page.click('[data-testid="upload-button"]')
+  const fileInput = await page.locator('input[type="file"]')
+  await fileInput.setInputFiles('tests/fixtures/privacy-policy.pdf')
 
   // Wait for upload to complete
-  await expect(page.locator('[data-testid="upload-success"]')).toBeVisible();
+  await expect(page.locator('[data-testid="upload-success"]')).toBeVisible()
 
   // Step 3: Select frameworks
-  await page.click('[data-testid="framework-gdpr"]');
-  await page.click('[data-testid="framework-soc2"]');
-  await page.click('[data-testid="start-assessment"]');
+  await page.click('[data-testid="framework-gdpr"]')
+  await page.click('[data-testid="framework-soc2"]')
+  await page.click('[data-testid="start-assessment"]')
 
   // Step 4: Wait for assessment to complete (poll for status)
   await page.waitForSelector('[data-testid="assessment-complete"]', {
-    timeout: 60000 // 60 seconds max
-  });
+    timeout: 60000, // 60 seconds max
+  })
 
   // Step 5: Verify results displayed
-  const score = await page.locator('[data-testid="compliance-score"]').textContent();
-  expect(score).toMatch(/\d+%/); // Score displayed as percentage
+  const score = await page.locator('[data-testid="compliance-score"]').textContent()
+  expect(score).toMatch(/\d+%/) // Score displayed as percentage
 
   // Step 6: Download report
-  const downloadPromise = page.waitForEvent('download');
-  await page.click('[data-testid="download-report"]');
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toContain('compliance-report');
-});
+  const downloadPromise = page.waitForEvent('download')
+  await page.click('[data-testid="download-report"]')
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toContain('compliance-report')
+})
 
 test('share report publicly', async ({ page, context }) => {
   // Use pre-seeded assessment for faster test
-  await page.goto('/assessments/test-assessment-id');
+  await page.goto('/assessments/test-assessment-id')
 
   // Generate public link
-  await page.click('[data-testid="share-button"]');
-  const publicLink = await page.locator('[data-testid="public-link"]').textContent();
+  await page.click('[data-testid="share-button"]')
+  const publicLink = await page.locator('[data-testid="public-link"]').textContent()
 
   // Open link in incognito (new context = no cookies)
-  const incognitoPage = await context.newPage();
-  await incognitoPage.goto(publicLink);
+  const incognitoPage = await context.newPage()
+  await incognitoPage.goto(publicLink)
 
   // Verify report loads without authentication
-  await expect(incognitoPage.locator('[data-testid="report-title"]')).toBeVisible();
-  await expect(incognitoPage.locator('[data-testid="login-prompt"]')).not.toBeVisible();
-});
+  await expect(incognitoPage.locator('[data-testid="report-title"]')).toBeVisible()
+  await expect(incognitoPage.locator('[data-testid="login-prompt"]')).not.toBeVisible()
+})
 ```
 
 ---
@@ -590,8 +599,7 @@ Coverage by Test Type:
   - Integration tests: 20% coverage (overlap with unit tests)
   - E2E tests: 10% coverage (critical paths only)
 
-Quality Gates:
-  1. All unit tests pass (blocking)
+Quality Gates: 1. All unit tests pass (blocking)
   2. All integration tests pass (blocking)
   3. Coverage >= 70% (blocking)
   4. No decrease in coverage vs main branch (blocking)
@@ -640,7 +648,7 @@ How to manage test data?
 
 **Example test data management:**
 
-```yaml
+````yaml
 # Test Data Strategy (compliance-saas)
 
 Test Database Setup:
@@ -680,37 +688,41 @@ Example Factory (Python):
       file_size = factory.Faker('random_int', min=1000, max=5000000)
       status = "ready"
       user_id = factory.LazyAttribute(lambda _: UserFactory().id)
-  ```
+````
 
 Example Factory Usage:
-  ```python
-  # tests/test_assessment.py
-  def test_create_assessment():
-      # Create test data with factories
-      user = UserFactory()
-      document = DocumentFactory(user_id=user.id)
-      frameworks = [FrameworkFactory() for _ in range(2)]
 
-      # Test assessment creation
-      assessment = create_assessment(
-          document_id=document.id,
-          framework_ids=[f.id for f in frameworks]
-      )
+```python
+# tests/test_assessment.py
+def test_create_assessment():
+    # Create test data with factories
+    user = UserFactory()
+    document = DocumentFactory(user_id=user.id)
+    frameworks = [FrameworkFactory() for _ in range(2)]
 
-      assert assessment.status == "pending"
-  ```
+    # Test assessment creation
+    assessment = create_assessment(
+        document_id=document.id,
+        framework_ids=[f.id for f in frameworks]
+    )
+
+    assert assessment.status == "pending"
+```
 
 Test Data Files:
-  - Fixtures location: tests/fixtures/
-  - Sample documents: tests/fixtures/sample.pdf, tests/fixtures/policy.docx
-  - API responses: tests/fixtures/api-responses/ (for mocking)
-  - Database seeds: tests/fixtures/seeds.sql (for E2E tests)
+
+- Fixtures location: tests/fixtures/
+- Sample documents: tests/fixtures/sample.pdf, tests/fixtures/policy.docx
+- API responses: tests/fixtures/api-responses/ (for mocking)
+- Database seeds: tests/fixtures/seeds.sql (for E2E tests)
 
 Test Data Cleanup:
-  - After each test: Truncate tables or rollback transaction
-  - After test suite: Drop test database
-  - CI cleanup: Delete test database after job
-```
+
+- After each test: Truncate tables or rollback transaction
+- After test suite: Drop test database
+- CI cleanup: Delete test database after job
+
+````
 
 ---
 
@@ -754,7 +766,7 @@ Performance Test Execution:
   - Before production deploy: Run load tests
   - After performance optimization: Run benchmarks
   - CI integration: Optional (long-running)
-```
+````
 
 **Security Testing Strategy:**
 
@@ -875,6 +887,7 @@ Regression test management:
 ### Step 10: Document Testing Strategy
 
 Create comprehensive documentation including:
+
 - Testing philosophy and principles
 - Test types and coverage targets
 - Testing tools and frameworks
@@ -890,42 +903,55 @@ Create comprehensive documentation including:
 # Testing Strategy
 
 ## Overview
+
 [Testing philosophy, risk level, coverage goals]
 
 ## Testing Philosophy
+
 [Why we test, what we test, TDD vs pragmatic]
 
 ## Unit Testing
+
 [Scope, patterns, tools, examples]
 
 ## Integration Testing
+
 [API tests, database tests, external services]
 
 ## E2E Testing
+
 [Critical journeys, tools, execution]
 
 ## Test Coverage
+
 [Targets by component, quality gates, reporting]
 
 ## Test Data Management
+
 [Factories, fixtures, database setup, cleanup]
 
 ## Performance Testing
+
 [Load tests, stress tests, benchmarks]
 
 ## Security Testing
+
 [Auth tests, vulnerability scanning, SAST/DAST]
 
 ## Testing Workflows
+
 [TDD, BDD, regression testing]
 
 ## CI/CD Integration
+
 [When tests run, blocking vs non-blocking, parallelization]
 
 ## Testing Checklist
+
 [Pre-commit, pre-deploy, production monitoring]
 
 ## What We DIDN'T Choose
+
 [Alternatives with reasoning]
 ```
 
@@ -938,12 +964,14 @@ Create comprehensive documentation including:
 **What it is**: Requiring every line of code to be tested
 
 **Why not (for this journey)**:
+
 - **Diminishing returns** - Last 20% takes 80% of effort
 - **Coverage doesn't equal quality** - 100% coverage can still have bugs
 - **Slows development** - Testing every getter/setter is wasteful
 - **Journey focus** - Better to test critical paths thoroughly than everything superficially
 
 **When to reconsider**:
+
 - IF building safety-critical system (medical devices, aviation)
 - IF regulatory requirement (some finance/healthcare)
 - IF legacy system with lots of bugs (increase coverage gradually)
@@ -957,12 +985,14 @@ Create comprehensive documentation including:
 **What it is**: Unit testing every possible UI state and combination
 
 **Why not (for this journey)**:
+
 - **UI changes frequently** - Tests become maintenance burden
 - **Brittle tests** - Break with minor CSS/layout changes
 - **Better alternatives** - E2E tests cover user flows, visual regression tests catch UI changes
 - **Journey focus** - Test user interactions, not implementation details
 
 **When to reconsider**:
+
 - IF complex state management (30+ UI states)
 - IF design system library (UI is the product)
 - IF regulatory requirement (accessibility testing)
@@ -976,12 +1006,14 @@ Create comprehensive documentation including:
 **What it is**: Automatically modify code to verify tests catch changes
 
 **Why not (for this journey)**:
+
 - **Slow** - Mutation testing is very slow (10x-100x longer)
 - **Diminishing returns** - Finds edge cases, but high effort
 - **Pragmatic focus** - Better to test critical paths well
 - **Journey stage** - More useful for mature products, not MVP
 
 **When to reconsider**:
+
 - IF safety-critical system (catch all bugs)
 - IF stable codebase (not changing much)
 - IF have time/resources (mature product phase)
@@ -995,12 +1027,14 @@ Create comprehensive documentation including:
 **What it is**: Generate random inputs to test properties (e.g., "sorting always returns sorted list")
 
 **Why not (for this journey)**:
+
 - **Complexity** - Harder to write and understand
 - **Overkill for CRUD** - Most web apps have predictable inputs
 - **Edge case focus** - Better for algorithms/libraries, less for business logic
 - **Team expertise** - Requires learning new testing paradigm
 
 **When to reconsider**:
+
 - IF complex algorithms (parsers, compilers, data processing)
 - IF many edge cases (date handling, currency conversion)
 - IF team experienced with property-based testing
@@ -1014,12 +1048,14 @@ Create comprehensive documentation including:
 **What it is**: Run all E2E tests on every pull request
 
 **Why not (for this journey)**:
+
 - **Too slow** - E2E tests take 20-30 minutes, slows feedback
 - **Expensive** - CI minutes cost money
 - **Overkill** - Most PRs don't affect entire user flow
 - **Pragmatic approach** - Run smoke tests on PR, full suite on merge
 
 **When to reconsider**:
+
 - IF E2E tests are fast (< 5 minutes)
 - IF high bug rate (need more testing)
 - IF few PRs per day (can afford time)
@@ -1033,12 +1069,14 @@ Create comprehensive documentation including:
 **What it is**: Screenshot every component and detect visual changes
 
 **Why not (for this journey)**:
+
 - **Maintenance burden** - Every design change requires updating screenshots
 - **False positives** - Flaky tests due to timing, fonts, rendering
 - **Expensive** - Visual regression services cost money (Percy, Chromatic)
 - **Selective approach** - Test critical components only
 
 **When to reconsider**:
+
 - IF design system library (UI is the product)
 - IF frequent visual bugs (lack of design discipline)
 - IF large team (many contributors, need consistency)
@@ -1052,12 +1090,14 @@ Create comprehensive documentation including:
 **What it is**: Run tests across many parallel workers for speed
 
 **Why not (for this journey)**:
+
 - **Diminishing returns** - 3-5 workers is sweet spot, more doesn't help much
 - **Resource limits** - CI environments have CPU/memory limits
 - **Database contention** - More workers = more database connections
 - **Complexity** - Requires careful test isolation
 
 **When to reconsider**:
+
 - IF massive test suite (>1000 tests, >1 hour)
 - IF have resources (self-hosted CI with many CPUs)
 - IF tests are well-isolated (no shared state)
@@ -1191,6 +1231,7 @@ jobs:
 This command generates:
 
 **1. Full Testing Strategy** (`product-guidelines/09-test-strategy.md`):
+
 - Testing philosophy and principles
 - Unit, integration, E2E testing strategies with examples
 - Test coverage goals and quality gates
@@ -1203,6 +1244,7 @@ This command generates:
 - "What We DIDN'T Choose" analysis (8+ alternatives)
 
 **2. Essentials Documentation** (`product-guidelines/09-test-strategy-essentials.md`):
+
 - **Purpose**: Condensed version for Session 10 (backlog generation) - 66% smaller
 - Coverage targets (for story estimation)
 - Test types required (unit, integration, E2E)
@@ -1213,6 +1255,7 @@ This command generates:
 - Common test scenarios (auth, authorization, validation)
 
 **3. Test Configuration Files** (`product-guidelines/09-test-strategy/`):
+
 - `pytest.ini` or `vitest.config.ts` (test runner config)
 - `.coveragerc` (coverage configuration)
 - `tests/conftest.py` (pytest fixtures)
@@ -1220,6 +1263,7 @@ This command generates:
 - `tests/fixtures/` (sample test data files)
 
 **4. Example Tests** (`product-guidelines/09-test-strategy/examples/`):
+
 - `example_unit_test.py` or `.test.ts`
 - `example_integration_test.py`
 - `example_e2e_test.py` or `.spec.ts`
@@ -1232,12 +1276,14 @@ This command generates:
 Before completing this session, verify:
 
 **Journey Alignment:**
+
 - [ ] Critical path (journey steps 1-3) has E2E tests
 - [ ] Business logic from journey has unit tests
 - [ ] API endpoints from journey have integration tests
 - [ ] Test coverage focused on user value delivery
 
 **Completeness:**
+
 - [ ] Unit testing strategy defined (scope, tools, patterns)
 - [ ] Integration testing strategy defined (API, database, services)
 - [ ] E2E testing strategy defined (critical journeys)
@@ -1248,6 +1294,7 @@ Before completing this session, verify:
 - [ ] CI/CD integration specified
 
 **Technical Quality:**
+
 - [ ] Testing tools match tech stack choices
 - [ ] Test isolation strategy prevents flaky tests
 - [ ] Quality gates prevent bad code from merging
@@ -1255,12 +1302,14 @@ Before completing this session, verify:
 - [ ] Test execution time is reasonable (< 10 min for PR)
 
 **Practicality:**
+
 - [ ] Testing strategy balances speed and thoroughness
 - [ ] Tests focus on critical paths, not every edge case
 - [ ] Test maintenance burden is manageable
 - [ ] Team can actually follow this strategy
 
 **Documentation:**
+
 - [ ] Full test strategy file (`09-test-strategy.md`) complete with all details
 - [ ] Essentials file (`09-test-strategy-essentials.md`) generated for backlog use
 - [ ] "What We DIDN'T Choose" section complete (4+ alternatives) in full file
@@ -1273,6 +1322,7 @@ Before completing this session, verify:
 ## After This Session
 
 **Next steps:**
+
 1. **Copy test configuration** to your project
 2. **Set up test database** (Docker PostgreSQL or similar)
 3. **Install testing dependencies** (pytest, vitest, playwright)
@@ -1281,6 +1331,7 @@ Before completing this session, verify:
 6. **Set up coverage reporting** (Codecov, Coveralls)
 
 **Use this strategy for:**
+
 - Writing tests during feature development (TDD)
 - Code review (ensure tests are included)
 - CI/CD setup (quality gates)
@@ -1288,6 +1339,7 @@ Before completing this session, verify:
 - Production monitoring (regression prevention)
 
 **Testing priority:**
+
 1. **Phase 1**: Unit tests for business logic (Week 1)
 2. **Phase 2**: Integration tests for API endpoints (Week 1-2)
 3. **Phase 3**: E2E tests for critical paths (Week 2-3)
@@ -1301,6 +1353,7 @@ Before completing this session, verify:
 **Test what matters, not everything.**
 
 Focus testing effort on:
+
 1. Critical path operations (journey steps 1-3)
 2. Business logic and algorithms
 3. User data integrity
@@ -1308,12 +1361,14 @@ Focus testing effort on:
 5. Performance bottlenecks
 
 Don't waste time on:
+
 - Testing framework code
 - Testing simple getters/setters
 - Testing every UI state
 - 100% coverage goals
 
 **Reference files:**
+
 - Journey: `product-guidelines/00-user-journey.md`
 - Tech stack: `product-guidelines/02-tech-stack.md`
 - Architecture: `product-guidelines/04-architecture.md`

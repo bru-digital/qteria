@@ -29,10 +29,12 @@
 ## Technical Details
 
 **Tech Stack**:
+
 - Redis: Upstash (serverless Redis)
 - Library: redis-py
 
 **Implementation**:
+
 ```python
 import redis
 import json
@@ -64,6 +66,7 @@ async def invalidate_workflow_cache(workflow_id: str):
 ```
 
 **Cache Invalidation**:
+
 ```python
 @router.put("/workflows/{workflow_id}")
 async def update_workflow(...):

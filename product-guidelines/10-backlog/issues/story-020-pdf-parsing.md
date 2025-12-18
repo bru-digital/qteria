@@ -35,11 +35,13 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - PDF Libraries: PyPDF2 (primary), pdfplumber (fallback)
 - OCR: pytesseract (optional, for scanned PDFs)
 - Caching: PostgreSQL (parsed_documents table)
 
 **PDF Parsing Service** (`app/services/pdf_parser.py`):
+
 ```python
 import PyPDF2
 import pdfplumber
@@ -152,6 +154,7 @@ class PDFParser:
 ```
 
 **Database Schema Addition**:
+
 ```sql
 CREATE TABLE parsed_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -165,6 +168,7 @@ CREATE INDEX idx_parsed_documents_document_id ON parsed_documents(document_id);
 ```
 
 **Example Output**:
+
 ```json
 [
   {
@@ -198,6 +202,7 @@ CREATE INDEX idx_parsed_documents_document_id ON parsed_documents(document_id);
 **Effort**: 3 person-days
 
 **Breakdown**:
+
 - PyPDF2 integration: 0.5 days (basic extraction)
 - Section detection: 1 day (regex patterns, testing)
 - Caching logic: 0.5 days (database integration)
@@ -223,6 +228,7 @@ CREATE INDEX idx_parsed_documents_document_id ON parsed_documents(document_id);
 ## Testing Requirements
 
 **Unit Tests** (95% coverage):
+
 - [ ] Extract text from simple PDF
 - [ ] Extract text from complex PDF (multi-column, tables)
 - [ ] Detect numbered sections (1., 1.1, 1.1.1)
@@ -231,11 +237,13 @@ CREATE INDEX idx_parsed_documents_document_id ON parsed_documents(document_id);
 - [ ] Cache hit → skip parsing
 
 **Integration Tests**:
+
 - [ ] Parse real TÜV SÜD document (Machinery Directive)
 - [ ] Parse medical device technical documentation
 - [ ] Verify section detection accuracy (manual review)
 
 **Performance Tests**:
+
 - [ ] Parse 1MB PDF → <1 second
 - [ ] Parse 10MB PDF → <5 seconds
 - [ ] Parse 50MB PDF → <30 seconds
@@ -246,12 +254,15 @@ CREATE INDEX idx_parsed_documents_document_id ON parsed_documents(document_id);
 ## Risks & Mitigations
 
 **Risk**: Section detection unreliable (documents use varied formatting)
+
 - **Mitigation**: Multiple detection strategies (numbered, headings, TOC), fallback to page-only
 
 **Risk**: PyPDF2 fails on certain PDFs (encrypted, corrupt)
+
 - **Mitigation**: Fallback to pdfplumber, clear error message if both fail
 
 **Risk**: Parsing slow for large PDFs (50MB)
+
 - **Mitigation**: Background job processing, caching, optimize parsing algorithm
 
 ---

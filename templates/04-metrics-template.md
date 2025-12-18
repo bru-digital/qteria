@@ -20,6 +20,7 @@
 ## Input Metrics (Drive North Star)
 
 ### 1. [Input Metric Name]
+
 **Definition**: [How it's measured]
 **Why It Matters**: [How it drives North Star]
 **Current**: [Current value]
@@ -27,6 +28,7 @@
 **Lever**: [How to improve it]
 
 ### 2. [Input Metric Name]
+
 **Definition**: [How it's measured]
 **Why It Matters**: [How it drives North Star]
 **Current**: [Current value]
@@ -40,14 +42,17 @@
 ## Health Metrics (Guardrails)
 
 ### Engagement Health
+
 - **Weekly Active Users**: [Current] (target: >[X])
 - **Sessions per User**: [Current] per week (target: >[Y])
 
 ### Retention Health
+
 - **D7 Retention**: [Current]% (target: >[X]%)
 - **D30 Retention**: [Current]% (target: >[Y]%)
 
 ### Product Health
+
 - **Error Rate**: [Current]% (target: <[X]%)
 - **NPS**: [Current] (target: >[Y])
 
@@ -58,6 +63,7 @@
 We will NOT improve [North Star] by degrading:
 
 ### 1. [Counter-Metric Name]
+
 **Definition**: [What it measures]
 **Threshold**: Must stay above/below [X]
 **Why Protected**: [Reason]
@@ -65,8 +71,10 @@ We will NOT improve [North Star] by degrading:
 ---
 
 **Connection to Journey**:
+
 - [Metric] measures [Journey Step X]
 - [Metric] measures [Journey Step Y]
 
 **Connection to Monetization**:
+
 - North Star growth drives revenue because [reason]

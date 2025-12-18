@@ -14,24 +14,31 @@ This document defines the product strategy including vision, market analysis, co
 ## How This Traces to User Journey
 
 **Journey audience** (from `product-guidelines/00-user-journey.md`):
+
 - [Who is the target audience? This defines your market segment.]
 
 **Journey problem** (from `product-guidelines/00-user-journey.md`):
+
 - [What problem do they struggle with? This defines market need.]
 
 **Journey solution** (from `product-guidelines/00-user-journey.md`):
+
 - [How do you solve it? This defines competitive differentiation.]
 
 **Mission** (from `product-guidelines/02-mission.md`):
+
 - [Your mission statement - foundation for vision]
 
 **Metrics** (from `product-guidelines/03-metrics.md`):
+
 - [Key metrics - foundation for strategic goals]
 
 **Architecture** (from `product-guidelines/05-architecture.md`):
+
 - [Technical approach - foundation for roadmap themes]
 
 **Strategy Goal**:
+
 - Validate [journey audience] represents viable market
 - Confirm [journey problem] is significant enough to solve
 - Differentiate [journey solution] from competitive alternatives
@@ -64,16 +71,19 @@ This document defines the product strategy including vision, market analysis, co
 ### Market Size
 
 **TAM (Total Addressable Market)**:
+
 - **Definition**: [Who could theoretically use this]
 - **Size**: $[X] or [Y] potential customers
 - **Calculation**: [Show your math - bottom-up preferred]
 
 **SAM (Serviceable Addressable Market)**:
+
 - **Definition**: [Who you can realistically reach]
 - **Size**: $[X] or [Y] potential customers
 - **Calculation**: [Show your math]
 
 **SOM (Serviceable Obtainable Market)**:
+
 - **Definition**: [Who you can realistically capture in [timeframe]]
 - **Size**: $[X] or [Y] potential customers
 - **Calculation**: [Show your math]
@@ -83,11 +93,13 @@ This document defines the product strategy including vision, market analysis, co
 **Growth rate**: [X% annually / Market is [growing/stable/shrinking]]
 
 **Key trends**:
+
 1. **[Trend 1]**: [How this affects your product]
 2. **[Trend 2]**: [How this affects your product]
 3. **[Trend 3]**: [How this affects your product]
 
 **Market forces**:
+
 - **Enablers**: [What's making this possible now? Technology? Regulation? Behavior change?]
 - **Barriers**: [What's preventing faster adoption?]
 
@@ -97,8 +109,8 @@ This document defines the product strategy including vision, market analysis, co
 
 ### Direct Competitors
 
-| Competitor | Positioning | Strengths | Weaknesses | Pricing |
-|------------|-------------|-----------|------------|---------|
+| Competitor  | Positioning      | Strengths           | Weaknesses           | Pricing       |
+| ----------- | ---------------- | ------------------- | -------------------- | ------------- |
 | [Company 1] | [How positioned] | [What they do well] | [Where they're weak] | [Price point] |
 | [Company 2] | [How positioned] | [What they do well] | [Where they're weak] | [Price point] |
 | [Company 3] | [How positioned] | [What they do well] | [Where they're weak] | [Price point] |
@@ -106,6 +118,7 @@ This document defines the product strategy including vision, market analysis, co
 ### Indirect Competitors / Alternatives
 
 **How customers solve this today without you**:
+
 - [Alternative 1 - e.g., "Manual spreadsheets"]
 - [Alternative 2 - e.g., "General-purpose tool"]
 - [Alternative 3 - e.g., "Hire consultant"]
@@ -173,11 +186,13 @@ This document defines the product strategy including vision, market analysis, co
 **Why it matters**: [How this advances the vision]
 
 **Success criteria**:
+
 - [Metric 1]: [Target]
 - [Metric 2]: [Target]
 - [Metric 3]: [Target]
 
 **Key initiatives**:
+
 - [Initiative 1]
 - [Initiative 2]
 - [Initiative 3]
@@ -195,10 +210,12 @@ This document defines the product strategy including vision, market analysis, co
 **Why it matters**: [How this advances the vision]
 
 **Success criteria**:
+
 - [Metric 1]: [Target]
 - [Metric 2]: [Target]
 
 **Key initiatives**:
+
 - [Initiative 1]
 - [Initiative 2]
 
@@ -215,10 +232,12 @@ This document defines the product strategy including vision, market analysis, co
 **Why it matters**: [How this advances the vision]
 
 **Success criteria**:
+
 - [Metric 1]: [Target]
 - [Metric 2]: [Target]
 
 **Key initiatives**:
+
 - [Initiative 1]
 - [Initiative 2]
 
@@ -228,7 +247,7 @@ This document defines the product strategy including vision, market analysis, co
 
 ---
 
-*[Add goals 4-5 if needed]*
+_[Add goals 4-5 if needed]_
 
 ---
 
@@ -266,7 +285,7 @@ This document defines the product strategy including vision, market analysis, co
 
 ---
 
-*[Add principles 4-5 if needed]*
+_[Add principles 4-5 if needed]_
 
 ---
 
@@ -281,6 +300,7 @@ This document defines the product strategy including vision, market analysis, co
 **Why now**: [Why this is the priority]
 
 **Example initiatives**:
+
 - [Initiative 1]
 - [Initiative 2]
 - [Initiative 3]
@@ -296,6 +316,7 @@ This document defines the product strategy including vision, market analysis, co
 **Why now**: [Why this is the priority]
 
 **Example initiatives**:
+
 - [Initiative 1]
 - [Initiative 2]
 
@@ -310,6 +331,7 @@ This document defines the product strategy including vision, market analysis, co
 **Why now**: [Why this is the priority]
 
 **Example initiatives**:
+
 - [Initiative 1]
 - [Initiative 2]
 
@@ -317,7 +339,7 @@ This document defines the product strategy including vision, market analysis, co
 
 ---
 
-*[Continue for 4-6 quarters or themes]*
+_[Continue for 4-6 quarters or themes]_
 
 ---
 
@@ -341,8 +363,8 @@ This document defines the product strategy including vision, market analysis, co
 
 ### Major Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
+| Risk     | Likelihood     | Impact         | Mitigation        |
+| -------- | -------------- | -------------- | ----------------- |
 | [Risk 1] | [High/Med/Low] | [High/Med/Low] | [How to mitigate] |
 | [Risk 2] | [High/Med/Low] | [High/Med/Low] | [How to mitigate] |
 | [Risk 3] | [High/Med/Low] | [High/Med/Low] | [How to mitigate] |
@@ -365,13 +387,13 @@ This document defines the product strategy including vision, market analysis, co
 
 ### Key Performance Indicators
 
-| Category | Metric | Current | Target | Frequency |
-|----------|--------|---------|--------|-----------|
+| Category        | Metric   | Current | Target   | Frequency        |
+| --------------- | -------- | ------- | -------- | ---------------- |
 | **Acquisition** | [Metric] | [Value] | [Target] | [Weekly/Monthly] |
-| **Activation** | [Metric] | [Value] | [Target] | [Weekly/Monthly] |
-| **Retention** | [Metric] | [Value] | [Target] | [Weekly/Monthly] |
-| **Revenue** | [Metric] | [Value] | [Target] | [Weekly/Monthly] |
-| **Referral** | [Metric] | [Value] | [Target] | [Weekly/Monthly] |
+| **Activation**  | [Metric] | [Value] | [Target] | [Weekly/Monthly] |
+| **Retention**   | [Metric] | [Value] | [Target] | [Weekly/Monthly] |
+| **Revenue**     | [Metric] | [Value] | [Target] | [Weekly/Monthly] |
+| **Referral**    | [Metric] | [Value] | [Target] | [Weekly/Monthly] |
 
 ---
 
@@ -397,7 +419,7 @@ This document defines the product strategy including vision, market analysis, co
 
 **Tiers**: [Number of tiers and rough structure]
 
-*See Session 3 (`/generate-strategy`) for detailed monetization strategy*
+_See Session 3 (`/generate-strategy`) for detailed monetization strategy_
 
 ---
 

@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import Link from "next/link"
-import { Plus, ClipboardList } from "lucide-react"
-import { TopNav } from "@/components/navigation/TopNav"
-import { Breadcrumb } from "@/components/navigation/Breadcrumb"
-import { EmptyState } from "@/components/ui/EmptyState"
-import { TableSkeleton } from "@/components/ui/LoadingSkeleton"
-import { useRouter } from "next/navigation"
-import type { Assessment } from "@/types/app"
+import { useState } from 'react'
+import Link from 'next/link'
+import { Plus, ClipboardList } from 'lucide-react'
+import { TopNav } from '@/components/navigation/TopNav'
+import { Breadcrumb } from '@/components/navigation/Breadcrumb'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
+import { useRouter } from 'next/navigation'
+import type { Assessment } from '@/types/app'
 
 // TODO(API Integration): Replace with React Query hook when backend is ready
 // Expected endpoint: GET /v1/assessments
@@ -24,14 +24,16 @@ const useAssessmentsQuery = () => {
 
 function StatusBadge({ status }: { status: string }) {
   const colors = {
-    pending: "bg-gray-100 text-gray-700",
-    processing: "bg-blue-100 text-blue-700",
-    completed: "bg-green-100 text-green-700",
-    failed: "bg-red-100 text-red-700",
+    pending: 'bg-gray-100 text-gray-700',
+    processing: 'bg-blue-100 text-blue-700',
+    completed: 'bg-green-100 text-green-700',
+    failed: 'bg-red-100 text-red-700',
   }
 
   return (
-    <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || colors.pending}`}>
+    <span
+      className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || colors.pending}`}
+    >
       {status}
     </span>
   )
@@ -40,10 +42,10 @@ function StatusBadge({ status }: { status: string }) {
 export default function AssessmentsPage() {
   const router = useRouter()
   const { data: assessments, isLoading } = useAssessmentsQuery()
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
-  const filteredAssessments = assessments?.filter((assessment) =>
-    statusFilter === "all" || assessment.status === statusFilter
+  const filteredAssessments = assessments?.filter(
+    assessment => statusFilter === 'all' || assessment.status === statusFilter
   )
 
   return (
@@ -52,10 +54,7 @@ export default function AssessmentsPage() {
 
       <main className="max-w-7xl mx-auto px-8 py-6">
         <Breadcrumb
-          items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Assessments" },
-          ]}
+          items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Assessments' }]}
         />
 
         <div className="flex items-center justify-between mb-6">
@@ -79,7 +78,7 @@ export default function AssessmentsPage() {
           <div className="mb-6">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={e => setStatusFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Statuses</option>
@@ -99,8 +98,8 @@ export default function AssessmentsPage() {
             title="No assessments yet"
             description="Start your first assessment to validate documents against your workflows."
             action={{
-              label: "Start Assessment",
-              onClick: () => router.push("/assessments/new"),
+              label: 'Start Assessment',
+              onClick: () => router.push('/assessments/new'),
             }}
           />
         ) : (
@@ -126,22 +125,28 @@ export default function AssessmentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAssessments?.map((assessment) => (
+                {filteredAssessments?.map(assessment => (
                   <tr
                     key={assessment.id}
                     onClick={() => router.push(`/assessments/${assessment.id}`)}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{assessment.workflow_name}</div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {assessment.workflow_name}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <StatusBadge status={assessment.status} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {assessment.status === "completed" ? (
-                        <span className={assessment.overall_pass ? "text-green-600" : "text-red-600"}>
-                          {assessment.criteria_passed ?? 0}/{(assessment.criteria_passed ?? 0) + (assessment.criteria_failed ?? 0)} passed
+                      {assessment.status === 'completed' ? (
+                        <span
+                          className={assessment.overall_pass ? 'text-green-600' : 'text-red-600'}
+                        >
+                          {assessment.criteria_passed ?? 0}/
+                          {(assessment.criteria_passed ?? 0) + (assessment.criteria_failed ?? 0)}{' '}
+                          passed
                         </span>
                       ) : (
                         <span className="text-gray-400">—</span>
@@ -151,7 +156,9 @@ export default function AssessmentsPage() {
                       {new Date(assessment.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {assessment.duration_ms ? `${Math.round(assessment.duration_ms / 1000)}s` : "—"}
+                      {assessment.duration_ms
+                        ? `${Math.round(assessment.duration_ms / 1000)}s`
+                        : '—'}
                     </td>
                   </tr>
                 ))}

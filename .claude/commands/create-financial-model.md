@@ -9,17 +9,20 @@ This is a **post-core extension** that creates a comprehensive financial model g
 ## When to Run This
 
 **Run AFTER Session 4+** when you have:
+
 - ✅ User journey defined (`product-guidelines/00-user-journey.md`)
 - ✅ Product strategy validated (`product-guidelines/01-product-strategy.md`)
 - ✅ Metrics established (`product-guidelines/04-metrics.md`)
 - ✅ Monetization model defined (`product-guidelines/04-monetization.md`)
 
 **Ideally after additional strategy work** when you also have:
+
 - ✅ Growth strategy created (`product-guidelines/growth-strategy.md`)
 - ✅ Tech stack chosen (`product-guidelines/02-tech-stack.md`)
 - So cost structure and customer acquisition costs are grounded in reality
 
 **Skip this** if:
+
 - You're building a pure passion project (no monetization intent)
 - You're pre-revenue and need to focus purely on product validation
 - You have a finance team that handles financial modeling
@@ -51,41 +54,51 @@ You are a financial strategist creating a data-driven financial model. Your job 
 This command READS previous outputs to ground financial projections in reality:
 
 1. **Read the user journey**:
+
    ```bash
    Read product-guidelines/00-user-journey.md
    ```
+
    - What economic value does journey deliver? (ROI basis for pricing)
    - What's the journey complexity? (affects conversion rates)
    - What's the time-to-value? (affects activation and retention)
 
 2. **Read the product strategy**:
+
    ```bash
    Read product-guidelines/01-product-strategy.md
    ```
+
    - What's the TAM/SAM/SOM? (market size constraints)
    - Who are the competitors? (pricing benchmarks)
    - What's the market positioning? (premium vs value pricing)
 
 3. **Read the tech stack** (if available):
+
    ```bash
    Read product-guidelines/02-tech-stack.md
    ```
+
    - What are the infrastructure costs? (AWS, hosting, SaaS tools)
    - What's the team size/composition? (salary costs)
    - What are the per-user variable costs? (API calls, storage, compute)
 
 4. **Read the metrics**:
+
    ```bash
    Read product-guidelines/04-metrics.md
    ```
+
    - What's the North Star metric? (ties to revenue)
    - What are conversion rates? (signup→activation→paid)
    - What's the expected retention? (affects LTV)
 
 5. **Read the monetization model**:
+
    ```bash
    Read product-guidelines/04-monetization.md
    ```
+
    - What's the pricing structure? (Free/Paid tiers, enterprise)
    - What's the value metric? (per-user, per-usage, per-outcome)
    - What's the expected ARPU? (Average Revenue Per User)
@@ -94,6 +107,7 @@ This command READS previous outputs to ground financial projections in reality:
    ```bash
    Read product-guidelines/growth-strategy.md
    ```
+
    - What are the acquisition channels? (affects CAC)
    - What's the growth model? (viral, content, sales)
    - What are the growth loop assumptions? (viral coefficient, cycle time)
@@ -107,6 +121,7 @@ Your financial model connects journey economics → unit economics → projectio
 Use the Read tool to read all cascade inputs listed above.
 
 **Extract key financial drivers**:
+
 - Journey ROI (value delivered vs. price)
 - Market size (TAM/SAM/SOM)
 - Pricing tiers and ARPU estimates
@@ -161,6 +176,7 @@ ELSE IF product-led or viral growth
 ```
 
 **Validation criteria**:
+
 - [ ] CAC is based on realistic channel costs (market benchmarks)
 - [ ] Includes all costs (marketing, sales, tools, not just ad spend)
 - [ ] Blended CAC accounts for channel mix
@@ -182,6 +198,7 @@ Where:
 **Component breakdown**:
 
 1. **ARPU (Average Revenue Per User)**:
+
    ```
    From monetization tiers:
    - % of users on Free tier → $0
@@ -193,6 +210,7 @@ Where:
    ```
 
 2. **Gross Margin**:
+
    ```
    Revenue:             100%
    - Hosting costs:     -5-15%  (from tech stack)
@@ -204,6 +222,7 @@ Where:
    ```
 
 3. **Churn Rate**:
+
    ```
    From metrics (or industry benchmarks):
 
@@ -219,6 +238,7 @@ Where:
    ```
 
 **Example calculation** (B2B SaaS):
+
 ```
 ARPU:              $100/month
 Gross Margin:      80%
@@ -229,6 +249,7 @@ LTV = ($100 × 0.80) × 50 months = $4,000
 ```
 
 **Validation criteria**:
+
 - [ ] ARPU reflects realistic tier distribution (not 100% enterprise)
 - [ ] Gross margin accounts for ALL variable costs
 - [ ] Churn rate is documented with source (metrics, assumptions, benchmarks)
@@ -250,11 +271,13 @@ LTV:CAC Ratio     Interpretation
 ```
 
 **If LTV:CAC < 3:1**, identify the lever to pull:
+
 - Increase LTV: Reduce churn, increase ARPU (upsells, usage), improve margins
 - Decrease CAC: Optimize channels, improve conversion rates, build growth loops
 - Adjust business model: Change pricing, target different segment, pivot
 
 **Payback period** (months to recover CAC):
+
 ```
 Payback Period = CAC / (ARPU × Gross Margin)
 
@@ -266,6 +289,7 @@ Benchmarks:
 ```
 
 **Validation criteria**:
+
 - [ ] LTV:CAC ratio is ≥ 3:1 (or path to 3:1 documented)
 - [ ] Payback period is ≤ 18 months (or funding plan exists)
 - [ ] If ratios don't pass, improvement plan is documented
@@ -308,6 +332,7 @@ ELSE IF Sales-driven
 ```
 
 **Example** (Content + Paid hybrid):
+
 ```
 Month 1:   100 signups (50 paid ads, 50 content)
 Month 3:   250 signups (100 paid ads, 150 content - SEO ramping)
@@ -354,6 +379,7 @@ Year 3: Accelerate
 ```
 
 **Validation criteria**:
+
 - [ ] Growth rates are grounded in channel capacity (not fantasy)
 - [ ] Churn is factored into projections (not just new customers)
 - [ ] Expansion revenue is included (upsells, cross-sells)
@@ -386,6 +412,7 @@ Gross Margin: (ARPU - Variable Cost) / ARPU = X%
 ```
 
 **Example** (B2B SaaS):
+
 ```
 ARPU:                 $100/month
 Hosting:              -$8
@@ -458,6 +485,7 @@ Stage 3 (Months 24-36): Scale team
 ```
 
 **Validation criteria**:
+
 - [ ] Variable costs are tied to tech stack choices
 - [ ] Fixed costs reflect realistic salaries for market/location
 - [ ] Team growth tied to revenue milestones (not premature hiring)
@@ -479,6 +507,7 @@ Break-even Customers = Fixed Costs / Contribution Margin per Customer
 ```
 
 **Example**:
+
 ```
 Fixed Costs:          $50,000/month
 ARPU:                 $100/month
@@ -492,6 +521,7 @@ Need 6,490+ signups/month to break even
 ```
 
 **Timeline to break-even**:
+
 ```
 IF current growth trajectory
   → Month X: Reach break-even customers
@@ -530,6 +560,7 @@ ELSE IF very long payback (>36 months)
 ```
 
 **Validation criteria**:
+
 - [ ] Break-even timeline is realistic (based on growth projections)
 - [ ] Funding requirements include 6-month buffer
 - [ ] Funding strategy matches business model (bootstrap vs VC)
@@ -541,12 +572,14 @@ ELSE IF very long payback (>36 months)
 #### Scenario 1: Conservative (70% confidence)
 
 **Pessimistic but realistic assumptions**:
+
 - Conversion rates: -30% vs. base case
 - Churn rates: +30% vs. base case
 - CAC: +30% vs. base case
 - Time to channel maturity: +50% vs. base case
 
 **Example**:
+
 ```
 Base case: 10% signup → paid, 2% monthly churn, $500 CAC
 Conservative: 7% conversion, 2.6% churn, $650 CAC
@@ -562,6 +595,7 @@ Result:
 #### Scenario 2: Realistic (50% confidence)
 
 **Base case assumptions** (from previous steps):
+
 - Journey-informed conversion rates
 - Market-benchmarked churn
 - Channel-specific CAC
@@ -572,12 +606,14 @@ Result:
 #### Scenario 3: Aggressive (30% confidence)
 
 **Optimistic but achievable assumptions**:
+
 - Conversion rates: +30% vs. base case
 - Churn rates: -30% vs. base case
 - CAC: -20% vs. base case
 - Viral coefficient > 1 (if product-led)
 
 **Example**:
+
 ```
 Base case: 10% signup → paid, 2% monthly churn, $500 CAC
 Aggressive: 13% conversion, 1.4% churn, $400 CAC
@@ -593,17 +629,18 @@ Result:
 #### Scenario Comparison Table
 
 ```markdown
-| Metric | Conservative | Realistic | Aggressive |
-|--------|--------------|-----------|------------|
-| Year 1 ARR | $X | $Y | $Z |
-| Year 3 ARR | $X | $Y | $Z |
-| LTV:CAC | X:1 | Y:1 | Z:1 |
-| Break-even Month | X | Y | Z |
-| Funding Needed | $X | $Y | $Z |
-| Customers (Year 1) | X | Y | Z |
+| Metric             | Conservative | Realistic | Aggressive |
+| ------------------ | ------------ | --------- | ---------- |
+| Year 1 ARR         | $X           | $Y        | $Z         |
+| Year 3 ARR         | $X           | $Y        | $Z         |
+| LTV:CAC            | X:1          | Y:1       | Z:1        |
+| Break-even Month   | X            | Y         | Z          |
+| Funding Needed     | $X           | $Y        | $Z         |
+| Customers (Year 1) | X            | Y         | Z          |
 ```
 
 **Validation criteria**:
+
 - [ ] Conservative scenario is survivable (not catastrophic)
 - [ ] Realistic scenario is attractive (worth pursuing)
 - [ ] Aggressive scenario is plausible (not fantasy)
@@ -624,6 +661,7 @@ Result:
 5. **If wrong, impact**: [Sensitivity analysis]
 
 **Example**:
+
 ```
 Assumption: 10% signup → paid conversion rate
 
@@ -656,6 +694,7 @@ If wrong (e.g., only 5% convert):
    - **Contingency**: [What if it happens anyway?]
 
 **Example**:
+
 ```
 1. Market Education Risk: Customers don't understand problem/solution
 
@@ -705,6 +744,7 @@ Milestone 5: $1M ARR (Month X)
 ```
 
 **For EACH milestone**, define:
+
 - [ ] Target date
 - [ ] Required metrics (customers, ARPU, LTV:CAC)
 - [ ] Team size at this stage
@@ -720,6 +760,7 @@ Use the template at `templates/22-financial-model-template.md` as structure.
 **The output includes**:
 
 ### Section 1: Executive Summary
+
 - Business model overview
 - Key metrics (LTV, CAC, LTV:CAC, payback)
 - Revenue targets (Year 1, 2, 3)
@@ -727,6 +768,7 @@ Use the template at `templates/22-financial-model-template.md` as structure.
 - Key assumptions and risks
 
 ### Section 2: Unit Economics
+
 - Customer Acquisition Cost (CAC) breakdown
 - Lifetime Value (LTV) calculation
 - LTV:CAC ratio analysis
@@ -734,35 +776,41 @@ Use the template at `templates/22-financial-model-template.md` as structure.
 - Gross margin analysis
 
 ### Section 3: Revenue Projections
+
 - Customer acquisition model
 - MRR/ARR projections (3 years)
 - Revenue by tier/segment
 - Expansion revenue assumptions
 
 ### Section 4: Cost Structure
+
 - Variable costs (COGS)
 - Fixed costs (OpEx)
 - Team growth plan
 - Marketing budget allocation
 
 ### Section 5: Profitability & Funding
+
 - Break-even analysis
 - Burn rate and runway
 - Funding requirements
 - Funding strategy
 
 ### Section 6: Scenario Analysis
+
 - Conservative scenario
 - Realistic scenario (base case)
 - Aggressive scenario
 - Comparison table
 
 ### Section 7: Assumptions & Risks
+
 - Critical assumptions (with validation plan)
 - Key risks and mitigations
 - Sensitivity analysis
 
 ### Section 8: Financial Milestones
+
 - Milestone definitions (First $, $10k MRR, Break-even, $100k MRR, $1M ARR)
 - Target dates
 - Success criteria
@@ -772,24 +820,28 @@ Use the template at `templates/22-financial-model-template.md` as structure.
 Before completing this session, verify:
 
 **Journey Alignment**:
+
 - [ ] LTV calculation is based on journey value delivery (not arbitrary pricing)
 - [ ] CAC estimates reflect how journey persona discovers solutions
 - [ ] Revenue projections consider journey complexity (affects conversion)
 - [ ] Unit economics reflect journey defensibility (affects retention)
 
 **Data Grounding**:
+
 - [ ] All assumptions cite sources (benchmarks, competitors, metrics)
 - [ ] Projections are tied to specific growth channels (not fantasy)
 - [ ] Costs reflect actual tech stack and team requirements
 - [ ] Scenarios test sensitivity to key assumptions
 
 **Business Viability**:
+
 - [ ] LTV:CAC ratio is ≥ 3:1 (or clear path documented)
 - [ ] Payback period is ≤ 18 months (or funding plan exists)
 - [ ] Break-even timeline is realistic (based on growth projections)
 - [ ] Conservative scenario is survivable
 
 **Completeness**:
+
 - [ ] All three scenarios modeled (conservative, realistic, aggressive)
 - [ ] Top 5 assumptions explicitly documented
 - [ ] Top 5 risks identified with mitigations
@@ -803,6 +855,7 @@ Before completing this session, verify:
 **What it is**: Free product monetized through display ads, sponsored content, or data licensing instead of direct user payments.
 
 **Why not (for this journey)**:
+
 - Journey delivers B2B value (compliance, productivity) where ad-based models fail
 - Users expect professional tools to be ad-free
 - Revenue per user is typically 10-100x lower than SaaS ($1-$10 ARPU vs $50-$500 ARPU)
@@ -810,6 +863,7 @@ Before completing this session, verify:
 - Misaligned incentives (maximize engagement vs. solve problem efficiently)
 
 **When to reconsider**:
+
 - IF pivot to B2C consumer market (millions of potential users)
 - IF journey naturally involves content consumption (not task completion)
 - IF users are unwilling to pay directly (very low willingness to pay)
@@ -824,6 +878,7 @@ Before completing this session, verify:
 **What it is**: Charge purely based on usage (per API call, per document processed, per report generated) with no base subscription fee.
 
 **Why not (for this journey)**:
+
 - Journey has predictable, recurring usage patterns (better fit for subscription)
 - Pure usage pricing creates revenue unpredictability (harder to forecast)
 - Users prefer predictable costs (budgeting for subscription vs. variable usage)
@@ -831,6 +886,7 @@ Before completing this session, verify:
 - Higher churn risk (easier to stop using than cancel subscription)
 
 **When to reconsider**:
+
 - IF usage is highly variable (some months 0, some months 1000x)
 - IF serving developers/technical users (comfortable with usage-based)
 - IF journey is transactional (one-time use vs. recurring workflow)
@@ -845,6 +901,7 @@ Before completing this session, verify:
 **What it is**: Generate revenue primarily through professional services, consulting, or "done-for-you" implementations rather than software subscriptions.
 
 **Why not (for this journey)**:
+
 - Services revenue doesn't scale (linear with headcount, not software margins)
 - Gross margins are lower (40-60% vs. 75-85% for SaaS)
 - Team complexity (consultants + engineers + sales vs. focused product team)
@@ -852,6 +909,7 @@ Before completing this session, verify:
 - Distracts from product development (services pull team away from software)
 
 **When to reconsider**:
+
 - IF early-stage and need revenue immediately (services fund product development)
 - IF market is immature (customers need hand-holding before self-serve works)
 - IF deal sizes are very large (>$100k ACV) and customization is expected
@@ -866,6 +924,7 @@ Before completing this session, verify:
 **What it is**: Take a percentage of transactions facilitated through the platform (like Stripe's 2.9%, Airbnb's 15%, Uber's 25%).
 
 **Why not (for this journey)**:
+
 - Journey doesn't involve financial transactions or matchmaking between parties
 - Requires high transaction volume to generate meaningful revenue
 - Adds friction (users pay more to use the platform)
@@ -873,6 +932,7 @@ Before completing this session, verify:
 - Competitive pressure on take rate (users seek lower-fee alternatives)
 
 **When to reconsider**:
+
 - IF journey involves facilitating payments or transactions
 - IF building a marketplace (connecting buyers and sellers)
 - IF transaction value is high enough that % fee is meaningful
@@ -883,6 +943,7 @@ Before completing this session, verify:
 ## Next Steps
 
 After completing this session:
+
 1. **Validate assumptions**: Run customer interviews to test pricing, conversion rates, retention
 2. **Update regularly**: Revisit financial model quarterly as you learn from real data
 3. **Share with stakeholders**: Use this model for investor pitches, board meetings, team planning
@@ -910,6 +971,7 @@ After completing this session:
 8. **Sensitivity table**: For key assumptions, create a sensitivity table showing impact of +/- 20% changes.
 
 **Common pitfalls to avoid**:
+
 - ❌ Using "hockey stick" growth curves without justification
 - ❌ Ignoring churn in revenue projections (only counting new customers)
 - ❌ Underestimating costs (especially marketing and personnel)

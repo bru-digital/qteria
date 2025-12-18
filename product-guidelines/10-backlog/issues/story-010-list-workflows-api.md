@@ -35,10 +35,12 @@
 ## Technical Approach
 
 **Tech Stack Components Used**:
+
 - Backend: FastAPI + SQLAlchemy
 - Database: PostgreSQL (workflows table)
 
 **API Endpoint** (`app/api/v1/workflows.py`):
+
 ```python
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -110,6 +112,7 @@ async def list_workflows(
 ```
 
 **Pydantic Schema** (`app/schemas/workflow.py`):
+
 ```python
 from pydantic import BaseModel
 from typing import List
@@ -133,12 +136,14 @@ class WorkflowListResponse(BaseModel):
 ```
 
 **Example Request**:
+
 ```
 GET /v1/workflows?page=1&per_page=20&sort_by=created_at&order=desc
 Authorization: Bearer <jwt_token>
 ```
 
 **Example Response**:
+
 ```json
 {
   "workflows": [
@@ -182,6 +187,7 @@ Authorization: Bearer <jwt_token>
 **Effort**: 1 person-day
 
 **Breakdown**:
+
 - API endpoint: 0.5 days (query, pagination logic)
 - Schema: 0.25 days (response model)
 - Testing: 0.25 days (pagination, sorting tests)
@@ -206,6 +212,7 @@ Authorization: Bearer <jwt_token>
 ## Testing Requirements
 
 **Integration Tests**:
+
 - [ ] No workflows → returns empty array with total_count=0
 - [ ] 1 workflow → returns array with 1 item
 - [ ] 25 workflows, page=1, per_page=20 → returns first 20
@@ -221,9 +228,11 @@ Authorization: Bearer <jwt_token>
 ## Risks & Mitigations
 
 **Risk**: Query slow with 1000+ workflows
+
 - **Mitigation**: Index on organization_id + created_at, limit per_page to 100
 
 **Risk**: Pagination metadata incorrect (total_pages calculation)
+
 - **Mitigation**: Test edge cases (0 workflows, 1 workflow, exact multiple of per_page)
 
 ---

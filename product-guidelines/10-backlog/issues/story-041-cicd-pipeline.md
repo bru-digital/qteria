@@ -30,6 +30,7 @@
 ## Technical Details
 
 **Quality Gates** (Must pass before merge):
+
 1. ✅ All unit tests pass (<2 min)
 2. ✅ All integration tests pass (<5 min)
 3. ✅ Code coverage >= 70% overall (95% for AI validation)
@@ -39,6 +40,7 @@
 7. ✅ No high/critical security vulnerabilities (Snyk)
 
 **GitHub Actions Workflow**:
+
 ```yaml
 # .github/workflows/ci-cd.yml
 
@@ -210,6 +212,7 @@ jobs:
 ```
 
 **Secrets to Configure**:
+
 ```
 RAILWAY_TOKEN           # Railway API token
 RAILWAY_PROJECT_ID      # Railway project ID
@@ -219,11 +222,13 @@ STAGING_URL             # Staging environment URL
 ```
 
 **Deployment Strategy**:
+
 - **PR**: Run tests + quality gates (block merge if failed)
 - **Merge to main**: Deploy to staging automatically
 - **Release tag** (e.g., `v1.0.0`): Deploy to production automatically
 
 **Rollback Strategy**:
+
 - Railway: `railway rollback --service backend`
 - Vercel: Automatic rollback via Vercel dashboard
 - Git: Revert commit and push
@@ -255,12 +260,15 @@ STAGING_URL             # Staging environment URL
 ## Risks & Mitigations
 
 **Risk**: CI/CD too slow (>10 min blocks PRs)
+
 - **Mitigation**: Run smoke tests on PR (5 min), full suite nightly
 
 **Risk**: Flaky tests fail CI (false negatives)
+
 - **Mitigation**: Improve test stability (STORY-040), retry flaky tests 3x
 
 **Risk**: Deployment breaks production
+
 - **Mitigation**: Deploy to staging first, run E2E tests on staging, require manual approval for production (optional)
 
 ---

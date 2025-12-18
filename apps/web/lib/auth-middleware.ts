@@ -1,5 +1,5 @@
-import NextAuth from "next-auth"
-import { baseAuthConfig } from "./auth-config-base"
+import NextAuth from 'next-auth'
+import { baseAuthConfig } from './auth-config-base'
 
 /**
  * Auth instance for middleware (Edge Runtime).

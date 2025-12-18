@@ -28,6 +28,7 @@ Read: product-guidelines/09-test-strategy-essentials.md
 ```
 
 **Context Optimization**: We read essentials files for significant context reduction:
+
 - `11-product-strategy-essentials.md` (not `01-product-strategy.md`) - 65% reduction: Contains vision, positioning, goals, principles, and roadmap themes—without market analysis and competitive landscape.
 - `07-database-schema-essentials.md` (not `07-database-schema.md`) - 56% reduction: Contains table list, ERD, relationships, and data access patterns—without column details, indexes, migrations, and scaling considerations.
 - `08-api-contracts-essentials.md` (not `08-api-contracts.md`) - 80% reduction: Contains endpoint list organized by journey step with brief descriptions—without OpenAPI schemas, request/response definitions, error schemas, and authentication flow details.
@@ -38,6 +39,7 @@ Note: Brand strategy (formerly 07) and design system (formerly 08) are now POST-
 ### Step 2: Generate Epic Structure
 
 **Create 1 epic per journey step** (typically 3-5 epics):
+
 - Epic 01: Onboarding (Journey Steps 1-2)
 - Epic 02: Core Value Delivery (Journey Step 3 - THE KEY EPIC)
 - Epic 03: Results & Actions (Journey Steps 4-5)
@@ -55,6 +57,7 @@ For EACH journey step, create stories that:
 4. **Track defined metrics**
 
 **Story Format** (use `/templates/issue-template.md`):
+
 ```markdown
 # [STORY-001] OAuth-based signup with Google
 
@@ -63,22 +66,27 @@ Journey Step: Step 1 (Onboarding)
 Priority: P0
 
 ## User Value
+
 When a compliance officer wants to try the product, they want frictionless signup, so they can reach value quickly.
 
 Value: Reduces signup friction, improves activation rate (key metric).
 
 ## Acceptance Criteria
+
 - [ ] User clicks "Sign up with Google"
 - [ ] OAuth flow completes, creates user in PostgreSQL
 - [ ] User lands in empty dashboard (ready for Step 2)
 
 ## Technical Approach
+
 Tech Stack: Clerk for auth, PostgreSQL for user storage, Next.js frontend
 
 ## Dependencies
+
 Blocked By: EPIC-04 (Database schema setup)
 
 ## Estimation
+
 Effort: 2 days (1 day Clerk integration, 1 day user creation flow)
 ```
 
@@ -94,6 +102,7 @@ For each story, calculate RICE:
 **RICE Score** = (R × I × C) ÷ E
 
 **Priority Assignment**:
+
 - P0: RICE > [threshold], critical for MVP
 - P1: Important, post-MVP
 - P2: Nice-to-have, defer
@@ -101,10 +110,12 @@ For each story, calculate RICE:
 ### Step 5: Map Dependencies
 
 For each story, note:
+
 - **Blocks**: What stories can't start until this is done?
 - **Blocked By**: What must be done first?
 
 Example:
+
 - STORY-001 (OAuth) blocks STORY-010 (User dashboard)
 - STORY-001 blocked by EPIC-04 (Database setup)
 
@@ -135,6 +146,7 @@ product-guidelines/10-backlog/
 Use `/templates/issue-template.md` for EVERY story.
 
 **Critical**: Each story must have:
+
 - Journey step reference
 - Clear user value
 - Acceptance criteria (testable)
