@@ -10,9 +10,12 @@ from unittest.mock import patch, MagicMock
 
 from fastapi.testclient import TestClient
 from jose import jwt
+from sqlalchemy.orm import Session
 
 from app.main import app
 from app.core.config import settings
+from app.models.base import SessionLocal
+from app.models.models import Organization, User
 from app.models.enums import UserRole
 from app.services.audit import AuditService
 
@@ -341,3 +344,52 @@ def org_b_project_handler_token() -> str:
         role=UserRole.PROJECT_HANDLER.value,
         organization_id=TEST_ORG_B_ID,
     )
+
+
+# =============================================================================
+# Database Session Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def db_session() -> Generator[Session, None, None]:
+    """Create a database session for integration tests."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@pytest.fixture
+def test_organization(db_session: Session) -> Organization:
+    """
+    Return the first seeded test organization (Org A) from the database.
+
+    This fixture relies on the pytest_sessionstart hook seeding the database
+    with test organizations matching the UUIDs in TEST_ORG_A_ID.
+    """
+    org = db_session.query(Organization).filter(Organization.id == TEST_ORG_A_ID).first()
+    if not org:
+        pytest.fail(
+            f"Test organization {TEST_ORG_A_ID} not found. "
+            "Ensure pytest_sessionstart hook seeded the database."
+        )
+    return org
+
+
+@pytest.fixture
+def test_user(db_session: Session) -> User:
+    """
+    Return the first seeded admin user (User A) from the database.
+
+    This fixture relies on the pytest_sessionstart hook seeding the database
+    with test users matching the UUIDs in TEST_USER_A_ID.
+    """
+    user = db_session.query(User).filter(User.id == TEST_USER_A_ID).first()
+    if not user:
+        pytest.fail(
+            f"Test user {TEST_USER_A_ID} not found. "
+            "Ensure pytest_sessionstart hook seeded the database."
+        )
+    return user
