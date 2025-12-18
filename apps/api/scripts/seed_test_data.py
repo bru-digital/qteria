@@ -30,6 +30,8 @@ from tests.conftest import (
     TEST_ORG_B_ID,
     TEST_USER_A_ID,
     TEST_USER_B_ID,
+    TEST_USER_A_PM_ID,
+    TEST_USER_B_PM_ID,
 )
 
 # Convert string UUIDs to UUID objects
@@ -37,6 +39,8 @@ ORG_A_UUID = UUID(TEST_ORG_A_ID)
 ORG_B_UUID = UUID(TEST_ORG_B_ID)
 USER_A_UUID = UUID(TEST_USER_A_ID)
 USER_B_UUID = UUID(TEST_USER_B_ID)
+USER_A_PM_UUID = UUID(TEST_USER_A_PM_ID)
+USER_B_PM_UUID = UUID(TEST_USER_B_PM_ID)
 
 
 def seed_test_data():
@@ -96,6 +100,7 @@ def seed_test_data():
         )
 
         user_a_pm = User(
+            id=USER_A_PM_UUID,
             organization_id=ORG_A_UUID,
             email="pm@test-org-a.com",
             name="Process Manager A",
@@ -112,6 +117,7 @@ def seed_test_data():
         )
 
         user_b_pm = User(
+            id=USER_B_PM_UUID,
             organization_id=ORG_B_UUID,
             email="pm@test-org-b.com",
             name="Process Manager B",

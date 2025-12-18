@@ -211,13 +211,27 @@ def create_workflow(
 
     except IntegrityError as e:
         db.rollback()
+
+        # Extract detailed SQL error information for debugging
+        error_details = {
+            "error": str(e),
+            "error_orig": str(e.orig) if hasattr(e, "orig") else None,
+            "statement": str(e.statement) if hasattr(e, "statement") else None,
+            "params": str(e.params) if hasattr(e, "params") else None,
+            "organization_id": str(current_user.organization_id),
+            "user_id": str(current_user.id),
+        }
+
+        # Try to extract constraint name from PostgreSQL error
+        if hasattr(e, "orig") and hasattr(e.orig, "diag"):
+            diag = e.orig.diag
+            error_details["constraint_name"] = getattr(diag, "constraint_name", None)
+            error_details["column_name"] = getattr(diag, "column_name", None)
+            error_details["table_name"] = getattr(diag, "table_name", None)
+
         logger.error(
             "workflow_creation_integrity_error",
-            extra={
-                "error": str(e),
-                "organization_id": str(current_user.organization_id),
-                "user_id": str(current_user.id),
-            },
+            extra=error_details,
         )
         raise create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
