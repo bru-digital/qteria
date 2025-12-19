@@ -223,6 +223,10 @@ class WorkflowResponse(BaseModel):
     archived_at: Optional[datetime] = Field(None, description="Archive timestamp")
     created_at: datetime
     updated_at: datetime
+    section_patterns: Optional[dict] = Field(
+        default=None,
+        description="Custom regex patterns for section detection in documents"
+    )
     buckets: List[BucketResponse]
     criteria: List[CriteriaResponse]
 
