@@ -105,16 +105,6 @@ class TestDatabaseSetup:
 
 
 @pytest.fixture
-def db_session() -> Generator[Session, None, None]:
-    """Create a database session for integration tests."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@pytest.fixture
 def test_orgs(db_session: Session) -> Generator[tuple[Organization, Organization], None, None]:
     """Create two test organizations for multi-tenancy tests."""
     org_a = TestDatabaseSetup.create_test_organization(db_session, TEST_ORG_A_NAME)
