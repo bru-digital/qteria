@@ -145,6 +145,48 @@ def mock_audit_service():
         }
 
 
+@pytest.fixture(autouse=True, scope="function")
+def mock_blob_storage():
+    """
+    Mock Vercel Blob storage for integration tests.
+
+    This fixture automatically mocks all Blob storage operations to avoid
+    requiring BLOB_READ_WRITE_TOKEN in CI environment.
+
+    The mock returns realistic Vercel Blob API responses matching production format.
+
+    NOTE: This fixture is autouse=True. Unit tests for BlobStorageService that
+    patch 'vercel_blob.put' or 'vercel_blob.delete' directly will override this
+    mock automatically (more specific patches take precedence).
+    """
+    with patch('vercel_blob.put', new_callable=MagicMock) as mock_put, \
+         patch('vercel_blob.delete', new_callable=MagicMock) as mock_del:
+
+        # Mock Vercel Blob upload response
+        # Format matches actual Vercel Blob API: https://vercel.com/docs/storage/vercel-blob
+        async def mock_upload(pathname: str, body, options, **kwargs):
+            """Mock put() function to return Vercel Blob response format."""
+            return {
+                "url": f"https://blob.vercel-storage.com/{pathname}?token=mock",
+                "pathname": pathname,
+                "contentType": options.get('contentType', 'application/pdf'),
+            }
+
+        mock_put.side_effect = mock_upload
+
+        # Mock delete returns None (Vercel Blob delete has no return value)
+        async def mock_delete(url: str, **kwargs):
+            """Mock delete() function - returns None like actual Vercel Blob API."""
+            return None
+
+        mock_del.side_effect = mock_delete
+
+        yield {
+            "put": mock_put,
+            "delete": mock_del,
+        }
+
+
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:
     """Create a test client for the FastAPI app."""
