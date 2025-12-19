@@ -18,6 +18,7 @@ Exports:
 from __future__ import annotations
 
 import logging
+import sys
 from typing import Annotated, Generator, Optional
 
 from fastapi import Depends
@@ -81,19 +82,42 @@ def initialize_redis_client() -> None:
         logger.info("Redis connection established successfully", extra={"redis_url": redis_url})
 
     except RedisConnectionError as e:
-        logger.error(
-            "Failed to connect to Redis - Redis features disabled",
-            extra={"error": str(e), "redis_url": settings.REDIS_URL},
-            exc_info=True,
-        )
+        # Detect test environment: check settings.ENVIRONMENT or pytest in sys.modules
+        # This prevents ERROR-level Redis logs from polluting test output
+        is_test = settings.ENVIRONMENT == "test" or "pytest" in sys.modules
+
+        if is_test:
+            # Test mode: log at DEBUG level (Redis is optional for tests)
+            logger.debug(
+                "Redis unavailable in test environment - rate limiting disabled",
+                extra={"error": str(e), "redis_url": settings.REDIS_URL},
+            )
+        else:
+            # Production/development: log at ERROR level (Redis should be available)
+            logger.error(
+                "Failed to connect to Redis - Redis features disabled",
+                extra={"error": str(e), "redis_url": settings.REDIS_URL},
+                exc_info=True,
+            )
         # Keep _redis_client as None for graceful degradation
         _redis_client = None
     except Exception as e:
-        logger.error(
-            "Unexpected error initializing Redis client",
-            extra={"error": str(e)},
-            exc_info=True,
-        )
+        # Detect test environment for unexpected errors too
+        is_test = settings.ENVIRONMENT == "test" or "pytest" in sys.modules
+
+        if is_test:
+            # Test mode: log at DEBUG level
+            logger.debug(
+                "Unexpected error initializing Redis client in test environment",
+                extra={"error": str(e)},
+            )
+        else:
+            # Production/development: log at ERROR level
+            logger.error(
+                "Unexpected error initializing Redis client",
+                extra={"error": str(e)},
+                exc_info=True,
+            )
         # Keep _redis_client as None for graceful degradation
         _redis_client = None
 
