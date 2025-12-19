@@ -448,6 +448,9 @@ def db_session() -> Generator[Session, None, None]:
     # Create connection from pool
     connection = engine.connect()
 
+    # Begin outer transaction first (required for nested transactions)
+    outer_transaction = connection.begin()
+
     # Begin a nested transaction (savepoint)
     # This allows test code to commit/rollback within the savepoint
     # without affecting the outer transaction
@@ -468,7 +471,8 @@ def db_session() -> Generator[Session, None, None]:
 
     # Cleanup: rollback all changes made during test
     session.close()
-    transaction.rollback()
+    transaction.rollback()  # Rollback savepoint
+    outer_transaction.rollback()  # Rollback outer transaction
     connection.close()
 
 
