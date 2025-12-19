@@ -393,3 +393,55 @@ def test_user(db_session: Session) -> User:
             "Ensure pytest_sessionstart hook seeded the database."
         )
     return user
+
+
+# =============================================================================
+# Error Response Assertion Helpers
+# =============================================================================
+
+
+def assert_error_response(
+    response,
+    expected_code: str,
+    expected_status: int,
+) -> None:
+    """
+    Assert that HTTP response matches standardized error format.
+
+    Validates that the response:
+    - Has the expected HTTP status code
+    - Contains "error" key at top level
+    - Has "code" field matching expected_code (SCREAMING_SNAKE_CASE)
+    - Has "message" field with non-empty string
+    - Has "request_id" field for audit trail
+
+    Args:
+        response: FastAPI TestClient response object
+        expected_code: Expected error code (e.g., "INVALID_TOKEN", "RESOURCE_NOT_FOUND")
+        expected_status: Expected HTTP status code (e.g., 401, 404)
+
+    Example:
+        >>> response = client.get("/v1/workflows/invalid-id", headers=headers)
+        >>> assert_error_response(response, "RESOURCE_NOT_FOUND", 404)
+    """
+    assert response.status_code == expected_status, (
+        f"Expected status {expected_status}, got {response.status_code}. "
+        f"Response body: {response.text}"
+    )
+
+    data = response.json()
+    assert "error" in data, f"Missing 'error' key in response. Got: {data}"
+
+    error = data["error"]
+    assert "code" in error, f"Missing 'code' in error object. Got: {error}"
+    assert error["code"] == expected_code, (
+        f"Expected error code '{expected_code}', got '{error['code']}'"
+    )
+
+    assert "message" in error, f"Missing 'message' in error object. Got: {error}"
+    assert isinstance(error["message"], str), (
+        f"Error message should be string, got {type(error['message'])}"
+    )
+    assert len(error["message"]) > 0, "Error message should not be empty"
+
+    assert "request_id" in error, f"Missing 'request_id' in error object. Got: {error}"
