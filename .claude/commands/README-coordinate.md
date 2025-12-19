@@ -1,7 +1,6 @@
 # Coordinate - Quick Reference
 
 ## Purpose
-
 Analyze issue backlog to determine optimal parallel execution strategy for AI agents, enabling 3x faster development with zero quality loss.
 
 ## Usage
@@ -109,7 +108,6 @@ Analyze issue backlog to determine optimal parallel execution strategy for AI ag
 ## Quality Assurance
 
 Every agent MUST:
-
 - ✅ Run full test suite before PR
 - ✅ Follow CLAUDE.md guidelines
 - ✅ Pass linting/type checking
@@ -119,7 +117,6 @@ Every agent MUST:
 ## Merge Strategy
 
 Issues merged in order:
-
 1. Smallest changes first (reduce conflict surface)
 2. Critical path next (unblock dependencies)
 3. Independent changes last (can rebase easily)
@@ -141,19 +138,16 @@ Issues merged in order:
 ## Pro Tips
 
 💡 **Assign priority roles to agents**:
-
 - Fastest agent → shortest task (they finish first, help with reviews)
 - Most experienced agent → critical path (blocks everything else)
 - Newest agent → isolated task (low risk if delayed)
 
 💡 **Monitor progress**:
-
 - Check in every hour (agents report status)
 - Adjust timeline if critical path delayed
 - Reassign agents after Wave 1 completes
 
 💡 **Coordinate conflicts early**:
-
 - If 2 agents touch same file, coordinate section splits
 - Specify merge order upfront
 - First agent pushes, second agent rebases
