@@ -320,7 +320,8 @@ class TestRBACIntegration:
         assert response.status_code == 403
         data = response.json()
         assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
-        assert "admin" in data["error"]["required_roles"]
+        assert "details" in data["error"]
+        assert "admin" in data["error"]["details"]["required_roles"]
 
         # Verify audit log for authorization denial
         audit_logs = (
