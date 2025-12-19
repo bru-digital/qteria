@@ -470,10 +470,13 @@ def db_session() -> Generator[Session, None, None]:
     yield session
 
     # Cleanup: rollback all changes made during test
-    session.close()
-    transaction.rollback()  # Rollback savepoint
-    outer_transaction.rollback()  # Rollback outer transaction
-    connection.close()
+    # Use try/finally to ensure connection is always closed even if rollback fails
+    try:
+        session.close()
+        transaction.rollback()  # Rollback savepoint
+        outer_transaction.rollback()  # Rollback outer transaction
+    finally:
+        connection.close()
 
 
 @pytest.fixture
