@@ -216,7 +216,7 @@ class TestUploadFile:
 
         mock_response = {"url": "https://blob.vercel-storage.com/test-abc123.pdf"}
 
-        with patch("app.services.blob_storage.put", new_callable=AsyncMock) as mock_put:
+        with patch("vercel_blob.put", new_callable=AsyncMock) as mock_put:
             mock_put.return_value = mock_response
 
             with patch.dict(os.environ, {"BLOB_READ_WRITE_TOKEN": "test_token"}):
@@ -267,7 +267,7 @@ class TestUploadFile:
         # Mock response without 'url' field
         mock_response = {"error": "Something went wrong"}
 
-        with patch("app.services.blob_storage.put", new_callable=AsyncMock) as mock_put:
+        with patch("vercel_blob.put", new_callable=AsyncMock) as mock_put:
             mock_put.return_value = mock_response
 
             with patch.dict(os.environ, {"BLOB_READ_WRITE_TOKEN": "test_token"}):
@@ -287,7 +287,7 @@ class TestUploadFile:
         """Test upload handles network/API errors gracefully."""
         org_id = uuid4()
 
-        with patch("app.services.blob_storage.put", new_callable=AsyncMock) as mock_put:
+        with patch("vercel_blob.put", new_callable=AsyncMock) as mock_put:
             mock_put.side_effect = Exception("Network error")
 
             with patch.dict(os.environ, {"BLOB_READ_WRITE_TOKEN": "test_token"}):
@@ -309,7 +309,7 @@ class TestUploadFile:
 
         mock_response = {"url": "https://blob.vercel-storage.com/test.pdf"}
 
-        with patch("app.services.blob_storage.put", new_callable=AsyncMock) as mock_put:
+        with patch("vercel_blob.put", new_callable=AsyncMock) as mock_put:
             mock_put.return_value = mock_response
 
             with patch.dict(os.environ, {"BLOB_READ_WRITE_TOKEN": "test_token"}):
@@ -340,7 +340,7 @@ class TestDeleteFile:
         """Test successful file deletion from Vercel Blob."""
         storage_url = "https://blob.vercel-storage.com/test-abc123.pdf"
 
-        with patch("app.services.blob_storage.delete", new_callable=AsyncMock) as mock_delete:
+        with patch("vercel_blob.delete", new_callable=AsyncMock) as mock_delete:
             mock_delete.return_value = None  # delete returns nothing on success
 
             with patch.dict(os.environ, {"BLOB_READ_WRITE_TOKEN": "test_token"}):
@@ -365,7 +365,7 @@ class TestDeleteFile:
         """Test delete returns False on API errors (instead of raising)."""
         storage_url = "https://blob.vercel-storage.com/test.pdf"
 
-        with patch("app.services.blob_storage.delete", new_callable=AsyncMock) as mock_delete:
+        with patch("vercel_blob.delete", new_callable=AsyncMock) as mock_delete:
             mock_delete.side_effect = Exception("Not found")
 
             with patch.dict(os.environ, {"BLOB_READ_WRITE_TOKEN": "test_token"}):
@@ -379,7 +379,7 @@ class TestDeleteFile:
         """Test delete handles invalid URLs gracefully."""
         invalid_url = "not-a-valid-url"
 
-        with patch("app.services.blob_storage.delete", new_callable=AsyncMock) as mock_delete:
+        with patch("vercel_blob.delete", new_callable=AsyncMock) as mock_delete:
             mock_delete.side_effect = Exception("Invalid URL")
 
             with patch.dict(os.environ, {"BLOB_READ_WRITE_TOKEN": "test_token"}):
