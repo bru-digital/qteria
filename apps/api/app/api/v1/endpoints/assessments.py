@@ -172,6 +172,21 @@ async def start_assessment(
 
     # 2. Validate all required buckets have documents
     #
+    # VALIDATION ORDER (UX): Check missing required buckets BEFORE invalid bucket references
+    # This is intentional for better user experience:
+    #
+    # Example scenario:
+    # - Workflow has required bucket: "Test Reports"
+    # - User uploads to: Invalid bucket from different workflow
+    # - User forgot: "Test Reports" (required)
+    #
+    # Good UX (current): "Missing documents for required buckets: Test Reports"
+    # → User knows to upload Test Reports (clear action)
+    #
+    # Bad UX (if order reversed): "Invalid bucket reference: bucket does not belong to this workflow"
+    # → User thinks they need to fix bucket reference (confusing - what's the right bucket?)
+    # → They're still missing the required document anyway!
+    #
     # DESIGN: Required bucket validation logic
     # - Build set of provided bucket IDs from document mappings
     # - Build set of required bucket IDs from workflow definition
@@ -224,9 +239,15 @@ async def start_assessment(
 
     # 3. Validate bucket IDs exist in workflow
     #
+    # VALIDATION ORDER: This check happens AFTER required bucket validation
+    # See comment above (lines 175-188) for UX rationale
+    #
     # DESIGN: Validate that all referenced buckets belong to the workflow
     # - Prevents referencing buckets from other workflows
     # - Validates bucket ownership at API level (defense in depth with DB foreign keys)
+    #
+    # NOTE: Tests verify this order in test_validation_order_missing_required_takes_precedence()
+    # and test_validation_order_only_invalid_bucket_when_no_missing_required()
     workflow_bucket_ids = {b.id for b in workflow.buckets}
     invalid_bucket_ids = provided_bucket_ids - workflow_bucket_ids
 

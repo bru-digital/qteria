@@ -153,7 +153,22 @@ class TestStartAssessment:
         org_a_process_manager_token: str,
         mock_audit_service,
     ):
-        """Assessment creation fails when referencing bucket from another workflow."""
+        """Assessment creation fails when referencing bucket from another workflow.
+
+        VALIDATION ORDER: When user uploads to invalid bucket (from different workflow)
+        AND workflow has required buckets, the error message should be "missing required buckets"
+        NOT "invalid bucket reference". This is better UX because fixing the required bucket
+        is the primary action the user should take.
+
+        Example scenario:
+        - Workflow has required bucket: "Test Reports"
+        - User uploads to: Invalid bucket from different workflow
+        - User forgot: "Test Reports" (required)
+
+        Good UX: "Missing documents for required buckets: Test Reports"
+        Bad UX: "Invalid bucket reference: bucket does not belong to this workflow"
+        (User thinks they need to fix bucket reference, but they're missing required document!)
+        """
         # Create two workflows
         workflow_1_id, bucket_1_id, _ = create_test_workflow_with_buckets(
             client, org_a_process_manager_token
@@ -163,11 +178,12 @@ class TestStartAssessment:
         )
 
         # Try to start assessment on workflow 1 with bucket from workflow 2
+        # Note: workflow 1 has REQUIRED bucket (bucket_1_id), but user uploads to invalid bucket only
         payload = {
             "workflow_id": workflow_1_id,
             "documents": [
                 {
-                    "bucket_id": bucket_2_id,  # Bucket from different workflow
+                    "bucket_id": bucket_2_id,  # Bucket from different workflow (invalid)
                     "document_id": "550e8400-e29b-41d4-a716-446655440000",
                     "file_name": "test-document.pdf",
                     "storage_key": "https://blob.vercel-storage.com/test.pdf",
@@ -186,11 +202,13 @@ class TestStartAssessment:
         assert response.status_code == 400
         data = response.json()
         assert data["error"]["code"] == "VALIDATION_ERROR"
-        # Error message can be either "missing documents for required buckets" or "invalid bucket references"
+
+        # VALIDATION ORDER FIX: Should return "missing required buckets" error
+        # because validation checks missing required buckets BEFORE invalid bucket references
+        # (see apps/api/app/api/v1/endpoints/assessments.py:173-223 vs 225-266)
         error_msg = data["error"]["message"].lower()
-        assert ("invalid bucket references" in error_msg or
-                "buckets do not belong to this workflow" in error_msg or
-                "missing documents for required buckets" in error_msg)
+        assert "missing documents for required buckets" in error_msg
+        assert "missing_bucket_names" in data["error"]["details"]
 
     def test_start_assessment_workflow_not_found(
         self,
@@ -303,6 +321,131 @@ class TestStartAssessment:
             data = response.json()
             assert data["workflow_id"] == workflow_id
             assert data["status"] == "pending"
+
+    def test_validation_order_missing_required_takes_precedence(
+        self,
+        client: TestClient,
+        org_a_project_handler_token: str,
+        org_a_process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Verify that 'missing required bucket' error is shown before 'invalid bucket' error.
+
+        VALIDATION ORDER RATIONALE (UX):
+        When both errors are present, showing "missing required buckets" is better UX because:
+        1. User must fix required bucket anyway (critical error)
+        2. Invalid bucket reference might be incidental (user uploaded wrong file)
+        3. Clearer action: "Upload Test Reports" vs "Check bucket references"
+
+        This test ensures validation order is maintained and protects against regressions
+        if validation logic is refactored in the future.
+        """
+        # Create two workflows
+        workflow_1_id, required_bucket_1_id, _ = create_test_workflow_with_buckets(
+            client, org_a_process_manager_token
+        )
+        workflow_2_id, bucket_2_id, _ = create_test_workflow_with_buckets(
+            client, org_a_process_manager_token
+        )
+
+        # Scenario: User uploads to INVALID bucket (from workflow 2) and MISSING required bucket (from workflow 1)
+        payload = {
+            "workflow_id": workflow_1_id,
+            "documents": [
+                {
+                    "bucket_id": bucket_2_id,  # INVALID: bucket from different workflow
+                    "document_id": "550e8400-e29b-41d4-a716-446655440000",
+                    "file_name": "test-document.pdf",
+                    "storage_key": "https://blob.vercel-storage.com/test.pdf",
+                    "file_size": 1024,
+                }
+                # MISSING: required_bucket_1_id has no document uploaded
+            ],
+        }
+
+        response = client.post(
+            "/v1/assessments",
+            json=payload,
+            headers={"Authorization": f"Bearer {org_a_project_handler_token}"},
+        )
+
+        # Verify error response prioritizes "missing required buckets"
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "VALIDATION_ERROR"
+        error_msg = data["error"]["message"].lower()
+
+        # Should return "missing required buckets" error (NOT "invalid bucket reference")
+        assert "missing documents for required buckets" in error_msg
+        assert "missing_bucket_names" in data["error"]["details"]
+
+        # Should NOT mention invalid bucket references
+        assert "invalid bucket" not in error_msg
+        assert "do not belong to this workflow" not in error_msg
+
+    def test_validation_order_only_invalid_bucket_when_no_missing_required(
+        self,
+        client: TestClient,
+        org_a_project_handler_token: str,
+        org_a_process_manager_token: str,
+        mock_audit_service,
+    ):
+        """Verify that 'invalid bucket reference' error is shown when all required buckets satisfied.
+
+        VALIDATION ORDER: Invalid bucket reference error should ONLY be shown
+        when all required buckets have documents. This ensures the validation
+        order is correctly implemented:
+
+        1. Check missing required buckets (lines 173-223)
+        2. Check invalid bucket references (lines 225-266)
+        """
+        # Create two workflows
+        workflow_1_id, required_bucket_1_id, optional_bucket_1_id = create_test_workflow_with_buckets(
+            client, org_a_process_manager_token
+        )
+        workflow_2_id, bucket_2_id, _ = create_test_workflow_with_buckets(
+            client, org_a_process_manager_token
+        )
+
+        # Scenario: User uploads to REQUIRED bucket (satisfied) AND INVALID bucket (from workflow 2)
+        payload = {
+            "workflow_id": workflow_1_id,
+            "documents": [
+                {
+                    "bucket_id": required_bucket_1_id,  # VALID: required bucket satisfied
+                    "document_id": "550e8400-e29b-41d4-a716-446655440000",
+                    "file_name": "required-document.pdf",
+                    "storage_key": "https://blob.vercel-storage.com/required.pdf",
+                    "file_size": 1024,
+                },
+                {
+                    "bucket_id": bucket_2_id,  # INVALID: bucket from different workflow
+                    "document_id": "550e8400-e29b-41d4-a716-446655440001",
+                    "file_name": "invalid-document.pdf",
+                    "storage_key": "https://blob.vercel-storage.com/invalid.pdf",
+                    "file_size": 2048,
+                },
+            ],
+        }
+
+        response = client.post(
+            "/v1/assessments",
+            json=payload,
+            headers={"Authorization": f"Bearer {org_a_project_handler_token}"},
+        )
+
+        # Verify error response shows "invalid bucket reference"
+        assert response.status_code == 400
+        data = response.json()
+        assert data["error"]["code"] == "VALIDATION_ERROR"
+        error_msg = data["error"]["message"].lower()
+
+        # Should return "invalid bucket reference" error (all required buckets satisfied)
+        assert ("invalid bucket" in error_msg or "do not belong to this workflow" in error_msg)
+        assert "invalid_bucket_ids" in data["error"]["details"]
+
+        # Should NOT mention missing required buckets
+        assert "missing documents for required buckets" not in error_msg
 
 
 class TestAssessmentMultiTenancy:
