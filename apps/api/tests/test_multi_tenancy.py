@@ -42,6 +42,7 @@ from tests.conftest import (
     TEST_ORG_B_ID,
     TEST_USER_A_ID,
     TEST_USER_B_ID,
+    assert_error_response,
 )
 
 
@@ -139,7 +140,11 @@ class TestValidateOrganizationAccess:
             )
 
         assert exc_info.value.status_code == 404
-        assert exc_info.value.detail["code"] == "RESOURCE_NOT_FOUND"
+        # HTTPException detail is a dict with standardized error format
+        assert isinstance(exc_info.value.detail, dict)
+        assert "error" in exc_info.value.detail
+        assert "code" in exc_info.value.detail["error"]
+        assert exc_info.value.detail["error"]["code"] == "RESOURCE_NOT_FOUND"
 
     def test_different_organization_logs_violation_when_db_provided(self):
         """Violation should be logged when db and user_id are provided."""
@@ -267,7 +272,11 @@ class TestGetScopedOr404:
             )
 
         assert exc_info.value.status_code == 404
-        assert exc_info.value.detail["code"] == "RESOURCE_NOT_FOUND"
+        # HTTPException detail is a dict with standardized error format
+        assert isinstance(exc_info.value.detail, dict)
+        assert "error" in exc_info.value.detail
+        assert "code" in exc_info.value.detail["error"]
+        assert exc_info.value.detail["error"]["code"] == "RESOURCE_NOT_FOUND"
 
 
 # ============================================================================

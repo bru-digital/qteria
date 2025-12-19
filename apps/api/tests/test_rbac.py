@@ -37,7 +37,7 @@ from app.core.auth import (
     CurrentUser,
 )
 from app.core.config import settings
-from tests.conftest import create_test_token, TEST_ORG_A_ID, TEST_ORG_B_ID
+from tests.conftest import create_test_token, TEST_ORG_A_ID, TEST_ORG_B_ID, assert_error_response
 
 
 # Apply mock_audit_service fixture to all tests in this module
@@ -227,9 +227,11 @@ class TestRoleEnforcement:
         )
         assert response.status_code == 403
         data = response.json()
+        assert "error" in data
         assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
-        assert "admin" in data["error"]["required_roles"]
-        assert data["error"]["your_role"] == "process_manager"
+        assert "details" in data["error"]
+        assert "admin" in data["error"]["details"]["required_roles"]
+        assert data["error"]["details"]["your_role"] == "process_manager"
 
     def test_project_handler_cannot_create_organization(
         self, client: TestClient, project_handler_token: str
@@ -423,9 +425,10 @@ class TestErrorResponses:
         )
         assert response.status_code == 401
         data = response.json()
-        assert "detail" in data
+        assert "error" in data
         assert "code" in data["error"]
         assert "message" in data["error"]
+        assert "request_id" in data["error"]
 
     def test_403_response_format(self, client: TestClient, project_handler_token: str):
         """403 errors have correct format with role info."""
@@ -436,7 +439,8 @@ class TestErrorResponses:
         )
         assert response.status_code == 403
         data = response.json()
-        assert "detail" in data
+        assert "error" in data
         assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
-        assert "required_roles" in data["error"]
-        assert "your_role" in data["error"]
+        assert "details" in data["error"]
+        assert "required_roles" in data["error"]["details"]
+        assert "your_role" in data["error"]["details"]
