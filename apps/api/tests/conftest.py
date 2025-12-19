@@ -229,8 +229,13 @@ def process_manager_token() -> str:
 
 @pytest.fixture
 def project_handler_token() -> str:
-    """Create a JWT token for a project handler user (random UUID - doesn't need DB record)."""
-    return create_test_token(role=UserRole.PROJECT_HANDLER.value)
+    """Create a JWT token for a project handler user (uses seeded test data)."""
+    return create_test_token(
+        user_id=TEST_USER_A_PH_ID,
+        organization_id=TEST_ORG_A_ID,
+        role=UserRole.PROJECT_HANDLER.value,
+        email="ph@test-org-a.com",
+    )
 
 
 @pytest.fixture
@@ -431,7 +436,6 @@ def test_workflow_with_bucket(db_session: Session):
         workflow_id=workflow_id,
         name="Test Documents",
         required=True,
-        accepted_file_types=["pdf", "docx"],
         order_index=0,
     )
     db_session.add(bucket)
@@ -509,7 +513,6 @@ def test_workflow_with_bucket_org_b(db_session: Session):
         workflow_id=workflow_id,
         name="Org B Test Documents",
         required=True,
-        accepted_file_types=["pdf", "docx"],
         order_index=0,
     )
     db_session.add(bucket)

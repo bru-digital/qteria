@@ -20,6 +20,8 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 
 from tests.conftest import create_test_token, TEST_ORG_A_ID, TEST_ORG_B_ID
+from app.main import app
+from app.core.dependencies import get_db
 
 
 # Test data
@@ -78,14 +80,19 @@ class TestGetWorkflowDetails:
 
     @pytest.fixture
     def mock_db(self):
-        """Mock database session."""
+        """Mock database session using FastAPI dependency override."""
         db_mock = MagicMock()
         # Setup query chain mock
         query_mock = MagicMock()
         db_mock.query.return_value = query_mock
         query_mock.options.return_value = query_mock
         query_mock.filter.return_value = query_mock
-        return db_mock, query_mock
+
+        # Override FastAPI dependency
+        app.dependency_overrides[get_db] = lambda: db_mock
+        yield db_mock, query_mock
+        # Clean up
+        app.dependency_overrides.clear()
 
     def test_get_workflow_success(self, client: TestClient, mock_db, mock_audit_service):
         """
@@ -129,11 +136,10 @@ class TestGetWorkflowDetails:
         # Create token for org A
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock database dependency
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        # Dependency override is handled by mock_db fixture
+        response = client.get(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -185,10 +191,9 @@ class TestGetWorkflowDetails:
         query_mock.first.return_value = workflow
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.get(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -213,10 +218,9 @@ class TestGetWorkflowDetails:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.get(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 404
         error = response.json()["error"]
@@ -244,10 +248,9 @@ class TestGetWorkflowDetails:
         # User from org B trying to access org A's workflow
         token = create_test_token(organization_id=TEST_ORG_B_ID)
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.get(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         # Should return 404 (not 403) to avoid leaking existence
         assert response.status_code == 404
@@ -342,10 +345,9 @@ class TestGetWorkflowDetails:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.get(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         # Verify response is successful
         assert response.status_code == 200
@@ -369,10 +371,9 @@ class TestGetWorkflowDetails:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.get(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 200
 
@@ -388,14 +389,19 @@ class TestUpdateWorkflow:
 
     @pytest.fixture
     def mock_db(self):
-        """Mock database session."""
+        """Mock database session using FastAPI dependency override."""
         db_mock = MagicMock()
         # Setup query chain mock
         query_mock = MagicMock()
         db_mock.query.return_value = query_mock
         query_mock.options.return_value = query_mock
         query_mock.filter.return_value = query_mock
-        return db_mock, query_mock
+
+        # Override FastAPI dependency
+        app.dependency_overrides[get_db] = lambda: db_mock
+        yield db_mock, query_mock
+        # Clean up
+        app.dependency_overrides.clear()
 
     def test_update_workflow_name_success(self, client: TestClient, mock_db, mock_audit_service):
         """
@@ -456,12 +462,11 @@ class TestUpdateWorkflow:
             ],
         }
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.put(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                json=update_data,
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.put(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -530,12 +535,11 @@ class TestUpdateWorkflow:
             ],
         }
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.put(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                json=update_data,
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.put(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 200
 
@@ -615,12 +619,11 @@ class TestUpdateWorkflow:
             ],
         }
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.put(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                json=update_data,
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.put(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 200
 
@@ -654,12 +657,11 @@ class TestUpdateWorkflow:
             ],
         }
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.put(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                json=update_data,
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.put(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 404
         error = response.json()["error"]
@@ -703,12 +705,11 @@ class TestUpdateWorkflow:
             ],
         }
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.put(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                json=update_data,
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.put(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 404
 
@@ -743,12 +744,11 @@ class TestUpdateWorkflow:
             ],
         }
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.put(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                json=update_data,
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.put(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 403
 
@@ -820,12 +820,11 @@ class TestUpdateWorkflow:
             ],
         }
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.put(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                json=update_data,
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.put(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         # Database IntegrityError is caught and returns 400
         assert response.status_code == 400
@@ -892,12 +891,11 @@ class TestUpdateWorkflow:
             ],
         }
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.put(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}",
-                json=update_data,
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.put(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         # Generic exception is caught and returns 500
         assert response.status_code == 500
@@ -915,12 +913,17 @@ class TestArchiveWorkflow:
 
     @pytest.fixture
     def mock_db(self):
-        """Mock database session."""
+        """Mock database session using FastAPI dependency override."""
         db_mock = MagicMock()
         query_mock = MagicMock()
         db_mock.query.return_value = query_mock
         query_mock.filter.return_value = query_mock
-        return db_mock, query_mock
+
+        # Override FastAPI dependency
+        app.dependency_overrides[get_db] = lambda: db_mock
+        yield db_mock, query_mock
+        # Clean up
+        app.dependency_overrides.clear()
 
     def test_archive_workflow_success(self, client: TestClient, mock_db, mock_audit_service):
         """
@@ -946,10 +949,9 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.delete(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 204
         # Verify workflow was marked as archived
@@ -982,10 +984,9 @@ class TestArchiveWorkflow:
         # User with project_handler role (insufficient permissions)
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="project_handler")
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.delete(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 403
 
@@ -1002,10 +1003,9 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.delete(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 404
         error = response.json()["error"]
@@ -1026,10 +1026,9 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.delete(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 404
 
@@ -1057,10 +1056,9 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.delete(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 409
         error = response.json()["error"]
@@ -1089,10 +1087,9 @@ class TestArchiveWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.delete(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.delete(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 400
         error = response.json()["error"]
@@ -1107,7 +1104,7 @@ class TestListWorkflowsWithArchived:
 
     @pytest.fixture
     def mock_db(self):
-        """Mock database session."""
+        """Mock database session using FastAPI dependency override."""
         db_mock = MagicMock()
         query_mock = MagicMock()
         db_mock.query.return_value = query_mock
@@ -1115,7 +1112,12 @@ class TestListWorkflowsWithArchived:
         query_mock.order_by.return_value = query_mock
         query_mock.offset.return_value = query_mock
         query_mock.limit.return_value = query_mock
-        return db_mock, query_mock
+
+        # Override FastAPI dependency
+        app.dependency_overrides[get_db] = lambda: db_mock
+        yield db_mock, query_mock
+        # Clean up
+        app.dependency_overrides.clear()
 
     def test_list_workflows_excludes_archived_by_default(self, client: TestClient, mock_db):
         """
@@ -1151,8 +1153,7 @@ class TestListWorkflowsWithArchived:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.get("/v1/workflows", headers={"Authorization": f"Bearer {token}"})
+        response = client.get("/v1/workflows", headers={"Authorization": f"Bearer {token}"})
 
         assert response.status_code == 200
         data = response.json()
@@ -1204,10 +1205,9 @@ class TestListWorkflowsWithArchived:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.get(
-                "/v1/workflows?include_archived=true", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.get(
+            "/v1/workflows?include_archived=true", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -1227,13 +1227,18 @@ class TestGetArchivedWorkflow:
 
     @pytest.fixture
     def mock_db(self):
-        """Mock database session."""
+        """Mock database session using FastAPI dependency override."""
         db_mock = MagicMock()
         query_mock = MagicMock()
         db_mock.query.return_value = query_mock
         query_mock.options.return_value = query_mock
         query_mock.filter.return_value = query_mock
-        return db_mock, query_mock
+
+        # Override FastAPI dependency
+        app.dependency_overrides[get_db] = lambda: db_mock
+        yield db_mock, query_mock
+        # Clean up
+        app.dependency_overrides.clear()
 
     def test_get_archived_workflow_by_id(self, client: TestClient, mock_db):
         """
@@ -1258,10 +1263,9 @@ class TestGetArchivedWorkflow:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch("app.api.v1.endpoints.workflows.get_db", return_value=iter([db_mock])):
-            response = client.get(
-                f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
-            )
+        response = client.get(
+            f"/v1/workflows/{TEST_WORKFLOW_ID}", headers={"Authorization": f"Bearer {token}"}
+        )
 
         assert response.status_code == 200
         data = response.json()

@@ -205,16 +205,6 @@ class TestDocumentUpload:
         # Use a valid UUID that doesn't exist in the database
         invalid_bucket_id = "00000000-0000-0000-0000-000000000000"
 
-        # Mock database to return None for the bucket query with join
-        mock_db = MagicMock()
-        mock_query = MagicMock()
-        mock_join = MagicMock()
-        mock_filter = MagicMock()
-        mock_filter.first.return_value = None  # Bucket not found
-        mock_join.filter.return_value = mock_filter
-        mock_query.join.return_value = mock_join
-        mock_db.query.return_value = mock_query
-
         response = client.post(
             "/v1/documents",
             headers={"Authorization": f"Bearer {token}"},
