@@ -10,6 +10,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 from fastapi.testclient import TestClient
 from jose import jwt
+from sqlalchemy import event
 from sqlalchemy.orm import Session
 
 from app.main import app
@@ -418,12 +419,57 @@ def org_b_project_handler_token() -> str:
 
 @pytest.fixture
 def db_session() -> Generator[Session, None, None]:
-    """Create a database session for integration tests."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    """
+    Create a database session for integration tests with automatic rollback.
+
+    Uses nested transactions (savepoints) to ensure all test data is automatically
+    rolled back after each test, preventing data pollution between tests.
+
+    This eliminates the need for manual cleanup in test fixtures - all changes
+    (INSERTs, UPDATEs, DELETEs) are automatically reverted after the test completes.
+
+    Technical Details:
+    - Creates a connection from the engine pool
+    - Begins a nested transaction (savepoint) via begin_nested()
+    - All test operations happen within this savepoint
+    - After test completes, savepoint is rolled back
+    - Session-level seed data (from pytest_sessionstart) persists across tests
+
+    Example:
+        def test_create_workflow(db_session):
+            workflow = Workflow(name="Test")
+            db_session.add(workflow)
+            db_session.commit()  # Commits to savepoint, not outer transaction
+            # After test: workflow is automatically rolled back
+    """
+    # Get engine from SessionLocal (SessionLocal is a sessionmaker bound to engine)
+    from app.models.base import engine
+
+    # Create connection from pool
+    connection = engine.connect()
+
+    # Begin a nested transaction (savepoint)
+    # This allows test code to commit/rollback within the savepoint
+    # without affecting the outer transaction
+    transaction = connection.begin_nested()
+
+    # Create session bound to this connection
+    session = Session(bind=connection)
+
+    # Configure session to start new savepoint after each commit/rollback
+    # This ensures db_session.commit() commits to the savepoint, not the outer transaction
+    @event.listens_for(session, "after_transaction_end")
+    def restart_savepoint(session, transaction):
+        if transaction.nested and not transaction._parent.nested:
+            # Restart the nested transaction after commit/rollback
+            session.begin_nested()
+
+    yield session
+
+    # Cleanup: rollback all changes made during test
+    session.close()
+    transaction.rollback()
+    connection.close()
 
 
 @pytest.fixture
@@ -471,6 +517,8 @@ def test_workflow_with_bucket(db_session: Session):
     Create a real workflow with one bucket in test database for document upload tests.
 
     Returns tuple: (workflow_id, bucket_id)
+
+    Note: Cleanup is automatic via db_session transaction rollback.
     """
     from app.models.models import Workflow, Bucket
     from uuid import uuid4
@@ -501,12 +549,7 @@ def test_workflow_with_bucket(db_session: Session):
     db_session.add(bucket)
     db_session.commit()
 
-    yield (workflow_id, bucket_id)
-
-    # Cleanup
-    db_session.query(Bucket).filter(Bucket.id == bucket_id).delete()
-    db_session.query(Workflow).filter(Workflow.id == workflow_id).delete()
-    db_session.commit()
+    return (workflow_id, bucket_id)
 
 
 @pytest.fixture
@@ -515,6 +558,8 @@ def test_document_in_org_a(db_session: Session):
     Create a real document in Organization A for download/deletion tests.
 
     Returns Document model instance.
+
+    Note: Cleanup is automatic via db_session transaction rollback.
     """
     from app.models.models import Document
     from uuid import uuid4
@@ -535,11 +580,7 @@ def test_document_in_org_a(db_session: Session):
     db_session.add(document)
     db_session.commit()
 
-    yield document
-
-    # Cleanup
-    db_session.query(Document).filter(Document.id == doc_id).delete()
-    db_session.commit()
+    return document
 
 
 @pytest.fixture
@@ -548,6 +589,8 @@ def test_workflow_with_bucket_org_b(db_session: Session):
     Create a real workflow with one bucket in Organization B for multi-tenancy tests.
 
     Returns tuple: (workflow_id, bucket_id)
+
+    Note: Cleanup is automatic via db_session transaction rollback.
     """
     from app.models.models import Workflow, Bucket
     from uuid import uuid4
@@ -578,12 +621,7 @@ def test_workflow_with_bucket_org_b(db_session: Session):
     db_session.add(bucket)
     db_session.commit()
 
-    yield (workflow_id, bucket_id)
-
-    # Cleanup
-    db_session.query(Bucket).filter(Bucket.id == bucket_id).delete()
-    db_session.query(Workflow).filter(Workflow.id == workflow_id).delete()
-    db_session.commit()
+    return (workflow_id, bucket_id)
 
 
 @pytest.fixture
@@ -592,6 +630,8 @@ def test_document_in_org_b(db_session: Session):
     Create a real document in Organization B for multi-tenancy tests.
 
     Returns Document model instance.
+
+    Note: Cleanup is automatic via db_session transaction rollback.
     """
     from app.models.models import Document
     from uuid import uuid4
@@ -612,11 +652,7 @@ def test_document_in_org_b(db_session: Session):
     db_session.add(document)
     db_session.commit()
 
-    yield document
-
-    # Cleanup
-    db_session.query(Document).filter(Document.id == doc_id).delete()
-    db_session.commit()
+    return document
 
 
 # =============================================================================
