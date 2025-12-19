@@ -23,12 +23,14 @@ gh issue list --repo bru-digital/qteria --limit 100 --state open --json number,t
 ```
 
 **Analysis Priority**:
+
 1. **P0 (Critical)** - Deployment blockers, safety issues
 2. **P1 (High)** - Core functionality, compliance
 3. **P2 (Medium)** - Quality improvements, tech debt
 4. **P3 (Low)** - Future enhancements
 
 **Age Priority**:
+
 - Oldest issues first (within same priority level)
 - Exception: Blockers always take precedence regardless of age
 
@@ -52,14 +54,15 @@ gh issue view {issue-number} --repo bru-digital/qteria
 
 Create a mental map of which issues touch which files:
 
-| Issue | Files Modified | Conflict Risk |
-|-------|----------------|---------------|
-| #172  | `models.py` (all models) | Low (only this issue touches models) |
-| #173  | `conftest.py` (lines 1-50) | Medium (overlaps with #166) |
-| #166  | `conftest.py` (lines 100+) | Medium (overlaps with #173) |
-| #174  | `dependencies.py` | Low (isolated) |
+| Issue | Files Modified             | Conflict Risk                        |
+| ----- | -------------------------- | ------------------------------------ |
+| #172  | `models.py` (all models)   | Low (only this issue touches models) |
+| #173  | `conftest.py` (lines 1-50) | Medium (overlaps with #166)          |
+| #166  | `conftest.py` (lines 100+) | Medium (overlaps with #173)          |
+| #174  | `dependencies.py`          | Low (isolated)                       |
 
 **Conflict Resolution**:
+
 - **No overlap**: Can run in parallel ✅
 - **Different sections of same file**: Can run in parallel with coordination ⚠️
 - **Same lines of same file**: MUST run sequentially ❌
@@ -76,6 +79,7 @@ Issue A blocks Issue B if:
 ```
 
 **Example Dependency Graph**:
+
 ```
 #172 (NULL constraints) ──┬─→ #168 (Document upload tests)
                           ├─→ #169 (Error response format)
@@ -89,6 +93,7 @@ Issue A blocks Issue B if:
 ```
 
 **Parallelization Rules**:
+
 - Issues with NO dependencies can ALL run in parallel
 - Issues with dependencies form "waves" (Wave 1 → Wave 2 → Wave 3)
 - Within a wave, issues run in parallel
@@ -104,6 +109,7 @@ Issue A blocks Issue B if:
 ## Wave 1: Parallel Execution (N agents)
 
 ### Agent 1: {Worktree Path} - #{Issue Number} {Title}
+
 - **Duration**: X hours
 - **Priority**: P{0-3}
 - **Impact**: {What this fixes}
@@ -115,9 +121,11 @@ Issue A blocks Issue B if:
 [Detailed implementation instructions]
 
 ### Agent 2: ...
+
 [Continue for all parallel issues]
 
 ## Wave 2: Sequential Execution (After Wave 1)
+
 [Issues that depend on Wave 1 completion]
 ```
 
@@ -136,11 +144,13 @@ git worktree add -b 172-fix-sqlalchemy-null-constraints ../qteria-172 main
 ```
 
 **Naming Convention**:
+
 - Branch: `{issue-number}-{kebab-case-description}`
 - Directory: `../qteria-{issue-number}`
 - Keep it short and recognizable
 
 **Verify**:
+
 ```bash
 git worktree list
 ```
@@ -152,6 +162,7 @@ git worktree list
 For each agent, provide:
 
 ### **A. Quick Start**
+
 ```bash
 cd /path/to/worktree-{issue-number}
 
@@ -160,6 +171,7 @@ cd /path/to/worktree-{issue-number}
 ```
 
 ### **B. Implementation Checklist**
+
 ```markdown
 1. **Understand**: Read issue #{number}
 2. **Plan**: Review affected files and dependencies
@@ -171,16 +183,20 @@ cd /path/to/worktree-{issue-number}
 ```
 
 ### **C. Key Files to Modify**
+
 ```markdown
 Primary:
+
 - `path/to/file1.py` - {What to change}
 - `path/to/file2.py` - {What to change}
 
 Tests:
+
 - `tests/test_*.py` - {What to verify}
 ```
 
 ### **D. Testing Strategy**
+
 ```bash
 # Unit tests
 pytest tests/test_specific_module.py -v
@@ -194,8 +210,10 @@ pytest tests/test_integration.py -v
 ```
 
 ### **E. Conflict Warnings**
+
 ```markdown
 ⚠️ **Potential Conflicts**:
+
 - Agent X also modifies `{file}` (lines Y-Z)
 - Coordinate: Agent A works on top section, Agent B on bottom
 - Merge order: #{issue1} → #{issue2} → #{issue3}
@@ -237,6 +255,7 @@ To minimize conflicts:
 3. **Independent changes last** (no rush, can rebase easily)
 
 **Example**:
+
 ```
 Merge Order:
 1. #173 (1h task, top of conftest.py)
@@ -254,14 +273,12 @@ Merge Order:
 ```markdown
 ## Estimated Timeline
 
-T+0:00  - Wave 1 starts ({N} agents in parallel)
-T+0:30  - Fastest agent done (shortest task)
-T+1:00  - Next agent done
-T+3:00  - Wave 1 complete (longest task)
-        - Start Wave 2 ({M} agents)
-T+4:00  - Wave 2 complete
-        - Start Wave 3 (if applicable)
-T+X:XX  - ALL COMPLETE 🎉
+T+0:00 - Wave 1 starts ({N} agents in parallel)
+T+0:30 - Fastest agent done (shortest task)
+T+1:00 - Next agent done
+T+3:00 - Wave 1 complete (longest task) - Start Wave 2 ({M} agents)
+T+4:00 - Wave 2 complete - Start Wave 3 (if applicable)
+T+X:XX - ALL COMPLETE 🎉
 
 **Total Elapsed**: ~X hours (vs Y hours sequential)
 **Speedup**: Zx faster
@@ -273,12 +290,14 @@ T+X:XX  - ALL COMPLETE 🎉
 ## Success Criteria
 
 **After Wave 1**:
+
 - ✅ {N} PRs created
 - ✅ All Wave 1 tests passing
 - ✅ 0 merge conflicts (proper coordination)
 - ✅ {X}% test pass rate (up from {Y}%)
 
 **After All Waves**:
+
 - ✅ {Total} PRs merged
 - ✅ 100% test pass rate (or target %)
 - ✅ CI pipeline green
@@ -326,6 +345,7 @@ Provide the user with:
    - Critical path identified
 
 2. **Worktrees Created** (table format)
+
    ```
    | Worktree | Issue | Priority | Duration | Status |
    |----------|-------|----------|----------|--------|
@@ -365,18 +385,21 @@ Always verify that parallel work maintains:
 ### **Anti-Patterns to Avoid**
 
 ❌ **Don't parallelize if**:
+
 - Issues modify exact same lines of code
 - One issue's tests depend on another's implementation
 - Merge conflicts would be complex to resolve
 - Team is unfamiliar with git worktrees (training needed first)
 
 ❌ **Don't sacrifice quality for speed**:
+
 - Every agent runs full test suite before PR
 - Code review is still thorough (not rushed)
 - CLAUDE.md guidelines still enforced
 - Security checks still required
 
 ✅ **Do parallelize if**:
+
 - Issues touch different files OR different sections
 - Issues have zero logical dependencies
 - Team is coordinated on conflict resolution
