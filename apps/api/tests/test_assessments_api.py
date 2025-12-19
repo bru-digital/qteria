@@ -275,7 +275,12 @@ class TestStartAssessment:
         assert "error" in data
         assert "code" in data["error"]
         # Code may be INVALID_TOKEN, JWT_ERROR, MISSING_CREDENTIALS, or similar auth error
-        assert data["error"]["code"] in ["INVALID_TOKEN", "JWT_ERROR", "TOKEN_REQUIRED", "MISSING_CREDENTIALS"]
+        assert data["error"]["code"] in [
+            "INVALID_TOKEN",
+            "JWT_ERROR",
+            "TOKEN_REQUIRED",
+            "MISSING_CREDENTIALS",
+        ]
 
     def test_start_assessment_all_roles_allowed(
         self,

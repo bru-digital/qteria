@@ -71,12 +71,11 @@ class TestDocumentUpload:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock database dependency
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test-document.pdf", pdf_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test-document.pdf", pdf_file, "application/pdf")},
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -126,18 +125,17 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={
-                    "files": (
-                        "test-document.docx",
-                        docx_file,
-                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    )
-                },
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={
+                "files": (
+                    "test-document.docx",
+                    docx_file,
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+            },
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -156,6 +154,7 @@ class TestDocumentUpload:
         mock_blob_storage,
         mock_magic,
         mock_audit_service,
+        test_workflow_with_bucket,
     ):
         """
         Test upload with optional bucket_id parameter.
@@ -168,46 +167,21 @@ class TestDocumentUpload:
         pdf_file = io.BytesIO(pdf_content)
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
-        bucket_id = "f52414ec-67f4-43d5-b25c-1552828ff06d"
+        workflow_id, bucket_id = test_workflow_with_bucket
 
-        # Mock database session to return a valid bucket when queried
-        mock_db_session = MagicMock()
-        mock_bucket = MagicMock()
-        mock_bucket.id = bucket_id
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+            data={"bucket_id": bucket_id},
+        )
 
-        # Setup the query mock chain: db.query(Bucket).join(Workflow).filter(...).first()
-        mock_query = mock_db_session.query.return_value
-        mock_join = mock_query.join.return_value
-        mock_filter = mock_join.filter.return_value
-        mock_filter.first.return_value = mock_bucket
-
-        # Mock get_db to yield our mock session
-        def mock_get_db():
-            yield mock_db_session
-
-        # Override the FastAPI dependency
-        from app.core.dependencies import get_db
-        from app.main import app
-
-        app.dependency_overrides[get_db] = mock_get_db
-
-        try:
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                data={"bucket_id": bucket_id},
-            )
-
-            assert response.status_code == 201
-            data = response.json()
-            assert isinstance(data, list)
-            assert len(data) == 1
-            doc = data[0]
-            assert doc["bucket_id"] == bucket_id
-        finally:
-            # Clean up the override
-            app.dependency_overrides.clear()
+        assert response.status_code == 201
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        doc = data[0]
+        assert doc["bucket_id"] == bucket_id
 
     def test_upload_invalid_bucket_id(
         self,
@@ -231,23 +205,12 @@ class TestDocumentUpload:
         # Use a valid UUID that doesn't exist in the database
         invalid_bucket_id = "00000000-0000-0000-0000-000000000000"
 
-        # Mock database to return None for the bucket query with join
-        mock_db = MagicMock()
-        mock_query = MagicMock()
-        mock_join = MagicMock()
-        mock_filter = MagicMock()
-        mock_filter.first.return_value = None  # Bucket not found
-        mock_join.filter.return_value = mock_filter
-        mock_query.join.return_value = mock_join
-        mock_db.query.return_value = mock_query
-
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                data={"bucket_id": invalid_bucket_id},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+            data={"bucket_id": invalid_bucket_id},
+        )
 
         assert response.status_code == 404
         data = response.json()
@@ -266,6 +229,7 @@ class TestDocumentUpload:
         mock_blob_storage,
         mock_magic,
         mock_audit_service,
+        test_workflow_with_bucket_org_b,
     ):
         """
         Test upload rejection for bucket_id belonging to different organization (multi-tenancy check).
@@ -279,25 +243,14 @@ class TestDocumentUpload:
 
         # User from ORG_A trying to access bucket from ORG_B
         token = create_test_token(organization_id=TEST_ORG_A_ID)
-        org_b_bucket_id = "f52414ec-67f4-43d5-b25c-1552828ff06d"
+        _, org_b_bucket_id = test_workflow_with_bucket_org_b
 
-        # Mock database to return None (because organization_id filter excludes it)
-        mock_db = MagicMock()
-        mock_query = MagicMock()
-        mock_join = MagicMock()
-        mock_filter = MagicMock()
-        mock_filter.first.return_value = None  # Bucket not found due to org filter
-        mock_join.filter.return_value = mock_filter
-        mock_query.join.return_value = mock_join
-        mock_db.query.return_value = mock_query
-
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                data={"bucket_id": org_b_bucket_id},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+            data={"bucket_id": org_b_bucket_id},
+        )
 
         assert response.status_code == 404
         data = response.json()
@@ -328,13 +281,12 @@ class TestDocumentUpload:
         # Use an invalid UUID format
         invalid_bucket_id = "not-a-valid-uuid"
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                data={"bucket_id": invalid_bucket_id},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+            data={"bucket_id": invalid_bucket_id},
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -365,12 +317,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("image.jpg", jpg_file, "image/jpeg")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("image.jpg", jpg_file, "image/jpeg")},
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -408,12 +359,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("large.pdf", large_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("large.pdf", large_file, "application/pdf")},
+        )
 
         assert response.status_code == 413
         data = response.json()
@@ -448,12 +398,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("empty.pdf", empty_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("empty.pdf", empty_file, "application/pdf")},
+        )
 
         # Empty files should return 400 Bad Request with EMPTY_FILE code
         assert response.status_code == 400
@@ -512,12 +461,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test.pdf", pdf_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
 
         assert response.status_code == 500
         data = response.json()
@@ -551,12 +499,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="project_handler")
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test.pdf", pdf_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -586,12 +533,11 @@ class TestDocumentUpload:
         # Test various Unicode filenames
         unicode_filename = "文档_test_αβγ_тест.pdf"
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": (unicode_filename, pdf_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": (unicode_filename, pdf_file, "application/pdf")},
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -619,12 +565,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="process_manager")
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test.pdf", pdf_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -650,12 +595,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID, role="admin")
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test.pdf", pdf_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -685,12 +629,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test.pdf", pdf_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test.pdf", pdf_file, "application/pdf")},
+        )
 
         assert response.status_code == 500
         data = response.json()
@@ -723,18 +666,17 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={
-                    "files": (
-                        "test-data.xlsx",
-                        xlsx_file,
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    )
-                },
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={
+                "files": (
+                    "test-data.xlsx",
+                    xlsx_file,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -775,12 +717,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("legacy-data.xls", xls_file, "application/vnd.ms-excel")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("legacy-data.xls", xls_file, "application/vnd.ms-excel")},
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -814,12 +755,11 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("data.csv", csv_file, "text/csv")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("data.csv", csv_file, "text/csv")},
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -868,18 +808,17 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={
-                    "files": (
-                        "data.ods",
-                        ods_file,
-                        "application/vnd.oasis.opendocument.spreadsheet",
-                    )
-                },
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={
+                "files": (
+                    "data.ods",
+                    ods_file,
+                    "application/vnd.oasis.opendocument.spreadsheet",
+                )
+            },
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -934,18 +873,17 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={
-                    "files": (
-                        "malicious-data.xlsm",
-                        xlsm_file,
-                        "application/vnd.ms-excel.sheet.macroEnabled.12",
-                    )
-                },
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={
+                "files": (
+                    "malicious-data.xlsm",
+                    xlsm_file,
+                    "application/vnd.ms-excel.sheet.macroEnabled.12",
+                )
+            },
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -989,18 +927,17 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={
-                    "files": (
-                        "malicious-doc.docm",
-                        docm_file,
-                        "application/vnd.ms-word.document.macroEnabled.12",
-                    )
-                },
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={
+                "files": (
+                    "malicious-doc.docm",
+                    docm_file,
+                    "application/vnd.ms-word.document.macroEnabled.12",
+                )
+            },
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -1049,18 +986,17 @@ class TestDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={
-                    "files": (
-                        "malicious-presentation.pptm",
-                        pptm_file,
-                        "application/vnd.ms-powerpoint.presentation.macroEnabled.12",
-                    )
-                },
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={
+                "files": (
+                    "malicious-presentation.pptm",
+                    pptm_file,
+                    "application/vnd.ms-powerpoint.presentation.macroEnabled.12",
+                )
+            },
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -1123,12 +1059,11 @@ class TestBatchDocumentUpload:
 
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"files": ("test-document.pdf", pdf_file, "application/pdf")},
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": ("test-document.pdf", pdf_file, "application/pdf")},
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -1186,12 +1121,11 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files=file_objects,
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files=file_objects,
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -1241,12 +1175,11 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files=file_objects,
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files=file_objects,
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -1283,12 +1216,11 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files=file_objects,
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files=file_objects,
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -1345,12 +1277,11 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files=file_objects,
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files=file_objects,
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -1390,12 +1321,11 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files=file_objects,
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files=file_objects,
+        )
 
         assert response.status_code == 413
         data = response.json()
@@ -1441,12 +1371,11 @@ class TestBatchDocumentUpload:
             for name, content in files_data
         ]
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-            response = client.post(
-                "/v1/documents",
-                headers={"Authorization": f"Bearer {token}"},
-                files=file_objects,
-            )
+        response = client.post(
+            "/v1/documents",
+            headers={"Authorization": f"Bearer {token}"},
+            files=file_objects,
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -1884,12 +1813,11 @@ class TestDocumentUploadRateLimiting:
 
         # Mock get_redis to return None (Redis unavailable)
         with patch("app.core.dependencies.get_redis", return_value=iter([None])):
-            with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([MagicMock()])):
-                response = client.post(
-                    "/v1/documents",
-                    headers={"Authorization": f"Bearer {token}"},
-                    files={"files": ("test.pdf", pdf_file, "application/pdf")},
-                )
+            response = client.post(
+                "/v1/documents",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"files": ("test.pdf", pdf_file, "application/pdf")},
+            )
 
         # Upload should succeed despite Redis unavailable (graceful degradation)
         assert response.status_code == 201
@@ -2135,7 +2063,7 @@ class TestDocumentDownload:
             yield mock_service
 
     @pytest.fixture
-    def mock_document_db(self):
+    def test_document_in_org_a(self):
         """Mock database with test document."""
         from uuid import uuid4
         from app.models import Document
@@ -2163,7 +2091,7 @@ class TestDocumentDownload:
         self,
         client: TestClient,
         mock_blob_storage,
-        mock_document_db,
+        test_document_in_org_a,
         mock_audit_service,
     ):
         """
@@ -2176,15 +2104,14 @@ class TestDocumentDownload:
         - Content-Disposition header contains filename
         - Audit log created
         """
-        mock_db, test_doc = mock_document_db
+        test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.get(
-                f"/v1/documents/{test_doc.id}",
-                headers={"Authorization": f"Bearer {token}"},
-                follow_redirects=False,
-            )
+        response = client.get(
+            f"/v1/documents/{test_doc.id}",
+            headers={"Authorization": f"Bearer {token}"},
+            follow_redirects=False,
+        )
 
         assert response.status_code == 307
         assert "Location" in response.headers
@@ -2201,7 +2128,7 @@ class TestDocumentDownload:
         self,
         client: TestClient,
         mock_blob_storage,
-        mock_document_db,
+        test_document_in_org_a,
         mock_audit_service,
     ):
         """
@@ -2211,15 +2138,14 @@ class TestDocumentDownload:
         - Returns 307 Temporary Redirect
         - X-PDF-Page header present with page number
         """
-        mock_db, test_doc = mock_document_db
+        test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.get(
-                f"/v1/documents/{test_doc.id}?page=8",
-                headers={"Authorization": f"Bearer {token}"},
-                follow_redirects=False,
-            )
+        response = client.get(
+            f"/v1/documents/{test_doc.id}?page=8",
+            headers={"Authorization": f"Bearer {token}"},
+            follow_redirects=False,
+        )
 
         assert response.status_code == 307
         assert "X-PDF-Page" in response.headers
@@ -2250,11 +2176,10 @@ class TestDocumentDownload:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
         nonexistent_id = uuid4()
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.get(
-                f"/v1/documents/{nonexistent_id}",
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.get(
+            f"/v1/documents/{nonexistent_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 404
         data = response.json()
@@ -2270,6 +2195,7 @@ class TestDocumentDownload:
         client: TestClient,
         mock_blob_storage,
         mock_audit_service,
+        test_document_in_org_b,
     ):
         """
         Test multi-tenancy: User from Org A cannot download Org B's document.
@@ -2279,30 +2205,14 @@ class TestDocumentDownload:
         - Error code RESOURCE_NOT_FOUND
         - Audit log for security monitoring
         """
-        from uuid import uuid4
-        from app.models import Document
-
-        mock_db = MagicMock()
-        mock_query = MagicMock()
-
-        # Document belongs to Org B
-        org_b_document = MagicMock(spec=Document)
-        org_b_document.id = uuid4()
-        org_b_document.organization_id = TEST_ORG_B_ID  # Different org
-
-        # Setup query to return no document (multi-tenancy filter blocks it)
-        mock_db.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = None  # Filtered out
-
         # User from Org A tries to download Org B's document
         token = create_test_token(organization_id=TEST_ORG_A_ID)
+        org_b_document = test_document_in_org_b
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.get(
-                f"/v1/documents/{org_b_document.id}",
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.get(
+            f"/v1/documents/{org_b_document.id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         # Should return 404 (not 403) to avoid leaking document existence
         assert response.status_code == 404
@@ -2331,7 +2241,7 @@ class TestDocumentDownload:
     def test_download_blob_storage_failure(
         self,
         client: TestClient,
-        mock_document_db,
+        test_document_in_org_a,
         mock_audit_service,
     ):
         """
@@ -2341,7 +2251,7 @@ class TestDocumentDownload:
         - Returns 500 Internal Server Error
         - Error code DOWNLOAD_URL_FAILED
         """
-        mock_db, test_doc = mock_document_db
+        test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock blob storage failure
@@ -2352,11 +2262,10 @@ class TestDocumentDownload:
 
             mock_service.get_download_url = AsyncMock(side_effect=url_error)
 
-            with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-                response = client.get(
-                    f"/v1/documents/{test_doc.id}",
-                    headers={"Authorization": f"Bearer {token}"},
-                )
+            response = client.get(
+                f"/v1/documents/{test_doc.id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
 
         assert response.status_code == 500
         data = response.json()
@@ -2374,36 +2283,11 @@ class TestDocumentDeletion:
             mock_service.delete_file = AsyncMock(return_value=True)
             yield mock_service
 
-    @pytest.fixture
-    def mock_document_db(self):
-        """Mock database with test document."""
-        from uuid import uuid4
-        from app.models import Document
-
-        mock_db = MagicMock()
-        mock_query = MagicMock()
-
-        # Create mock document
-        test_document = MagicMock(spec=Document)
-        test_document.id = uuid4()
-        test_document.organization_id = TEST_ORG_A_ID
-        test_document.file_name = "test-document.pdf"
-        test_document.file_size = 1024000
-        test_document.mime_type = "application/pdf"
-        test_document.storage_key = "https://blob.vercel-storage.com/documents/test.pdf"
-
-        # Setup query mock chain
-        mock_db.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = test_document
-
-        return mock_db, test_document
-
     def test_delete_document_not_in_assessment_success(
         self,
         client: TestClient,
         mock_blob_storage,
-        mock_document_db,
+        test_document_in_org_a,
         mock_audit_service,
     ):
         """
@@ -2417,14 +2301,14 @@ class TestDocumentDeletion:
         """
         from app.models import Document, AssessmentDocument
 
-        mock_db, test_doc = mock_document_db
+        test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Setup query chain for AssessmentDocument to return None (no assessment)
         def mock_query_handler(model):
             if model == Document:
                 # Return the mocked document query
-                return mock_document_db[0].query.return_value
+                return test_document_in_org_a[0].query.return_value
             elif model == AssessmentDocument:
                 # Return empty result for assessment documents
                 mock_assessment_query = MagicMock()
@@ -2439,11 +2323,10 @@ class TestDocumentDeletion:
 
         mock_db.query.side_effect = mock_query_handler
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.delete(
-                f"/v1/documents/{test_doc.id}",
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.delete(
+            f"/v1/documents/{test_doc.id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 204
 
@@ -2467,7 +2350,7 @@ class TestDocumentDeletion:
         self,
         client: TestClient,
         mock_blob_storage,
-        mock_document_db,
+        test_document_in_org_a,
         mock_audit_service,
     ):
         """
@@ -2477,7 +2360,7 @@ class TestDocumentDeletion:
         - Returns 204 No Content
         - Safe to delete documents in pending assessments
         """
-        mock_db, test_doc = mock_document_db
+        test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock assessment_documents query to return document with pending status
@@ -2490,13 +2373,15 @@ class TestDocumentDeletion:
         # First query is for document, second is for assessment_documents
         mock_assessment_query = MagicMock()
         mock_assessment_query.first.return_value = None  # No completed/processing assessment
-        mock_db.query.side_effect = [mock_document_db[0].query.return_value, mock_assessment_query]
+        mock_db.query.side_effect = [
+            test_document_in_org_a[0].query.return_value,
+            mock_assessment_query,
+        ]
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.delete(
-                f"/v1/documents/{test_doc.id}",
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.delete(
+            f"/v1/documents/{test_doc.id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 204
 
@@ -2504,7 +2389,7 @@ class TestDocumentDeletion:
         self,
         client: TestClient,
         mock_blob_storage,
-        mock_document_db,
+        test_document_in_org_a,
         mock_audit_service,
     ):
         """
@@ -2516,7 +2401,7 @@ class TestDocumentDeletion:
         - Error message indicates assessment status
         - Audit log created
         """
-        mock_db, test_doc = mock_document_db
+        test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock assessment_documents query to return document in completed assessment
@@ -2536,15 +2421,14 @@ class TestDocumentDeletion:
         mock_assessment_query = MagicMock()
         mock_assessment_query.first.return_value = mock_assessment_doc
         mock_db.query.side_effect = [
-            mock_document_db[0].query.return_value,  # Document query
+            test_document_in_org_a[0].query.return_value,  # Document query
             mock_assessment_query,  # AssessmentDocument query
         ]
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.delete(
-                f"/v1/documents/{test_doc.id}",
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.delete(
+            f"/v1/documents/{test_doc.id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 409
         data = response.json()
@@ -2569,7 +2453,7 @@ class TestDocumentDeletion:
         self,
         client: TestClient,
         mock_blob_storage,
-        mock_document_db,
+        test_document_in_org_a,
         mock_audit_service,
     ):
         """
@@ -2580,7 +2464,7 @@ class TestDocumentDeletion:
         - Error code DOCUMENT_IN_USE
         - Error message indicates assessment is processing
         """
-        mock_db, test_doc = mock_document_db
+        test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock assessment_documents query to return document in processing assessment
@@ -2599,13 +2483,15 @@ class TestDocumentDeletion:
         # Setup queries
         mock_assessment_query = MagicMock()
         mock_assessment_query.first.return_value = mock_assessment_doc
-        mock_db.query.side_effect = [mock_document_db[0].query.return_value, mock_assessment_query]
+        mock_db.query.side_effect = [
+            test_document_in_org_a[0].query.return_value,
+            mock_assessment_query,
+        ]
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.delete(
-                f"/v1/documents/{test_doc.id}",
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.delete(
+            f"/v1/documents/{test_doc.id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 409
         data = response.json()
@@ -2637,11 +2523,10 @@ class TestDocumentDeletion:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
         nonexistent_id = uuid4()
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.delete(
-                f"/v1/documents/{nonexistent_id}",
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.delete(
+            f"/v1/documents/{nonexistent_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 404
         data = response.json()
@@ -2680,11 +2565,10 @@ class TestDocumentDeletion:
         token = create_test_token(organization_id=TEST_ORG_A_ID)
         org_b_doc_id = uuid4()
 
-        with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-            response = client.delete(
-                f"/v1/documents/{org_b_doc_id}",
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        response = client.delete(
+            f"/v1/documents/{org_b_doc_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         # Should return 404 (not 403) to avoid leaking document existence
         assert response.status_code == 404
@@ -2694,7 +2578,7 @@ class TestDocumentDeletion:
     def test_delete_blob_failure_still_deletes_db(
         self,
         client: TestClient,
-        mock_document_db,
+        test_document_in_org_a,
         mock_audit_service,
     ):
         """
@@ -2706,7 +2590,7 @@ class TestDocumentDeletion:
         - Error logged but operation continues
         - Audit log shows blob_deleted: false
         """
-        mock_db, test_doc = mock_document_db
+        test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
         # Mock blob storage failure
@@ -2721,15 +2605,14 @@ class TestDocumentDeletion:
             mock_assessment_query = MagicMock()
             mock_assessment_query.first.return_value = None
             mock_db.query.side_effect = [
-                mock_document_db[0].query.return_value,
+                test_document_in_org_a[0].query.return_value,
                 mock_assessment_query,
             ]
 
-            with patch("app.api.v1.endpoints.documents.get_db", return_value=iter([mock_db])):
-                response = client.delete(
-                    f"/v1/documents/{test_doc.id}",
-                    headers={"Authorization": f"Bearer {token}"},
-                )
+            response = client.delete(
+                f"/v1/documents/{test_doc.id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
 
         # Should still succeed despite blob deletion failure
         assert response.status_code == 204
