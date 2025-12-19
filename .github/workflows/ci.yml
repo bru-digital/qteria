@@ -87,6 +87,9 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libmagic1
+
       - name: Install dependencies
         run: |
           cd apps/api
@@ -181,6 +184,12 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           JWT_SECRET: test-secret-key-for-ci
           ANTHROPIC_API_KEY: test-key
+          # NOTE: BLOB_READ_WRITE_TOKEN is intentionally NOT set for security.
+          # Integration tests use _auto_mock_vercel_blob fixture (conftest.py:148-200)
+          # to mock vercel_blob.put and vercel_blob.delete operations. This allows
+          # testing document upload logic, validation, and database operations
+          # without external dependencies or exposing credentials in CI.
+          # Unit tests in test_blob_storage.py use @pytest.mark.unit to skip autouse mock.
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

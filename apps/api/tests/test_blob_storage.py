@@ -22,6 +22,7 @@ from app.services.blob_storage import BlobStorageService
 # ============================================================================
 
 
+@pytest.mark.unit
 class TestFilenameSanitization:
     """Test filename sanitization to prevent path traversal and injection attacks."""
 
@@ -120,6 +121,7 @@ class TestFilenameSanitization:
 # ============================================================================
 
 
+@pytest.mark.unit
 class TestStorageKeyGeneration:
     """Test storage key generation for uniqueness and organization isolation."""
 
@@ -203,6 +205,7 @@ class TestStorageKeyGeneration:
 # ============================================================================
 
 
+@pytest.mark.unit
 class TestUploadFile:
     """Test file upload functionality and edge cases."""
 
@@ -332,6 +335,7 @@ class TestUploadFile:
 # ============================================================================
 
 
+@pytest.mark.unit
 class TestDeleteFile:
     """Test file deletion functionality and edge cases."""
 
