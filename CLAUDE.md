@@ -90,10 +90,29 @@ DATABASE_URL=postgresql://...neon.tech/qteria_dev
 
 # .env.test (testing)
 DATABASE_URL=postgresql://...neon.tech/qteria_test
+PYTHON_ENV=test  # Suppresses Redis error logs in test output
 
 # Vercel environment variables (production)
 DATABASE_URL=postgresql://...neon.tech/qteria_prod
 ```
+
+### Redis in Tests
+
+Redis is **optional** in test environment. Tests will run without Redis, disabling:
+
+- Rate limiting (tests verify functionality, not limits)
+- Caching (tests use fresh data each time)
+
+In CI/local tests, Redis connection failures are suppressed (logged at DEBUG level instead of ERROR). This keeps test output clean while preserving production error visibility.
+
+**Environment Detection:**
+
+- Test mode: `PYTHON_ENV=test` OR pytest running → DEBUG level logs
+- Production/Dev: All other cases → ERROR level logs
+
+**Why This Matters:**
+
+Without this suppression, every test would show 50+ lines of Redis connection error logs, making it difficult to spot actual test failures. The application gracefully handles missing Redis by disabling rate limiting, so tests don't require Redis to run successfully.
 
 ### Quick Start
 
