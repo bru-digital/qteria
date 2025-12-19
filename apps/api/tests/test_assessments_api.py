@@ -405,8 +405,8 @@ class TestStartAssessment:
         2. Check invalid bucket references (lines 225-266)
         """
         # Create two workflows
-        workflow_1_id, required_bucket_1_id, optional_bucket_1_id = (
-            create_test_workflow_with_buckets(client, org_a_process_manager_token)
+        workflow_1_id, required_bucket_1_id, optional_bucket_1_id = create_test_workflow_with_buckets(
+            client, org_a_process_manager_token
         )
         workflow_2_id, bucket_2_id, _ = create_test_workflow_with_buckets(
             client, org_a_process_manager_token
@@ -446,7 +446,7 @@ class TestStartAssessment:
         error_msg = data["error"]["message"].lower()
 
         # Should return "invalid bucket reference" error (all required buckets satisfied)
-        assert "invalid bucket" in error_msg or "do not belong to this workflow" in error_msg
+        assert ("invalid bucket" in error_msg or "do not belong to this workflow" in error_msg)
         assert "invalid_bucket_ids" in data["error"]["details"]
 
         # Should NOT mention missing required buckets
