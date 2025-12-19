@@ -105,10 +105,10 @@ def pytest_configure(config):
 
     Fail-fast if DATABASE_URL points to production (safety check).
     """
-    # Load .env.test if it exists
+    # Load .env.test if it exists (don't override existing env vars from CI)
     env_test_path = Path(__file__).parent / ".env.test"
     if env_test_path.exists():
-        load_dotenv(env_test_path, override=True)
+        load_dotenv(env_test_path, override=False)
         print(f"✅ Loaded test environment from {env_test_path}")
     else:
         print(f"⚠️  Warning: {env_test_path} not found. Using default .env")
