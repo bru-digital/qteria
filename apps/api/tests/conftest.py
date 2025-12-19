@@ -155,14 +155,21 @@ def _auto_mock_vercel_blob(request):
 
     The mock returns realistic Vercel Blob API responses matching production format.
 
-    NOTE: This fixture is autouse=True but excludes blob storage unit tests
-    (test_blob_storage.py) to avoid conflicts with unit test patches.
+    NOTE: This fixture is autouse=True but skips for tests marked with @pytest.mark.unit
+    to avoid conflicts with unit test patches. This provides more robust exclusion
+    than filename matching.
 
     The fixture is prefixed with _ to indicate it's an internal autouse fixture
     and to avoid naming collisions with test-specific mock_blob_storage fixtures.
+
+    Example usage in integration tests:
+        def test_upload_pdf(client, _auto_mock_vercel_blob):
+            # _auto_mock_vercel_blob["put"] gives access to mock for assertions
+            response = client.post("/api/v1/documents/upload", ...)
+            assert _auto_mock_vercel_blob["put"].called
     """
-    # Skip for blob storage unit tests to avoid conflicts
-    if 'test_blob_storage' in request.node.fspath.basename:
+    # Skip for blob storage unit tests marked with @pytest.mark.unit
+    if request.node.get_closest_marker('unit'):
         yield None
         return
 
