@@ -6,7 +6,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from typing import Generator
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from fastapi.testclient import TestClient
 from jose import jwt
@@ -146,7 +146,7 @@ def mock_audit_service():
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mock_blob_storage():
+def mock_blob_storage(request):
     """
     Mock Vercel Blob storage for integration tests.
 
@@ -155,17 +155,23 @@ def mock_blob_storage():
 
     The mock returns realistic Vercel Blob API responses matching production format.
 
-    NOTE: This fixture is autouse=True. Unit tests for BlobStorageService that
-    patch 'vercel_blob.put' or 'vercel_blob.delete' directly will override this
-    mock automatically (more specific patches take precedence).
+    NOTE: This fixture is autouse=True but excludes blob storage unit tests
+    (test_blob_storage.py) to avoid conflicts with unit test patches.
     """
-    with patch('vercel_blob.put', new_callable=MagicMock) as mock_put, \
-         patch('vercel_blob.delete', new_callable=MagicMock) as mock_del:
+    # Skip for blob storage unit tests to avoid conflicts
+    if 'test_blob_storage' in request.node.fspath.basename:
+        yield None
+        return
+
+    # Patch at the point of use (where imports happen), not at module level
+    with patch('app.services.blob_storage.put', new_callable=AsyncMock) as mock_put, \
+         patch('app.services.blob_storage.delete', new_callable=AsyncMock) as mock_del:
 
         # Mock Vercel Blob upload response
         # Format matches actual Vercel Blob API: https://vercel.com/docs/storage/vercel-blob
-        async def mock_upload(pathname: str, body, options, **kwargs):
+        async def mock_upload(pathname: str, body, options=None, **kwargs):
             """Mock put() function to return Vercel Blob response format."""
+            options = options or {}
             return {
                 "url": f"https://blob.vercel-storage.com/{pathname}?token=mock",
                 "pathname": pathname,
