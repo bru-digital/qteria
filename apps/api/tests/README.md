@@ -9,12 +9,14 @@ This document describes the test architecture patterns used in the Qteria API te
 **When to use**: All API endpoint tests, database operations, and multi-tenancy tests.
 
 **Key characteristics**:
+
 - Use **real database** via `client` fixture
 - Mock **only external services** (Vercel Blob, Claude API, python-magic)
 - Use **real test data** seeded in the database
 - Auth middleware accesses real database (no get_db mocking)
 
 **Working Example** (`test_workflow_api.py`):
+
 ```python
 def test_create_workflow_success(
     client: TestClient,
@@ -40,6 +42,7 @@ def test_create_workflow_success(
 **Problem**: Mocking `get_db` causes authentication middleware to fail with 500 errors because auth needs real database access to validate JWT tokens.
 
 **Broken Example**:
+
 ```python
 def test_upload_pdf(client, token):
     # ❌ WRONG: Mocking get_db breaks authentication
@@ -67,6 +70,7 @@ def test_upload_pdf(client, token):
 ### Document Test Fixtures (apps/api/tests/conftest.py)
 
 **`test_workflow_with_bucket`** - Creates workflow with bucket in Org A
+
 ```python
 def test_upload_with_bucket_id(
     client,
@@ -91,10 +95,12 @@ def test_upload_with_bucket_id(
 The test database is seeded once per pytest session with organizations and users that match the UUIDs used in JWT tokens.
 
 **Seeded Organizations**:
+
 - `TEST_ORG_A_ID = "f52414ec-67f4-43d5-b25c-1552828ff06d"`
 - `TEST_ORG_B_ID = "f171ee72-38bd-4a10-9682-a0c483ae365e"`
 
 **Seeded Users**:
+
 - `TEST_USER_A_ID` - Admin in Org A
 - `TEST_USER_A_PM_ID` - Process Manager in Org A
 - `TEST_USER_A_PH_ID` - Project Handler in Org A
@@ -107,12 +113,14 @@ The test database is seeded once per pytest session with organizations and users
 ### ✅ Mock External Services
 
 **Always mock**:
+
 - `BlobStorageService` - Vercel Blob upload/download/delete
 - `python-magic` - MIME type detection
 - `AuditService` - Audit log writes (use `mock_audit_service` fixture)
 - Claude API calls (when implemented)
 
 **Example**:
+
 ```python
 @pytest.fixture
 def mock_blob_storage(self):
@@ -124,6 +132,7 @@ def mock_blob_storage(self):
 ### ❌ Never Mock These
 
 **DO NOT mock**:
+
 - `get_db` - Authentication middleware needs real database
 - Database models (User, Organization, Workflow, etc.)
 - SQLAlchemy sessions
@@ -172,11 +181,13 @@ pytest apps/api/tests/ -v
 Tests require a seeded test database. The `pytest_sessionstart` hook in `conftest.py` automatically seeds the database before tests run.
 
 **Environment variable required**:
+
 ```bash
 DATABASE_URL=postgresql://user:pass@host/qteria_test
 ```
 
 **Manual seeding** (if needed):
+
 ```bash
 cd apps/api
 DATABASE_URL=postgresql://...neon.tech/qteria_test python scripts/seed_test_data.py
@@ -204,6 +215,7 @@ Per `product-guidelines/09-test-strategy.md`:
 **Cause**: Test database not seeded with required organizations/users.
 
 **Solution**:
+
 1. Ensure `DATABASE_URL` points to `qteria_test` database
 2. Run `python scripts/seed_test_data.py` manually if needed
 3. Check `pytest_sessionstart` hook executed successfully
@@ -213,6 +225,7 @@ Per `product-guidelines/09-test-strategy.md`:
 **Cause**: Different database state between local and CI.
 
 **Solution**:
+
 1. CI uses ephemeral Neon database (seeded fresh each run)
 2. Local dev may have stale data - run `python scripts/clear_test_data.py` then reseed
 3. Ensure tests clean up created data (or use transaction rollback)
@@ -222,6 +235,7 @@ Per `product-guidelines/09-test-strategy.md`:
 This test suite was migrated from unit tests (mocking `get_db`) to integration tests (real database) to fix authentication issues. See issue #160 for details.
 
 **Changes made**:
+
 1. Removed all `patch("app.api.v1.endpoints.documents.get_db")` calls (41 instances)
 2. Created real test fixtures: `test_workflow_with_bucket`, `test_document_in_org_a`, `test_document_in_org_b`
 3. Simplified tests to use `client` fixture directly

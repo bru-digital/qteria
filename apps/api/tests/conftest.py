@@ -598,14 +598,14 @@ def assert_error_response(
 
     error = data["error"]
     assert "code" in error, f"Missing 'code' in error object. Got: {error}"
-    assert error["code"] == expected_code, (
-        f"Expected error code '{expected_code}', got '{error['code']}'"
-    )
+    assert (
+        error["code"] == expected_code
+    ), f"Expected error code '{expected_code}', got '{error['code']}'"
 
     assert "message" in error, f"Missing 'message' in error object. Got: {error}"
-    assert isinstance(error["message"], str), (
-        f"Error message should be string, got {type(error['message'])}"
-    )
+    assert isinstance(
+        error["message"], str
+    ), f"Error message should be string, got {type(error['message'])}"
     assert len(error["message"]) > 0, "Error message should not be empty"
 
     assert "request_id" in error, f"Missing 'request_id' in error object. Got: {error}"

@@ -2373,7 +2373,10 @@ class TestDocumentDeletion:
         # First query is for document, second is for assessment_documents
         mock_assessment_query = MagicMock()
         mock_assessment_query.first.return_value = None  # No completed/processing assessment
-        mock_db.query.side_effect = [test_document_in_org_a[0].query.return_value, mock_assessment_query]
+        mock_db.query.side_effect = [
+            test_document_in_org_a[0].query.return_value,
+            mock_assessment_query,
+        ]
 
         response = client.delete(
             f"/v1/documents/{test_doc.id}",
@@ -2480,7 +2483,10 @@ class TestDocumentDeletion:
         # Setup queries
         mock_assessment_query = MagicMock()
         mock_assessment_query.first.return_value = mock_assessment_doc
-        mock_db.query.side_effect = [test_document_in_org_a[0].query.return_value, mock_assessment_query]
+        mock_db.query.side_effect = [
+            test_document_in_org_a[0].query.return_value,
+            mock_assessment_query,
+        ]
 
         response = client.delete(
             f"/v1/documents/{test_doc.id}",
