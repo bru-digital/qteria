@@ -26,6 +26,7 @@ from sqlalchemy import (
     Text,
     JSON,
     Index,
+    FetchedValue,
 )
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.sql import func
@@ -123,8 +124,17 @@ class Workflow(Base):
     __tablename__ = "workflows"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id"),
+        nullable=False,
+        server_default=FetchedValue(),
+    )
+    created_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        server_default=FetchedValue(),
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text)
     section_patterns = Column(JSON, nullable=True)  # Custom regex patterns for section detection
@@ -223,9 +233,18 @@ class Assessment(Base):
     __tablename__ = "assessments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id"),
+        nullable=False,
+        server_default=FetchedValue(),
+    )
     workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id"), nullable=False)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
+    created_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        server_default=FetchedValue(),
+    )
     status = Column(
         String(50),
         CheckConstraint(
@@ -282,6 +301,7 @@ class Document(Base):
         UUID(as_uuid=True),
         ForeignKey("organizations.id", ondelete="CASCADE"),
         nullable=False,
+        server_default=FetchedValue(),
     )
     file_name = Column(String(255), nullable=False)
     file_size = Column(Integer, nullable=False)  # Size in bytes
@@ -292,7 +312,12 @@ class Document(Base):
         ForeignKey("buckets.id", ondelete="SET NULL"),
         nullable=True,  # Optional - document may not be associated with bucket yet
     )
-    uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    uploaded_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        server_default=FetchedValue(),
+    )
     uploaded_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
@@ -424,6 +449,7 @@ class ParsedDocument(Base):
         ForeignKey("organizations.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+        server_default=FetchedValue(),
     )
     document_id = Column(
         UUID(as_uuid=True),

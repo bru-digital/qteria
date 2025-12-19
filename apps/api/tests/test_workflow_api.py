@@ -854,6 +854,84 @@ class TestListWorkflows:
         assert data["pagination"]["has_prev_page"] is True
 
 
+class TestUpdateWorkflow:
+    """Tests for PUT /v1/workflows/{id} endpoint."""
+
+    def test_update_workflow_preserves_organization_id(
+        self,
+        client: TestClient,
+        org_a_process_manager_token: str,
+        mock_audit_service,
+    ):
+        """
+        Regression test for #172: Verify that updating a workflow
+        doesn't set organization_id/created_by to NULL.
+
+        This test ensures server_default=FetchedValue() prevents
+        SQLAlchemy from including organization_id/created_by in
+        UPDATE statements when onupdate=func.now() triggers.
+        """
+        # Create workflow
+        create_payload = {
+            "name": "Test Workflow",
+            "buckets": [{"name": "Test Bucket", "required": True, "order_index": 0}],
+            "criteria": [{"name": "Test Criteria", "applies_to_bucket_ids": [0]}],
+        }
+        create_response = client.post(
+            "/v1/workflows",
+            headers={"Authorization": f"Bearer {org_a_process_manager_token}"},
+            json=create_payload,
+        )
+        assert create_response.status_code == 201
+        workflow_id = create_response.json()["id"]
+        original_org_id = create_response.json()["organization_id"]
+        original_created_by = create_response.json()["created_by"]
+
+        # Verify original values are set
+        assert original_org_id is not None
+        assert original_created_by is not None
+        assert original_org_id == TEST_ORG_A_ID
+
+        # Update workflow (triggers onupdate=func.now() on updated_at)
+        # Include existing bucket and criteria to avoid deletion
+        update_payload = {
+            "name": "Updated Name",
+            "description": "Updated description",
+            "buckets": [
+                {
+                    "id": create_response.json()["buckets"][0]["id"],
+                    "name": "Test Bucket",
+                    "required": True,
+                    "order_index": 0,
+                }
+            ],
+            "criteria": [
+                {
+                    "id": create_response.json()["criteria"][0]["id"],
+                    "name": "Test Criteria",
+                    "applies_to_bucket_ids": [create_response.json()["buckets"][0]["id"]],
+                }
+            ],
+        }
+        update_response = client.put(
+            f"/v1/workflows/{workflow_id}",
+            headers={"Authorization": f"Bearer {org_a_process_manager_token}"},
+            json=update_payload,
+        )
+        assert update_response.status_code == 200
+        updated_workflow = update_response.json()
+
+        # Verify organization_id and created_by are preserved (not set to NULL)
+        assert updated_workflow["organization_id"] == original_org_id
+        assert updated_workflow["created_by"] == original_created_by
+        assert updated_workflow["organization_id"] is not None
+        assert updated_workflow["created_by"] is not None
+
+        # Verify the update actually worked
+        assert updated_workflow["name"] == "Updated Name"
+        assert updated_workflow["description"] == "Updated description"
+
+
 class TestGetWorkflow:
     """Tests for GET /v1/workflows/{id} endpoint."""
 
