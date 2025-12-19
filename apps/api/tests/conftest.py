@@ -146,7 +146,7 @@ def mock_audit_service():
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mock_blob_storage(request):
+def _auto_mock_vercel_blob(request):
     """
     Mock Vercel Blob storage for integration tests.
 
@@ -157,15 +157,20 @@ def mock_blob_storage(request):
 
     NOTE: This fixture is autouse=True but excludes blob storage unit tests
     (test_blob_storage.py) to avoid conflicts with unit test patches.
+
+    The fixture is prefixed with _ to indicate it's an internal autouse fixture
+    and to avoid naming collisions with test-specific mock_blob_storage fixtures.
     """
     # Skip for blob storage unit tests to avoid conflicts
     if 'test_blob_storage' in request.node.fspath.basename:
         yield None
         return
 
-    # Patch at the point of use (where imports happen), not at module level
-    with patch('app.services.blob_storage.put', new_callable=AsyncMock) as mock_put, \
-         patch('app.services.blob_storage.delete', new_callable=AsyncMock) as mock_del:
+    # Patch at module level where imports are defined (vercel_blob.put, not app.services.blob_storage.put)
+    # This is necessary because blob_storage.py imports these functions dynamically inside methods
+    with patch('vercel_blob.put', new_callable=AsyncMock) as mock_put, \
+         patch('vercel_blob.delete', new_callable=AsyncMock) as mock_del, \
+         patch.dict('os.environ', {'BLOB_READ_WRITE_TOKEN': 'mock-token-for-integration-tests'}):
 
         # Mock Vercel Blob upload response
         # Format matches actual Vercel Blob API: https://vercel.com/docs/storage/vercel-blob
