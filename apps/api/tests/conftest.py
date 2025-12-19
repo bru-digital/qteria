@@ -396,6 +396,167 @@ def test_user(db_session: Session) -> User:
 
 
 # =============================================================================
+# Document Test Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def test_workflow_with_bucket(db_session: Session):
+    """
+    Create a real workflow with one bucket in test database for document upload tests.
+
+    Returns tuple: (workflow_id, bucket_id)
+    """
+    from app.models.models import Workflow, Bucket
+    from uuid import uuid4
+
+    workflow_id = str(uuid4())
+    bucket_id = str(uuid4())
+
+    # Create workflow
+    workflow = Workflow(
+        id=workflow_id,
+        name="Document Test Workflow",
+        description="Workflow for document upload testing",
+        organization_id=TEST_ORG_A_ID,
+        created_by=TEST_USER_A_PM_ID,
+        is_active=True,
+    )
+    db_session.add(workflow)
+    db_session.flush()
+
+    # Create bucket
+    bucket = Bucket(
+        id=bucket_id,
+        workflow_id=workflow_id,
+        name="Test Documents",
+        required=True,
+        accepted_file_types=["pdf", "docx"],
+        order_index=0,
+    )
+    db_session.add(bucket)
+    db_session.commit()
+
+    yield (workflow_id, bucket_id)
+
+    # Cleanup
+    db_session.query(Bucket).filter(Bucket.id == bucket_id).delete()
+    db_session.query(Workflow).filter(Workflow.id == workflow_id).delete()
+    db_session.commit()
+
+
+@pytest.fixture
+def test_document_in_org_a(db_session: Session):
+    """
+    Create a real document in Organization A for download/deletion tests.
+
+    Returns Document model instance.
+    """
+    from app.models.models import Document
+    from uuid import uuid4
+    from datetime import datetime, timezone
+
+    doc_id = str(uuid4())
+
+    document = Document(
+        id=doc_id,
+        file_name="test-document-org-a.pdf",
+        file_size=1024,
+        mime_type="application/pdf",
+        storage_key=f"test-storage-key-{doc_id}",
+        organization_id=TEST_ORG_A_ID,
+        uploaded_by=TEST_USER_A_PH_ID,
+        uploaded_at=datetime.now(timezone.utc),
+    )
+    db_session.add(document)
+    db_session.commit()
+
+    yield document
+
+    # Cleanup
+    db_session.query(Document).filter(Document.id == doc_id).delete()
+    db_session.commit()
+
+
+@pytest.fixture
+def test_workflow_with_bucket_org_b(db_session: Session):
+    """
+    Create a real workflow with one bucket in Organization B for multi-tenancy tests.
+
+    Returns tuple: (workflow_id, bucket_id)
+    """
+    from app.models.models import Workflow, Bucket
+    from uuid import uuid4
+
+    workflow_id = str(uuid4())
+    bucket_id = str(uuid4())
+
+    # Create workflow in Org B
+    workflow = Workflow(
+        id=workflow_id,
+        name="Org B Document Test Workflow",
+        description="Workflow for multi-tenancy testing",
+        organization_id=TEST_ORG_B_ID,
+        created_by=TEST_USER_B_PM_ID,
+        is_active=True,
+    )
+    db_session.add(workflow)
+    db_session.flush()
+
+    # Create bucket
+    bucket = Bucket(
+        id=bucket_id,
+        workflow_id=workflow_id,
+        name="Org B Test Documents",
+        required=True,
+        accepted_file_types=["pdf", "docx"],
+        order_index=0,
+    )
+    db_session.add(bucket)
+    db_session.commit()
+
+    yield (workflow_id, bucket_id)
+
+    # Cleanup
+    db_session.query(Bucket).filter(Bucket.id == bucket_id).delete()
+    db_session.query(Workflow).filter(Workflow.id == workflow_id).delete()
+    db_session.commit()
+
+
+@pytest.fixture
+def test_document_in_org_b(db_session: Session):
+    """
+    Create a real document in Organization B for multi-tenancy tests.
+
+    Returns Document model instance.
+    """
+    from app.models.models import Document
+    from uuid import uuid4
+    from datetime import datetime, timezone
+
+    doc_id = str(uuid4())
+
+    document = Document(
+        id=doc_id,
+        file_name="test-document-org-b.pdf",
+        file_size=2048,
+        mime_type="application/pdf",
+        storage_key=f"test-storage-key-{doc_id}",
+        organization_id=TEST_ORG_B_ID,
+        uploaded_by=TEST_USER_B_PH_ID,
+        uploaded_at=datetime.now(timezone.utc),
+    )
+    db_session.add(document)
+    db_session.commit()
+
+    yield document
+
+    # Cleanup
+    db_session.query(Document).filter(Document.id == doc_id).delete()
+    db_session.commit()
+
+
+# =============================================================================
 # Error Response Assertion Helpers
 # =============================================================================
 
