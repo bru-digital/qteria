@@ -169,15 +169,17 @@ def _auto_mock_vercel_blob(request):
             assert _auto_mock_vercel_blob["put"].called
     """
     # Skip for blob storage unit tests marked with @pytest.mark.unit
-    if request.node.get_closest_marker('unit'):
+    if request.node.get_closest_marker("unit"):
         yield None
         return
 
     # Patch at module level where imports are defined (vercel_blob.put, not app.services.blob_storage.put)
     # This is necessary because blob_storage.py imports these functions dynamically inside methods
-    with patch('vercel_blob.put', new_callable=AsyncMock) as mock_put, \
-         patch('vercel_blob.delete', new_callable=AsyncMock) as mock_del, \
-         patch.dict('os.environ', {'BLOB_READ_WRITE_TOKEN': 'mock-token-for-integration-tests'}):
+    with (
+        patch("vercel_blob.put", new_callable=AsyncMock) as mock_put,
+        patch("vercel_blob.delete", new_callable=AsyncMock) as mock_del,
+        patch.dict("os.environ", {"BLOB_READ_WRITE_TOKEN": "mock-token-for-integration-tests"}),
+    ):
 
         # Mock Vercel Blob upload response
         # Format matches actual Vercel Blob API: https://vercel.com/docs/storage/vercel-blob
@@ -187,7 +189,7 @@ def _auto_mock_vercel_blob(request):
             return {
                 "url": f"https://blob.vercel-storage.com/{pathname}?token=mock",
                 "pathname": pathname,
-                "contentType": options.get('contentType', 'application/pdf'),
+                "contentType": options.get("contentType", "application/pdf"),
             }
 
         mock_put.side_effect = mock_upload
