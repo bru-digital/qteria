@@ -367,7 +367,7 @@ def list_workflows(
     # Apply sorting using explicit field mapping (defense-in-depth)
     # FastAPI regex validation already enforces sort_by in ALLOWED_SORT_FIELDS,
     # but we add defensive handling in case of future middleware changes
-    sort_column: InstrumentedAttribute | None = ALLOWED_SORT_FIELDS.get(sort_by)
+    sort_column = ALLOWED_SORT_FIELDS.get(sort_by)
     if not sort_column:
         raise create_error_response(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -376,7 +376,7 @@ def list_workflows(
             request=request,
         )
 
-    # After the None check, MyPy knows sort_column is InstrumentedAttribute
+    # MyPy infers sort_column is InstrumentedAttribute after None check
     if order == "desc":
         query = query.order_by(sort_column.desc())
     else:
