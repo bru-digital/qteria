@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("/health", tags=["Health"])
-async def health_check_detailed(db: Session = Depends(get_db)):
+async def health_check_detailed(db: Session = Depends(get_db)) -> dict[str, str]:
     """
     Detailed health check with database connectivity test.
 
