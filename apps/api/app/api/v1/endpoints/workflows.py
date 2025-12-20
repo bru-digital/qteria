@@ -17,14 +17,14 @@ Note: All endpoints use `def` (not `async def`) because:
 - Using `def` is more accurate and avoids unnecessary async overhead
 """
 
-from typing import List
+from typing import List, Dict, cast
 from uuid import UUID
 from datetime import datetime, timezone
 from collections import Counter
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, InstrumentedAttribute
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 
@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
 # Allowed sort fields mapping for security and maintainability
-ALLOWED_SORT_FIELDS = {
+ALLOWED_SORT_FIELDS: Dict[str, InstrumentedAttribute] = {
     "created_at": Workflow.created_at,
     "name": Workflow.name,
 }
@@ -129,17 +129,18 @@ def create_workflow(
         bucket_names = [bucket.name for bucket in workflow_data.buckets]
         bucket_names_lower = [name.lower() for name in bucket_names]
 
-        # Find duplicates
+        # Find duplicates and return original casing
         name_counts = Counter(bucket_names_lower)
-        duplicates = [name for name, count in name_counts.items() if count > 1]
+        duplicate_lower = {name for name, count in name_counts.items() if count > 1}
+        duplicate_originals = [name for name in bucket_names if name.lower() in duplicate_lower]
 
-        if duplicates:
+        if duplicate_originals:
             raise create_error_response(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 error_code="VALIDATION_ERROR",
                 message="Duplicate bucket names not allowed within a workflow",
                 details={
-                    "duplicate_names": duplicates,
+                    "duplicate_names": duplicate_originals,  # Original casing
                     "bucket_names": bucket_names
                 },
                 request=request,
@@ -202,8 +203,8 @@ def create_workflow(
             db=db,
             user_id=current_user.id,
             organization_id=current_user.organization_id,
-            workflow_id=workflow.id,
-            workflow_name=workflow.name,
+            workflow_id=cast(UUID, workflow.id),
+            workflow_name=cast(str, workflow.name),
             request=request,
         )
 
@@ -375,6 +376,7 @@ def list_workflows(
             request=request,
         )
 
+    # MyPy infers sort_column is InstrumentedAttribute after None check
     if order == "desc":
         query = query.order_by(sort_column.desc())
     else:
@@ -602,9 +604,11 @@ def update_workflow(
         criteria_deleted = 0
 
         # 2. Update workflow metadata
-        workflow.name = workflow_data.name
-        workflow.description = workflow_data.description
-        workflow.updated_at = datetime.now(timezone.utc)
+        # Note: SQLAlchemy descriptors handle type conversion at runtime
+        # MyPy sees Column[T] at class level, but instances accept T values
+        workflow.name = workflow_data.name  # type: ignore[assignment]
+        workflow.description = workflow_data.description  # type: ignore[assignment]
+        workflow.updated_at = datetime.now(timezone.utc)  # type: ignore[assignment]
 
         # 3. Update buckets (delete, update, create)
         existing_bucket_ids = {bucket.id for bucket in workflow.buckets}
@@ -712,8 +716,8 @@ def update_workflow(
             db=db,
             user_id=current_user.id,
             organization_id=current_user.organization_id,
-            workflow_id=workflow.id,
-            workflow_name=workflow.name,
+            workflow_id=cast(UUID, workflow.id),
+            workflow_name=cast(str, workflow.name),
             buckets_added=buckets_added,
             buckets_updated=buckets_updated,
             buckets_deleted=buckets_deleted,
@@ -884,8 +888,9 @@ def archive_workflow(
         )
 
     # Soft delete: Mark as archived
-    workflow.archived = True
-    workflow.archived_at = datetime.now(timezone.utc)
+    # Note: SQLAlchemy descriptors handle type conversion at runtime
+    workflow.archived = True  # type: ignore[assignment]
+    workflow.archived_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     db.commit()
 
     # Log workflow archive (important operation for audit trail)

@@ -488,6 +488,46 @@ class TestAuditLoggingIntegration:
         # IP might be testclient in test environment
         assert latest_log.ip_address is not None
 
+    def test_organization_delete_preserves_audit_logs(self, db_session):
+        """Deleting organization should SET NULL on audit logs, not delete them (SOC2/ISO 27001)."""
+        # Create test organization
+        test_org = Organization(
+            id=uuid4(),
+            name="Test Org for Audit Log Preservation",
+            slug="test-org-audit-preserve",
+        )
+        db_session.add(test_org)
+        db_session.commit()
+        db_session.refresh(test_org)
+
+        # Create audit log associated with this organization
+        audit_log = AuditLog(
+            id=uuid4(),
+            organization_id=test_org.id,
+            user_id=None,
+            action="test.action",
+            resource_type="test",
+            resource_id=str(uuid4()),
+            status="success",
+            ip_address="127.0.0.1",
+            user_agent="TestAgent",
+            request_id=str(uuid4()),
+        )
+        db_session.add(audit_log)
+        db_session.commit()
+        db_session.refresh(audit_log)
+        audit_log_id = audit_log.id
+
+        # Delete organization
+        db_session.delete(test_org)
+        db_session.commit()
+
+        # Verify audit log still exists with NULL organization_id
+        preserved_audit_log = db_session.query(AuditLog).filter(AuditLog.id == audit_log_id).first()
+        assert preserved_audit_log is not None, "Audit log must persist (SOC2/ISO 27001)"
+        assert preserved_audit_log.organization_id is None, "Organization ID should be NULL after org deletion"
+        assert preserved_audit_log.action == "test.action", "Audit log data should be preserved"
+
 
 class TestMultiTenancyIsolation:
     """Integration tests for multi-tenancy isolation."""
