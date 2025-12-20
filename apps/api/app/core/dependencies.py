@@ -19,14 +19,17 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import Annotated, Generator, Optional
+from typing import Annotated, Generator, Optional, TYPE_CHECKING
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from redis import Redis, ConnectionError as RedisConnectionError, RedisError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.base import SessionLocal
+
+if TYPE_CHECKING:
+    from app.core.auth import AuthenticatedUser
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +81,8 @@ def initialize_redis_client() -> None:
         )
 
         # Test connection
-        _redis_client.ping()
+        if _redis_client is not None:
+            _redis_client.ping()
         logger.info("Redis connection established successfully", extra={"redis_url": redis_url})
 
     except RedisConnectionError as e:
@@ -122,7 +126,7 @@ def initialize_redis_client() -> None:
         _redis_client = None
 
 
-def get_redis() -> Generator[Redis, None, None]:
+def get_redis() -> Generator[Optional[Redis], None, None]:
     """
     Dependency function for FastAPI to get Redis client connections.
 
@@ -181,7 +185,7 @@ def check_upload_rate_limit(
     redis: RedisClient,
     db: DbSession,
     file_count: int = 1,
-    request: "Request" = None,
+    request: Optional[Request] = None,
 ) -> int:
     """
     Check if user has exceeded upload rate limit (100 uploads per hour).
