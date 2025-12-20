@@ -25,7 +25,7 @@ Usage:
 """
 
 from datetime import datetime, timezone
-from typing import Annotated, Callable, Optional
+from typing import Annotated, Awaitable, Callable, Optional
 from uuid import UUID
 import logging
 
@@ -282,7 +282,7 @@ async def get_current_user(
         raise error
 
 
-def require_role(*allowed_roles: UserRole) -> Callable:
+def require_role(*allowed_roles: UserRole) -> Callable[..., Awaitable[CurrentUser]]:
     """
     Create a dependency that requires specific role(s) for access.
 
@@ -357,7 +357,7 @@ def require_role(*allowed_roles: UserRole) -> Callable:
     return role_checker
 
 
-def require_permission(*required_permissions: Permission) -> Callable:
+def require_permission(*required_permissions: Permission) -> Callable[..., Awaitable[CurrentUser]]:
     """
     Create a dependency that requires specific permission(s) for access.
 

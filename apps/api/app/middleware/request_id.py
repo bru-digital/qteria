@@ -22,10 +22,11 @@ Usage in client:
 """
 
 import uuid
-from typing import Callable
+from typing import Awaitable, Callable
 
-from fastapi import Request, Response
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -43,7 +44,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     - Audit service for SOC2/ISO 27001 compliance
     """
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """Process incoming request and add request ID.
 
         Args:

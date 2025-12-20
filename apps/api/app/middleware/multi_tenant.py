@@ -47,6 +47,7 @@ import logging
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.core.auth import get_current_user, CurrentUser
 from app.core.dependencies import get_db
@@ -232,10 +233,10 @@ class MultiTenantMiddleware:
         app.add_middleware(MultiTenantMiddleware)
     """
 
-    def __init__(self, app):
+    def __init__(self, app: ASGIApp) -> None:
         self.app = app
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Process the request and ensure organization context is cleared after.
 
