@@ -166,9 +166,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qteria_test
 
-      - name: Seed test database
+      - name: Clear and seed test database
         run: |
           cd apps/api
+          python scripts/clear_test_data.py
           python scripts/seed_test_data.py
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qteria_test
