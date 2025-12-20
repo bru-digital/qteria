@@ -66,10 +66,10 @@ class Organization(Base):
 
     # Relationships
     users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
-    workflows = relationship("Workflow", back_populates="organization")
-    assessments = relationship("Assessment", back_populates="organization")
-    documents = relationship("Document", back_populates="organization")
-    audit_logs = relationship("AuditLog", back_populates="organization")
+    workflows = relationship("Workflow", back_populates="organization", cascade="all, delete-orphan")
+    assessments = relationship("Assessment", back_populates="organization", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="organization", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", back_populates="organization", cascade="all, delete-orphan")
 
 
 class User(Base):

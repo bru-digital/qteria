@@ -124,6 +124,17 @@ def create_workflow(
         HTTPException 500: Database error
     """
     try:
+        # Validate duplicate bucket names
+        bucket_names = [bucket.name for bucket in workflow_data.buckets]
+        if len(bucket_names) != len(set(bucket_names)):
+            raise create_error_response(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                error_code="VALIDATION_ERROR",
+                message="Duplicate bucket names not allowed within a workflow",
+                details={"bucket_names": bucket_names},
+                request=request,
+            )
+
         # Begin transaction (SQLAlchemy session handles this)
         # 1. Create workflow
         workflow = Workflow(
