@@ -416,7 +416,7 @@ class TestCreateWorkflow:
             headers={"Authorization": f"Bearer {process_manager_token}"},
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 400  # VALIDATION_ERROR uses 400 per CLAUDE.md
         error_detail = response.json()["error"]
         assert any(
             "unique" in str(err).lower() and "technical documentation" in str(err).lower()

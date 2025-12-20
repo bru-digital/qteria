@@ -136,7 +136,7 @@ def create_workflow(
 
         if duplicates:
             raise create_error_response(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 error_code="VALIDATION_ERROR",
                 message="Duplicate bucket names not allowed within a workflow",
                 details={
