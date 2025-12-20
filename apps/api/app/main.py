@@ -2,11 +2,12 @@
 FastAPI main application entry point.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     FastAPI lifespan context manager for startup and shutdown logic.
 
@@ -122,7 +123,7 @@ app.add_middleware(
 
 # Root endpoint
 @app.get("/", tags=["Root"])
-async def root():
+async def root() -> dict[str, str]:
     """Root endpoint - API information."""
     return {
         "name": settings.PROJECT_NAME,
@@ -136,7 +137,7 @@ async def root():
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
-async def health_check():
+async def health_check() -> dict[str, str]:
     """
     Health check endpoint for monitoring and load balancers.
 
@@ -154,7 +155,7 @@ async def health_check():
 
 # Custom HTTPException handler to unwrap detail field
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc: HTTPException):
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """
     Custom HTTPException handler to unwrap the detail field.
 
@@ -198,7 +199,7 @@ async def http_exception_handler(request, exc: HTTPException):
 
 # Global exception handler
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Global exception handler for unhandled errors.
 
