@@ -423,8 +423,9 @@ class TestCreateWorkflow:
         assert error_response["code"] == "VALIDATION_ERROR"
         assert "duplicate" in error_response["message"].lower()
 
-        # Verify duplicate bucket name is in details
-        assert "technical documentation" in error_response["details"]["duplicate_names"]
+        # Verify duplicate bucket name is in details (case-insensitive check)
+        duplicate_names = error_response["details"]["duplicate_names"]
+        assert any("technical documentation" in name.lower() for name in duplicate_names)
 
 
 class TestListWorkflows:

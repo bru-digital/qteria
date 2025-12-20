@@ -129,17 +129,18 @@ def create_workflow(
         bucket_names = [bucket.name for bucket in workflow_data.buckets]
         bucket_names_lower = [name.lower() for name in bucket_names]
 
-        # Find duplicates
+        # Find duplicates and return original casing
         name_counts = Counter(bucket_names_lower)
-        duplicates = [name for name, count in name_counts.items() if count > 1]
+        duplicate_lower = {name for name, count in name_counts.items() if count > 1}
+        duplicate_originals = [name for name in bucket_names if name.lower() in duplicate_lower]
 
-        if duplicates:
+        if duplicate_originals:
             raise create_error_response(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 error_code="VALIDATION_ERROR",
                 message="Duplicate bucket names not allowed within a workflow",
                 details={
-                    "duplicate_names": duplicates,
+                    "duplicate_names": duplicate_originals,  # Original casing
                     "bucket_names": bucket_names
                 },
                 request=request,
