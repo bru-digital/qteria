@@ -12,6 +12,7 @@ against workflow criteria.
 
 import logging
 from datetime import datetime, timedelta, timezone
+from typing import cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, status
@@ -340,7 +341,7 @@ async def start_assessment(
             organization_id=org_id,
             user_id=current_user.id,
             resource_type="assessment",
-            resource_id=assessment.id,
+            resource_id=cast(UUID, assessment.id),
             metadata={
                 "workflow_id": str(data.workflow_id),
                 "document_count": len(data.documents),

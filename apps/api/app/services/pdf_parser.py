@@ -83,6 +83,7 @@ def _check_java_availability() -> bool:
 # Optional table extraction dependencies (graceful degradation if not available)
 try:
     import tabula
+    import pandas as pd
 
     JAVA_AVAILABLE = _check_java_availability()
     TABLE_EXTRACTION_AVAILABLE = JAVA_AVAILABLE
@@ -377,7 +378,7 @@ class PDFParserService:
             # The actual parsing will fail with CorruptPDFError if it's really broken
             return False
 
-    def _extract_with_pypdf2(self, file_path: str) -> List[Dict]:
+    def _extract_with_pypdf2(self, file_path: str) -> List[Dict[str, Any]]:
         """
         Extract text from PDF using PyPDF2.
 
@@ -428,7 +429,7 @@ class PDFParserService:
 
         return pages
 
-    def _extract_with_pdfplumber(self, file_path: str) -> List[Dict]:
+    def _extract_with_pdfplumber(self, file_path: str) -> List[Dict[str, Any]]:
         """
         Extract text from PDF using pdfplumber (fallback method).
 
@@ -472,8 +473,8 @@ class PDFParserService:
         return pages
 
     def _detect_sections(
-        self, pages: List[Dict], custom_patterns: Optional[List[str]] = None
-    ) -> List[Dict]:
+        self, pages: List[Dict[str, Any]], custom_patterns: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
         """
         Detect section headings across pages using regex patterns.
 
@@ -593,7 +594,7 @@ class PDFParserService:
         self,
         document_id: UUID,
         organization_id: UUID,
-        parsed_data: List[Dict],
+        parsed_data: List[Dict[str, Any]],
         method: str,
         tables: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
@@ -642,7 +643,7 @@ class PDFParserService:
             )
             raise PDFParsingError(f"Failed to cache parsed document: {str(e)}")
 
-    def _compile_section_patterns(self, patterns: List[str]) -> List[re.Pattern]:
+    def _compile_section_patterns(self, patterns: List[str]) -> List[re.Pattern[str]]:
         """
         Compile and validate custom section detection patterns.
 
@@ -756,7 +757,7 @@ class PDFParserService:
                 "Must be 3-letter ISO 639-2 code (e.g., 'eng', 'deu', 'fra') or combined (e.g., 'eng+deu')"
             )
 
-    def _is_scanned_pdf(self, pages: List[Dict]) -> Tuple[bool, str]:
+    def _is_scanned_pdf(self, pages: List[Dict[str, Any]]) -> Tuple[bool, str]:
         """
         Detect if PDF contains scanned images (no extractable text).
 
@@ -874,7 +875,7 @@ class PDFParserService:
             )
             return OCR_DEFAULT_DPI
 
-    def _extract_with_ocr(self, file_path: str, language: str = "eng") -> List[Dict]:
+    def _extract_with_ocr(self, file_path: str, language: str = "eng") -> List[Dict[str, Any]]:
         """
         Extract text from scanned PDF using OCR (pytesseract).
 
@@ -1045,7 +1046,7 @@ class PDFParserService:
                 try:
                     # Extract tables from single page
                     # java_options limits heap size to prevent OOM in production (Railway 512MB tier)
-                    page_tables = tabula.read_pdf(
+                    page_tables = tabula.read_pdf(  # type: ignore[attr-defined]
                         file_path,
                         pages=page_num,
                         multiple_tables=True,
@@ -1054,7 +1055,15 @@ class PDFParserService:
                     )
 
                     # Convert each table on this page to structured format
+                    # Type narrowing: Ensure page_tables is a list before iterating
+                    if not isinstance(page_tables, list):
+                        continue
+
                     for df in page_tables:
+                        # Type narrowing: Verify df is a DataFrame before accessing methods
+                        if not isinstance(df, pd.DataFrame):
+                            continue
+
                         if df.empty:
                             continue
 
