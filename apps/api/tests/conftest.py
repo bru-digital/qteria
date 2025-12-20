@@ -474,6 +474,8 @@ def db_session() -> Generator[Session, None, None]:
     # Cleanup: rollback all changes made during test
     # Use try/finally to ensure connection is always closed even if rollback fails
     try:
+        # Remove event listener to prevent accumulation in pytest watch mode
+        event.remove(session, "after_transaction_end", restart_savepoint)
         session.close()
         transaction.rollback()  # Rollback savepoint
         outer_transaction.rollback()  # Rollback outer transaction
