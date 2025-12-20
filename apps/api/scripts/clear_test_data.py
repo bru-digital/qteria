@@ -30,6 +30,8 @@ from app.models import (
     User,
     Organization,
     AuditLog,
+    Document,
+    ParsedDocument,
 )
 
 
@@ -47,7 +49,9 @@ def clear_test_data():
 
         counts = {}
         counts["assessment_results"] = db.query(AssessmentResult).delete()
+        counts["parsed_documents"] = db.query(ParsedDocument).delete()
         counts["assessment_documents"] = db.query(AssessmentDocument).delete()
+        counts["documents"] = db.query(Document).delete()
         counts["assessments"] = db.query(Assessment).delete()
         counts["criteria"] = db.query(Criteria).delete()
         counts["buckets"] = db.query(Bucket).delete()

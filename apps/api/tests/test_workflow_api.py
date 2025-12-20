@@ -422,6 +422,7 @@ class TestCreateWorkflow:
         # Verify error structure (per CLAUDE.md error response format)
         assert error_response["code"] == "VALIDATION_ERROR"
         assert "duplicate" in error_response["message"].lower()
+        assert "request_id" in error_response, "Error must include request_id for debugging"
 
         # Verify duplicate bucket name is in details (case-insensitive check)
         duplicate_names = error_response["details"]["duplicate_names"]
