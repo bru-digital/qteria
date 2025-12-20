@@ -125,14 +125,24 @@ def create_workflow(
     """
     try:
         # Validate duplicate bucket names (case-insensitive)
+        from collections import Counter
+
         bucket_names = [bucket.name for bucket in workflow_data.buckets]
         bucket_names_lower = [name.lower() for name in bucket_names]
-        if len(bucket_names_lower) != len(set(bucket_names_lower)):
+
+        # Find duplicates
+        name_counts = Counter(bucket_names_lower)
+        duplicates = [name for name, count in name_counts.items() if count > 1]
+
+        if duplicates:
             raise create_error_response(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 error_code="VALIDATION_ERROR",
                 message="Duplicate bucket names not allowed within a workflow",
-                details={"bucket_names": bucket_names},
+                details={
+                    "duplicate_names": duplicates,
+                    "bucket_names": bucket_names
+                },
                 request=request,
             )
 
