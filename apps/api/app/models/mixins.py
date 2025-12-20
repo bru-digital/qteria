@@ -29,7 +29,7 @@ Security Note:
     Never bypass these methods for user-facing queries.
 """
 
-from typing import Generic, List, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Generic, List, Optional, Type, TypeVar
 from uuid import UUID
 
 from fastapi import HTTPException, Request, status
@@ -39,8 +39,12 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import create_error_response
 from app.services.audit import AuditService
 
-# Generic type variable for model classes
-T = TypeVar("T")
+if TYPE_CHECKING:
+    from app.models.base import Base
+
+# Generic type variable for model classes, constrained to SQLAlchemy Base
+# This enables MyPy to recognize SQLAlchemy model attributes (organization_id, id, etc.)
+T = TypeVar("T", bound="Base")
 
 
 def not_found_error(resource_name: str, request: Optional[Request] = None) -> HTTPException:
