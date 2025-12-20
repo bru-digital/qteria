@@ -58,7 +58,12 @@ def create_jwt_token(
 
 
 class TestDatabaseSetup:
-    """Helper class for database setup and teardown."""
+    """
+    Helper class for database setup.
+
+    Note: Cleanup methods removed - automatic rollback via db_session fixture
+    handles all test data cleanup.
+    """
 
     @staticmethod
     def create_test_organization(db: Session, name: str) -> Organization:
@@ -94,31 +99,27 @@ class TestDatabaseSetup:
         db.refresh(user)
         return user
 
-    @staticmethod
-    def cleanup_test_data(db: Session, org_ids: list[UUID]) -> None:
-        """Clean up test data after tests."""
-        for org_id in org_ids:
-            org = db.query(Organization).filter(Organization.id == org_id).first()
-            if org:
-                db.delete(org)
-        db.commit()
-
 
 @pytest.fixture
-def test_orgs(db_session: Session) -> Generator[tuple[Organization, Organization], None, None]:
-    """Create two test organizations for multi-tenancy tests."""
+def test_orgs(db_session: Session) -> tuple[Organization, Organization]:
+    """
+    Create two test organizations for multi-tenancy tests.
+
+    Note: Cleanup is automatic via db_session transaction rollback.
+    """
     org_a = TestDatabaseSetup.create_test_organization(db_session, TEST_ORG_A_NAME)
     org_b = TestDatabaseSetup.create_test_organization(db_session, TEST_ORG_B_NAME)
 
-    yield org_a, org_b
-
-    # Cleanup
-    TestDatabaseSetup.cleanup_test_data(db_session, [org_a.id, org_b.id])
+    return org_a, org_b
 
 
 @pytest.fixture
-def test_users(db_session: Session, test_orgs) -> Generator[dict, None, None]:
-    """Create test users for each organization and role."""
+def test_users(db_session: Session, test_orgs) -> dict:
+    """
+    Create test users for each organization and role.
+
+    Note: Cleanup is automatic via db_session transaction rollback.
+    """
     org_a, org_b = test_orgs
 
     users = {
@@ -136,9 +137,7 @@ def test_users(db_session: Session, test_orgs) -> Generator[dict, None, None]:
         ),
     }
 
-    yield users
-
-    # Users are cascade deleted with organizations
+    return users
 
 
 @pytest.fixture

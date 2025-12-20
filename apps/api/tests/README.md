@@ -57,7 +57,45 @@ def test_upload_pdf(client, token):
 
 **`test_organization`** - Returns seeded Organization A from database
 **`test_user`** - Returns seeded Admin User A from database
-**`db_session`** - Provides SQLAlchemy session for creating test data
+**`db_session`** - Provides SQLAlchemy session for creating test data with automatic transaction rollback
+
+### Transaction Isolation Pattern
+
+The `db_session` fixture uses **nested transactions (savepoints)** to automatically rollback all test data after each test completes. This ensures test isolation without requiring manual cleanup.
+
+**How it works**:
+
+1. Each test gets a database session bound to a nested transaction (savepoint)
+2. Test code can freely create/update/delete data and call `db.commit()`
+3. Commits are applied to the savepoint, NOT the outer transaction
+4. After test completes, the savepoint is rolled back automatically
+5. Session-level seed data (from `pytest_sessionstart`) persists across all tests
+
+**Example - No cleanup needed**:
+
+```python
+def test_create_workflow(db_session):
+    workflow = Workflow(
+        name="Test Workflow",
+        organization_id=TEST_ORG_A_ID,
+        created_by=TEST_USER_A_PM_ID,
+    )
+    db_session.add(workflow)
+    db_session.commit()  # Commits to savepoint
+
+    # Test assertions...
+
+    # NO CLEANUP NEEDED - workflow is automatically rolled back
+```
+
+**Benefits**:
+
+- **No manual cleanup** - No `yield` + cleanup blocks needed in fixtures
+- **Faster tests** - No explicit delete queries at teardown
+- **Safer tests** - Impossible to accidentally leave test data in database
+- **Prevents data pollution** - Each test starts with clean slate (except seeded data)
+
+**Note**: This pattern fixed 26 `UniqueViolation` errors that occurred when test data was not properly cleaned up between test runs (issue #166).
 
 ### Token Fixtures
 
