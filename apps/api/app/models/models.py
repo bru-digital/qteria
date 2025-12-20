@@ -65,11 +65,21 @@ class Organization(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
-    workflows = relationship("Workflow", back_populates="organization", cascade="all, delete-orphan")
-    assessments = relationship("Assessment", back_populates="organization", cascade="all, delete-orphan")
-    documents = relationship("Document", back_populates="organization", cascade="all, delete-orphan")
-    audit_logs = relationship("AuditLog", back_populates="organization", cascade="all, delete-orphan")
+    users = relationship(
+        "User", back_populates="organization", cascade="all, delete-orphan"
+    )
+    workflows = relationship(
+        "Workflow", back_populates="organization", cascade="all, delete-orphan"
+    )
+    assessments = relationship(
+        "Assessment", back_populates="organization", cascade="all, delete-orphan"
+    )
+    documents = relationship(
+        "Document", back_populates="organization", cascade="all, delete-orphan"
+    )
+    audit_logs = relationship(
+        "AuditLog", back_populates="organization", cascade="all, delete-orphan"
+    )
 
 
 class User(Base):
