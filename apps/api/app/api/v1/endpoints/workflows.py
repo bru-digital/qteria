@@ -20,6 +20,7 @@ Note: All endpoints use `def` (not `async def`) because:
 from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
+from collections import Counter
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -125,8 +126,6 @@ def create_workflow(
     """
     try:
         # Validate duplicate bucket names (case-insensitive)
-        from collections import Counter
-
         bucket_names = [bucket.name for bucket in workflow_data.buckets]
         bucket_names_lower = [name.lower() for name in bucket_names]
 

@@ -417,11 +417,14 @@ class TestCreateWorkflow:
         )
 
         assert response.status_code == 400  # VALIDATION_ERROR uses 400 per CLAUDE.md
-        error_detail = response.json()["error"]
-        assert any(
-            "unique" in str(err).lower() and "technical documentation" in str(err).lower()
-            for err in error_detail
-        )
+        error_response = response.json()["error"]
+
+        # Verify error structure (per CLAUDE.md error response format)
+        assert error_response["code"] == "VALIDATION_ERROR"
+        assert "duplicate" in error_response["message"].lower()
+
+        # Verify duplicate bucket name is in details
+        assert "technical documentation" in error_response["details"]["duplicate_names"]
 
 
 class TestListWorkflows:
