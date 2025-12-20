@@ -77,10 +77,8 @@ class Organization(Base):
     documents = relationship(
         "Document", back_populates="organization", cascade="all, delete-orphan"
     )
-    audit_logs = relationship(
-        "AuditLog", back_populates="organization"
-        # Note: No cascade delete - audit logs preserved for SOC2/ISO 27001 compliance
-    )
+    # Note: No cascade delete - audit logs preserved for SOC2/ISO 27001 compliance
+    audit_logs = relationship("AuditLog", back_populates="organization")
 
 
 class User(Base):
@@ -424,7 +422,11 @@ class AuditLog(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # Nullable to support logging auth failures before org context is known
     # SET NULL on org deletion preserves audit trail for compliance (SOC2/ISO 27001)
-    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     action = Column(String(100), nullable=False)
     resource_type = Column(String(50))
