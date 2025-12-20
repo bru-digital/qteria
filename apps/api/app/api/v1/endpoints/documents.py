@@ -13,7 +13,7 @@ Documents are uploaded to Vercel Blob storage with encryption at rest and multi-
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, TypedDict, cast
 from uuid import UUID, uuid4
 
 from fastapi import (
@@ -65,6 +65,15 @@ from app.services.blob_storage import BlobStorageService
 from app.services.audit import AuditService
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
+
+
+# TypedDict for file data structure used during batch upload
+class FileData(TypedDict):
+    """Type definition for file data dict during upload processing."""
+    filename: str
+    content: bytes
+    size: int
+    mime_type: str
 
 
 def calculate_rate_limit_headers(
@@ -228,7 +237,7 @@ async def upload_document(
         ..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"
     ),
     bucket_id: Optional[str] = Form(None, description="Optional bucket ID for validation"),
-    request: Request = None,
+    request: Optional[Request] = None,
     db: Session = Depends(get_db),
 ) -> list[DocumentResponse]:
     """
@@ -410,7 +419,7 @@ async def upload_document(
         #
         # This approach optimizes for data consistency over memory efficiency.
 
-        file_data_list = []
+        file_data_list: list[FileData] = []
         for file in files:
             # Read file content and validate size
             file_content = file.file.read()
@@ -885,7 +894,7 @@ async def download_document(
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
     page: Optional[int] = None,
-    request: Request = None,
+    request: Optional[Request] = None,
 ) -> Response:
     """
     Download document from Vercel Blob storage.
@@ -962,7 +971,7 @@ async def download_document(
 
         # 2. Get download URL from Vercel Blob
         try:
-            download_url = await BlobStorageService.get_download_url(document.storage_key)
+            download_url = await BlobStorageService.get_download_url(cast(str, document.storage_key))
         except Exception as e:
             logger.error(
                 "Failed to get download URL from Vercel Blob",
@@ -1013,8 +1022,8 @@ async def download_document(
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
             headers={
                 "Location": download_url,
-                "Content-Type": document.mime_type,
-                "Content-Disposition": f'inline; filename="{document.file_name}"',
+                "Content-Type": cast(str, document.mime_type),
+                "Content-Disposition": f'inline; filename="{cast(str, document.file_name)}"',
             },
         )
 
@@ -1085,7 +1094,7 @@ async def delete_document(
     document_id: UUID,
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
-    request: Request = None,
+    request: Optional[Request] = None,
 ) -> Response:
     """
     Delete document from Vercel Blob storage and database.
@@ -1227,7 +1236,7 @@ async def delete_document(
         # - Failed deletions tracked in audit log with needs_cleanup flag for monitoring
         blob_deleted = False
         try:
-            blob_deleted = await BlobStorageService.delete_file(document.storage_key)
+            blob_deleted = await BlobStorageService.delete_file(cast(str, document.storage_key))
             if not blob_deleted:
                 logger.warning(
                     "Blob deletion returned False but continuing with database deletion",
