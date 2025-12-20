@@ -49,7 +49,7 @@ def create_organization(
     current_user: AdminOnly,
     request: Request,
     db: Session = Depends(get_db),
-):
+) -> OrganizationResponse:
     """
     Create a new organization.
 
@@ -98,7 +98,7 @@ def create_organization(
 def list_organizations(
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
-):
+) -> List[OrganizationResponse]:
     """
     List organizations.
 
@@ -135,7 +135,7 @@ def get_organization(
     current_user: AuthenticatedUser,
     request: Request,
     db: Session = Depends(get_db),
-):
+) -> OrganizationResponse:
     """
     Get a single organization by ID.
 
@@ -204,7 +204,7 @@ def update_organization(
     current_user: AdminOnly,
     request: Request,
     db: Session = Depends(get_db),
-):
+) -> OrganizationResponse:
     """
     Update an organization by ID.
 
@@ -291,7 +291,7 @@ def delete_organization(
     current_user: AdminOnly,
     request: Request,
     db: Session = Depends(get_db),
-):
+) -> None:
     """
     Delete an organization by ID.
 
