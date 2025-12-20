@@ -174,7 +174,16 @@ class BlobStorageService:
                 )
                 raise Exception("Invalid response from Vercel Blob - missing URL")
 
-            return response["url"]
+            # Type narrowing: Ensure URL is a string
+            url = response["url"]
+            if not isinstance(url, str):
+                logger.error(
+                    "Invalid response from Vercel Blob - URL is not a string",
+                    extra={"url_type": type(url).__name__, "url_value": str(url)},
+                )
+                raise Exception("Invalid response from Vercel Blob - URL is not a string")
+
+            return url
 
         except Exception as e:
             logger.error(
