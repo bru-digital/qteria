@@ -1,7 +1,7 @@
 """Add ondelete SET NULL to audit_logs.organization_id for compliance
 
 Revision ID: a7b8c9d0e1f2
-Revises: (latest revision)
+Revises: d4e5f6g7h8i0
 Create Date: 2025-12-20 21:22:00.000000
 
 This migration modifies the foreign key constraint on audit_logs.organization_id
