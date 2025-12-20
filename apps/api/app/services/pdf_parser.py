@@ -83,6 +83,7 @@ def _check_java_availability() -> bool:
 # Optional table extraction dependencies (graceful degradation if not available)
 try:
     import tabula
+    import pandas as pd
 
     JAVA_AVAILABLE = _check_java_availability()
     TABLE_EXTRACTION_AVAILABLE = JAVA_AVAILABLE
@@ -1060,8 +1061,6 @@ class PDFParserService:
 
                     for df in page_tables:
                         # Type narrowing: Verify df is a DataFrame before accessing methods
-                        import pandas as pd
-
                         if not isinstance(df, pd.DataFrame):
                             continue
 
