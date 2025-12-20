@@ -129,7 +129,7 @@ def create_workflow(
         bucket_names_lower = [name.lower() for name in bucket_names]
         if len(bucket_names_lower) != len(set(bucket_names_lower)):
             raise create_error_response(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 error_code="VALIDATION_ERROR",
                 message="Duplicate bucket names not allowed within a workflow",
                 details={"bucket_names": bucket_names},
