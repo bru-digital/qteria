@@ -63,7 +63,10 @@ def _validate_test_database_url():
     # CI exception requires both CI=true AND test database name pattern
     is_ci = os.getenv("CI", "").lower() in ("true", "1", "yes")
     is_ci_test = is_ci and (
-        "qteria_test" in database_name.lower() or database_name.endswith("_test")
+        "qteria-test" in database_name.lower()
+        or "qteria_test" in database_name.lower()
+        or database_name.endswith("-test")
+        or database_name.endswith("_test")
     )
     if is_ci_test:
         print(f"✅ CI environment detected with test database: {database_name}")
@@ -71,7 +74,10 @@ def _validate_test_database_url():
 
     # Check 3: Does database name match test patterns?
     is_test_database = (
-        "qteria_test" in database_name.lower() or database_name.endswith("_test")
+        "qteria-test" in database_name.lower()
+        or "qteria_test" in database_name.lower()
+        or database_name.endswith("-test")
+        or database_name.endswith("_test")
     )
 
     if not is_test_database:
@@ -82,12 +88,12 @@ def _validate_test_database_url():
             f"Database name: {database_name}\n"
             f"\n"
             f"Accepted patterns:\n"
-            f"  - Database name contains 'qteria_test'\n"
-            f"  - Database name ends with '_test'\n"
+            f"  - Database name contains 'qteria-test' or 'qteria_test'\n"
+            f"  - Database name ends with '-test' or '_test'\n"
             f"  - CI environment (CI=true) with neon.tech\n"
             f"\n"
             f"Fix: Update .env.test to point to test database:\n"
-            f"  DATABASE_URL=postgresql://user:pass@host/qteria_test\n"
+            f"  DATABASE_URL=postgresql://user:pass@host/qteria-test\n"
             f"\n"
             f"NEVER run tests against production database!\n",
             returncode=1,

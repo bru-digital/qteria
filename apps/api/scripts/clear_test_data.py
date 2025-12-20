@@ -7,7 +7,11 @@ Useful for resetting the test database to a clean state.
 
 Usage:
     python scripts/clear_test_data.py
+
+    # In CI (auto-confirm):
+    CI=true python scripts/clear_test_data.py
 """
+import os
 import sys
 from pathlib import Path
 
@@ -26,6 +30,8 @@ from app.models import (
     User,
     Organization,
     AuditLog,
+    Document,
+    ParsedDocument,
 )
 
 
@@ -43,7 +49,9 @@ def clear_test_data():
 
         counts = {}
         counts["assessment_results"] = db.query(AssessmentResult).delete()
+        counts["parsed_documents"] = db.query(ParsedDocument).delete()
         counts["assessment_documents"] = db.query(AssessmentDocument).delete()
+        counts["documents"] = db.query(Document).delete()
         counts["assessments"] = db.query(Assessment).delete()
         counts["criteria"] = db.query(Criteria).delete()
         counts["buckets"] = db.query(Bucket).delete()
@@ -77,8 +85,15 @@ if __name__ == "__main__":
     print("=" * 60)
     print()
 
-    response = input("⚠️  This will DELETE ALL DATA from qteria-test. Continue? (yes/no): ")
-    if response.lower() == "yes":
+    # Auto-confirm in CI environment (no interactive terminal)
+    is_ci = os.getenv("CI", "").lower() in ("true", "1", "yes")
+
+    if is_ci:
+        print("⚠️  CI environment detected - auto-confirming data deletion")
         clear_test_data()
     else:
-        print("Cancelled.")
+        response = input("⚠️  This will DELETE ALL DATA from qteria-test. Continue? (yes/no): ")
+        if response.lower() == "yes":
+            clear_test_data()
+        else:
+            print("Cancelled.")

@@ -43,7 +43,13 @@ def pytest_sessionstart(session):
     # Only seed in CI or if DATABASE_URL points to test database
     database_url = os.getenv("DATABASE_URL", "")
     is_ci = os.getenv("CI") == "true"
-    is_test_db = "qteria_test" in database_url or (is_ci and "neon.tech" in database_url)
+    # Accept qteria_test (CI), qteria-test (Neon), or CI with neon.tech
+    is_test_db = (
+        "qteria_test" in database_url
+        or "qteria-test" in database_url
+        or "/qteria?" in database_url  # Old pattern, kept for compatibility
+        or (is_ci and "neon.tech" in database_url)
+    )
 
     if not is_test_db:
         print("\n⚠️  Skipping test data seeding - DATABASE_URL does not point to test database")

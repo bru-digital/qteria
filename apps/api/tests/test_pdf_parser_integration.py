@@ -214,8 +214,8 @@ def test_extract_tables_integration(db_session, tmp_path):
         assert len(page3_tables) > 0, "Should detect table on page 3"
         # Verify page 3 table has correct page number (not sequential like page 2)
         assert page3_tables[0]["page"] == 3, "Page 3 table should have page number 3, not 2"
-        # Verify page 3 table structure (4 columns as defined in _create_pdf_with_tables)
-        assert len(page3_tables[0]["columns"]) == 4, "Page 3 table should have 4 columns"
+        # Verify page 3 table structure (3 columns as defined in _create_pdf_with_tables)
+        assert len(page3_tables[0]["columns"]) == 3, "Page 3 table should have 3 columns"
     else:
         # tabula may not detect all tables depending on PDF layout complexity
         # Log a warning but don't fail the test

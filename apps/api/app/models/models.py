@@ -65,10 +65,19 @@ class Organization(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
-    workflows = relationship("Workflow", back_populates="organization")
-    assessments = relationship("Assessment", back_populates="organization")
-    documents = relationship("Document", back_populates="organization")
+    users = relationship(
+        "User", back_populates="organization", cascade="all, delete-orphan"
+    )
+    workflows = relationship(
+        "Workflow", back_populates="organization", cascade="all, delete-orphan"
+    )
+    assessments = relationship(
+        "Assessment", back_populates="organization", cascade="all, delete-orphan"
+    )
+    documents = relationship(
+        "Document", back_populates="organization", cascade="all, delete-orphan"
+    )
+    # Note: No cascade delete - audit logs preserved for SOC2/ISO 27001 compliance
     audit_logs = relationship("AuditLog", back_populates="organization")
 
 
@@ -412,7 +421,12 @@ class AuditLog(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # Nullable to support logging auth failures before org context is known
-    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
+    # SET NULL on org deletion preserves audit trail for compliance (SOC2/ISO 27001)
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     action = Column(String(100), nullable=False)
     resource_type = Column(String(50))

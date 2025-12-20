@@ -20,6 +20,7 @@ Note: All endpoints use `def` (not `async def`) because:
 from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
+from collections import Counter
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -124,6 +125,27 @@ def create_workflow(
         HTTPException 500: Database error
     """
     try:
+        # Validate duplicate bucket names (case-insensitive)
+        bucket_names = [bucket.name for bucket in workflow_data.buckets]
+        bucket_names_lower = [name.lower() for name in bucket_names]
+
+        # Find duplicates and return original casing
+        name_counts = Counter(bucket_names_lower)
+        duplicate_lower = {name for name, count in name_counts.items() if count > 1}
+        duplicate_originals = [name for name in bucket_names if name.lower() in duplicate_lower]
+
+        if duplicate_originals:
+            raise create_error_response(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                error_code="VALIDATION_ERROR",
+                message="Duplicate bucket names not allowed within a workflow",
+                details={
+                    "duplicate_names": duplicate_originals,  # Original casing
+                    "bucket_names": bucket_names
+                },
+                request=request,
+            )
+
         # Begin transaction (SQLAlchemy session handles this)
         # 1. Create workflow
         workflow = Workflow(

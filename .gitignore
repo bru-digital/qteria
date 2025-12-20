@@ -155,3 +155,4 @@ test-results/
 .eslintcache
 *.tgz
 coverage.xml
+apps/api/.env.test

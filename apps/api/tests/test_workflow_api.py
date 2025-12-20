@@ -416,12 +416,17 @@ class TestCreateWorkflow:
             headers={"Authorization": f"Bearer {process_manager_token}"},
         )
 
-        assert response.status_code == 422
-        error_detail = response.json()["error"]
-        assert any(
-            "unique" in str(err).lower() and "technical documentation" in str(err).lower()
-            for err in error_detail
-        )
+        assert response.status_code == 400  # VALIDATION_ERROR uses 400 per CLAUDE.md
+        error_response = response.json()["error"]
+
+        # Verify error structure (per CLAUDE.md error response format)
+        assert error_response["code"] == "VALIDATION_ERROR"
+        assert "duplicate" in error_response["message"].lower()
+        assert "request_id" in error_response, "Error must include request_id for debugging"
+
+        # Verify duplicate bucket name is in details (case-insensitive check)
+        duplicate_names = error_response["details"]["duplicate_names"]
+        assert any("technical documentation" in name.lower() for name in duplicate_names)
 
 
 class TestListWorkflows:
