@@ -141,7 +141,7 @@ def create_workflow(
                 message="Duplicate bucket names not allowed within a workflow",
                 details={
                     "duplicate_names": duplicate_originals,  # Original casing
-                    "bucket_names": bucket_names
+                    "bucket_names": bucket_names,
                 },
                 request=request,
             )

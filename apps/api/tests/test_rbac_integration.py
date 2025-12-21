@@ -525,7 +525,9 @@ class TestAuditLoggingIntegration:
         # Verify audit log still exists with NULL organization_id
         preserved_audit_log = db_session.query(AuditLog).filter(AuditLog.id == audit_log_id).first()
         assert preserved_audit_log is not None, "Audit log must persist (SOC2/ISO 27001)"
-        assert preserved_audit_log.organization_id is None, "Organization ID should be NULL after org deletion"
+        assert (
+            preserved_audit_log.organization_id is None
+        ), "Organization ID should be NULL after org deletion"
         assert preserved_audit_log.action == "test.action", "Audit log data should be preserved"
 
 

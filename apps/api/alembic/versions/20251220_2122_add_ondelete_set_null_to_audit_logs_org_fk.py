@@ -28,11 +28,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Add ON DELETE SET NULL to audit_logs.organization_id foreign key."""
     # Drop existing foreign key constraint
-    op.drop_constraint(
-        "audit_logs_organization_id_fkey",
-        "audit_logs",
-        type_="foreignkey"
-    )
+    op.drop_constraint("audit_logs_organization_id_fkey", "audit_logs", type_="foreignkey")
 
     # Recreate foreign key with ON DELETE SET NULL
     op.create_foreign_key(
@@ -41,18 +37,14 @@ def upgrade() -> None:
         "organizations",
         ["organization_id"],
         ["id"],
-        ondelete="SET NULL"
+        ondelete="SET NULL",
     )
 
 
 def downgrade() -> None:
     """Remove ON DELETE SET NULL from audit_logs.organization_id foreign key."""
     # Drop existing foreign key constraint
-    op.drop_constraint(
-        "audit_logs_organization_id_fkey",
-        "audit_logs",
-        type_="foreignkey"
-    )
+    op.drop_constraint("audit_logs_organization_id_fkey", "audit_logs", type_="foreignkey")
 
     # Recreate foreign key without ON DELETE clause (defaults to NO ACTION)
     op.create_foreign_key(
@@ -60,5 +52,5 @@ def downgrade() -> None:
         "audit_logs",
         "organizations",
         ["organization_id"],
-        ["id"]
+        ["id"],
     )
