@@ -226,7 +226,6 @@ For each selected guideline, perform targeted checks using Grep + Read (efficien
 **CRITICAL VIOLATIONS:**
 
 - ❌ `apps/web/app/api/v1/workflows/route.ts:53` - JWT payload uses `organizationId` (should be `org_id`)
-
   - **Guideline:** 08-api-contracts-essentials.md, line 89-95 (JWT Authentication)
   - **Reason:** Backend expects snake_case per Python conventions (apps/api/app/core/auth.py:177)
   - **Fix:**

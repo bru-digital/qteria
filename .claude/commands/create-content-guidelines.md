@@ -61,7 +61,6 @@ Create a detailed content style guide using the prompt in `/prompts/branding/con
    - If exists: Ensure content guidelines align with visual design tone
 
 5. **Interview the user** following the content guidelines prompt:
-
    - **Grammar and style**: AP? Chicago? Custom rules?
    - **Formatting**: Numbers, dates, capitalization, punctuation
    - **Voice consistency**: Examples of on-brand vs off-brand
@@ -70,7 +69,6 @@ Create a detailed content style guide using the prompt in `/prompts/branding/con
    - **Localization**: Translation guidance, cultural considerations
 
 6. **Develop content guidelines**:
-
    - Voice and tone foundation (with 10+ examples)
    - Grammar and mechanics (specific rules)
    - Word list (prefer/avoid terms)

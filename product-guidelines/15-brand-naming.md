@@ -843,49 +843,41 @@ If **pronunciation simplicity** and **ease of adoption** are highest priorities 
 **Questions to ask about your chosen name**:
 
 1. **Say it out loud** - Is it easy to pronounce? Does it sound professional?
-
    - **Qteria**: Requires establishing pronunciation (kway-TEER-ee-uh)
    - **Veridox**: Clear pronunciation (VER-ih-doks)
    - **Certia**: Clear pronunciation (SER-tee-uh)
 
 2. **Spell it** - Can someone spell it after hearing it once?
-
    - **Qteria**: Challenging (Q vs K, -ia vs -ea) - requires spelling aid
    - **Veridox**: Moderate (Veri- clear, -dox may need confirmation)
    - **Certia**: Easy (phonetic spelling)
 
 3. **Remember it** - Can you recall it 24 hours later?
-
    - **Qteria**: Memorable (unique, stands out)
    - **Veridox**: Memorable (strong visual imagery: truth in documents)
    - **Certia**: Memorable (simple, clear)
 
 4. **Google it** - What comes up? Any negative associations?
-
    - **Qteria**: Check current search results (should be your brand if established)
    - **Veridox**: Similar to Veridocs (ID authentication) - check confusion potential
    - **Certia**: Check for conflicts with existing companies
 
 5. **International** - Does it mean something unfortunate in other languages?
-
    - **Qteria**: No known issues (invented word)
    - **Veridox**: Veritas universally understood (truth in Latin)
    - **Certia**: No known issues (certainty root)
 
 6. **Trademark** - Is it clear in your industry (software/SaaS compliance)?
-
    - **Qteria**: 🟢 Likely clear (unique invented word)
    - **Veridox**: 🟢 Likely clear (confirm against Veridocs)
    - **Certia**: 🟡 Check needed (more common root)
 
 7. **Domain** - Is a reasonable domain available?
-
    - **Qteria**: If you own qteria.com, this is a major advantage (don't switch)
    - **Veridox**: Check veridox.com, veridox.io availability
    - **Certia**: Check certia.com, certia.io availability
 
 8. **Social** - Are handles available (LinkedIn, Twitter/X, YouTube)?
-
    - Recommend checking for final choice before committing
 
 9. **Gut check** - Does it feel right for a quality management professional who uses AI with transparency and rigor?

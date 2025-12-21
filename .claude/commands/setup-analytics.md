@@ -64,7 +64,6 @@ Create a comprehensive analytics implementation plan using the prompt in `/promp
    - Identify key moments to track
 
 5. **Interview the user** following the analytics prompt:
-
    - **Current state**: What analytics do you have now? Gaps?
    - **Event taxonomy**: How will you name events? Naming convention?
    - **User identification**: Anonymous tracking? User IDs? Cross-device?
@@ -77,7 +76,6 @@ Create a comprehensive analytics implementation plan using the prompt in `/promp
    - **Privacy**: GDPR, CCPA compliance? Consent management?
 
 6. **Develop analytics plan**:
-
    - Event taxonomy (naming conventions, structure)
    - Event tracking plan (30-50 events with properties)
    - User properties (demographics, firmographics, behavior)

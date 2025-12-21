@@ -32,14 +32,12 @@ by transforming manual compliance checks into AI-powered assessments with eviden
 ### How We're Different
 
 - **Unique Approach**:
-
   1. **Evidence-based validation** - Every AI result links to exact document location (no black-box answers)
   2. **Radical simplicity** - ONLY workflow → buckets → criteria → validate (no feature bloat)
   3. **Enterprise data privacy** - Zero-retention AI, SOC2/ISO 27001 compliance from day one
   4. **White-glove support** - Dedicated relationship manager per customer (not ticket queues)
 
 - **Why It Works**:
-
   - Evidence builds trust (users verify AI is correct, not guessing)
   - Simplicity enables <30 min workflow creation (Process Managers succeed immediately)
   - Privacy unlocks enterprise sales (notified bodies trust us with confidential certification documents)

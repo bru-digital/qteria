@@ -56,7 +56,6 @@ Create a comprehensive deployment strategy using the prompt in `/prompts/operati
    - Know what needs to be deployed (frontend, backend, database, etc.)
 
 5. **Interview the user** following the deployment prompt:
-
    - **Current state**: How do you deploy now? What's painful?
    - **Environments**: How many? (dev, staging, prod? More?)
    - **CI/CD**: What needs to happen on every commit? Tests? Linting? Build?
@@ -69,7 +68,6 @@ Create a comprehensive deployment strategy using the prompt in `/prompts/operati
    - **Runbooks**: What could go wrong? How to fix?
 
 6. **Develop deployment plan**:
-
    - Environment strategy (dev, staging, prod + ephemeral)
    - CI/CD pipeline (detailed workflow for each repo/service)
    - Deployment patterns (rolling, canary, feature flags)

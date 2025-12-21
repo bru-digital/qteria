@@ -1,0 +1,38 @@
+# Prettier ignore file
+# Excludes directories from formatting to preserve intentional formatting
+
+# GitHub Actions - CI/CD workflows require exact formatting for security
+.github/
+
+# Claude commands - Preserve documentation formatting
+.claude/
+
+# Product guidelines - Preserve intentional documentation formatting
+product-guidelines/
+
+# Python backend code (formatted with Black, not Prettier)
+apps/api/
+
+# Build outputs and dependencies
+node_modules/
+.next/
+dist/
+build/
+.venv/
+__pycache__/
+
+# Cache directories
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage/
+
+# Vercel deployment files
+.vercel/
+
+# Lock files and generated files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

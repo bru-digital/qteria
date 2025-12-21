@@ -445,23 +445,18 @@ This lets you iterate until clean: fix issue → re-validate → verify pass →
 ### Do's ✅
 
 - **Lead with outcomes, not features**: "Fix issues before the Certification Person sees them" (outcome) vs "AI-powered document analysis" (feature)
-
   - Why: Customers care about results (fewer clarification rounds, faster pipeline), not technology
 
 - **Use specific numbers**: "400x faster (1-2 days → 10 minutes)" vs "fast and easy"
-
   - Why: Specificity builds credibility; vague claims sound like marketing fluff
 
 - **Show evidence, don't just claim**: "FAIL → [Link: test-report.pdf, page 8]" (show the actual evidence link) vs "Our AI is accurate"
-
   - Why: Evidence-based messaging matches evidence-based product (walk the talk)
 
 - **Speak their language**: Use TIC industry terms they already use (clarification rounds, Certification Person, notified body, validation criteria)
-
   - Why: Builds trust that we understand their world (domain expertise)
 
 - **Be direct about trade-offs**: "Doesn't scale to thousands of customers - we cap at 20-50 accounts for white-glove service"
-
   - Why: Honesty builds trust; customers respect transparency about what we're NOT
 
 - **Use customer voice in testimonials**: "My clarification rounds dropped 40%" (measurable, specific) vs "Qteria is amazing!" (generic praise)
@@ -470,23 +465,18 @@ This lets you iterate until clean: fix issue → re-validate → verify pass →
 ### Don'ts ❌
 
 - **Don't use AI hype language**: Avoid "revolutionary AI", "disruptive", "cutting-edge machine learning", "paradigm shift"
-
   - Why: Violates brand personality (reserved, no hype); customers are skeptical of AI buzzwords
 
 - **Don't hide behind jargon**: Avoid "optimize workflows for maximum efficiency" → Say "validate faster and catch issues earlier"
-
   - Why: Jargon creates distance; plain English shows confidence and respect for user intelligence
 
 - **Don't oversell with superlatives**: Avoid "the best", "most advanced", "world-class", "industry-leading" without proof
-
   - Why: Superlatives sound like marketing fluff; use specific metrics instead ("95%+ accuracy" vs "highly accurate")
 
 - **Don't ignore pain points**: Don't say "fast document validation" → Say "no more 1-2 day waits that block your pipeline"
-
   - Why: Generic benefits don't resonate; specific pain points show you understand their struggle
 
 - **Don't use casual startup language**: Avoid "awesome", "crushing it", "rock your workflow", "let's do this!"
-
   - Why: Violates brand personality (professional, serious); compliance work isn't casual
 
 - **Don't overcomplicate with technical details**: Avoid "Our neural network uses transformer architecture with fine-tuned embeddings"

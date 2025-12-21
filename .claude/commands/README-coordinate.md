@@ -13,25 +13,21 @@ Analyze issue backlog to determine optimal parallel execution strategy for AI ag
 ## What It Does
 
 1. **Analyzes Issue Backlog**
-
    - Fetches all open issues from GitHub
    - Prioritizes by labels (P0 → P1 → P2 → P3)
    - Considers age (oldest first within priority)
 
 2. **Performs Dependency Analysis**
-
    - Code dependencies (file conflicts)
    - Logical dependencies (blocking relationships)
    - Creates dependency graph (waves)
 
 3. **Creates Git Worktrees**
-
    - One worktree per parallel task
    - Proper naming convention: `qteria-{issue-number}`
    - Branch: `{issue-number}-{slug}`
 
 4. **Generates Agent Instructions**
-
    - Quick start commands
    - Implementation checklists
    - Testing requirements
@@ -39,7 +35,6 @@ Analyze issue backlog to determine optimal parallel execution strategy for AI ag
    - Quality gates
 
 5. **Provides Timeline Estimation**
-
    - Wave breakdown (parallel vs sequential)
    - Total elapsed time
    - Speedup factor vs sequential

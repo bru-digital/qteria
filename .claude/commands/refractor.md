@@ -77,21 +77,18 @@ Create a minimal refactoring plan:
 ### Refactor Principles
 
 1. **Remove, Don't Add**
-
    - Delete dead code first
    - Remove abstractions, don't add them
    - Inline over extract (unless 3+ duplicates)
    - Flat over nested
 
 2. **Use Framework Capabilities**
-
    - FastAPI dependencies > custom middleware
    - SQLAlchemy relationships > manual joins
    - React Query > custom data fetching
    - Pydantic validation > custom validators
 
 3. **Zero Backwards Compatibility**
-
    - Break cleanly
    - Update all call sites
    - Remove deprecated code paths

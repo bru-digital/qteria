@@ -10,8 +10,12 @@ repos:
     hooks:
       - id: trailing-whitespace
         name: Remove trailing whitespace
+        # Exclude .github/ to preserve exact CI/CD workflow formatting
+        exclude: ^\.github/
       - id: end-of-file-fixer
         name: Fix end of files
+        # Exclude .github/ to preserve exact CI/CD workflow formatting
+        exclude: ^\.github/
       - id: check-yaml
         name: Validate YAML syntax
       - id: check-json
@@ -70,8 +74,9 @@ repos:
         types_or: [javascript, jsx, ts, tsx, json, markdown]
         # YAML excluded to avoid conflict with check-yaml hook
         # NOTE: Prettier v3.1.0 matches package.json version exactly (DO NOT autoupdate)
-        # Only exclude apps/api/ (Python code), all other dirs formatted for CI consistency
-        exclude: ^apps/api/
+        # Exclude .github/, .claude/, product-guidelines/ to preserve intentional formatting
+        # CI format:check also excludes these directories for consistency
+        exclude: ^(apps/api/|\.github/|\.claude/|product-guidelines/)
         args: ['--write', '--ignore-unknown']
 
 # Global excludes

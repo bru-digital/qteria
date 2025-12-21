@@ -81,27 +81,21 @@ Generate brand name candidates that express the value from the user journey thro
 3. **Interview the user** with journey-informed questions:
 
    **Naming Direction**:
-
    - "Your journey helps users [problem → solution]. Should your name be descriptive (explain what you do), metaphorical (suggest the benefit), or abstract (create new meaning)?"
 
    **Keywords from Journey**:
-
    - "From your journey, we have keywords like [X, Y, Z]. Which resonate? What others come to mind?"
 
    **Brand Personality Fit**:
-
    - "Your brand personality is [personality from 05]. Should the name be [formal/casual], [serious/playful] to match?"
 
    **Domain Requirements**:
-
    - "Is .com essential, or are you open to .io, .ai, etc?"
 
    **Trademark Concerns**:
-
    - "What geography and industry do we need to check trademark clearance for?"
 
 4. **Generate 20-30 name candidates** that connect to journey:
-
    - Descriptive names (express what you do in the journey)
    - Metaphorical names (suggest the journey transformation)
    - Abstract names (create new meaning for journey value)
@@ -109,13 +103,11 @@ Generate brand name candidates that express the value from the user journey thro
    - All names must trace back to [journey problem/value]
 
 5. **Trademark research** for top candidates:
-
    - Check USPTO database (use WebSearch or guide user to check)
    - Check domain availability (guide user to check key TLDs)
    - Flag high-risk names (too similar to existing brands)
 
 6. **Narrow to 10 finalists** with:
-
    - How each name expresses journey value
    - How each name fits brand personality
    - Trademark risk assessment

@@ -204,7 +204,6 @@ Use `/templates/02-tech-stack-template.md` as structure.
 **Required Sections**:
 
 1. **Core Stack** (Summary)
-
    - Frontend: [Choice]
    - Backend: [Choice]
    - Database: [Choice]
@@ -215,19 +214,16 @@ Use `/templates/02-tech-stack-template.md` as structure.
    - Hosting: [Where it runs]
 
 2. **Why This Stack (Journey-Driven Decisions)**
-
    - For EACH choice, explain:
      - Journey requirement it serves (reference specific steps)
      - Why this technology satisfies that requirement
      - Alternatives considered and why not chosen
 
 3. **Stack Mapping to Journey**
-
    - Table showing: Journey Step → Technical Requirement → Technology Solution
    - Makes journey→tech connection crystal clear
 
 4. **Cost Estimate (MVP Phase)**
-
    - Be realistic about free tiers
    - Show total monthly cost for MVP scale
    - Include: hosting, database, AI APIs, auth, monitoring, etc.
@@ -291,7 +287,6 @@ Once you've created the file:
    ```
 
 2. **Highlight key decisions**:
-
    - "Chose [tech] over [alternative] because your journey requires [requirement]"
 
 3. **Next steps**:

@@ -343,7 +343,6 @@ EOF
 Provide the user with:
 
 1. **Executive Summary** (3-5 sentences)
-
    - How many issues analyzed
    - How many can run in parallel (Wave 1)
    - Total estimated time savings
@@ -358,14 +357,12 @@ Provide the user with:
    ```
 
 3. **Wave Breakdown** (detailed per agent)
-
    - Quick start commands
    - Implementation instructions
    - Testing requirements
    - Conflict warnings
 
 4. **Quality Gates** (checklist)
-
    - Pre-PR requirements
    - Merge order
    - Verification steps

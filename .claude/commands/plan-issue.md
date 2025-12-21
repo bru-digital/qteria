@@ -286,21 +286,18 @@ Create a surgical, elegant implementation plan following these principles:
 ### Planning Principles
 
 1. **Surgical Precision**
-
    - Minimal file changes
    - Touch only what's necessary
    - No refactoring outside scope
    - Single responsibility per change
 
 2. **Elegant Design**
-
    - Follow existing patterns in codebase
    - Leverage framework capabilities (FastAPI, Next.js)
    - Use declarative over imperative
    - Compose, don't repeat
 
 3. **Clean & Simple**
-
    - Obvious over clever
    - Remove code, don't add layers
    - Flat over nested
@@ -661,13 +658,11 @@ Provide the complete implementation plan following the structure above. Be speci
 **CRITICAL REQUIREMENTS:**
 
 1. **Section 2 (Research Findings) is MANDATORY** - This is where you prevent reinventing the wheel:
-
    - If you skipped research (cosmetic changes, simple CRUD), explicitly state why
    - If you researched, document the proven pattern and ALL edge cases
    - The implementation agent will follow this pattern, not create their own
 
 2. **Section 9 (Implementation Checklist) must be specific** - Customize based on research:
-
    - Include specific requirements from Section 2 (e.g., "Use INCRBY not INCR")
    - Add issue-specific items (not just generic boilerplate)
    - Implementation agent will self-review against this before committing

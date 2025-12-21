@@ -122,27 +122,23 @@ def test_assessment_calls_calculate_score_method():
 **What to Unit Test:**
 
 1. **AI Validation Logic** (95% coverage target):
-
    - `assessment_engine.py`: Score calculation, pass/fail determination
    - `evidence_extractor.py`: Page/section detection from PDFs
    - `criteria_evaluator.py`: Match criteria to document content
    - `confidence_scorer.py`: High/medium/low confidence classification
 
 2. **Business Logic** (90% coverage target):
-
    - `workflow_validator.py`: Workflow creation rules
    - `document_validator.py`: File type, size validation
    - `multi_tenancy.py`: Organization isolation logic
    - `usage_limiter.py`: Subscription tier limits
 
 3. **Utilities** (80% coverage target):
-
    - `pdf_parser.py`: Extract text, detect sections
    - `formatters.py`: Date, currency, file size formatting
    - `validators.py`: Email, UUID, file type validation
 
 4. **API Logic** (60% coverage target):
-
    - Route handlers: Test business logic, not FastAPI framework
    - Pydantic models: Test custom validators only
 
@@ -473,7 +469,6 @@ describe('WorkflowForm', () => {
 **What to Integration Test:**
 
 1. **API Endpoints** (80% coverage target):
-
    - All 28 REST endpoints from `08-api-contracts.md`
    - Request validation (400 errors for invalid input)
    - Response format (correct JSON structure)
@@ -482,14 +477,12 @@ describe('WorkflowForm', () => {
    - Multi-tenant isolation (can't access other org's data)
 
 2. **Database Operations** (70% coverage target):
-
    - Complex queries (JOINs, filters, pagination)
    - Transaction handling (rollback on error)
    - Cascading deletes (org deleted → users deleted)
    - Data integrity constraints (unique emails, foreign keys)
 
 3. **External Service Integration** (80% coverage target):
-
    - Claude API integration (mock responses)
    - Vercel Blob storage (upload/download)
    - Email service (mock in test mode)
@@ -769,7 +762,6 @@ def test_workflow_with_assessments_cannot_be_deleted(test_db):
 **Journey-Based E2E Tests** (from `00-user-journey.md`):
 
 1. **Complete Assessment Flow** (Journey Steps 1-5):
-
    - Process Manager creates workflow
    - Project Handler uploads documents
    - Project Handler starts assessment
@@ -778,7 +770,6 @@ def test_workflow_with_assessments_cannot_be_deleted(test_db):
    - Project Handler downloads report
 
 2. **Re-run Assessment Flow** (Journey Step 4):
-
    - Project Handler sees failed criteria
    - Project Handler replaces failing document
    - Project Handler re-runs assessment

@@ -48,7 +48,6 @@
 
 - **Price**: $30,000/year per notified body (billed annually)
 - **Includes**:
-
   - Unlimited workflows
   - Unlimited document buckets & criteria
   - Unlimited assessments

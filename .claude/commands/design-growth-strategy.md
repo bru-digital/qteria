@@ -231,19 +231,16 @@ When to reconsider: If moving upmarket (ACV >$15k, multi-team deals) where 1:1 s
 **Identify loop opportunities** from journey:
 
 1. **Viral Loop** (users invite users)
-
    - Journey trigger: What moment makes users want to invite teammates?
    - Mechanism: In-product invites, permissions, collaboration
    - Example: "Share this assessment with your team" CTA
 
 2. **Content Loop** (users create content that attracts users)
-
    - Journey trigger: What user-generated output has SEO value?
    - Mechanism: Public galleries, user profiles, embeds with attribution
    - Example: Public assessment reports ranked by Google
 
 3. **Network Loop** (more users = more value for all users)
-
    - Journey trigger: What gets better with more users?
    - Mechanism: Shared data, integrations, community effects
    - Example: Framework library grows as teams upload frameworks
@@ -473,19 +470,15 @@ When to reconsider: If collaboration features become primary value (multiplayer 
 **Identify experiment categories**:
 
 1. **Acquisition experiments** (fill top of funnel)
-
    - Example: "Launch SEO content hub" → Organic traffic → +50% in 3 months
 
 2. **Activation experiments** (improve signup → aha moment)
-
    - Example: "Add onboarding checklist" → Activation rate → +10% in 2 weeks
 
 3. **Retention experiments** (reduce churn, increase engagement)
-
    - Example: "Weekly reminder emails" → D30 retention → +5% in 1 month
 
 4. **Monetization experiments** (improve conversion, expansion)
-
    - Example: "Usage-based pricing" → Free→Paid conversion → +8% in 6 weeks
 
 5. **Viral/Loop experiments** (amplify growth loops)

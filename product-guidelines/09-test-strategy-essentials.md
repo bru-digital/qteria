@@ -296,7 +296,6 @@ tests/
 **Required E2E Tests** (from `00-user-journey.md`):
 
 1. **Complete Assessment Flow** (Journey Steps 1-5):
-
    - Create/select workflow
    - Upload documents
    - Start assessment
@@ -305,7 +304,6 @@ tests/
    - Download report
 
 2. **Re-run Assessment After Fix** (Journey Step 4):
-
    - View failed assessment
    - Replace failing document
    - Re-run assessment

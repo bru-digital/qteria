@@ -87,31 +87,24 @@ Create a comprehensive brand strategy document by following the prompt in `/prom
 3. **Interview the user** with journey-informed questions:
 
    **Brand Purpose (journey-grounded)**:
-
    - "I've read your user journey. Users struggle with [X problem] at [journey step]. Your mission is to [mission from product-guidelines/03]. Why are YOU the one solving this problem? What drives you to deliver this value?"
 
    **Core Values (journey-connected)**:
-
    - "Your user journey shows value gets delivered when [aha moment]. What 3-5 values guide how you deliver this? What won't you compromise on?"
 
    **Brand Personality**:
-
    - "When users experience [journey moment], how should your brand show up? Formal or casual? Professional or playful?"
 
    **Brand Promise (journey-specific)**:
-
    - "Users move through [journey steps] to get [outcome]. What can they ALWAYS count on from you? What will never change?"
 
    **Visual Direction**:
-
    - "What aesthetic fits the [problem domain] and [audience] from your journey?"
 
    **Differentiation**:
-
    - "Others solve [problem] differently. How is your approach to [journey value] unique?"
 
 4. **Generate the brand strategy**:
-
    - Fill out the template connecting EVERY section back to journey/mission
    - Show how brand PURPOSE = WHY you solve [journey problem]
    - Show how brand VALUES = HOW you deliver [journey value]

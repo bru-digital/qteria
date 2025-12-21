@@ -122,7 +122,6 @@ By 2030, Qteria will be the trusted standard for AI-driven document validation a
 **Market forces**:
 
 - **Enablers**:
-
   - LLM capability maturation (GPT-4, Claude 3.5 can read PDFs accurately)
   - Enterprise AI adoption mindset shift
   - Cost pressure on notified bodies ($100K/year for basic checks is hard to justify)
@@ -592,25 +591,21 @@ First 5 consultants publishing workflows, first notified body purchases third-pa
 **Assumptions that must be true for strategy to work**:
 
 1. **TÜV SÜD will become first customer**
-
    - **Assumption**: Founder's insider relationship + their stated interest in AI automation = contract by Q2 2026
    - **Validation plan**: Ongoing conversations with TÜV SÜD stakeholders, co-development agreement, pilot phase before contract
    - **If wrong**: Need to find alternative first customer (BSI, DEKRA) - extends timeline 6-12 months, burns more runway
 
 2. **AI accuracy is sufficient for production use**
-
    - **Assumption**: GPT-4/Claude 3.5 or fine-tuned models can achieve <5% false positive, <1% false negative on compliance validation
    - **Validation plan**: Pilot with TÜV SÜD, measure accuracy against India team baseline, iterate on prompts/models
    - **If wrong**: May need hybrid approach (AI flags, human reviews) or delay launch until AI improves (6-12 months)
 
 3. **Data privacy can be solved cost-effectively**
-
    - **Assumption**: Can use AI APIs with zero-retention agreements OR self-host open-source models within MVP budget
    - **Validation plan**: Negotiate with OpenAI/Anthropic for enterprise privacy terms, evaluate self-hosted alternatives (Llama, Mistral)
    - **If wrong**: May need higher funding to build private AI infrastructure ($50-100K+), or lose enterprise customers who can't accept API risk
 
 4. **$30K/year pricing is acceptable**
-
    - **Assumption**: Notified bodies paying $100K/year for India teams will pay $30K/year for AI (70% savings)
    - **Validation plan**: Pricing discussions with TÜV SÜD, validate ROI math is compelling
    - **If wrong**: May need to lower price ($15-20K) or raise it ($50K) based on value perception - affects unit economics
@@ -710,19 +705,16 @@ Captures actual value delivery. If Project Handlers are running assessments mont
 
 - **Session 1** (`/refine-journey`): ✅ Complete - User journey validated by this strategy (TAM/SAM/SOM confirms market viability)
 - **Session 3** (`/choose-tech-stack`): Tech choices must enable:
-
   - Fast PDF processing (<10 min AI validation)
   - Data privacy/security (SOC2/ISO 27001 compatible)
   - Rapid iteration (Vercel deployment, simple architecture)
   - Cost-effective AI (API vs. self-hosted decision)
 
 - **Session 4** (`/generate-strategy`): Mission/metrics must align with:
-
   - Vision: "Trusted standard for AI document validation in certification industry"
   - Strategic goals: First customer, AI accuracy, UX excellence, security, expansion
 
 - **Session 6** (`/create-design`): Design must reflect product principles:
-
   - Simplicity over features (minimalist UI)
   - Evidence-based (always show proof, links to documents)
   - Trustworthy (clear confidence levels, no black-box AI)

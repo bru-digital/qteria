@@ -93,7 +93,6 @@ Create a comprehensive brand identity system including logo concepts, visual ass
 3. **Analyze brand personality for visual expression**:
 
    From brand strategy, identify:
-
    - **Personality traits**: Professional? Playful? Trustworthy? Innovative?
    - **Core values**: What must the visual identity communicate?
    - **Target audience**: Who needs to connect with this brand?
@@ -133,7 +132,6 @@ Create a comprehensive brand identity system including logo concepts, visual ass
    ```
 
    **Decision criteria**:
-
    - **Trustworthy + Professional** → Wordmark with solid, classic typography
    - **Playful + Creative** → Icon + wordmark with custom illustration
    - **Technical + Efficient** → Lettermark or geometric abstract symbol
@@ -142,29 +140,23 @@ Create a comprehensive brand identity system including logo concepts, visual ass
 5. **Interview the user** with journey-informed questions:
 
    **Visual Direction**:
-
    - "Your brand personality is [traits from brand strategy]. Should your logo be minimalist/complex, geometric/organic, modern/classic?"
 
    **Color Strategy**:
-
    - "Your brand values [values]. What emotions should the colors evoke? Should we follow industry conventions (trust = blue in finance) or disrupt them?"
 
    **Typography Direction**:
-
    - "Should the logo typography be serif (traditional, trustworthy) or sans-serif (modern, clean)? Custom or standard font?"
 
    **Symbolism** (if using icon):
-
    - "What visual metaphors connect to [journey value]? What should the icon communicate at a glance?"
 
    **Differentiation**:
-
    - "I've analyzed your competitors from the product strategy. They use [common patterns]. Should we follow conventions for category recognition, or differentiate boldly?"
 
 6. **Generate 3-5 logo concepts**:
 
    For each concept, provide:
-
    - **Visual description**: Detailed description of the logo design
    - **Rationale**: How it expresses brand personality and journey value
    - **Logo type**: Wordmark, lettermark, combination, etc.
@@ -174,7 +166,6 @@ Create a comprehensive brand identity system including logo concepts, visual ass
    - **Differentiation**: How it stands apart from competitors
 
    **Concept diversity**: Generate different approaches:
-
    - Concept A: Conservative/safe (industry-appropriate)
    - Concept B: Balanced (brand personality + recognition)
    - Concept C: Bold/distinctive (maximum differentiation)
@@ -185,19 +176,16 @@ Create a comprehensive brand identity system including logo concepts, visual ass
    Document design decisions:
 
    **Logo Type Not Chosen**:
-
    - "Didn't choose abstract symbol because brand is new and needs name recognition"
    - "Avoided pictorial marks because [journey value] is abstract, not a physical thing"
    - "Decided against lettermark because full name is short and memorable"
 
    **Visual Style Not Chosen**:
-
    - "Avoided gradients and complexity because brand values clarity and simplicity"
    - "Didn't use illustration style because B2B audience expects professionalism"
    - "Decided against vintage aesthetic because innovation is core to brand"
 
    **Color Decisions**:
-
    - "Avoided blue (despite industry norm) because brand differentiates through [personality]"
    - "Didn't use bright colors because audience is [demographic] in [industry] expecting [tone]"
    - "Chose [color] over [color] because it better expresses [brand value from strategy]"
@@ -205,21 +193,18 @@ Create a comprehensive brand identity system including logo concepts, visual ass
 8. **Create comprehensive brand identity system**:
 
    **Primary Logo**:
-
    - Full color version
    - Single color version
    - Reversed (light on dark)
    - Minimum size specifications
 
    **Logo Variations**:
-
    - Horizontal layout
    - Stacked/vertical layout
    - Icon only (for app icons, favicons)
    - Simplified version (for small sizes)
 
    **Color Palette Application**:
-
    - Primary brand color(s) and usage
    - Secondary colors for variety
    - Accent colors for CTAs/highlights
@@ -227,21 +212,18 @@ Create a comprehensive brand identity system including logo concepts, visual ass
    - Color codes: HEX, RGB, CMYK (print), Pantone (if needed)
 
    **Typography System**:
-
    - Primary brand font (logo, headlines)
    - Secondary font (body copy)
    - Font weights and when to use
    - Typographic hierarchy
 
    **Visual Elements**:
-
    - Patterns or textures (if applicable)
    - Iconography style
    - Photography/illustration style
    - Graphic elements (shapes, lines, etc.)
 
    **Usage Guidelines**:
-
    - Logo clearspace (minimum space around logo)
    - Incorrect logo usage (don't stretch, don't change colors, etc.)
    - Backgrounds: approved colors/images for logo placement
@@ -251,14 +233,12 @@ Create a comprehensive brand identity system including logo concepts, visual ass
 9. **Brand Applications** (examples of identity in use):
 
    Show how the identity appears across touchpoints:
-
    - **Digital**: Website header, mobile app icon, social media avatars
    - **Marketing**: Business cards, presentations, email signatures
    - **Product**: App UI, dashboard, loading screens
    - **Collateral**: Pitch decks, one-pagers, reports
 
    For each application, describe:
-
    - How the logo is used
    - Which color palette elements appear
    - How it reinforces brand personality
@@ -266,7 +246,6 @@ Create a comprehensive brand identity system including logo concepts, visual ass
 10. **Journey-Brand Alignment Check**:
 
     Validate that visual identity serves the user journey:
-
     - Does the logo communicate [journey value] visually?
     - Does the aesthetic fit [target audience] expectations?
     - Does the personality expressed match [brand strategy]?
