@@ -95,7 +95,6 @@ ignore = [
     "F541",  # f-string without placeholders (temp: will fix in follow-up)
     "F841",  # unused local variable (temp: will clean up in follow-up)
     "W293",  # blank line contains whitespace (temp: formatting issue)
-    "UP007", # use X | Y for type annotations (temp: Python 3.10+ syntax)
     "UP037", # remove quotes from type annotation (temp: forward references)
     "F821",  # undefined name in forward reference (temp: type checking issue)
     "B007",  # loop control variable not used (temp: will refactor in follow-up)
