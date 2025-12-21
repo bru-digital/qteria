@@ -118,6 +118,7 @@ Cache parsed PDF text in PostgreSQL. If same document uploaded again, skip parsi
    - Detect section boundaries (headings, numbering)
    - Store in memory + cache in PostgreSQL
 5. **For each criteria** (STORY-021):
+
    - Build Claude prompt:
 
      ```

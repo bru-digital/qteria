@@ -73,6 +73,7 @@ Set up GitHub Actions workflow: Run tests on PR, enforce coverage >70%, deploy t
 **E2E Test Coverage** (STORY-040):
 
 1. **Test: Complete Assessment Flow**
+
    - Login as Process Manager
    - Create workflow with 2 buckets, 3 criteria
    - Login as Project Handler
@@ -83,12 +84,14 @@ Set up GitHub Actions workflow: Run tests on PR, enforce coverage >70%, deploy t
    - Download report
 
 2. **Test: Re-assessment Flow**
+
    - View failed assessment
    - Replace failing document
    - Re-run assessment
    - Verify criteria now pass
 
 3. **Test: Multi-Tenant Isolation**
+
    - Login as User A (org TÜV SÜD)
    - Create workflow
    - Login as User B (org BSI)

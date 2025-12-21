@@ -1309,6 +1309,7 @@ curl https://api.qteria.com/health
 **Fix**:
 
 1. **Check Railway status**:
+
    - Go to Railway dashboard → qteria-api service
    - Check "Deployments" tab (recent deploy failed?)
    - Check "Metrics" tab (memory 100%? CPU 100%?)
@@ -1321,10 +1322,12 @@ curl https://api.qteria.com/health
    ```
 
 3. **If out of memory**:
+
    - Railway dashboard → Settings → Increase memory (512MB → 1GB)
    - Redeploy
 
 4. **If database connection pool**:
+
    - See "Runbook 4: Database Connection Pool Exhausted"
 
 5. **If still down**:
@@ -1387,9 +1390,11 @@ curl https://qteria.com
    ```
 
 2. **If database connection**:
+
    - See "Runbook 4: Database Connection Pool Exhausted"
 
 3. **If missing environment variable**:
+
    - Railway dashboard → Variables → Add missing variable
    - Redeploy
 
@@ -1443,6 +1448,7 @@ railway logs --service qteria-celery-prod --tail 100
 **Fix**:
 
 1. **If Claude API down**:
+
    - Check status: https://status.anthropic.com
    - If down, notify users: "AI temporarily unavailable, will retry automatically"
    - Wait for resolution (Anthropic typically resolves in <30 min)
@@ -1464,6 +1470,7 @@ railway logs --service qteria-celery-prod --tail 100
    ```
 
 3. **If Celery workers crashed**:
+
    - Railway dashboard → qteria-celery-prod → Redeploy
 
 4. **If out of memory**:
@@ -1512,9 +1519,11 @@ railway run --service qteria-postgres psql $DATABASE_URL -c \
 **Fix**:
 
 1. **Immediate** (restart backend to close connections):
+
    - Railway dashboard → qteria-api-prod → Redeploy
 
 2. **Short-term** (upgrade database tier):
+
    - Vercel dashboard → Postgres → Upgrade to Pro (256 connections)
 
 3. **Long-term** (fix connection leak):
@@ -1596,15 +1605,18 @@ railway logs --service qteria-celery-prod --tail 100
 **Fix**:
 
 1. **If queue depth high** (add more workers):
+
    - Railway dashboard → qteria-celery-prod → Settings → Increase replicas (1 → 3)
    - Queue should drain within 30 min
 
 2. **If Claude API slow**:
+
    - Check Anthropic status: https://status.anthropic.com
    - If slow globally, wait for resolution
    - If persistent, contact Anthropic support
 
 3. **If large PDFs**:
+
    - Optimize PDF parsing (stream pages instead of loading entire file)
    - Set max PDF size limit (e.g., 50MB or 100 pages)
    - Notify user: "Large documents may take 10-15 min"
@@ -1652,9 +1664,11 @@ vercel --prod inspect
 **Fix**:
 
 1. **If recent deploy failed**:
+
    - Vercel dashboard → Deployments → Promote previous working deployment
 
 2. **If Vercel outage**:
+
    - Check status: https://www.vercel-status.com/
    - Wait for resolution (typically <30 min)
    - Notify users via email: "Service temporarily unavailable, resolving shortly"
@@ -1701,6 +1715,7 @@ curl https://qteria.com
 **Fix**:
 
 1. **If redirect_uri mismatch**:
+
    - Go to Google Cloud Console → Credentials → OAuth 2.0 Client IDs
    - Ensure authorized redirect URIs include:
      - `https://qteria.com/api/auth/callback/google`
@@ -1708,6 +1723,7 @@ curl https://qteria.com
    - Save (takes ~5 min to propagate)
 
 2. **If NEXTAUTH_SECRET missing**:
+
    - Generate new secret: `openssl rand -base64 32`
    - Vercel dashboard → Environment Variables → Add `NEXTAUTH_SECRET`
    - Redeploy
@@ -1759,6 +1775,7 @@ ORDER BY date DESC;
 **Fix**:
 
 1. **If retry loop**:
+
    - Check Celery tasks (are assessments retrying infinitely?)
    - Fix retry logic (max 3 retries, exponential backoff)
    - Cancel stuck tasks:
@@ -1767,6 +1784,7 @@ ORDER BY date DESC;
      ```
 
 2. **If large prompts**:
+
    - Check prompt size in logs (should be <20K tokens for 50-page PDF)
    - If sending full PDF binary: Fix code (extract text first, don't send raw PDF)
 
@@ -1809,6 +1827,7 @@ ORDER BY date DESC;
 **Fix**:
 
 1. **If missing env vars**:
+
    - Copy from production (Railway dashboard → Variables → Copy to staging)
    - Redeploy staging
 
@@ -1864,11 +1883,13 @@ ORDER BY date DESC;
 **Fix**:
 
 1. **If false positive** (wrongly flagged as fail):
+
    - Override result manually (mark as pass with note: "Manual review")
    - Update AI prompt to clarify criteria
    - Add to training examples (if building fine-tuned model later)
 
 2. **If false negative** (missed real issue):
+
    - **Critical**: Notify customer immediately (apologize, explain)
    - Mark assessment as "uncertain" (yellow flag)
    - Manual review required

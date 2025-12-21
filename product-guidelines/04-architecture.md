@@ -531,21 +531,25 @@ CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 **Potential Bottlenecks**:
 
 1. **Celery Workers**:
+
    - **Problem**: 1 worker can't process 3-5 concurrent assessments
    - **Solution**: Scale to 5 workers (1 per concurrent assessment) - Railway auto-scaling or manual replicas
    - **Cost**: $25-50/month (5 workers × $5-10 each)
 
 2. **PostgreSQL**:
+
    - **Problem**: 2,000 assessments/month × 10 criteria each = 20K result rows/month = 240K rows/year (free tier limited)
    - **Solution**: Upgrade to Vercel Postgres Pro ($20/month) - handles millions of rows
    - **Cost**: $20/month
 
 3. **Vercel Blob**:
+
    - **Problem**: 2,000 assessments × 3 docs each × 5MB avg = 30GB/month (exceeds 1GB free tier)
    - **Solution**: Migrate to AWS S3 ($0.023/GB = ~$0.70/month storage + $0.09/GB egress) or pay Vercel Blob ($0.15/GB)
    - **Cost**: $5-10/month
 
 4. **Claude API**:
+
    - **Problem**: 2,000 assessments × $0.21 each = $420/month AI cost
    - **Solution**: Optimize prompts (batch criteria, cache common validations), or negotiate volume discount with Anthropic
    - **Cost**: $400-500/month (acceptable at $150K ARR)
@@ -577,15 +581,18 @@ CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 **Architecture Evolution**:
 
 1. **Horizontal Scaling**:
+
    - 10-20 Celery workers (handle 15-20 concurrent assessments)
    - 3-5 FastAPI backend instances (load balanced)
    - PostgreSQL read replicas (if query latency increases)
 
 2. **Caching Layer**:
+
    - Redis for frequently accessed workflows (reduce PostgreSQL reads)
    - CDN for static assets (Vercel already does this)
 
 3. **Database Optimization**:
+
    - Partition `assessment_results` table by month (archiving old assessments)
    - Indexes on common queries (workflow_id, user_id, created_at)
    - Query optimization (EXPLAIN ANALYZE slow queries)

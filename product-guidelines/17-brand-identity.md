@@ -587,16 +587,19 @@ Wordmark "Qteria" in **Inter Semibold**, **gray-900**, right of symbol.
 **Approved Color Pairings**:
 
 1. **Primary Brand (Most Common)**:
+
    - Blue-600 + Gray-900 + White backgrounds
    - Use: 90% of applications (website, app UI, documents)
    - Example: Blue CTAs, gray-900 headings, white cards
 
 2. **Warm Accent (Selective Use)**:
+
    - Terracotta-500 + Blue-600 + White
    - Use: Logo, special callouts (1-2 per page), marketing accents
    - Example: Q logo with terracotta tail, section divider with warm accent
 
 3. **Semantic Status (Results Display)**:
+
    - Green-500 + Yellow-500 + Red-500 (with gray-50 backgrounds)
    - Use: Criteria results cards, status badges, validation feedback
    - Example: Green "PASS" badge, red "FAIL" badge, yellow "UNCERTAIN" badge
@@ -629,6 +632,7 @@ Wordmark "Qteria" in **Inter Semibold**, **gray-900**, right of symbol.
 **Font**: **Inter** (Variable font, weights 400-700)
 
 - **Weights available**:
+
   - 400 Regular (body text, form inputs)
   - 500 Medium (labels, navigation, secondary buttons)
   - 600 Semibold (headings, primary buttons, logo wordmark)
@@ -1004,16 +1008,19 @@ Wordmark "Qteria" in **Inter Semibold**, **gray-900**, right of symbol.
 **❌ DON'T**:
 
 1. **Stretch or distort**:
+
    - Always maintain aspect ratio (width:height proportion)
    - If resizing, hold Shift (design software) or set only height OR width (CSS), not both
    - Wrong: Making logo wider to fit header without maintaining height ratio
 
 2. **Change colors**:
+
    - Only use approved color versions (full color, single color blue/gray, reversed white)
    - Wrong: Making Q green, using pink accent instead of terracotta, changing wordmark to purple
    - Exception: Single-color versions in blue-600 or gray-900 are approved
 
 3. **Add effects**:
+
    - No drop shadows (logo has no shadow in original design)
    - No glows, outer glows, inner shadows
    - No bevels, emboss, 3D effects
@@ -1021,34 +1028,40 @@ Wordmark "Qteria" in **Inter Semibold**, **gray-900**, right of symbol.
    - Wrong: Adding Photoshop layer styles to "enhance" logo
 
 4. **Rotate or angle**:
+
    - Logo should always be upright (0° rotation)
    - Wrong: Tilting logo 15° for "dynamic" feel, rotating as decoration
    - Exception: Vertical signage (90° rotation) if absolutely necessary
 
 5. **Outline or stroke**:
+
    - Don't add strokes/outlines around logo elements
    - Wrong: Adding 2px black outline to Q, adding stroke to wordmark
    - If visibility is issue, use logo version designed for that background (reversed, overlay)
 
 6. **Rearrange elements**:
+
    - Don't separate Q from "teria" wordmark (except when using icon-only version)
    - Don't change spacing between Q and wordmark
    - Don't stack when horizontal is specified, or vice versa
    - Wrong: Moving wordmark above Q, increasing gap between elements
 
 7. **Place on poor contrast**:
+
    - Must meet WCAG AA standards (3:1 minimum for graphics)
    - Test: Q shape must be clearly visible at full logo size
    - Wrong: Blue Q on blue background, gray wordmark on gray background
    - Fix: Use reversed logo, add overlay, choose different background
 
 8. **Use low resolution**:
+
    - Always use vector (SVG) when possible (web, apps, digital)
    - For print: 300 DPI minimum (PDF or high-res PNG)
    - Wrong: Using 72px PNG on billboard, using JPG with artifacts
    - Fix: Request proper file format from brand assets
 
 9. **Combine with other logos improperly**:
+
    - Maintain clearspace between Qteria logo and partner logos
    - Don't merge logos (Qteria + Partner in single lockup)
    - Wrong: Overlapping logos, no spacing between
@@ -1105,6 +1118,7 @@ Wordmark "Qteria" in **Inter Semibold**, **gray-900**, right of symbol.
 **Formats to Maintain**:
 
 1. **SVG** (Scalable Vector Graphics):
+
    - **Primary format** for web and apps
    - Scalable to any size without quality loss
    - Small file size (typically 2-10KB)
@@ -1112,6 +1126,7 @@ Wordmark "Qteria" in **Inter Semibold**, **gray-900**, right of symbol.
    - Use: Website, web app, email (if supported), digital displays
 
 2. **PNG** (Portable Network Graphics):
+
    - Transparent backgrounds (24-bit with alpha channel)
    - Use: Presentations (PowerPoint, Keynote), documents (Word, Google Docs), social media
    - Resolution:
@@ -1120,12 +1135,14 @@ Wordmark "Qteria" in **Inter Semibold**, **gray-900**, right of symbol.
    - Sizes to maintain: 512px, 1024px, 2048px height
 
 3. **JPG** (JPEG):
+
    - No transparency (white or colored background)
    - Smaller file size than PNG (for photos/social media)
    - Use: Social media cover images, email newsletters (some clients don't support PNG)
    - Quality: 90-95% (high quality, minimal compression artifacts)
 
 4. **PDF** (Portable Document Format):
+
    - Vector format for print materials
    - Use: Print shops (business cards, brochures), design software handoff
    - Embed fonts (Inter) for consistent rendering
@@ -1739,11 +1756,13 @@ qteria-app-icon-1024.png (iOS/Android app store)
 ### Immediate Actions (MVP Launch)
 
 1. **Finalize logo concept**:
+
    - [ ] Review Concept A (The Evidence Mark) recommendation
    - [ ] Provide feedback if different direction preferred (Concept B, C, D, or E)
    - [ ] Approve for production
 
 2. **Create logo files** (if design resources available):
+
    - [ ] Design Q letterform in vector software (Adobe Illustrator, Figma, or Sketch)
    - [ ] Create all variations:
      - Horizontal full-color (Q + wordmark)
@@ -1755,6 +1774,7 @@ qteria-app-icon-1024.png (iOS/Android app store)
    - [ ] Organize in /brand-assets folder with consistent naming
 
 3. **If working with professional designer**:
+
    - [ ] Share this brand identity document as creative brief
    - [ ] Provide access to brand strategy (product-guidelines/05-brand-strategy.md)
    - [ ] Share design system (product-guidelines/06-design-system.md)
@@ -1762,6 +1782,7 @@ qteria-app-icon-1024.png (iOS/Android app store)
    - [ ] Review designer output against recommendations in this document
 
 4. **Implement immediately** (MVP):
+
    - [ ] Website header logo (40px height, horizontal version)
    - [ ] Favicon (16px simplified Q, 32px full-color Q)
    - [ ] App navigation logo (36px height)
@@ -1780,12 +1801,14 @@ qteria-app-icon-1024.png (iOS/Android app store)
 ### Short-term (Next 3 Months)
 
 6. **Complete brand asset library**:
+
    - [ ] Organize all logo files in structured folder (/brand-assets/logo/)
    - [ ] Create simple brand guidelines PDF (condensed version of this doc for quick reference)
    - [ ] Share with any contractors/vendors who need assets (web developers, print shops)
    - [ ] Version control: Tag as "Brand Identity v1.0 - November 2025"
 
 7. **Test identity in real contexts**:
+
    - [ ] View logo at actual sizes (16px favicon in browser, 40px in nav, 400px+ billboard mockup)
    - [ ] Test on different backgrounds (white, gray-50, blue-900, photos)
    - [ ] Check accessibility (contrast ratios, color-blind simulation)
@@ -1801,18 +1824,21 @@ qteria-app-icon-1024.png (iOS/Android app store)
 ### Long-term (6-12 Months)
 
 9. **Expand brand applications**:
+
    - [ ] Create full presentation template library (pitch deck, customer training, webinar slides)
    - [ ] Design report templates (assessment reports, white papers)
    - [ ] Create social media post templates (LinkedIn updates, case study graphics)
    - [ ] Develop swag/merchandise (if budget allows - t-shirts, stickers, notebooks with logo)
 
 10. **Consider professional brand guidelines**:
+
     - [ ] If team grows (hiring designers, marketers), create comprehensive brand guidelines website
     - [ ] Use tools like Frontify or Notion to create interactive brand guidelines
     - [ ] Include: Logo usage, color palette, typography, voice/tone, photography style, examples
     - [ ] Make accessible to entire team + external partners
 
 11. **Maintain and evolve**:
+
     - [ ] Audit brand applications quarterly (is logo used consistently?)
     - [ ] Collect feedback from customers (how do they perceive brand?)
     - [ ] Monitor competitive landscape (are competitors copying visual style? need to differentiate more?)
@@ -1830,17 +1856,20 @@ qteria-app-icon-1024.png (iOS/Android app store)
 ### Optional (If Resources Allow)
 
 13. **Create motion brand guidelines**:
+
     - [ ] Design logo animation (Q appearing, perhaps checkmark tail drawing on)
     - [ ] Create loading spinner animation using Q (rotating quality badge)
     - [ ] Design micro-interactions (button hovers, transitions) that reflect brand personality
 
 14. **Develop illustration system** (if testing shows need):
+
     - [ ] Hire Balkan illustrator to create custom spot illustrations
     - [ ] Define illustration style (line-based, 2-3 colors, geometric)
     - [ ] Create library: Empty state illustrations, onboarding visuals, error states
     - [ ] Ensure consistency with overall brand (professional, clear, not overly playful)
 
 15. **Create brand video/animation**:
+
     - [ ] Short brand video explaining Qteria value with logo animation
     - [ ] Use brand colors, typography, visual style established in this document
     - [ ] Could serve as website hero video or LinkedIn company intro
@@ -1965,22 +1994,26 @@ qteria-app-icon-1024.png (iOS/Android app store)
 **Our differentiation**:
 
 1. **Q letterform is unique and ownable**:
+
    - NOT generic document icon (differentiated through distinctive letterform)
    - NOT floating checkmark (Q integrates checkmark as meaningful part of letter)
    - NOT abstract geometric shape with no meaning (Q stands for Quality + Qteria - double meaning)
    - **Result**: Memorable logo that competitors can't copy (letterform is tied to our name)
 
 2. **Terracotta warm accent breaks "all blue" pattern**:
+
    - Every compliance tool uses blue → we use blue + terracotta
    - Warm accent differentiates visually ("that's the one with the warm accent") while maintaining professionalism
    - **Result**: Stands out in side-by-side comparison (logo more distinctive in competitive slide decks)
 
 3. **Clean minimalism vs. enterprise bloat**:
+
    - Competitors have complex logos (multiple elements, intricate details)
    - Qteria has simple Q + wordmark (geometric clarity)
    - **Result**: Feels modern and efficient, not heavy/intimidating. Appeals to users tired of bloated enterprise software.
 
 4. **Balkan warmth vs. Silicon Valley cold**:
+
    - Generic tech tools feel like "built by engineers for engineers" (cold, technical)
    - Qteria feels like "built by quality professional who understands your work" (warm expertise)
    - Visual expression: Terracotta accent, approachable personality, human voice
