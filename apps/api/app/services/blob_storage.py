@@ -127,7 +127,7 @@ class BlobStorageService:
         """
         try:
             # Import vercel_blob here to avoid issues if package not installed
-            from vercel_blob import put
+            from vercel_blob import put  # type: ignore[import-untyped]
         except ImportError:
             logger.error("vercel-blob package not installed")
             raise ImportError("vercel-blob package required. Install with: pip install vercel-blob")

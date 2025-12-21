@@ -65,18 +65,18 @@ class Organization(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
-    workflows = relationship(
-        "Workflow", back_populates="organization", cascade="all, delete-orphan"
+    users: Mapped[list["User"]] = relationship(back_populates="organization", cascade="all, delete-orphan")
+    workflows: Mapped[list["Workflow"]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
     )
-    assessments = relationship(
-        "Assessment", back_populates="organization", cascade="all, delete-orphan"
+    assessments: Mapped[list["Assessment"]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
     )
-    documents = relationship(
-        "Document", back_populates="organization", cascade="all, delete-orphan"
+    documents: Mapped[list["Document"]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
     )
     # Note: No cascade delete - audit logs preserved for SOC2/ISO 27001 compliance
-    audit_logs = relationship("AuditLog", back_populates="organization")
+    audit_logs: Mapped[list["AuditLog"]] = relationship(back_populates="organization")
 
 
 class User(Base):
@@ -107,15 +107,15 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    organization = relationship("Organization", back_populates="users")
-    created_workflows = relationship(
-        "Workflow", back_populates="creator", foreign_keys="Workflow.created_by"
+    organization: Mapped["Organization"] = relationship(back_populates="users")
+    created_workflows: Mapped[list["Workflow"]] = relationship(
+        back_populates="creator", foreign_keys="Workflow.created_by"
     )
-    created_assessments = relationship(
-        "Assessment", back_populates="creator", foreign_keys="Assessment.created_by"
+    created_assessments: Mapped[list["Assessment"]] = relationship(
+        back_populates="creator", foreign_keys="Assessment.created_by"
     )
-    uploaded_documents = relationship(
-        "Document", back_populates="uploader", foreign_keys="Document.uploaded_by"
+    uploaded_documents: Mapped[list["Document"]] = relationship(
+        back_populates="uploader", foreign_keys="Document.uploaded_by"
     )
 
     # Indexes
@@ -156,11 +156,11 @@ class Workflow(Base):
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    organization = relationship("Organization", back_populates="workflows")
-    creator = relationship("User", back_populates="created_workflows", foreign_keys=[created_by])
-    buckets = relationship("Bucket", back_populates="workflow", cascade="all, delete-orphan")
-    criteria = relationship("Criteria", back_populates="workflow", cascade="all, delete-orphan")
-    assessments = relationship("Assessment", back_populates="workflow")
+    organization: Mapped["Organization"] = relationship(back_populates="workflows")
+    creator: Mapped["User"] = relationship(back_populates="created_workflows", foreign_keys=[created_by])
+    buckets: Mapped[list["Bucket"]] = relationship(back_populates="workflow", cascade="all, delete-orphan")
+    criteria: Mapped[list["Criteria"]] = relationship(back_populates="workflow", cascade="all, delete-orphan")
+    assessments: Mapped[list["Assessment"]] = relationship(back_populates="workflow")
 
     # Indexes
     __table_args__ = (
@@ -192,9 +192,9 @@ class Bucket(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    workflow = relationship("Workflow", back_populates="buckets")
-    documents = relationship("Document", back_populates="bucket")
-    assessment_documents = relationship("AssessmentDocument", back_populates="bucket")
+    workflow: Mapped["Workflow"] = relationship(back_populates="buckets")
+    documents: Mapped[list["Document"]] = relationship(back_populates="bucket")
+    assessment_documents: Mapped[list["AssessmentDocument"]] = relationship(back_populates="bucket")
 
     # Indexes
     __table_args__ = (Index("idx_bucket_workflow", "workflow_id"),)
@@ -224,8 +224,8 @@ class Criteria(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    workflow = relationship("Workflow", back_populates="criteria")
-    assessment_results = relationship("AssessmentResult", back_populates="criteria")
+    workflow: Mapped["Workflow"] = relationship(back_populates="criteria")
+    assessment_results: Mapped[list["AssessmentResult"]] = relationship(back_populates="criteria")
 
     # Indexes
     __table_args__ = (Index("idx_criteria_workflow", "workflow_id"),)
@@ -266,16 +266,14 @@ class Assessment(Base):
     duration_ms = Column(Integer)
 
     # Relationships
-    organization = relationship("Organization", back_populates="assessments")
-    workflow = relationship("Workflow", back_populates="assessments")
-    creator = relationship("User", back_populates="created_assessments", foreign_keys=[created_by])
-    assessment_documents = relationship(
-        "AssessmentDocument",
+    organization: Mapped["Organization"] = relationship(back_populates="assessments")
+    workflow: Mapped["Workflow"] = relationship(back_populates="assessments")
+    creator: Mapped["User"] = relationship(back_populates="created_assessments", foreign_keys=[created_by])
+    assessment_documents: Mapped[list["AssessmentDocument"]] = relationship(
         back_populates="assessment",
         cascade="all, delete-orphan",
     )
-    assessment_results = relationship(
-        "AssessmentResult",
+    assessment_results: Mapped[list["AssessmentResult"]] = relationship(
         back_populates="assessment",
         cascade="all, delete-orphan",
     )
@@ -328,9 +326,9 @@ class Document(Base):
     uploaded_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    organization = relationship("Organization", back_populates="documents")
-    bucket = relationship("Bucket", back_populates="documents")
-    uploader = relationship("User", back_populates="uploaded_documents")
+    organization: Mapped["Organization"] = relationship(back_populates="documents")
+    bucket: Mapped[Optional["Bucket"]] = relationship(back_populates="documents")
+    uploader: Mapped["User"] = relationship(back_populates="uploaded_documents")
 
     # Indexes for common queries
     __table_args__ = (
@@ -361,8 +359,8 @@ class AssessmentDocument(Base):
     uploaded_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    assessment = relationship("Assessment", back_populates="assessment_documents")
-    bucket = relationship("Bucket", back_populates="assessment_documents")
+    assessment: Mapped["Assessment"] = relationship(back_populates="assessment_documents")
+    bucket: Mapped["Bucket"] = relationship(back_populates="assessment_documents")
 
     # Indexes
     __table_args__ = (Index("idx_assessment_document", "assessment_id"),)
@@ -396,8 +394,8 @@ class AssessmentResult(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    assessment = relationship("Assessment", back_populates="assessment_results")
-    criteria = relationship("Criteria", back_populates="assessment_results")
+    assessment: Mapped["Assessment"] = relationship(back_populates="assessment_results")
+    criteria: Mapped["Criteria"] = relationship(back_populates="assessment_results")
 
     # Indexes
     __table_args__ = (
@@ -435,7 +433,7 @@ class AuditLog(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    organization = relationship("Organization", back_populates="audit_logs")
+    organization: Mapped[Optional["Organization"]] = relationship(back_populates="audit_logs")
 
     # Indexes for querying audit logs
     __table_args__ = (
@@ -475,7 +473,7 @@ class ParsedDocument(Base):
 
     # Relationships
     # Use selectin loading to prevent N+1 query issues when accessing document.parsed_version
-    document = relationship("Document", backref=backref("parsed_version", lazy="selectin"))
+    document: Mapped["Document"] = relationship(backref=backref("parsed_version", lazy="selectin"))
 
     # Indexes
     # Note: document_id index is created automatically by unique=True constraint
