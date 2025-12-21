@@ -234,11 +234,11 @@ async def upload_document(
     current_user: AuthenticatedUser,
     response: Response,
     redis: RedisClient,
+    request: Request,
     files: list[UploadFile] = File(
         ..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"
     ),
     bucket_id: Optional[str] = Form(None, description="Optional bucket ID for validation"),
-    request: Request,
     db: Session = Depends(get_db),
 ) -> list[DocumentResponse]:
     """
