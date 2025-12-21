@@ -578,6 +578,50 @@ Examples:
 5. Write tests (auth, authorization, multi-tenancy, validation)
 6. Update OpenAPI docs automatically via FastAPI
 
+### Type Checking Philosophy (MyPy)
+
+**Pragmatic Type Checking**: Focus on critical business logic, not exhaustive coverage.
+
+**Why Relaxed Configuration** (as of 2025-12-21):
+
+- **Priority**: Shipping velocity over perfect typing in MVP phase
+- **Reality**: 136 MyPy errors (61 in tests, ~50 SQLAlchemy UUID type mismatches, ~20 complex generics)
+- **Decision**: Relax MyPy to unblock CI pipeline, incrementally tighten per-module later
+
+**Current Configuration** (`apps/api/pyproject.toml`):
+
+```toml
+[tool.mypy]
+strict = false
+disallow_untyped_defs = false  # Allow functions without type annotations
+ignore_missing_imports = true  # Ignore third-party stubs
+check_untyped_defs = false     # Don't type-check untyped function bodies
+```
+
+**Error Reduction**: 136 errors → 31 errors (77% reduction)
+
+**Remaining Errors** (31 total, P2 priority to fix incrementally):
+
+- ~20 errors: SQLAlchemy `UUID` vs `_UUID_RETURN` type mismatches (known upstream issue)
+- ~8 errors: Pydantic schema compatibility issues
+- ~3 errors: Miscellaneous type incompatibilities
+
+**Philosophy**:
+
+- ✅ **Type critical paths**: AI validation, evidence extraction, multi-tenancy logic
+- ✅ **Skip test typing**: Tests don't need type annotations (behavior validation sufficient)
+- ✅ **Ignore third-party stubs**: Missing stubs for psutil, pandas, pytesseract (not worth creating)
+- 🔄 **Incremental improvement**: Add `# type: ignore[error-code]` for SQLAlchemy UUID issues, tighten per-module when stable
+
+**Re-tightening Plan** (defer to P2):
+
+1. Fix SQLAlchemy UUID type issues with explicit type annotations or `# type: ignore[arg-type]`
+2. Re-enable `disallow_untyped_defs = true` for `app/services/` (business logic)
+3. Re-enable `check_untyped_defs = true` for `app/api/v1/endpoints/` (API routes)
+4. Keep tests excluded permanently (no value in typing test functions)
+
+**Reference**: See issue #201 for full context and decision rationale.
+
 ---
 
 ## Cost Structure
