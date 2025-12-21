@@ -892,10 +892,10 @@ Location: https://blob.vercel-storage.com/documents/...
 )
 async def download_document(
     document_id: UUID,
+    request: Request,
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
     page: Optional[int] = None,
-    request: Request = Depends(),
 ) -> Response:
     """
     Download document from Vercel Blob storage.
