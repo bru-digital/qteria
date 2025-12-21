@@ -538,7 +538,7 @@ Create a checklist the implementation agent will use for self-review before comm
 
 ### 3. Technical Approach
 
-Implement Redis-based rate limiting using increment-first pattern to prevent race conditions. Use Redis pipeline for atomic INCRBY + EXPIREAT operations. Gracefully degrade if Redis unavailable (fail-open for availability). Return 429 with standardized error format and X-RateLimit-\* headers per API contract.
+Implement Redis-based rate limiting using increment-first pattern to prevent race conditions. Use Redis pipeline for atomic INCRBY + EXPIREAT operations. Gracefully degrade if Redis unavailable (fail-open for availability). Return 429 with standardized error format and X-RateLimit-* headers per API contract.
 
 ### 4. Files to Modify
 
@@ -580,7 +580,7 @@ None (uses Redis for rate limiting state, not PostgreSQL)
 - `test_rate_limit_allows_99_uploads()` - Allows 99/100
 - `test_batch_uploads_count_per_file()` - 20 files = 20 uploads, not 1
 - `test_rate_limit_per_user_isolation()` - User A limit doesn't affect User B
-- `test_rate_limit_headers_present()` - X-RateLimit-\* headers on success
+- `test_rate_limit_headers_present()` - X-RateLimit-* headers on success
 - `test_rate_limit_counter_increments()` - Redis INCRBY called with file_count
 - `test_redis_unavailable_graceful_degradation()` - Allows upload if Redis down
 - `test_retry_after_header_accurate()` - Retry-After seconds matches next hour
@@ -643,7 +643,7 @@ No breaking changes (rate limiting is additive feature)
 ### 11. Success Criteria
 
 - 101st upload returns 429 with RATE_LIMIT_EXCEEDED
-- X-RateLimit-\* headers present on all upload responses
+- X-RateLimit-* headers present on all upload responses
 - Concurrent requests handled correctly (no race conditions)
 - Redis unavailable: uploads still work (fail-open)
 - All 9 tests pass with 80%+ coverage
@@ -700,6 +700,7 @@ EOF
 ```
 
 This ensures the plan is documented in the issue for:
+
 - Implementation agent reference
 - Team visibility and review
 - Audit trail of planning decisions
