@@ -151,8 +151,8 @@ def create_workflow(
         workflow = Workflow(
             name=workflow_data.name,
             description=workflow_data.description,
-            organization_id=cast(UUID, current_user.organization_id),
-            created_by=cast(UUID, current_user.id),
+            organization_id=cast(Any, current_user.organization_id),
+            created_by=cast(Any, current_user.id),
             is_active=True,
         )
         db.add(workflow)
@@ -187,7 +187,7 @@ def create_workflow(
                 else None  # None = applies to all buckets
             )
 
-            criteria = Criteria(  # type: ignore[call-arg]  # SQLAlchemy Mapped[] field not recognized by MyPy
+            criteria = Criteria(  # type: ignore[call-arg]
                 workflow_id=workflow.id,
                 name=criteria_data.name,
                 description=criteria_data.description,
@@ -709,7 +709,7 @@ def update_workflow(
                 criteria_updated += 1
             else:
                 # Create new criteria
-                criteria = Criteria(  # type: ignore[call-arg]  # SQLAlchemy Mapped[] field not recognized by MyPy
+                criteria = Criteria(  # type: ignore[call-arg]
                     workflow_id=workflow.id,
                     name=criteria_data.name,
                     description=criteria_data.description,
