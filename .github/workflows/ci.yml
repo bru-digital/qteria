@@ -41,6 +41,43 @@ jobs:
         run: npm run type-check
 
   # ========================================
+  # Pre-commit Hooks Verification
+  # ========================================
+  pre-commit-check:
+    name: Pre-commit Hooks - Validate Config
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Install Python dependencies (for pre-commit)
+        run: |
+          cd apps/api
+          pip install -r requirements-dev.txt
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit on all files
+        run: pre-commit run --all-files --show-diff-on-failure
+
+  # ========================================
   # Frontend: Tests
   # ========================================
   frontend-test:

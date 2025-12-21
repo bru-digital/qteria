@@ -224,7 +224,7 @@ class Criteria(Base):
     )
     name = Column(String(255), nullable=False)
     description = Column(Text)  # Made nullable to match API schema
-    applies_to_bucket_ids: Mapped[Optional[list[uuid.UUID]]] = mapped_column(
+    applies_to_bucket_ids: Mapped[list[uuid.UUID] | None] = mapped_column(
         ARRAY(UUID(as_uuid=True)), nullable=True
     )  # Array of bucket UUIDs
     example_text = Column(Text)

@@ -51,11 +51,13 @@ Per CLAUDE.md: "Zero tolerance for data leakage between organizations"
    ```
 
 2. **Create Test Database**
+
    - Use separate Neon database instance for E2E tests
    - Seed with test users in different organizations
    - Configure DATABASE_URL in `.env.test`
 
 3. **Authentication Helper**
+
    - Create `tests/helpers/auth.ts` with login helpers for different roles
    - Mock NextAuth session for E2E tests
 

@@ -26,15 +26,12 @@ from fastapi.testclient import TestClient
 
 from app.middleware.multi_tenant import (
     OrganizationContext,
-    get_organization_context,
     validate_organization_access,
     current_organization_id,
     get_current_organization_id,
 )
 from app.models.mixins import (
-    OrganizationScopedMixin,
     get_scoped_or_404,
-    filter_by_organization,
 )
 from tests.conftest import (
     create_test_token,
@@ -42,7 +39,6 @@ from tests.conftest import (
     TEST_ORG_B_ID,
     TEST_USER_A_ID,
     TEST_USER_B_ID,
-    assert_error_response,
 )
 
 

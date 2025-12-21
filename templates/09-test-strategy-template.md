@@ -199,12 +199,14 @@ def test_assessment_score_calculates_correctly_for_perfect_match():
 **Critical user journeys** (from journey steps 1-3):
 
 1. **[Journey 1 name]**:
+
    - [Step 1]
    - [Step 2]
    - [Step 3]
    - Expected: [Outcome]
 
 2. **[Journey 2 name]**:
+
    - [Step 1]
    - [Step 2]
    - Expected: [Outcome]

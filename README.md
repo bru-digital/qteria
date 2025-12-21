@@ -62,14 +62,39 @@ pip install -r requirements-dev.txt
 cd ../..
 ```
 
-#### 5. Run database migrations
+#### 5. Install pre-commit hooks (Recommended)
+
+Pre-commit hooks catch formatting and linting issues before you commit, saving CI time.
+
+```bash
+# Install pre-commit hooks
+source apps/api/venv/bin/activate  # On Windows: apps\api\venv\Scripts\activate
+pre-commit install
+
+# Test hooks work (optional)
+pre-commit run --all-files
+```
+
+**What the hooks check:**
+
+- Python: Black formatting, Ruff linting
+- JavaScript/TypeScript: Prettier formatting
+- General: Trailing whitespace, end-of-file fixes, YAML syntax
+
+**Bypass hooks in emergencies:**
+
+```bash
+git commit --no-verify -m "emergency fix"
+```
+
+#### 6. Run database migrations
 
 ```bash
 # Apply database schema
 npm run db:migrate
 ```
 
-#### 6. Seed development data (Optional)
+#### 7. Seed development data (Optional)
 
 ```bash
 # Populate database with sample data (recommended for development)
@@ -95,7 +120,7 @@ python scripts/seed_data.py           # Idempotent - skips if data exists
 python scripts/seed_data.py --reset   # Reset database and reseed
 ```
 
-#### 7. Start development servers
+#### 8. Start development servers
 
 ```bash
 # Terminal 1: Start frontend (Next.js)
@@ -105,7 +130,7 @@ npm run dev
 npm run dev:api
 ```
 
-#### 8. Open your browser
+#### 9. Open your browser
 
 - **Frontend**: http://localhost:3000
 - **API Docs**: http://localhost:8000/docs (FastAPI Swagger UI)
@@ -175,6 +200,11 @@ npm run lint             # Lint all code
 npm run type-check       # TypeScript type checking
 npm run format           # Format code with Prettier
 npm run format:check     # Check code formatting
+
+# Pre-commit Hooks
+pre-commit install       # Install git hooks (run once)
+pre-commit run --all-files  # Run hooks on all files manually
+pre-commit autoupdate    # Update hook versions
 
 # Database
 npm run db:migrate       # Run database migrations

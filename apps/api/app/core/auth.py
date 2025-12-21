@@ -25,7 +25,8 @@ Usage:
 """
 
 from datetime import datetime, timezone
-from typing import Annotated, Awaitable, Callable, Optional
+from typing import Annotated
+from collections.abc import Awaitable, Callable
 from uuid import UUID
 import logging
 
@@ -39,7 +40,7 @@ from app.core.config import settings
 from app.core.dependencies import get_db
 from app.core.exceptions import create_error_response
 from app.models.enums import UserRole, Permission, has_permission
-from app.services.audit import AuditService, AuditEventType
+from app.services.audit import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ class CurrentUser(BaseModel):
     email: str = Field(..., description="User's email address")
     role: UserRole = Field(..., description="User's role for RBAC")
     organization_id: UUID = Field(..., description="User's organization ID for multi-tenancy")
-    name: Optional[str] = Field(default=None, description="User's display name")
+    name: str | None = Field(default=None, description="User's display name")
 
     class Config:
         """Pydantic configuration."""
@@ -93,9 +94,9 @@ class TokenPayload(BaseModel):
     email: str = Field(..., description="User email")
     role: str = Field(..., description="User role")
     org_id: str = Field(..., description="Organization ID")
-    name: Optional[str] = Field(default=None, description="User name")
-    iat: Optional[int] = Field(default=None, description="Issued at timestamp")
-    exp: Optional[int] = Field(default=None, description="Expiration timestamp")
+    name: str | None = Field(default=None, description="User name")
+    iat: int | None = Field(default=None, description="Issued at timestamp")
+    exp: int | None = Field(default=None, description="Expiration timestamp")
 
     class Config:
         """Pydantic configuration."""
@@ -104,7 +105,7 @@ class TokenPayload(BaseModel):
 
 
 async def get_current_user(
-    credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(security)],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
     request: Request,
     db: Session = Depends(get_db),
 ) -> CurrentUser:

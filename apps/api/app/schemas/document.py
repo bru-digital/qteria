@@ -6,7 +6,7 @@ including validation rules and error responses.
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -24,7 +24,7 @@ class DocumentResponse(BaseModel):
     file_size: int = Field(..., description="File size in bytes")
     mime_type: str = Field(..., description="MIME type (e.g., application/pdf)")
     storage_key: str = Field(..., description="Storage URL/key for retrieval")
-    bucket_id: Optional[UUID] = Field(
+    bucket_id: UUID | None = Field(
         None, description="Associated bucket ID (if specified during upload)"
     )
     uploaded_at: datetime = Field(..., description="Upload timestamp (UTC)")

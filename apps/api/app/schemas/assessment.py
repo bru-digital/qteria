@@ -9,7 +9,6 @@ Journey Step 2→3: Project Handler starts assessment → AI validates documents
 """
 
 from datetime import datetime
-from typing import List
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -51,7 +50,7 @@ class AssessmentCreate(BaseModel):
         description="Workflow UUID to run assessment against",
         examples=["550e8400-e29b-41d4-a716-446655440000"],
     )
-    documents: List[DocumentMapping] = Field(
+    documents: list[DocumentMapping] = Field(
         ...,
         min_length=1,
         description="Document-to-bucket mappings (at least one document required)",
@@ -77,7 +76,7 @@ class AssessmentCreate(BaseModel):
 
     @field_validator("documents")
     @classmethod
-    def validate_unique_documents(cls, v: List[DocumentMapping]) -> List[DocumentMapping]:
+    def validate_unique_documents(cls, v: list[DocumentMapping]) -> list[DocumentMapping]:
         """
         Validate that each document is assigned to only one bucket.
 

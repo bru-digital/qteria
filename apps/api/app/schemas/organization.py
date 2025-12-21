@@ -2,7 +2,6 @@
 Pydantic schemas for Organization model.
 """
 
-from typing import Optional
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, Field
@@ -33,9 +32,9 @@ class OrganizationCreate(OrganizationBase):
 class OrganizationUpdate(BaseModel):
     """Schema for updating an existing organization."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    subscription_tier: Optional[str] = Field(None, pattern="^(trial|professional|enterprise)$")
-    subscription_status: Optional[str] = Field(None, pattern="^(trial|active|cancelled)$")
+    name: str | None = Field(None, min_length=1, max_length=255)
+    subscription_tier: str | None = Field(None, pattern="^(trial|professional|enterprise)$")
+    subscription_status: str | None = Field(None, pattern="^(trial|active|cancelled)$")
 
 
 class OrganizationResponse(OrganizationBase):

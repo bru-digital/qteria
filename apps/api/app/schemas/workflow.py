@@ -8,7 +8,7 @@ Journey Step 1: Process Manager creates validation workflows with document bucke
 and validation criteria.
 """
 
-from typing import Any, List, Optional
+from typing import Any
 from uuid import UUID
 from datetime import datetime
 
@@ -65,12 +65,12 @@ class CriteriaCreate(BaseModel):
             "Risk matrix must be complete",
         ],
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         max_length=2000,
         description="Detailed description of validation rule for AI context",
     )
-    applies_to_bucket_ids: List[int] = Field(
+    applies_to_bucket_ids: list[int] = Field(
         default_factory=list,
         description="Bucket indexes this criteria applies to (empty = applies to all buckets)",
         examples=[[0, 1], [2], []],
@@ -104,17 +104,17 @@ class WorkflowCreate(BaseModel):
         description="Workflow name (e.g., 'Medical Device - Class II')",
         examples=["Medical Device - Class II", "Machinery Directive 2006/42/EC"],
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         max_length=2000,
         description="Optional workflow description",
     )
-    buckets: List[BucketCreate] = Field(
+    buckets: list[BucketCreate] = Field(
         ...,
         min_length=1,
         description="Document buckets (at least one required)",
     )
-    criteria: List[CriteriaCreate] = Field(
+    criteria: list[CriteriaCreate] = Field(
         ...,
         min_length=1,
         description="Validation criteria (at least one required)",
@@ -157,8 +157,8 @@ class WorkflowCreate(BaseModel):
     @field_validator("criteria")
     @classmethod
     def validate_bucket_references(
-        cls, v: List[CriteriaCreate], values: ValidationInfo
-    ) -> List[CriteriaCreate]:
+        cls, v: list[CriteriaCreate], values: ValidationInfo
+    ) -> list[CriteriaCreate]:
         """
         Validate that criteria bucket references are valid indexes.
 
@@ -201,8 +201,8 @@ class CriteriaResponse(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str]
-    applies_to_bucket_ids: Optional[List[UUID]] = None  # None = applies to all buckets
+    description: str | None
+    applies_to_bucket_ids: list[UUID] | None = None  # None = applies to all buckets
     order_index: int
 
     class Config:
@@ -218,19 +218,19 @@ class WorkflowResponse(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str]
+    description: str | None
     organization_id: UUID
     created_by: UUID
     is_active: bool
     archived: bool = Field(default=False, description="Whether workflow is archived")
-    archived_at: Optional[datetime] = Field(None, description="Archive timestamp")
+    archived_at: datetime | None = Field(None, description="Archive timestamp")
     created_at: datetime
     updated_at: datetime
-    section_patterns: Optional[dict[str, Any]] = Field(
+    section_patterns: dict[str, Any] | None = Field(
         default=None, description="Custom regex patterns for section detection in documents"
     )
-    buckets: List[BucketResponse]
-    criteria: List[CriteriaResponse]
+    buckets: list[BucketResponse]
+    criteria: list[CriteriaResponse]
 
     class Config:
         from_attributes = True
@@ -243,10 +243,10 @@ class WorkflowListItem(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str]
+    description: str | None
     is_active: bool
     archived: bool = Field(default=False, description="Whether workflow is archived")
-    archived_at: Optional[datetime] = Field(None, description="Archive timestamp")
+    archived_at: datetime | None = Field(None, description="Archive timestamp")
     created_at: datetime
     buckets_count: int
     criteria_count: int
@@ -277,7 +277,7 @@ class WorkflowListResponse(BaseModel):
     Includes both workflow data and pagination metadata for client-side pagination UI.
     """
 
-    workflows: List[WorkflowListItem] = Field(
+    workflows: list[WorkflowListItem] = Field(
         ..., description="List of workflows for the current page"
     )
     pagination: PaginationMeta = Field(..., description="Pagination metadata")
@@ -293,7 +293,7 @@ class BucketUpdate(BaseModel):
     - Omit from request: Delete bucket
     """
 
-    id: Optional[UUID] = Field(
+    id: UUID | None = Field(
         default=None,
         description="Bucket UUID (None for new buckets, UUID for existing buckets)",
     )
@@ -331,7 +331,7 @@ class CriteriaUpdate(BaseModel):
     - Omit from request: Delete criteria
     """
 
-    id: Optional[UUID] = Field(
+    id: UUID | None = Field(
         default=None,
         description="Criteria UUID (None for new criteria, UUID for existing criteria)",
     )
@@ -346,12 +346,12 @@ class CriteriaUpdate(BaseModel):
             "Risk matrix must be complete",
         ],
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         max_length=2000,
         description="Detailed description of validation rule for AI context",
     )
-    applies_to_bucket_ids: Optional[List[UUID]] = Field(
+    applies_to_bucket_ids: list[UUID] | None = Field(
         default=None,
         description="Bucket UUIDs this criteria applies to (None = applies to all buckets)",
         examples=[],
@@ -394,17 +394,17 @@ class WorkflowUpdate(BaseModel):
         description="Workflow name (e.g., 'Medical Device - Class II')",
         examples=["Medical Device - Class II", "Machinery Directive 2006/42/EC"],
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         max_length=2000,
         description="Optional workflow description",
     )
-    buckets: List[BucketUpdate] = Field(
+    buckets: list[BucketUpdate] = Field(
         ...,
         min_length=1,
         description="Document buckets (at least one required)",
     )
-    criteria: List[CriteriaUpdate] = Field(
+    criteria: list[CriteriaUpdate] = Field(
         ...,
         min_length=1,
         description="Validation criteria (at least one required)",

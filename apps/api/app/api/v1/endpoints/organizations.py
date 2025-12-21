@@ -11,22 +11,17 @@ Security Notes:
 - Returns 404 (not 403) when accessing other org's data to prevent info leakage
 """
 
-from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
 from app.core.auth import (
-    get_current_user,
-    require_role,
-    CurrentUser,
     AdminOnly,
     AuthenticatedUser,
 )
 from app.core.exceptions import create_error_response
 from app.models.models import Organization
-from app.models.enums import UserRole
 from app.schemas.organization import (
     OrganizationCreate,
     OrganizationUpdate,
@@ -91,14 +86,14 @@ def create_organization(
 
 @router.get(
     "/organizations",
-    response_model=List[OrganizationResponse],
+    response_model=list[OrganizationResponse],
     tags=["Organizations"],
     summary="List organizations (own organization only)",
 )
 def list_organizations(
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
-) -> List[OrganizationResponse]:
+) -> list[OrganizationResponse]:
     """
     List organizations.
 

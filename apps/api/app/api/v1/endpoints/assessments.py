@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.auth import AuthenticatedUser
 from app.core.dependencies import get_db
 from app.core.exceptions import create_error_response
-from app.models import Assessment, AssessmentDocument, Bucket, Workflow
+from app.models import Assessment, AssessmentDocument, Workflow
 from app.schemas.assessment import AssessmentCreate, AssessmentResponse
 from app.services.audit import AuditService
 

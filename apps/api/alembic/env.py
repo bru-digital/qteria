@@ -17,7 +17,6 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 # Import models for autogenerate support
 from app.models.base import Base
-from app.models import models  # Import all models to register them
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

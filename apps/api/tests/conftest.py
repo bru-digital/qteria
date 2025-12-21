@@ -5,7 +5,7 @@ Pytest configuration and fixtures for API tests.
 import pytest
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
-from typing import Generator
+from collections.abc import Generator
 from unittest.mock import patch, MagicMock, AsyncMock
 
 from fastapi.testclient import TestClient
@@ -15,7 +15,6 @@ from sqlalchemy.orm import Session
 
 from app.main import app
 from app.core.config import settings
-from app.models.base import SessionLocal
 from app.models.models import Organization, User
 from app.models.enums import UserRole
 from app.services.audit import AuditService

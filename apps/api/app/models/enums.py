@@ -39,7 +39,6 @@ Never trust frontend-only checks for authorization.
 """
 
 from enum import Enum
-from typing import Set
 
 
 class UserRole(str, Enum):
@@ -102,7 +101,7 @@ class Permission(str, Enum):
 # Role-to-Permission mapping
 # Defines what each role can do in the system
 # @sync apps/web/lib/rbac.ts:ROLE_PERMISSIONS
-ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
+ROLE_PERMISSIONS: dict[UserRole, set[Permission]] = {
     UserRole.PROCESS_MANAGER: {
         # Workflow management (full CRUD)
         Permission.WORKFLOWS_CREATE,
@@ -151,7 +150,7 @@ def has_permission(role: UserRole, permission: Permission) -> bool:
     return permission in role_perms
 
 
-def get_role_permissions(role: UserRole) -> Set[Permission]:
+def get_role_permissions(role: UserRole) -> set[Permission]:
     """
     Get all permissions for a role.
 

@@ -218,7 +218,9 @@ export const authOptions = {
           MicrosoftEntraID({
             clientId: process.env.MICROSOFT_CLIENT_ID || '',
             clientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
-            issuer: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID || 'common'}/v2.0`,
+            issuer: `https://login.microsoftonline.com/${
+              process.env.MICROSOFT_TENANT_ID || 'common'
+            }/v2.0`,
             authorization: {
               params: {
                 prompt: 'select_account',

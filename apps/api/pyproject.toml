@@ -66,6 +66,16 @@ extend-exclude = '''
 
 [tool.ruff]
 line-length = 100
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    "venv",
+    ".venv",
+    "alembic/versions",
+]
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -81,11 +91,10 @@ ignore = [
     "C901",  # too complex
     "E402",  # module level import not at top of file (temp: many conditional imports)
     "B904",  # exception handling without 'from err' (temp: will fix in follow-up)
-    "F401",  # unused imports (temp: will clean up in follow-up)
+    # F401 removed: unused imports will be auto-fixed by pre-commit hooks
     "F541",  # f-string without placeholders (temp: will fix in follow-up)
     "F841",  # unused local variable (temp: will clean up in follow-up)
     "W293",  # blank line contains whitespace (temp: formatting issue)
-    "UP007", # use X | Y for type annotations (temp: Python 3.10+ syntax)
     "UP037", # remove quotes from type annotation (temp: forward references)
     "F821",  # undefined name in forward reference (temp: type checking issue)
     "B007",  # loop control variable not used (temp: will refactor in follow-up)
@@ -94,14 +103,6 @@ ignore = [
     "B017",  # pytest.raises too broad (temp: will make specific in follow-up)
     "F811",  # redefinition of unused variable (temp: will clean up in follow-up)
     "C416",  # unnecessary list comprehension (temp: will optimize in follow-up)
-]
-exclude = [
-    ".git",
-    ".mypy_cache",
-    ".ruff_cache",
-    "venv",
-    ".venv",
-    "alembic/versions",
 ]
 
 [tool.mypy]

@@ -14,7 +14,7 @@ All errors must use the format:
 }
 """
 
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -24,9 +24,9 @@ def create_error_response(
     status_code: int,
     error_code: str,
     message: str,
-    details: Optional[dict[str, Any]] = None,
-    request: Optional[Request] = None,
-    headers: Optional[dict[str, str]] = None,
+    details: dict[str, Any] | None = None,
+    request: Request | None = None,
+    headers: dict[str, str] | None = None,
 ) -> HTTPException:
     """Create standardized error response matching API contract.
 

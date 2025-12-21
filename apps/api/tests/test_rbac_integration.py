@@ -11,7 +11,7 @@ and verify end-to-end behavior including audit trail creation.
 import pytest
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4, UUID
-from typing import Generator
+from collections.abc import Generator
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -19,8 +19,6 @@ from jose import jwt
 
 from app.main import app
 from app.core.config import settings
-from app.core.dependencies import get_db
-from app.models.base import SessionLocal
 from app.models.models import Organization, User, AuditLog
 from app.models.enums import UserRole
 

@@ -370,7 +370,9 @@ export default function NewWorkflowPage() {
                         <button
                           type="button"
                           onClick={() => removeBucket(index)}
-                          aria-label={`Remove bucket ${index + 1}: ${watch(`buckets.${index}.name`) || 'unnamed'}`}
+                          aria-label={`Remove bucket ${index + 1}: ${
+                            watch(`buckets.${index}.name`) || 'unnamed'
+                          }`}
                           className="text-red-600 hover:text-red-700 text-sm font-medium"
                         >
                           Remove
@@ -496,7 +498,9 @@ export default function NewWorkflowPage() {
                         <button
                           type="button"
                           onClick={() => removeCriteria(index)}
-                          aria-label={`Remove criteria ${index + 1}: ${watch(`criteria.${index}.name`) || 'unnamed'}`}
+                          aria-label={`Remove criteria ${index + 1}: ${
+                            watch(`criteria.${index}.name`) || 'unnamed'
+                          }`}
                           className="text-red-600 hover:text-red-700 text-sm font-medium"
                         >
                           Remove Criteria

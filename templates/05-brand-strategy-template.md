@@ -1,7 +1,6 @@
 # Brand Strategy
 
-> **Generated**: [Date]
-> **Status**: [Draft/Final]
+> **Generated**: [Date] > **Status**: [Draft/Final]
 
 ## Overview
 

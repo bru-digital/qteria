@@ -17,9 +17,10 @@ pytest-cov==4.1.0
 pytest-mock==3.12.0
 
 # Code Quality
-black==24.1.1
-ruff==0.1.14
+black==25.12.0
+ruff==0.14.10
 mypy==1.8.0
+pre-commit==3.6.0
 
 # Type Stubs
 types-passlib==1.7.7.20240106

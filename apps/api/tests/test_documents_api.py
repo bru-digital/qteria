@@ -22,7 +22,6 @@ from fastapi.testclient import TestClient
 from tests.conftest import (
     create_test_token,
     TEST_ORG_A_ID,
-    TEST_ORG_B_ID,
 )
 
 
@@ -1955,7 +1954,6 @@ class TestDocumentUploadRateLimiting:
         This test verifies the new approach is implemented correctly.
         """
         import threading
-        import time
         from collections import Counter
 
         pdf_content = b"%PDF-1.4 Test PDF"

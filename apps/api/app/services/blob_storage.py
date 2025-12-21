@@ -20,7 +20,6 @@ import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 from uuid import UUID
 import logging
 
@@ -77,7 +76,7 @@ class BlobStorageService:
 
     @staticmethod
     def _generate_storage_key(
-        filename: str, organization_id: UUID, document_id: Optional[str] = None
+        filename: str, organization_id: UUID, document_id: str | None = None
     ) -> str:
         """
         Generate unique storage key for document.
@@ -107,7 +106,7 @@ class BlobStorageService:
         filename: str,
         content_type: str,
         organization_id: UUID,
-        document_id: Optional[str] = None,
+        document_id: str | None = None,
     ) -> str:
         """
         Upload file to Vercel Blob storage.

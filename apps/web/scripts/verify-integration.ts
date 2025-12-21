@@ -311,7 +311,9 @@ async function main(): Promise<void> {
 
   console.log('')
   console.log(
-    `Total: ${total} | ${colors.green}Passed: ${passed}${colors.reset} | ${failed > 0 ? colors.red : colors.reset}Failed: ${failed}${colors.reset}\n`
+    `Total: ${total} | ${colors.green}Passed: ${passed}${colors.reset} | ${
+      failed > 0 ? colors.red : colors.reset
+    }Failed: ${failed}${colors.reset}\n`
   )
 
   // Exit with appropriate code
