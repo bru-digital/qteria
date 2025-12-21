@@ -18,7 +18,7 @@ Features:
 import re
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 from datetime import datetime
 
@@ -617,8 +617,8 @@ class PDFParserService:
         cache_data = {"pages": parsed_data, "tables": tables if tables is not None else []}
 
         parsed_doc = ParsedDocument(
-            document_id=document_id,
-            organization_id=organization_id,
+            document_id=cast(Any, document_id),
+            organization_id=cast(Any, organization_id),
             parsed_data=cache_data,
             parsing_method=method,
             parsed_at=datetime.utcnow(),

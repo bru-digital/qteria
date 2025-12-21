@@ -81,7 +81,7 @@ def create_organization(
     db.commit()
     db.refresh(db_organization)
 
-    return db_organization
+    return OrganizationResponse.model_validate(db_organization)
 
 
 @router.get(
@@ -116,7 +116,7 @@ def list_organizations(
     organizations = (
         db.query(Organization).filter(Organization.id == current_user.organization_id).all()
     )
-    return organizations
+    return [OrganizationResponse.model_validate(org) for org in organizations]
 
 
 @router.get(
@@ -184,7 +184,7 @@ def get_organization(
             request=request,
         )
 
-    return organization
+    return OrganizationResponse.model_validate(organization)
 
 
 @router.patch(
@@ -272,7 +272,7 @@ def update_organization(
         request=request,
     )
 
-    return organization
+    return OrganizationResponse.model_validate(organization)
 
 
 @router.delete(

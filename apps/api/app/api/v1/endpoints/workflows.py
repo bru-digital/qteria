@@ -17,7 +17,7 @@ Note: All endpoints use `def` (not `async def`) because:
 - Using `def` is more accurate and avoids unnecessary async overhead
 """
 
-from typing import cast
+from typing import Any, cast
 from uuid import UUID
 from datetime import datetime, timezone
 from collections import Counter
@@ -151,8 +151,8 @@ def create_workflow(
         workflow = Workflow(
             name=workflow_data.name,
             description=workflow_data.description,
-            organization_id=current_user.organization_id,
-            created_by=current_user.id,
+            organization_id=cast(Any, current_user.organization_id),
+            created_by=cast(Any, current_user.id),
             is_active=True,
         )
         db.add(workflow)
@@ -187,7 +187,7 @@ def create_workflow(
                 else None  # None = applies to all buckets
             )
 
-            criteria = Criteria(
+            criteria = Criteria(  # type: ignore[call-arg]
                 workflow_id=workflow.id,
                 name=criteria_data.name,
                 description=criteria_data.description,
@@ -245,7 +245,7 @@ def create_workflow(
         }
 
         # Try to extract constraint name from PostgreSQL error
-        if hasattr(e, "orig") and hasattr(e.orig, "diag"):
+        if hasattr(e, "orig") and e.orig and hasattr(e.orig, "diag"):
             diag = e.orig.diag
             error_details["constraint_name"] = getattr(diag, "constraint_name", None)
             error_details["column_name"] = getattr(diag, "column_name", None)
@@ -611,8 +611,10 @@ def update_workflow(
         workflow.updated_at = datetime.now(timezone.utc)  # type: ignore[assignment]
 
         # 3. Update buckets (delete, update, create)
-        existing_bucket_ids = {bucket.id for bucket in workflow.buckets}
-        incoming_bucket_ids = {
+        existing_bucket_ids: set[UUID] = {
+            cast(UUID, bucket.id) for bucket in workflow.buckets if bucket.id is not None
+        }
+        incoming_bucket_ids: set[UUID] = {
             bucket.id for bucket in workflow_data.buckets if bucket.id is not None
         }
 
@@ -639,8 +641,10 @@ def update_workflow(
 
         # Create a mapping of existing buckets for quick lookup
         # Filter out deleted buckets to prevent race condition
-        existing_buckets_map = {
-            bucket.id: bucket for bucket in workflow.buckets if bucket.id not in buckets_to_delete
+        existing_buckets_map: dict[UUID, Bucket] = {
+            cast(UUID, bucket.id): bucket
+            for bucket in workflow.buckets
+            if bucket.id is not None and bucket.id not in buckets_to_delete
         }
 
         # Update/create buckets
@@ -666,8 +670,10 @@ def update_workflow(
         db.flush()  # Get new bucket IDs
 
         # 4. Update criteria (delete, update, create)
-        existing_criteria_ids = {criteria.id for criteria in workflow.criteria}
-        incoming_criteria_ids = {
+        existing_criteria_ids: set[UUID] = {
+            cast(UUID, criteria.id) for criteria in workflow.criteria if criteria.id is not None
+        }
+        incoming_criteria_ids: set[UUID] = {
             criteria.id for criteria in workflow_data.criteria if criteria.id is not None
         }
 
@@ -680,7 +686,11 @@ def update_workflow(
             criteria_deleted = len(criteria_to_delete)
 
         # Create a mapping of existing criteria for quick lookup
-        existing_criteria_map = {criteria.id: criteria for criteria in workflow.criteria}
+        existing_criteria_map: dict[UUID, Criteria] = {
+            cast(UUID, criteria.id): criteria
+            for criteria in workflow.criteria
+            if criteria.id is not None
+        }
 
         # Update/create criteria
         for criteria_data in workflow_data.criteria:
@@ -699,7 +709,7 @@ def update_workflow(
                 criteria_updated += 1
             else:
                 # Create new criteria
-                criteria = Criteria(
+                criteria = Criteria(  # type: ignore[call-arg]
                     workflow_id=workflow.id,
                     name=criteria_data.name,
                     description=criteria_data.description,
@@ -717,7 +727,7 @@ def update_workflow(
             user_id=current_user.id,
             organization_id=current_user.organization_id,
             workflow_id=cast(UUID, workflow.id),
-            workflow_name=cast(str, workflow.name),
+            workflow_name=workflow.name,
             buckets_added=buckets_added,
             buckets_updated=buckets_updated,
             buckets_deleted=buckets_deleted,

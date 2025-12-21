@@ -22,7 +22,7 @@ Usage:
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 import logging
 
@@ -124,11 +124,11 @@ class AuditService:
         ip_address, user_agent = AuditService._extract_request_info(request)
 
         audit_entry = AuditLog(
-            organization_id=organization_id,
-            user_id=user_id,
+            organization_id=cast(Any, organization_id),
+            user_id=cast(Any, user_id),
             action=action,
             resource_type=resource_type,
-            resource_id=resource_id,
+            resource_id=cast(Any, resource_id),
             action_metadata=metadata,
             ip_address=ip_address,
             user_agent=user_agent,
