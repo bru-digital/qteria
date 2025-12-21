@@ -19,7 +19,7 @@ def _validate_test_database_url():
     Accepted patterns:
     - Database name contains 'qteria_test'
     - Database name ends with '_test'
-    - CI environment (CI=true) with neon.tech database
+    - CI environment (CI=true) with test database name
 
     Raises pytest.exit() if validation fails (fail-fast safety check).
     """
@@ -90,7 +90,7 @@ def _validate_test_database_url():
             f"Accepted patterns:\n"
             f"  - Database name contains 'qteria-test' or 'qteria_test'\n"
             f"  - Database name ends with '-test' or '_test'\n"
-            f"  - CI environment (CI=true) with neon.tech\n"
+            f"  - CI environment (CI=true) with test database name\n"
             f"\n"
             f"Fix: Update .env.test to point to test database:\n"
             f"  DATABASE_URL=postgresql://user:pass@host/qteria-test\n"
