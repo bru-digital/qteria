@@ -238,7 +238,7 @@ async def upload_document(
         ..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"
     ),
     bucket_id: Optional[str] = Form(None, description="Optional bucket ID for validation"),
-    request: Request = None,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> list[DocumentResponse]:
     """
@@ -895,7 +895,7 @@ async def download_document(
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
     page: Optional[int] = None,
-    request: Optional[Request] = None,
+    request: Request = Depends(),
 ) -> Response:
     """
     Download document from Vercel Blob storage.
@@ -1097,7 +1097,7 @@ async def delete_document(
     document_id: UUID,
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
-    request: Optional[Request] = None,
+    request: Request = Depends(),
 ) -> Response:
     """
     Delete document from Vercel Blob storage and database.

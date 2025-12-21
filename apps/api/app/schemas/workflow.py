@@ -8,11 +8,12 @@ Journey Step 1: Process Manager creates validation workflows with document bucke
 and validation criteria.
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 from uuid import UUID
 from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic_core import ValidationInfo
 
 
 class BucketCreate(BaseModel):
@@ -155,7 +156,7 @@ class WorkflowCreate(BaseModel):
 
     @field_validator("criteria")
     @classmethod
-    def validate_bucket_references(cls, v: List[CriteriaCreate], values) -> List[CriteriaCreate]:
+    def validate_bucket_references(cls, v: List[CriteriaCreate], values: ValidationInfo) -> List[CriteriaCreate]:
         """
         Validate that criteria bucket references are valid indexes.
 
@@ -223,7 +224,7 @@ class WorkflowResponse(BaseModel):
     archived_at: Optional[datetime] = Field(None, description="Archive timestamp")
     created_at: datetime
     updated_at: datetime
-    section_patterns: Optional[dict] = Field(
+    section_patterns: Optional[dict[str, Any]] = Field(
         default=None, description="Custom regex patterns for section detection in documents"
     )
     buckets: List[BucketResponse]
