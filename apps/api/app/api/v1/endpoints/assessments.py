@@ -12,7 +12,7 @@ against workflow criteria.
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import cast
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, status
@@ -193,8 +193,10 @@ async def start_assessment(
     # - Build set of required bucket IDs from workflow definition
     # - Check if all required buckets are covered
     required_buckets = [b for b in workflow.buckets if b.required]
-    provided_bucket_ids = {doc.bucket_id for doc in data.documents}
-    required_bucket_ids = {b.id for b in required_buckets}
+    provided_bucket_ids: set[UUID] = {doc.bucket_id for doc in data.documents}
+    required_bucket_ids: set[UUID] = {
+        cast(UUID, b.id) for b in required_buckets if b.id is not None
+    }
 
     missing_buckets = required_bucket_ids - provided_bucket_ids
     if missing_buckets:
@@ -230,7 +232,7 @@ async def start_assessment(
         raise create_error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
             error_code="VALIDATION_ERROR",
-            message=f"Missing documents for required buckets: {', '.join(missing_bucket_names)}",
+            message=f"Missing documents for required buckets: {', '.join(filter(None, missing_bucket_names))}",
             details={
                 "missing_bucket_ids": [str(bid) for bid in missing_buckets],
                 "missing_bucket_names": missing_bucket_names,
@@ -249,7 +251,9 @@ async def start_assessment(
     #
     # NOTE: Tests verify this order in test_validation_order_missing_required_takes_precedence()
     # and test_validation_order_only_invalid_bucket_when_no_missing_required()
-    workflow_bucket_ids = {b.id for b in workflow.buckets}
+    workflow_bucket_ids: set[UUID] = {
+        cast(UUID, b.id) for b in workflow.buckets if b.id is not None
+    }
     invalid_bucket_ids = provided_bucket_ids - workflow_bucket_ids
 
     if invalid_bucket_ids:
@@ -295,9 +299,9 @@ async def start_assessment(
     # - Status starts as "pending" until background job picks it up
     try:
         assessment = Assessment(
-            organization_id=org_id,
-            workflow_id=data.workflow_id,
-            created_by=current_user.id,
+            organization_id=cast(Any, org_id),
+            workflow_id=cast(Any, data.workflow_id),
+            created_by=cast(Any, current_user.id),
             status="pending",
             started_at=datetime.now(timezone.utc),
         )
@@ -313,7 +317,7 @@ async def start_assessment(
         for doc_mapping in data.documents:
             assessment_doc = AssessmentDocument(
                 assessment_id=assessment.id,
-                bucket_id=doc_mapping.bucket_id,
+                bucket_id=cast(Any, doc_mapping.bucket_id),
                 file_name=doc_mapping.file_name,
                 storage_key=doc_mapping.storage_key,
                 file_size_bytes=doc_mapping.file_size,

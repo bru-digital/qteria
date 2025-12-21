@@ -13,7 +13,7 @@ Documents are uploaded to Vercel Blob storage with encryption at rest and multi-
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import TypedDict, cast
+from typing import Any, TypedDict, cast
 from uuid import UUID, uuid4
 
 from fastapi import (
@@ -575,7 +575,7 @@ async def upload_document(
             # Store validated file data for upload phase
             file_data_list.append(
                 {
-                    "filename": file.filename,
+                    "filename": file.filename or "unknown.pdf",
                     "content": file_content,
                     "size": file_size,
                     "mime_type": mime_type,
@@ -649,14 +649,14 @@ async def upload_document(
             # Add document metadata to database session (don't commit yet)
             # This completes STORY-015 acceptance criteria: "Stores metadata in PostgreSQL"
             document_record = Document(
-                id=UUID(document_id),
-                organization_id=current_user.organization_id,
+                id=cast(Any, UUID(document_id)),
+                organization_id=cast(Any, current_user.organization_id),
                 file_name=file_data["filename"],
                 file_size=file_data["size"],
                 mime_type=file_data["mime_type"],
                 storage_key=storage_url,
-                bucket_id=UUID(bucket_id) if bucket_id else None,
-                uploaded_by=current_user.id,
+                bucket_id=cast(Any, UUID(bucket_id)) if bucket_id else None,
+                uploaded_by=cast(Any, current_user.id),
             )
             db.add(document_record)
 
@@ -1095,9 +1095,9 @@ HTTP/1.1 204 No Content
 )
 async def delete_document(
     document_id: UUID,
+    request: Request,
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
-    request: Request = Depends(),
 ) -> Response:
     """
     Delete document from Vercel Blob storage and database.
