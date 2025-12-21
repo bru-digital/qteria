@@ -13,9 +13,8 @@ Target: 95% code coverage
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
-from uuid import uuid4, UUID
+from unittest.mock import Mock, patch
+from uuid import uuid4
 
 from app.services.pdf_parser import (
     PDFParserService,

@@ -41,16 +41,15 @@ Security Notes:
 
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
 import logging
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
 from sqlalchemy.orm import Session
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.core.auth import get_current_user, CurrentUser
-from app.core.dependencies import get_db
 from app.core.exceptions import create_error_response
 from app.services.audit import AuditService
 
@@ -59,7 +58,7 @@ logger = logging.getLogger(__name__)
 
 # Context variable to store the current organization ID for the request
 # This allows organization filtering in any part of the codebase
-current_organization_id: ContextVar[Optional[UUID]] = ContextVar(
+current_organization_id: ContextVar[UUID | None] = ContextVar(
     "current_organization_id", default=None
 )
 
@@ -124,7 +123,7 @@ async def get_organization_context(
     )
 
 
-def get_current_organization_id() -> Optional[UUID]:
+def get_current_organization_id() -> UUID | None:
     """
     Get the current organization ID from context.
 
@@ -150,10 +149,10 @@ def validate_organization_access(
     resource_organization_id: UUID,
     current_org_id: UUID,
     resource_type: str,
-    resource_id: Optional[UUID] = None,
-    request: Optional[Request] = None,
-    db: Optional[Session] = None,
-    user_id: Optional[UUID] = None,
+    resource_id: UUID | None = None,
+    request: Request | None = None,
+    db: Session | None = None,
+    user_id: UUID | None = None,
 ) -> None:
     """
     Validate that the current user has access to a resource's organization.

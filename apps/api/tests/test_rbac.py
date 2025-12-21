@@ -17,27 +17,21 @@ Coverage target: 100% for security-critical code
 
 import pytest
 from uuid import uuid4
-from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException
 from fastapi.testclient import TestClient
-from jose import jwt
 
 from app.models.enums import (
     UserRole,
     Permission,
     has_permission,
     get_role_permissions,
-    ROLE_PERMISSIONS,
 )
 from app.core.auth import (
-    get_current_user,
     require_role,
     require_permission,
     CurrentUser,
 )
-from app.core.config import settings
-from tests.conftest import create_test_token, TEST_ORG_A_ID, TEST_ORG_B_ID, assert_error_response
+from tests.conftest import TEST_ORG_A_ID, TEST_ORG_B_ID
 
 
 # Apply mock_audit_service fixture to all tests in this module

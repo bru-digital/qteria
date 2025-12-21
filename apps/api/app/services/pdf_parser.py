@@ -18,7 +18,7 @@ Features:
 import re
 import logging
 from pathlib import Path
-from typing import List, Dict, Optional, Any, Tuple
+from typing import Any
 from uuid import UUID
 from datetime import datetime
 
@@ -160,11 +160,11 @@ class PDFParserService:
         document_id: UUID,
         file_path: str,
         organization_id: UUID,
-        custom_patterns: Optional[List[str]] = None,
+        custom_patterns: list[str] | None = None,
         enable_ocr: bool = True,
         ocr_language: str = "eng",
         enable_tables: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Parse PDF document and return structured text with page/section info.
 
@@ -378,7 +378,7 @@ class PDFParserService:
             # The actual parsing will fail with CorruptPDFError if it's really broken
             return False
 
-    def _extract_with_pypdf2(self, file_path: str) -> List[Dict[str, Any]]:
+    def _extract_with_pypdf2(self, file_path: str) -> list[dict[str, Any]]:
         """
         Extract text from PDF using PyPDF2.
 
@@ -429,7 +429,7 @@ class PDFParserService:
 
         return pages
 
-    def _extract_with_pdfplumber(self, file_path: str) -> List[Dict[str, Any]]:
+    def _extract_with_pdfplumber(self, file_path: str) -> list[dict[str, Any]]:
         """
         Extract text from PDF using pdfplumber (fallback method).
 
@@ -473,8 +473,8 @@ class PDFParserService:
         return pages
 
     def _detect_sections(
-        self, pages: List[Dict[str, Any]], custom_patterns: Optional[List[str]] = None
-    ) -> List[Dict[str, Any]]:
+        self, pages: list[dict[str, Any]], custom_patterns: list[str] | None = None
+    ) -> list[dict[str, Any]]:
         """
         Detect section headings across pages using regex patterns.
 
@@ -532,9 +532,7 @@ class PDFParserService:
 
         return pages
 
-    def _get_cached_parse(
-        self, document_id: UUID, organization_id: UUID
-    ) -> Optional[Dict[str, Any]]:
+    def _get_cached_parse(self, document_id: UUID, organization_id: UUID) -> dict[str, Any] | None:
         """
         Get cached parsed text from database.
 
@@ -594,9 +592,9 @@ class PDFParserService:
         self,
         document_id: UUID,
         organization_id: UUID,
-        parsed_data: List[Dict[str, Any]],
+        parsed_data: list[dict[str, Any]],
         method: str,
-        tables: Optional[List[Dict[str, Any]]] = None,
+        tables: list[dict[str, Any]] | None = None,
     ) -> None:
         """
         Store parsed text in database cache.
@@ -643,7 +641,7 @@ class PDFParserService:
             )
             raise PDFParsingError(f"Failed to cache parsed document: {str(e)}")
 
-    def _compile_section_patterns(self, patterns: List[str]) -> List[re.Pattern[str]]:
+    def _compile_section_patterns(self, patterns: list[str]) -> list[re.Pattern[str]]:
         """
         Compile and validate custom section detection patterns.
 
@@ -757,7 +755,7 @@ class PDFParserService:
                 "Must be 3-letter ISO 639-2 code (e.g., 'eng', 'deu', 'fra') or combined (e.g., 'eng+deu')"
             )
 
-    def _is_scanned_pdf(self, pages: List[Dict[str, Any]]) -> Tuple[bool, str]:
+    def _is_scanned_pdf(self, pages: list[dict[str, Any]]) -> tuple[bool, str]:
         """
         Detect if PDF contains scanned images (no extractable text).
 
@@ -875,7 +873,7 @@ class PDFParserService:
             )
             return OCR_DEFAULT_DPI
 
-    def _extract_with_ocr(self, file_path: str, language: str = "eng") -> List[Dict[str, Any]]:
+    def _extract_with_ocr(self, file_path: str, language: str = "eng") -> list[dict[str, Any]]:
         """
         Extract text from scanned PDF using OCR (pytesseract).
 
@@ -1000,8 +998,8 @@ class PDFParserService:
             raise PDFParsingError(f"OCR extraction failed: {str(e)}")
 
     def _extract_tables(
-        self, file_path: str, page_count: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, file_path: str, page_count: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Extract tables from PDF using tabula-py.
 

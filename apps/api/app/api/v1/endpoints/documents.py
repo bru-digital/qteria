@@ -13,7 +13,7 @@ Documents are uploaded to Vercel Blob storage with encryption at rest and multi-
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional, TypedDict, cast
+from typing import TypedDict, cast
 from uuid import UUID, uuid4
 
 from fastapi import (
@@ -50,7 +50,7 @@ except Exception as e:
 
 from app.constants import AssessmentStatus
 from app.core.auth import AuthenticatedUser
-from app.core.dependencies import get_db, get_redis, check_upload_rate_limit, RedisClient
+from app.core.dependencies import get_db, check_upload_rate_limit, RedisClient
 from app.core.exceptions import create_error_response
 from app.models import Bucket, Workflow, Document, Assessment, AssessmentDocument
 from app.schemas.document import (
@@ -238,7 +238,7 @@ async def upload_document(
     files: list[UploadFile] = File(
         ..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"
     ),
-    bucket_id: Optional[str] = Form(None, description="Optional bucket ID for validation"),
+    bucket_id: str | None = Form(None, description="Optional bucket ID for validation"),
     db: Session = Depends(get_db),
 ) -> list[DocumentResponse]:
     """
@@ -895,7 +895,7 @@ async def download_document(
     request: Request,
     current_user: AuthenticatedUser,
     db: Session = Depends(get_db),
-    page: Optional[int] = None,
+    page: int | None = None,
 ) -> Response:
     """
     Download document from Vercel Blob storage.

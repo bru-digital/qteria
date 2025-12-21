@@ -12,12 +12,7 @@ Tests POST /v1/assessments endpoint for:
 Journey Step 2→3: Project Handler starts AI validation assessment.
 """
 
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
-
-from app.models.enums import UserRole
-from tests.conftest import TEST_ORG_A_ID, TEST_ORG_B_ID, assert_error_response
 
 
 def create_test_workflow_with_buckets(client: TestClient, token: str):

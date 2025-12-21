@@ -8,17 +8,12 @@ For now, this provides a stub for future integration tests with real PDF files.
 """
 
 import pytest
-from uuid import uuid4
 from pathlib import Path
 
 from app.services.pdf_parser import (
     PDFParserService,
-    PDFParsingError,
-    EncryptedPDFError,
-    CorruptPDFError,
     TABLE_EXTRACTION_AVAILABLE,
 )
-from app.models.models import ParsedDocument, Document
 
 # Optional: ReportLab for generating test PDFs
 try:

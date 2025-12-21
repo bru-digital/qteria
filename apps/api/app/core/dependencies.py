@@ -19,7 +19,8 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import Annotated, Generator, Optional, TYPE_CHECKING
+from typing import Annotated, TYPE_CHECKING
+from collections.abc import Generator
 
 from fastapi import Depends, Request
 from redis import Redis, ConnectionError as RedisConnectionError, RedisError
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Global Redis client instance (connection pooling)
-_redis_client: Optional[Redis] = None
+_redis_client: Redis | None = None
 
 
 def initialize_redis_client() -> None:
@@ -126,7 +127,7 @@ def initialize_redis_client() -> None:
         _redis_client = None
 
 
-def get_redis() -> Generator[Optional[Redis], None, None]:
+def get_redis() -> Generator[Redis | None, None, None]:
     """
     Dependency function for FastAPI to get Redis client connections.
 
@@ -185,7 +186,7 @@ def check_upload_rate_limit(
     redis: RedisClient,
     db: DbSession,
     file_count: int = 1,
-    request: Optional[Request] = None,
+    request: Request | None = None,
 ) -> int:
     """
     Check if user has exceeded upload rate limit (100 uploads per hour).
@@ -219,8 +220,7 @@ def check_upload_rate_limit(
         Uses increment-first approach to prevent TOCTOU race conditions
     """
     from datetime import datetime, timedelta, timezone
-    from fastapi import HTTPException, Request, status
-    from app.core.auth import AuthenticatedUser
+    from fastapi import HTTPException, status
     from app.services.audit import AuditService
 
     # Graceful degradation: If Redis unavailable, log warning and allow upload
@@ -431,4 +431,4 @@ def check_upload_rate_limit(
 DbSession = Annotated[Session, Depends(get_db)]
 
 # Type alias for Redis dependency
-RedisClient = Annotated[Optional[Redis], Depends(get_redis)]
+RedisClient = Annotated[Redis | None, Depends(get_redis)]

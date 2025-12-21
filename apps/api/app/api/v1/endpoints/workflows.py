@@ -17,7 +17,7 @@ Note: All endpoints use `def` (not `async def`) because:
 - Using `def` is more accurate and avoids unnecessary async overhead
 """
 
-from typing import List, Dict, cast
+from typing import cast
 from uuid import UUID
 from datetime import datetime, timezone
 from collections import Counter
@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session, selectinload, InstrumentedAttribute
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 
-from app.core.auth import ProcessManagerOrAdmin, AuthenticatedUser, CurrentUser
+from app.core.auth import ProcessManagerOrAdmin, AuthenticatedUser
 from app.core.dependencies import get_db
 from app.core.exceptions import create_error_response
 from app.models import Workflow, Bucket, Criteria, Assessment
@@ -40,14 +40,14 @@ from app.schemas.workflow import (
     WorkflowListResponse,
     PaginationMeta,
 )
-from app.services.audit import AuditService, AuditEventType
+from app.services.audit import AuditService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
 # Allowed sort fields mapping for security and maintainability
-ALLOWED_SORT_FIELDS: Dict[str, InstrumentedAttribute] = {
+ALLOWED_SORT_FIELDS: dict[str, InstrumentedAttribute] = {
     "created_at": Workflow.created_at,
     "name": Workflow.name,
 }

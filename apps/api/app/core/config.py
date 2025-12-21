@@ -3,9 +3,7 @@ Application configuration management.
 Loads settings from environment variables using pydantic-settings.
 """
 
-import os
 from pathlib import Path
-from typing import List
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
@@ -79,7 +77,7 @@ class Settings(BaseSettings):
     )
 
     @property
-    def cors_origins_list(self) -> List[str]:
+    def cors_origins_list(self) -> list[str]:
         """Parse CORS origins string into list."""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
 

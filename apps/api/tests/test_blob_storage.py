@@ -8,9 +8,8 @@ Tests cover:
 """
 
 import os
-from datetime import datetime
-from unittest.mock import AsyncMock, patch, MagicMock
-from uuid import UUID, uuid4
+from unittest.mock import AsyncMock, patch
+from uuid import uuid4
 
 import pytest
 

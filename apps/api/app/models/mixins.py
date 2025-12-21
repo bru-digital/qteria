@@ -29,7 +29,7 @@ Security Note:
     Never bypass these methods for user-facing queries.
 """
 
-from typing import TYPE_CHECKING, Generic, List, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
 from uuid import UUID
 
 from fastapi import HTTPException, Request, status
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="Base")
 
 
-def not_found_error(resource_name: str, request: Optional[Request] = None) -> HTTPException:
+def not_found_error(resource_name: str, request: Request | None = None) -> HTTPException:
     """
     Create a standardized 404 Not Found HTTPException.
 
@@ -100,11 +100,11 @@ class OrganizationScopedMixin(Generic[T]):
 
     @classmethod
     def get_by_id_scoped(
-        cls: Type[T],
+        cls: type[T],
         db: Session,
         org_id: UUID,
         record_id: UUID,
-    ) -> Optional[T]:
+    ) -> T | None:
         """
         Get a single record by ID, filtered by organization.
 
@@ -146,12 +146,12 @@ class OrganizationScopedMixin(Generic[T]):
 
     @classmethod
     def get_all_scoped(
-        cls: Type[T],
+        cls: type[T],
         db: Session,
         org_id: UUID,
         skip: int = 0,
         limit: int = 100,
-    ) -> List[T]:
+    ) -> list[T]:
         """
         Get all records for an organization with pagination.
 
@@ -179,7 +179,7 @@ class OrganizationScopedMixin(Generic[T]):
 
     @classmethod
     def count_scoped(
-        cls: Type[T],
+        cls: type[T],
         db: Session,
         org_id: UUID,
     ) -> int:
@@ -197,7 +197,7 @@ class OrganizationScopedMixin(Generic[T]):
 
     @classmethod
     def exists_scoped(
-        cls: Type[T],
+        cls: type[T],
         db: Session,
         org_id: UUID,
         record_id: UUID,
@@ -226,11 +226,11 @@ class OrganizationScopedMixin(Generic[T]):
 
     @classmethod
     def get_by_id_scoped_or_404(
-        cls: Type[T],
+        cls: type[T],
         db: Session,
         org_id: UUID,
         record_id: UUID,
-        resource_name: Optional[str] = None,
+        resource_name: str | None = None,
     ) -> T:
         """
         Get a single record by ID, or raise 404 if not found.
@@ -270,7 +270,7 @@ class OrganizationScopedMixin(Generic[T]):
 
     @classmethod
     def delete_scoped(
-        cls: Type[T],
+        cls: type[T],
         db: Session,
         org_id: UUID,
         record_id: UUID,
@@ -314,12 +314,12 @@ class OrganizationScopedMixin(Generic[T]):
 
 def get_scoped_or_404(
     db: Session,
-    model_class: Type[T],
+    model_class: type[T],
     org_id: UUID,
     record_id: UUID,
     resource_name: str,
-    user_id: Optional[UUID] = None,
-    request: Optional[Request] = None,
+    user_id: UUID | None = None,
+    request: Request | None = None,
     audit_on_not_found: bool = True,
 ) -> T:
     """
@@ -400,9 +400,9 @@ def get_scoped_or_404(
 
 def filter_by_organization(
     db: Session,
-    model_class: Type[T],
+    model_class: type[T],
     org_id: UUID,
-) -> List[T]:
+) -> list[T]:
     """
     Filter all records by organization ID.
 

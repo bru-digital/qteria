@@ -22,7 +22,7 @@ Usage:
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 import logging
 
@@ -76,7 +76,7 @@ class AuditService:
     """
 
     @staticmethod
-    def _extract_request_info(request: Optional[Request]) -> tuple[Optional[str], Optional[str]]:
+    def _extract_request_info(request: Request | None) -> tuple[str | None, str | None]:
         """Extract IP address and user agent from request."""
         if not request:
             return None, None
@@ -98,12 +98,12 @@ class AuditService:
     def log_event(
         db: Session,
         action: str,
-        organization_id: Optional[UUID] = None,
-        user_id: Optional[UUID] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[UUID] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        request: Optional[Request] = None,
+        organization_id: UUID | None = None,
+        user_id: UUID | None = None,
+        resource_type: str | None = None,
+        resource_id: UUID | None = None,
+        metadata: dict[str, Any] | None = None,
+        request: Request | None = None,
     ) -> AuditLog:
         """
         Create a generic audit log entry.
@@ -161,7 +161,7 @@ class AuditService:
         user_id: UUID,
         organization_id: UUID,
         email: str,
-        request: Optional[Request] = None,
+        request: Request | None = None,
         auth_method: str = "jwt",
     ) -> AuditLog:
         """
@@ -193,10 +193,10 @@ class AuditService:
     @staticmethod
     def log_auth_failure(
         db: Session,
-        email: Optional[str] = None,
+        email: str | None = None,
         reason: str = "invalid_credentials",
-        request: Optional[Request] = None,
-        organization_id: Optional[UUID] = None,
+        request: Request | None = None,
+        organization_id: UUID | None = None,
     ) -> AuditLog:
         """
         Log failed authentication attempt.
@@ -225,8 +225,8 @@ class AuditService:
     def log_token_invalid(
         db: Session,
         reason: str,
-        request: Optional[Request] = None,
-        token_snippet: Optional[str] = None,
+        request: Request | None = None,
+        token_snippet: str | None = None,
     ) -> AuditLog:
         """
         Log invalid token attempt (potential attack indicator).
@@ -251,9 +251,9 @@ class AuditService:
     @staticmethod
     def log_token_expired(
         db: Session,
-        user_id: Optional[UUID] = None,
-        organization_id: Optional[UUID] = None,
-        request: Optional[Request] = None,
+        user_id: UUID | None = None,
+        organization_id: UUID | None = None,
+        request: Request | None = None,
     ) -> AuditLog:
         """
         Log expired token usage attempt.
@@ -283,7 +283,7 @@ class AuditService:
         required_roles: list[str],
         actual_role: str,
         endpoint: str,
-        request: Optional[Request] = None,
+        request: Request | None = None,
     ) -> AuditLog:
         """
         Log authorization denial (insufficient role).
@@ -319,8 +319,8 @@ class AuditService:
         user_organization_id: UUID,
         attempted_organization_id: UUID,
         resource_type: str,
-        resource_id: Optional[UUID] = None,
-        request: Optional[Request] = None,
+        resource_id: UUID | None = None,
+        request: Request | None = None,
     ) -> AuditLog:
         """
         Log multi-tenancy violation attempt (user trying to access another org's data).
@@ -370,7 +370,7 @@ class AuditService:
         required_permissions: list[str],
         actual_role: str,
         endpoint: str,
-        request: Optional[Request] = None,
+        request: Request | None = None,
     ) -> AuditLog:
         """
         Log permission-based denial.
@@ -405,9 +405,9 @@ class AuditService:
         user_id: UUID,
         organization_id: UUID,
         endpoint: str,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[UUID] = None,
-        request: Optional[Request] = None,
+        resource_type: str | None = None,
+        resource_id: UUID | None = None,
+        request: Request | None = None,
     ) -> AuditLog:
         """
         Log successful authorization (for sensitive operations).
@@ -444,7 +444,7 @@ class AuditService:
         organization_id: UUID,
         workflow_id: UUID,
         workflow_name: str,
-        request: Optional[Request] = None,
+        request: Request | None = None,
     ) -> AuditLog:
         """
         Log workflow creation event.
@@ -484,7 +484,7 @@ class AuditService:
         criteria_added: int = 0,
         criteria_updated: int = 0,
         criteria_deleted: int = 0,
-        request: Optional[Request] = None,
+        request: Request | None = None,
     ) -> AuditLog:
         """
         Log workflow update event.

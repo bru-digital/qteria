@@ -1,7 +1,6 @@
 """Unit tests for standardized error response handling."""
 
-import pytest
-from fastapi import Request, HTTPException
+from fastapi import Request
 from unittest.mock import MagicMock, Mock
 from uuid import UUID
 
