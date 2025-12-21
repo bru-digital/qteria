@@ -88,7 +88,7 @@ def test_validate_rejects_neondb():
     with patch.dict(
         os.environ, {"DATABASE_URL": "postgresql://user:pass@host/neondb", "CI": ""}, clear=False
     ):
-        with pytest.raises(pytest.exit.Exception) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             _validate_test_database_url()
 
         # Verify error message mentions production database
@@ -101,7 +101,7 @@ def test_validate_rejects_postgres():
     with patch.dict(
         os.environ, {"DATABASE_URL": "postgresql://user:pass@host/postgres", "CI": ""}, clear=False
     ):
-        with pytest.raises(pytest.exit.Exception) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             _validate_test_database_url()
 
         assert "PRODUCTION database" in str(exc_info.value)
@@ -115,7 +115,7 @@ def test_validate_rejects_production():
         {"DATABASE_URL": "postgresql://user:pass@host/production", "CI": ""},
         clear=False,
     ):
-        with pytest.raises(pytest.exit.Exception) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             _validate_test_database_url()
 
         assert "PRODUCTION database" in str(exc_info.value)
@@ -126,7 +126,7 @@ def test_validate_rejects_missing_database_url():
     """Test that missing DATABASE_URL environment variable triggers pytest.exit() with helpful error."""
     # Clear DATABASE_URL from environment
     with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(pytest.exit.Exception) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             _validate_test_database_url()
 
         error_message = str(exc_info.value)
@@ -140,7 +140,7 @@ def test_validate_rejects_malformed_url_no_database():
     with patch.dict(
         os.environ, {"DATABASE_URL": "postgresql://user:pass@host/", "CI": ""}, clear=False
     ):
-        with pytest.raises(pytest.exit.Exception) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             _validate_test_database_url()
 
         assert "malformed" in str(exc_info.value).lower()
@@ -150,7 +150,7 @@ def test_validate_rejects_malformed_url_no_database():
 def test_validate_rejects_malformed_url_invalid_format():
     """Test that completely invalid URL format triggers pytest.exit()."""
     with patch.dict(os.environ, {"DATABASE_URL": "not-a-valid-url", "CI": ""}, clear=False):
-        with pytest.raises(pytest.exit.Exception) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             _validate_test_database_url()
 
         assert "malformed" in str(exc_info.value).lower()
@@ -176,7 +176,7 @@ def test_validate_ci_environment_still_rejects_production():
         {"DATABASE_URL": "postgresql://user:pass@host/production", "CI": "true"},
         clear=False,
     ):
-        with pytest.raises(pytest.exit.Exception) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             _validate_test_database_url()
 
         assert "PRODUCTION database" in str(exc_info.value)
@@ -190,7 +190,7 @@ def test_password_masking_in_production_error():
         {"DATABASE_URL": "postgresql://user:secretpass123@host/production", "CI": ""},
         clear=False,
     ):
-        with pytest.raises(pytest.exit.Exception) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             _validate_test_database_url()
 
         error_message = str(exc_info.value)
@@ -205,7 +205,7 @@ def test_password_masking_in_malformed_error():
     with patch.dict(
         os.environ, {"DATABASE_URL": "postgresql://user:supersecret@host/", "CI": ""}, clear=False
     ):
-        with pytest.raises(pytest.exit.Exception) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             _validate_test_database_url()
 
         error_message = str(exc_info.value)
