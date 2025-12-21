@@ -641,7 +641,7 @@ def update_workflow(
 
         # Create a mapping of existing buckets for quick lookup
         # Filter out deleted buckets to prevent race condition
-        existing_buckets_map: dict[UUID, Any] = {
+        existing_buckets_map: dict[UUID, Bucket] = {
             cast(UUID, bucket.id): bucket
             for bucket in workflow.buckets
             if bucket.id is not None and bucket.id not in buckets_to_delete
@@ -686,7 +686,7 @@ def update_workflow(
             criteria_deleted = len(criteria_to_delete)
 
         # Create a mapping of existing criteria for quick lookup
-        existing_criteria_map: dict[UUID, Any] = {
+        existing_criteria_map: dict[UUID, Criteria] = {
             cast(UUID, criteria.id): criteria
             for criteria in workflow.criteria
             if criteria.id is not None
