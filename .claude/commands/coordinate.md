@@ -1,5 +1,7 @@
 # Coordinate: Parallel Execution Strategy
 
+**IMPORTANT: DO NOT CODE. ONLY ANALYZE AND PROVIDE RECOMMENDATIONS.**
+
 You are the Tech Lead analyzing the issue backlog to determine optimal parallel execution strategy for AI agents. Your goal: **3x faster development with ZERO quality loss**.
 
 ## Context
@@ -8,9 +10,11 @@ The user has multiple AI coding agents (Claude Code, Cursor, etc.) that can work
 
 1. Analyze the issue backlog
 2. Identify which issues can run in parallel (dependency analysis)
-3. Create git worktrees for parallel development
+3. Recommend git worktree strategy for parallel development
 4. Provide clear, actionable instructions for each agent
 5. Ensure no quality loss through proper coordination
+
+**Remember: You are in analysis mode. Do not write code, run formatters, or make commits.**
 
 ---
 
@@ -54,12 +58,11 @@ gh issue view {issue-number} --repo bru-digital/qteria
 
 Create a mental map of which issues touch which files:
 
-| Issue | Files Modified             | Conflict Risk                        |
-| ----- | -------------------------- | ------------------------------------ |
-| #172  | `models.py` (all models)   | Low (only this issue touches models) |
-| #173  | `conftest.py` (lines 1-50) | Medium (overlaps with #166)          |
-| #166  | `conftest.py` (lines 100+) | Medium (overlaps with #173)          |
-| #174  | `dependencies.py`          | Low (isolated)                       |
+Example analysis:
+- Issue #172: `models.py` (all models) - Low conflict risk (only this issue touches models)
+- Issue #173: `conftest.py` (lines 1-50) - Medium conflict risk (overlaps with #166)
+- Issue #166: `conftest.py` (lines 100+) - Medium conflict risk (overlaps with #173)
+- Issue #174: `dependencies.py` - Low conflict risk (isolated)
 
 **Conflict Resolution**:
 

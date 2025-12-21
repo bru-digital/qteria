@@ -682,3 +682,25 @@ Provide the complete implementation plan following the structure above. Be speci
 - [ ] Testing requirements cover all edge cases from Section 2
 
 The plan should be ready to hand off to the implementation agent without further clarification needed. The implementation agent should be able to follow the proven pattern from Section 2 and self-review using the checklist in Section 9.
+
+## Step 6: Post the Plan as a Comment to the Issue
+
+After outputting the complete implementation plan, post it as a comment to the GitHub issue:
+
+```bash
+gh issue comment {issue-number} --repo bru-digital/qteria --body "$(cat <<'EOF'
+## Implementation Plan
+
+[Your complete plan from Step 5 here]
+
+---
+🤖 Generated with Claude Code
+EOF
+)"
+```
+
+This ensures the plan is documented in the issue for:
+- Implementation agent reference
+- Team visibility and review
+- Audit trail of planning decisions
+- Easy access during PR review
