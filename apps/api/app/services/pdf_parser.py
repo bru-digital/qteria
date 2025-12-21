@@ -617,8 +617,8 @@ class PDFParserService:
         cache_data = {"pages": parsed_data, "tables": tables if tables is not None else []}
 
         parsed_doc = ParsedDocument(
-            document_id=cast(Any, document_id),
-            organization_id=cast(Any, organization_id),
+            document_id=cast(UUID, document_id),
+            organization_id=cast(UUID, organization_id),
             parsed_data=cache_data,
             parsing_method=method,
             parsed_at=datetime.utcnow(),

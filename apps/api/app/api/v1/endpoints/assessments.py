@@ -12,7 +12,7 @@ against workflow criteria.
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, cast
+from typing import cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, status
@@ -299,9 +299,9 @@ async def start_assessment(
     # - Status starts as "pending" until background job picks it up
     try:
         assessment = Assessment(
-            organization_id=cast(Any, org_id),
-            workflow_id=cast(Any, data.workflow_id),
-            created_by=cast(Any, current_user.id),
+            organization_id=cast(UUID, org_id),
+            workflow_id=cast(UUID, data.workflow_id),
+            created_by=cast(UUID, current_user.id),
             status="pending",
             started_at=datetime.now(timezone.utc),
         )
@@ -317,7 +317,7 @@ async def start_assessment(
         for doc_mapping in data.documents:
             assessment_doc = AssessmentDocument(
                 assessment_id=assessment.id,
-                bucket_id=cast(Any, doc_mapping.bucket_id),
+                bucket_id=cast(UUID, doc_mapping.bucket_id),
                 file_name=doc_mapping.file_name,
                 storage_key=doc_mapping.storage_key,
                 file_size_bytes=doc_mapping.file_size,
