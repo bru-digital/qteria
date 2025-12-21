@@ -44,7 +44,9 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     - Audit service for SOC2/ISO 27001 compliance
     """
 
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Process incoming request and add request ID.
 
         Args:

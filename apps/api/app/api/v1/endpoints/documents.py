@@ -70,6 +70,7 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 # TypedDict for file data structure used during batch upload
 class FileData(TypedDict):
     """Type definition for file data dict during upload processing."""
+
     filename: str
     content: bytes
     size: int
@@ -237,7 +238,7 @@ async def upload_document(
         ..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"
     ),
     bucket_id: Optional[str] = Form(None, description="Optional bucket ID for validation"),
-    request: Optional[Request] = None,
+    request: Request = None,
     db: Session = Depends(get_db),
 ) -> list[DocumentResponse]:
     """
@@ -971,7 +972,9 @@ async def download_document(
 
         # 2. Get download URL from Vercel Blob
         try:
-            download_url = await BlobStorageService.get_download_url(cast(str, document.storage_key))
+            download_url = await BlobStorageService.get_download_url(
+                cast(str, document.storage_key)
+            )
         except Exception as e:
             logger.error(
                 "Failed to get download URL from Vercel Blob",
