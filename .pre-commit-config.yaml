@@ -75,6 +75,8 @@ repos:
         name: Format JS/TS/JSON/MD with Prettier
         types_or: [javascript, jsx, ts, tsx, json, markdown]
         # YAML excluded to avoid conflict with check-yaml hook
+        # NOTE: Using v3.1.0 as v3.2.5 (from package.json) is not available in mirrors-prettier
+        # If formatting differs between pre-commit and CI, run: npm run format
         exclude: ^(apps/api/|\.github/|\.claude/|product-guidelines/)
         args: ['--write', '--ignore-unknown']
 
