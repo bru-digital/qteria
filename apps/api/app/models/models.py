@@ -65,7 +65,9 @@ class Organization(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    users: Mapped[list["User"]] = relationship(back_populates="organization", cascade="all, delete-orphan")
+    users: Mapped[list["User"]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
+    )
     workflows: Mapped[list["Workflow"]] = relationship(
         back_populates="organization", cascade="all, delete-orphan"
     )
@@ -157,9 +159,15 @@ class Workflow(Base):
 
     # Relationships
     organization: Mapped["Organization"] = relationship(back_populates="workflows")
-    creator: Mapped["User"] = relationship(back_populates="created_workflows", foreign_keys=[created_by])
-    buckets: Mapped[list["Bucket"]] = relationship(back_populates="workflow", cascade="all, delete-orphan")
-    criteria: Mapped[list["Criteria"]] = relationship(back_populates="workflow", cascade="all, delete-orphan")
+    creator: Mapped["User"] = relationship(
+        back_populates="created_workflows", foreign_keys=[created_by]
+    )
+    buckets: Mapped[list["Bucket"]] = relationship(
+        back_populates="workflow", cascade="all, delete-orphan"
+    )
+    criteria: Mapped[list["Criteria"]] = relationship(
+        back_populates="workflow", cascade="all, delete-orphan"
+    )
     assessments: Mapped[list["Assessment"]] = relationship(back_populates="workflow")
 
     # Indexes
@@ -268,7 +276,9 @@ class Assessment(Base):
     # Relationships
     organization: Mapped["Organization"] = relationship(back_populates="assessments")
     workflow: Mapped["Workflow"] = relationship(back_populates="assessments")
-    creator: Mapped["User"] = relationship(back_populates="created_assessments", foreign_keys=[created_by])
+    creator: Mapped["User"] = relationship(
+        back_populates="created_assessments", foreign_keys=[created_by]
+    )
     assessment_documents: Mapped[list["AssessmentDocument"]] = relationship(
         back_populates="assessment",
         cascade="all, delete-orphan",

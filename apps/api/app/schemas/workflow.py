@@ -156,7 +156,9 @@ class WorkflowCreate(BaseModel):
 
     @field_validator("criteria")
     @classmethod
-    def validate_bucket_references(cls, v: List[CriteriaCreate], values: ValidationInfo) -> List[CriteriaCreate]:
+    def validate_bucket_references(
+        cls, v: List[CriteriaCreate], values: ValidationInfo
+    ) -> List[CriteriaCreate]:
         """
         Validate that criteria bucket references are valid indexes.
 
