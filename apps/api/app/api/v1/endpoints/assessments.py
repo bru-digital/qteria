@@ -299,9 +299,9 @@ async def start_assessment(
     # - Status starts as "pending" until background job picks it up
     try:
         assessment = Assessment(
-            organization_id=cast(Any, org_id),
-            workflow_id=cast(Any, data.workflow_id),
-            created_by=cast(Any, current_user.id),
+            organization_id=cast(Any, org_id),  # SQLAlchemy _UUID_RETURN workaround
+            workflow_id=cast(Any, data.workflow_id),  # SQLAlchemy _UUID_RETURN workaround
+            created_by=cast(Any, current_user.id),  # SQLAlchemy _UUID_RETURN workaround
             status="pending",
             started_at=datetime.now(timezone.utc),
         )
@@ -317,7 +317,7 @@ async def start_assessment(
         for doc_mapping in data.documents:
             assessment_doc = AssessmentDocument(
                 assessment_id=assessment.id,
-                bucket_id=cast(Any, doc_mapping.bucket_id),
+                bucket_id=cast(Any, doc_mapping.bucket_id),  # SQLAlchemy _UUID_RETURN workaround
                 file_name=doc_mapping.file_name,
                 storage_key=doc_mapping.storage_key,
                 file_size_bytes=doc_mapping.file_size,

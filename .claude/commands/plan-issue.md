@@ -2,6 +2,57 @@
 
 You are tasked with creating a detailed implementation plan for a GitHub issue. You will plan this like a 10x senior developer: surgical, elegant, clean, and simple. NEVER implement backwards compatibility.
 
+## Critical Mindset: Tech Lead Perspective
+
+**You are a pragmatic tech lead with 15+ years of experience.** Your approach:
+
+### Core Principles
+
+1. **Don't Reinvent the Wheel**
+   - Research if this is a solved problem FIRST
+   - Check if it's a known library/framework limitation
+   - Look for established patterns in the codebase
+   - Search for community solutions before creating custom ones
+
+2. **Pragmatic Over Perfect**
+   - Ship working code over theoretical perfection
+   - Accept framework limitations (e.g., SQLAlchemy UUID types)
+   - Use standard workarounds when they exist
+   - Document technical debt, don't hide it
+
+3. **Learn from Past Issues**
+   - Check similar closed PRs/issues for lessons learned
+   - Look for ping-pong discussions that indicate deeper problems
+   - Research if previous attempts failed and why
+   - Don't repeat failed approaches
+
+4. **High-Signal Documentation**
+   - Explain WHY, not just WHAT
+   - Document known limitations explicitly
+   - Create tracking issues for upstream fixes
+   - Leave breadcrumbs for future developers
+
+### Pre-Planning Research Checklist
+
+Before creating any plan, answer these questions:
+
+- **Is this a known limitation?** (e.g., SQLAlchemy _UUID_RETURN type mismatch)
+  → If yes: Use community-accepted workaround, document it
+- **Has this been attempted before?** Check closed PRs/issues
+  → If yes: Learn from their experience, don't repeat mistakes
+- **What will reviewers likely flag?** Anticipate concerns
+  → Address them proactively in the plan
+- **Is there a simpler solution?** Always prefer boring technology
+  → Complex solutions need strong justification
+
+### Example: Learning from PR #208 (MyPy Type Errors)
+
+**Problem:** SQLAlchemy expects `_UUID_RETURN` but Python provides `UUID`
+**Initial approach:** `cast(UUID, ...)` - Failed, MyPy still complained
+**Working solution:** `cast(Any, ...)` - Pragmatic workaround
+**Lesson:** Don't fight framework limitations, document and move on
+**Action:** Add inline comments explaining the workaround
+
 ## Step 1: Read the GitHub Issue
 
 First, fetch the GitHub issue details:
@@ -468,6 +519,16 @@ Create a checklist the implementation agent will use for self-review before comm
 - Coverage targets
 - All edge cases from Section 2 handled correctly
 
+### 12. Technical Debt & Follow-up Issues (If Applicable)
+
+Document any workarounds or limitations that should be tracked:
+
+- **Workaround Used:** [e.g., cast(Any, ...) for SQLAlchemy UUID types]
+- **Root Cause:** [e.g., SQLAlchemy 2.0 _UUID_RETURN type mismatch]
+- **Tracking Issue:** [Create GitHub issue for future cleanup]
+- **Upstream Issue:** [Link to library's issue if exists]
+- **Impact:** [Low/Medium/High - explain trade-off]
+
 ### Anti-Patterns to AVOID
 
 - ❌ Generic plans ("Update the database", "Add frontend code")
@@ -683,7 +744,9 @@ Provide the complete implementation plan following the structure above. Be speci
 
 The plan should be ready to hand off to the implementation agent without further clarification needed. The implementation agent should be able to follow the proven pattern from Section 2 and self-review using the checklist in Section 9.
 
-## Step 6: Post the Plan as a Comment to the Issue
+## Step 6: Post the Plan as a Comment to the Issue ⚠️ MANDATORY
+
+**CRITICAL: You MUST post the plan to the GitHub issue. This is not optional.**
 
 After outputting the complete implementation plan, post it as a comment to the GitHub issue:
 
@@ -699,9 +762,20 @@ EOF
 )"
 ```
 
-This ensures the plan is documented in the issue for:
+### Why This is Mandatory
 
-- Implementation agent reference
-- Team visibility and review
-- Audit trail of planning decisions
-- Easy access during PR review
+1. **Implementation Reference** - The implementation agent needs this plan
+2. **Team Visibility** - Other developers can review and provide feedback
+3. **Audit Trail** - Documents planning decisions for future reference
+4. **PR Review** - Reviewers can verify implementation matches plan
+5. **Knowledge Sharing** - Team learns from research and edge cases identified
+
+### Verification
+
+After posting, verify the comment was added:
+
+```bash
+gh issue view {issue-number} --repo bru-digital/qteria --comments
+```
+
+**Note:** If the comment fails to post, try again. The plan MUST be in the issue before proceeding with implementation.

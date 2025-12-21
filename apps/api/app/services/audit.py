@@ -124,11 +124,11 @@ class AuditService:
         ip_address, user_agent = AuditService._extract_request_info(request)
 
         audit_entry = AuditLog(
-            organization_id=cast(Any, organization_id),
-            user_id=cast(Any, user_id),
+            organization_id=cast(Any, organization_id),  # SQLAlchemy _UUID_RETURN workaround
+            user_id=cast(Any, user_id),  # SQLAlchemy _UUID_RETURN workaround
             action=action,
             resource_type=resource_type,
-            resource_id=cast(Any, resource_id),
+            resource_id=cast(Any, resource_id),  # SQLAlchemy _UUID_RETURN workaround
             action_metadata=metadata,
             ip_address=ip_address,
             user_agent=user_agent,

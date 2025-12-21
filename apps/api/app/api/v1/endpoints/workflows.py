@@ -151,8 +151,10 @@ def create_workflow(
         workflow = Workflow(
             name=workflow_data.name,
             description=workflow_data.description,
-            organization_id=cast(Any, current_user.organization_id),
-            created_by=cast(Any, current_user.id),
+            organization_id=cast(
+                Any, current_user.organization_id
+            ),  # SQLAlchemy _UUID_RETURN workaround
+            created_by=cast(Any, current_user.id),  # SQLAlchemy _UUID_RETURN workaround
             is_active=True,
         )
         db.add(workflow)
