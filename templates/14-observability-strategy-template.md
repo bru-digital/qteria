@@ -1,8 +1,6 @@
 # Observability Strategy
 
-> **Generated**: [Date]
-> **Product**: [Product Name]
-> **Status**: [Draft/In Progress/Implemented]
+> **Generated**: [Date] > **Product**: [Product Name] > **Status**: [Draft/In Progress/Implemented]
 
 ## Overview
 

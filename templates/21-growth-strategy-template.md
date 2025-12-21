@@ -404,10 +404,12 @@ Activation (Aha Moment)
 **Top 3 Blockers**:
 
 1. [Blocker 1]: [X]% drop-off at [step]
+
    - **Root cause**: [Why users drop off]
    - **Solution**: [How to fix]
 
 2. [Blocker 2]: [Y]% drop-off at [step]
+
    - **Root cause**: [Why]
    - **Solution**: [Fix]
 
@@ -591,6 +593,7 @@ Tactics:
 **Churn Reasons** (survey churned users):
 
 1. [Reason 1]: [X]% of churned users
+
    - **Fix**: [Product improvement / messaging / pricing change]
 
 2. [Reason 2]: [Y]% of churned users

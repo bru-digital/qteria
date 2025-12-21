@@ -30,6 +30,7 @@ Guide the user through code review using the framework in `/prompts/technical/co
    ```
 
 2. **Ask what to review**:
+
    - GitHub PR URL (if `gh` CLI available)
    - File paths to review
    - Specific concerns (performance? security? style?)
@@ -41,6 +42,7 @@ Guide the user through code review using the framework in `/prompts/technical/co
    ```
 
 4. **Apply the code review framework**:
+
    - **Correctness**: Does it work? Are there bugs?
    - **Architecture**: Does it fit the system design?
    - **Readability**: Can others understand it?
@@ -52,6 +54,7 @@ Guide the user through code review using the framework in `/prompts/technical/co
    - **Style**: Does it follow project conventions?
 
 5. **Provide structured feedback**:
+
    - **Critical** (must fix before merge)
    - **Important** (should fix, but not blocking)
    - **Nit** (nice to have, style preference)

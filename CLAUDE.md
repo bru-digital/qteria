@@ -179,6 +179,22 @@ npm run format                 # Format with Prettier
 npm run format:check           # Check formatting
 ```
 
+**Code Quality (Pre-commit Hooks):**
+
+```bash
+pre-commit install             # Install pre-commit hooks (one-time setup)
+pre-commit run --all-files     # Run pre-commit on all files
+pre-commit run                 # Run pre-commit on staged files only
+git commit --no-verify         # Bypass pre-commit hooks (emergencies only)
+
+# What pre-commit hooks check:
+# - Black: Python code formatting
+# - Ruff: Python linting with auto-fix
+# - Prettier: JS/TS/JSON/MD/YAML formatting
+# - File checks: trailing whitespace, line endings, YAML/JSON/TOML syntax
+# Note: MyPy disabled in pre-commit due to existing type errors (still runs in CI)
+```
+
 **Test Database Setup:**
 
 ```bash
@@ -755,17 +771,20 @@ Configure these in Railway dashboard under your service → Variables:
 **Initial Setup:**
 
 1. **Connect GitHub Repository:**
+
    - Railway dashboard → New Project → Deploy from GitHub repo
    - Select `bru-digital/qteria` repository
    - Select branch: `main`
 
 2. **Configure Service Settings:**
+
    - Root Directory: `/apps/api`
    - Watch Paths: `/apps/api/**`
    - Builder: **Automatic** (Railway will detect Dockerfile)
    - Do NOT set custom build/start commands (Dockerfile handles this)
 
 3. **Set Environment Variables:**
+
    - Copy all required environment variables from the list above
    - **CRITICAL:** Use `PYTHON_ENV=production` (NOT `ENVIRONMENT`)
    - Verify `DATABASE_URL` points to `qteria_prod` (NOT `qteria_dev` or `qteria_test`)
@@ -920,11 +939,13 @@ This deployment went through **3 major iterations** before succeeding:
 If deployment fails or introduces critical bugs:
 
 1. **Railway Dashboard:**
+
    - Deployments → Find last working deployment
    - Click [...] → Redeploy
    - Railway will rollback to previous build
 
 2. **Git Rollback:**
+
    - Find last working commit: `git log --oneline`
    - Revert: `git revert <commit-hash>`
    - Push to main: `git push origin main`

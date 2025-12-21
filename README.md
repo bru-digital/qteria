@@ -62,14 +62,39 @@ pip install -r requirements-dev.txt
 cd ../..
 ```
 
-#### 5. Run database migrations
+#### 5. Install pre-commit hooks (Recommended)
+
+```bash
+# Install pre-commit (one-time setup)
+pip install pre-commit
+
+# Or with pipx (recommended)
+pipx install pre-commit
+
+# Install git hooks
+pre-commit install
+
+# Optional: Run on all files to verify setup
+pre-commit run --all-files
+```
+
+**What pre-commit does:**
+
+- **Black**: Automatically formats Python code
+- **Ruff**: Lints Python code and auto-fixes issues
+- **Prettier**: Formats JavaScript, TypeScript, JSON, Markdown, YAML
+- **File checks**: Removes trailing whitespace, fixes line endings, validates YAML/JSON/TOML
+
+Pre-commit hooks run automatically when you `git commit`. To bypass (use sparingly): `git commit --no-verify`
+
+#### 6. Run database migrations
 
 ```bash
 # Apply database schema
 npm run db:migrate
 ```
 
-#### 6. Seed development data (Optional)
+#### 7. Seed development data (Optional)
 
 ```bash
 # Populate database with sample data (recommended for development)
@@ -95,7 +120,7 @@ python scripts/seed_data.py           # Idempotent - skips if data exists
 python scripts/seed_data.py --reset   # Reset database and reseed
 ```
 
-#### 7. Start development servers
+#### 8. Start development servers
 
 ```bash
 # Terminal 1: Start frontend (Next.js)
@@ -105,7 +130,7 @@ npm run dev
 npm run dev:api
 ```
 
-#### 8. Open your browser
+#### 9. Open your browser
 
 - **Frontend**: http://localhost:3000
 - **API Docs**: http://localhost:8000/docs (FastAPI Swagger UI)
@@ -180,6 +205,12 @@ npm run format:check     # Check code formatting
 npm run db:migrate       # Run database migrations
 npm run db:migrate:create "migration name"  # Create new migration
 npm run db:reset         # Reset database (⚠️ destroys data)
+
+# Code Quality (Pre-commit)
+pre-commit install       # Install pre-commit hooks (one-time)
+pre-commit run --all-files  # Run pre-commit on all files
+pre-commit run           # Run pre-commit on staged files only
+git commit --no-verify   # Bypass pre-commit hooks (use sparingly)
 ```
 
 ### Frontend (apps/web/)

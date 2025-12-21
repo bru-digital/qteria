@@ -598,18 +598,21 @@ Example: "Our visual identity balances professional credibility with approachabl
 ## Next Steps
 
 1. **If choosing this identity**:
+
    - [ ] Finalize logo concept with any refinements
    - [ ] Create actual logo files (SVG, PNG, PDF) using design tools
    - [ ] Apply identity to immediate needs (website, app, pitch deck)
    - [ ] Document additional guidelines as brand evolves
 
 2. **If working with designer**:
+
    - [ ] Use this document as creative brief
    - [ ] Provide access to brand strategy (product-guidelines/07-brand-strategy.md)
    - [ ] Request logo files in all formats specified above
    - [ ] Review designer work against these guidelines
 
 3. **Implementation checklist**:
+
    - [ ] Website: Update header logo, favicon, colors
    - [ ] App: Update app icon, splash screen, UI accents
    - [ ] Marketing: Create business cards, email signature, presentation template

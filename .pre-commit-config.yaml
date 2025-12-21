@@ -1,0 +1,112 @@
+# Pre-commit hooks for Qteria
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+# Bypass: git commit --no-verify (use sparingly!)
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+        name: Fix end of files
+      - id: check-yaml
+        name: Check YAML syntax
+      - id: check-json
+        name: Check JSON syntax
+      - id: check-toml
+        name: Check TOML syntax
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: check-added-large-files
+        name: Check for large files
+        args: [--maxkb=10000]
+      - id: mixed-line-ending
+        name: Fix mixed line endings
+        args: [--fix=lf]
+
+  # Python: Black formatting
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        name: Format Python with Black
+        args: [--config=apps/api/pyproject.toml]
+        files: ^apps/api/
+
+  # Python: Ruff linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.14
+    hooks:
+      - id: ruff
+        name: Lint Python with Ruff
+        args: [--config=apps/api/pyproject.toml, --fix]
+        files: ^apps/api/
+
+  # Python: MyPy type checking
+  # Note: Disabled in pre-commit due to many existing type errors (67 errors in 12 files)
+  # MyPy still runs in CI and can be run manually with: mypy apps/api/app
+  # TODO: Re-enable once type errors are fixed in follow-up PRs
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.8.0
+  #   hooks:
+  #     - id: mypy
+  #       name: Type check Python with MyPy
+  #       args: [--config-file=apps/api/pyproject.toml]
+  #       files: ^apps/api/app/
+  #       exclude: ^apps/api/tests/|^apps/api/alembic/|.*_test\.py$
+  #       additional_dependencies:
+  #         - pydantic>=2.5.0
+  #         - pydantic-settings>=2.1.0
+  #         - sqlalchemy>=2.0.25
+  #         - fastapi>=0.109.0
+  #         - types-passlib
+  #         - types-python-jose
+  #         - python-dotenv>=1.0.0
+
+  # JavaScript/TypeScript: Prettier formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        name: Format JS/TS/JSON/MD with Prettier
+        types_or: [javascript, jsx, ts, tsx, json, markdown, yaml]
+        exclude: ^apps/api/|^product-guidelines/|package-lock.json
+        args: [--config=.prettierrc]
+
+  # Markdown: Check links (optional, can be slow)
+  # - repo: https://github.com/tcort/markdown-link-check
+  #   rev: v3.11.2
+  #   hooks:
+  #     - id: markdown-link-check
+  #       name: Check markdown links
+  #       args: [--quiet]
+  #       exclude: ^product-guidelines/
+
+# Global configuration
+default_language_version:
+  python: python3
+  node: system
+
+# Fail fast on first error (set to false to see all errors)
+fail_fast: false
+
+# Exclude patterns (global)
+exclude: |
+  (?x)^(
+    .*\.egg-info/.*|
+    .*\.lock|
+    .*\.pyc|
+    .*/__pycache__/.*|
+    .*/\.git/.*|
+    .*/\.mypy_cache/.*|
+    .*/\.pytest_cache/.*|
+    .*/\.ruff_cache/.*|
+    .*/\.venv/.*|
+    .*/node_modules/.*|
+    .*/venv/.*|
+    apps/api/alembic/versions/.*
+  )$

@@ -13,6 +13,7 @@
 ### 1. Configuration Verification
 
 - [ ] **Dockerfile Exists**
+
   - Path: `/apps/api/Dockerfile`
   - Verify: `ls apps/api/Dockerfile` shows file exists
   - Base image: `python:3.11-slim`
@@ -94,12 +95,14 @@ Verify all required environment variables are set in Railway dashboard:
 ### 2. Monitor Deployment Progress
 
 - [ ] **Build Phase**
+
   - Docker image build starts
   - Python dependencies installed
   - libmagic1 system dependency installed
   - Application files copied
 
 - [ ] **Deploy Phase**
+
   - Container starts
   - Health check begins (usually within 30 seconds)
   - Status changes to "Ready" (green checkmark)
@@ -199,6 +202,7 @@ Verify all required environment variables are set in Railway dashboard:
 ### 5. Database Connectivity
 
 - [ ] **Verify Database Connection**
+
   - Check Railway logs for successful database connection
   - No SQLAlchemy errors
   - No connection timeout errors
@@ -210,6 +214,7 @@ Verify all required environment variables are set in Railway dashboard:
   ```
 
   **Expected:** 401 Unauthorized (NOT 500 Internal Server Error)
+
   - 401 = database working, auth enforced
   - 500 = database connection failed
 
@@ -246,6 +251,7 @@ Verify all required environment variables are set in Railway dashboard:
 ### 3. End-to-End Testing (Manual)
 
 - [ ] **Test Workflow Creation**
+
   1. Visit https://qteria.com or https://qteria.vercel.app
   2. Navigate to workflow creation page
   3. Create a test workflow
@@ -253,6 +259,7 @@ Verify all required environment variables are set in Railway dashboard:
   5. Check browser console for errors
 
 - [ ] **Verify No CORS Errors**
+
   - Open browser DevTools → Console
   - No "CORS policy" errors
   - No "blocked by CORS policy" messages
@@ -269,6 +276,7 @@ Verify all required environment variables are set in Railway dashboard:
 ### 1. Railway Logs
 
 - [ ] **Check Startup Logs**
+
   - Railway dashboard → Deployments → Click deployment → Logs
   - Verify "Application startup complete" message
   - No Python errors or warnings

@@ -125,6 +125,12 @@ module = [
     "PyPDF2.*",
     "pdfplumber.*",
     "reportlab.*",
+    "vercel_blob.*",
+    "pytesseract.*",
+    "pdf2image.*",
+    "psutil.*",
+    "tabula.*",
+    "pandas.*",
 ]
 ignore_missing_imports = true
 

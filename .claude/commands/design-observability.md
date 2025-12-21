@@ -63,6 +63,7 @@ Create a comprehensive observability strategy using the prompt in `/prompts/oper
    - Monitoring integrates with deployment
 
 6. **Interview the user** following the observability prompt:
+
    - **Current state**: What monitoring do you have? What's missing?
    - **Golden signals**: Latency, traffic, errors, saturation - what to track?
    - **Logging strategy**: What to log? Structured logs? Retention?
@@ -75,6 +76,7 @@ Create a comprehensive observability strategy using the prompt in `/prompts/oper
    - **Tools**: Datadog? Grafana? CloudWatch? Prometheus? OpenTelemetry?
 
 7. **Develop observability strategy**:
+
    - Observability principles (what and why)
    - Golden signals for each service
    - Logging strategy (structured logs, retention, search)

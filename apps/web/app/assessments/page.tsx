@@ -32,7 +32,9 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || colors.pending}`}
+      className={`px-2 py-1 text-xs font-medium rounded-full ${
+        colors[status as keyof typeof colors] || colors.pending
+      }`}
     >
       {status}
     </span>

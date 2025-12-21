@@ -1,9 +1,6 @@
 # Product Strategy
 
-> **Generated**: [Date]
-> **Product**: [Product Name]
-> **Status**: [Draft/Final]
-> **Planning Horizon**: [12-24 months / 3-5 years]
+> **Generated**: [Date] > **Product**: [Product Name] > **Status**: [Draft/Final] > **Planning Horizon**: [12-24 months / 3-5 years]
 
 ## Overview
 
@@ -350,10 +347,12 @@ _[Continue for 4-6 quarters or themes]_
 **Assumptions that must be true for strategy to work**:
 
 1. **[Assumption 1]**: [What we're assuming]
+
    - **Validation plan**: [How to test this]
    - **If wrong**: [What changes]
 
 2. **[Assumption 2]**: [What we're assuming]
+
    - **Validation plan**: [How to test this]
    - **If wrong**: [What changes]
 

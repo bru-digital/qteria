@@ -68,6 +68,7 @@ Create comprehensive UX design documentation using the prompt in `/prompts/desig
    - Backlog shows specific features to design for
 
 5. **Interview the user** following the UX design prompt:
+
    - **UX Research**: Who are users? What research do you have? Gaps?
    - **Information Architecture**: How is content organized? Navigation structure?
    - **User Flows**: What are the critical paths? Happy paths and edge cases?
@@ -79,6 +80,7 @@ Create comprehensive UX design documentation using the prompt in `/prompts/desig
    - **Usability Testing**: What will you test? With whom?
 
 6. **Develop UX design**:
+
    - User research summary (personas, pain points, jobs-to-be-done)
    - Information architecture (site map, navigation hierarchy)
    - User flows (5-10 critical paths with decision points)
