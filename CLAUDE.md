@@ -179,6 +179,23 @@ npm run format                 # Format with Prettier
 npm run format:check           # Check formatting
 ```
 
+**Pre-commit Hooks:**
+
+```bash
+pre-commit install             # Install git hooks (run once after clone)
+pre-commit run --all-files     # Run all hooks manually on all files
+pre-commit run                 # Run hooks on staged files only
+pre-commit autoupdate          # Update hook versions
+git commit --no-verify         # Bypass hooks (emergencies only)
+```
+
+**What hooks check:**
+
+- Python: Black formatting, Ruff linting (auto-fix enabled)
+- JavaScript/TypeScript: Prettier formatting
+- General: Trailing whitespace, end-of-file fixes, YAML syntax
+- **Note:** MyPy type checking is disabled in pre-commit (run manually: `cd apps/api && mypy app`)
+
 **Test Database Setup:**
 
 ```bash

@@ -1,0 +1,89 @@
+# Pre-commit hooks for Qteria
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+# Bypass: git commit --no-verify (emergencies only)
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Remove trailing whitespace
+        exclude: ^\.github/workflows/
+      - id: end-of-file-fixer
+        name: Fix end of files
+        exclude: ^\.github/workflows/
+      - id: check-yaml
+        name: Validate YAML syntax
+      - id: check-added-large-files
+        name: Prevent large files
+        args: ['--maxkb=10240'] # 10MB limit
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: mixed-line-ending
+        name: Fix mixed line endings
+
+  # Python: Black formatting
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        name: Format Python with Black
+        files: ^apps/api/
+
+  # Python: Ruff linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.14
+    hooks:
+      - id: ruff
+        name: Lint Python with Ruff
+        files: ^apps/api/
+        args: ['--fix', '--exit-non-zero-on-fix']
+
+  # Python: MyPy type checking (disabled in pre-commit, run manually)
+  # See CLAUDE.md for rationale: project uses relaxed MyPy config
+  # Run manually: cd apps/api && mypy app
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.8.0
+  #   hooks:
+  #     - id: mypy
+  #       name: Type check Python with MyPy
+  #       files: ^apps/api/app/
+  #       exclude: ^apps/api/app/tests/
+  #       args:
+  #         - --config-file=apps/api/pyproject.toml
+  #         - --no-error-summary
+  #         - --show-error-codes
+  #       additional_dependencies:
+  #         - pydantic>=2.0
+  #         - sqlalchemy>=2.0
+  #         - fastapi>=0.109.0
+  #         - types-redis
+
+  # JavaScript/TypeScript: Prettier formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        name: Format JS/TS/JSON/MD with Prettier
+        types_or: [javascript, jsx, ts, tsx, json, markdown, yaml]
+        exclude: ^(apps/api/|\.github/workflows/)
+        args: ['--write', '--ignore-unknown']
+
+# Global excludes
+exclude: |
+  (?x)^(
+      .*\.pyc|
+      .*__pycache__.*|
+      .*/migrations/.*|
+      .*/alembic/versions/.*|
+      .*\.min\.js|
+      .*\.min\.css|
+      .*/node_modules/.*|
+      .*/\.next/.*|
+      .*/\.venv/.*|
+      .*/\.pytest_cache/.*|
+      .*/\.mypy_cache/.*|
+      .*/\.ruff_cache/.*
+  )$
