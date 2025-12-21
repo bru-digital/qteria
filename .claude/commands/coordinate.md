@@ -59,6 +59,7 @@ gh issue view {issue-number} --repo bru-digital/qteria
 Create a mental map of which issues touch which files:
 
 Example analysis:
+
 - Issue #172: `models.py` (all models) - Low conflict risk (only this issue touches models)
 - Issue #173: `conftest.py` (lines 1-50) - Medium conflict risk (overlaps with #166)
 - Issue #166: `conftest.py` (lines 100+) - Medium conflict risk (overlaps with #173)

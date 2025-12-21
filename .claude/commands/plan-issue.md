@@ -700,6 +700,7 @@ EOF
 ```
 
 This ensures the plan is documented in the issue for:
+
 - Implementation agent reference
 - Team visibility and review
 - Audit trail of planning decisions
