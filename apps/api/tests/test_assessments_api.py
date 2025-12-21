@@ -291,6 +291,13 @@ class TestStartAssessment:
             client, org_a_process_manager_token
         )
 
+        # Define valid UUIDs for each role (hex-only characters)
+        document_ids = {
+            "admin": "550e8400-e29b-41d4-a716-446655440001",
+            "process_manager": "550e8400-e29b-41d4-a716-446655440002",
+            "project_handler": "550e8400-e29b-41d4-a716-446655440003",
+        }
+
         # Test each role
         for role_name, token in [
             ("admin", org_a_admin_token),
@@ -302,7 +309,7 @@ class TestStartAssessment:
                 "documents": [
                     {
                         "bucket_id": required_bucket_id,
-                        "document_id": f"550e8400-e29b-41d4-a716-44665544{role_name[:4]}",
+                        "document_id": document_ids[role_name],
                         "file_name": f"{role_name}-document.pdf",
                         "storage_key": f"https://blob.vercel-storage.com/{role_name}.pdf",
                         "file_size": 1024,
