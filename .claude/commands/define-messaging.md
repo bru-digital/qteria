@@ -90,18 +90,23 @@ Create a brand messaging framework that expresses the journey value in your bran
 3. **Interview the user** with journey-informed questions:
 
    **Value Proposition (journey-based)**:
+
    - "Your mission is [mission]. How would you express this as a one-sentence value prop for [journey audience]?"
 
    **Elevator Pitch (journey-grounded)**:
+
    - "Let's create your elevator pitch. Start with: [Audience] struggles with [journey problem]. We help them [journey transformation] through [unique approach from brand strategy]."
 
    **Messaging Pillars (journey-connected)**:
+
    - "Your journey delivers value at [key moments]. What are the 3-5 core themes we should communicate about this value?"
 
    **Voice (brand-aligned)**:
+
    - "Your brand personality is [from brand strategy]. How should this show up in copy? Let's define specific do's and don'ts."
 
 4. **Develop messaging framework** grounded in journey:
+
    - Value proposition = [Mission statement] for [journey audience]
    - Elevator pitch = [Journey problem] → [Journey solution] → [Journey value]
    - Messaging pillars = Key themes from [journey moments]
@@ -109,6 +114,7 @@ Create a brand messaging framework that expresses the journey value in your bran
    - EVERY element traces back to journey
 
 5. **Create sample copy** that demonstrates journey value:
+
    - Homepage hero: Speaks to [journey problem], promises [journey value]
    - About us: Tells story of WHY you solve [journey problem]
    - Product description: Explains HOW you deliver [journey transformation]

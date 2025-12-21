@@ -184,20 +184,24 @@ Does new design differ only in:
 **Examples from Compliance SaaS Journey**:
 
 - **Button** (appears everywhere) → Core component with variants
+
   - Primary: Main journey actions ("Generate Assessment")
   - Secondary: Cancel, back actions
   - Danger: Delete, remove actions
 
 - **File Upload** (Step 1 only) → Dedicated component (critical path)
+
   - Multiple props: accept types, max size, drag-drop
   - Complex states: uploading, error, success
 
 - **Framework Selector** (Step 2) → Page-specific component
+
   - Only used once in journey
   - Highly specific to compliance frameworks
   - Don't over-engineer for reuse
 
 - **Assessment Card** (Step 4 results) → Reusable component
+
   - Used in dashboard, history, results
   - Variants: collapsed, expanded, with-actions
 
@@ -324,14 +328,17 @@ Which steps happen on mobile?
 **Responsive Patterns**:
 
 1. **Information Density**:
+
    - Mobile: 1 key metric per screen
    - Desktop: Dashboard with 6-8 metrics
 
 2. **Navigation**:
+
    - Mobile: Bottom tab bar (thumb-friendly)
    - Desktop: Sidebar or top nav
 
 3. **Forms** (Step 1, 2):
+
    - Mobile: Full-width inputs, larger touch targets (44px min)
    - Desktop: Multi-column forms, keyboard shortcuts
 
@@ -469,10 +476,12 @@ Document the decisions you made and alternatives you rejected. This prevents fut
 Examples:
 
 - **Tailwind CSS**: Utility-first, fast prototyping, small bundle
+
   - ✅ Choose if: Speed-focused, startup, small team
   - ❌ Avoid if: Need strict design consistency, complex themes
 
 - **Styled Components / Emotion**: CSS-in-JS, component-scoped styles
+
   - ✅ Choose if: React-heavy, dynamic theming, complex logic
   - ❌ Avoid if: Concerned about runtime cost, server-side rendering
 
@@ -504,14 +513,17 @@ Why tokens matter:
 **Options**:
 
 - **Material UI (MUI)**: Full component library, opinionated design
+
   - ✅ Choose if: Need rapid development, Material Design acceptable
   - ❌ Avoid if: Need custom brand, concerned about bundle size
 
 - **Chakra UI**: Accessible, composable, flexible
+
   - ✅ Choose if: Accessibility priority, need flexibility
   - ❌ Avoid if: Don't need that many components
 
 - **shadcn/ui**: Copy-paste components, full control
+
   - ✅ Choose if: Want control, can maintain components
   - ❌ Avoid if: Team too small to maintain
 

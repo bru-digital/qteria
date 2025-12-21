@@ -6,18 +6,12 @@
 repos:
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         name: Remove trailing whitespace
-        # Exclude .github/workflows/ to preserve exact formatting (required for CI/CD security)
-        # Exclude .claude/ and product-guidelines/ to preserve intentional documentation formatting
-        exclude: ^(\.github/|\.claude/|product-guidelines/)
       - id: end-of-file-fixer
         name: Fix end of files
-        # Exclude .github/workflows/ to preserve exact formatting (required for CI/CD security)
-        # Exclude .claude/ and product-guidelines/ to preserve intentional documentation formatting
-        exclude: ^(\.github/|\.claude/|product-guidelines/)
       - id: check-yaml
         name: Validate YAML syntax
       - id: check-json
@@ -32,7 +26,7 @@ repos:
 
   # Python: Black formatting
   - repo: https://github.com/psf/black
-    rev: 24.1.1
+    rev: 25.12.0
     hooks:
       - id: black
         name: Format Python with Black
@@ -40,7 +34,7 @@ repos:
 
   # Python: Ruff linting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.14
+    rev: v0.14.10
     hooks:
       - id: ruff
         name: Lint Python with Ruff
@@ -75,9 +69,9 @@ repos:
         name: Format JS/TS/JSON/MD with Prettier
         types_or: [javascript, jsx, ts, tsx, json, markdown]
         # YAML excluded to avoid conflict with check-yaml hook
-        # NOTE: Using v3.1.0 as v3.2.5 (from package.json) is not available in mirrors-prettier
-        # If formatting differs between pre-commit and CI, run: npm run format
-        exclude: ^(apps/api/|\.github/|\.claude/|product-guidelines/)
+        # NOTE: Prettier v3.1.0 matches package.json version exactly (DO NOT autoupdate)
+        # Only exclude apps/api/ (Python code), all other dirs formatted for CI consistency
+        exclude: ^apps/api/
         args: ['--write', '--ignore-unknown']
 
 # Global excludes

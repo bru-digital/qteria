@@ -154,6 +154,7 @@ For each session you're about to run:
 ```
 
 2. **Execute the session using SlashCommand tool:**
+
    - Use the SlashCommand tool to run the appropriate command
    - Examples: `/refine-journey`, `/create-product-strategy`, etc.
 

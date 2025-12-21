@@ -57,6 +57,7 @@ Follow the plan's Implementation Steps EXACTLY. Do NOT deviate unless you discov
 ### Execution Principles
 
 1. **Follow the Plan Religiously**
+
    - Execute steps in exact order
    - Don't skip steps
    - Don't add extra steps
@@ -64,12 +65,14 @@ Follow the plan's Implementation Steps EXACTLY. Do NOT deviate unless you discov
    - DO NOT read product-guidelines - all context is already in the plan
 
 2. **Surgical Implementation**
+
    - Only touch files listed in plan
    - Make minimal changes
    - Don't refactor outside scope
    - Keep changes atomic per step
 
 3. **Test as You Go**
+
    - Run relevant tests after each major step
    - Fix issues immediately
    - Don't accumulate test debt

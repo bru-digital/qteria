@@ -164,16 +164,19 @@ xl:   25px (1.563rem)  → Page section headings
 **Journey Mapping**:
 
 - **Step 1** (Workflow Creation):
+
   - Form labels: `sm` (14px)
   - Input text: `base` (16px)
   - Section headings: `xl` (25px) - "Define Criteria"
 
 - **Step 2** (Document Upload):
+
   - File names: `base` (16px)
   - Upload instructions: `sm` (14px)
   - Drag-drop hint: `lg` (20px) - needs visibility
 
 - **Step 3** (AI Validation Progress):
+
   - Status text: `base` (16px) - "Analyzing documents..."
   - Progress percentage: `lg` (20px) - quick glance
   - Time estimate: `sm` (14px) - "~5 minutes remaining"

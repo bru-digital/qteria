@@ -443,12 +443,14 @@ export const showConfidenceScore = flag({
 **Services to Configure**:
 
 1. **Vercel Project** (qteria-web)
+
    - Framework: Next.js
    - Root directory: `apps/web`
    - Build command: `npm run build`
    - Environment variables: (see Secrets section)
 
 2. **Railway Project** (qteria-api)
+
    - Service 1: FastAPI (uvicorn)
    - Service 2: Celery Worker
    - Service 3: PostgreSQL (managed)
@@ -456,6 +458,7 @@ export const showConfidenceScore = flag({
    - Environment variables: (see Secrets section)
 
 3. **Vercel Postgres** (qteria-db)
+
    - Region: US East
    - Plan: Hobby (free) → Pro ($20/month when needed)
 
@@ -1307,16 +1310,19 @@ curl https://qteria.com/api/auth/providers
 **Deployment Security Requirements**:
 
 1. **Access Control**:
+
    - ✅ Only authorized personnel can deploy (GitHub branch protection, Railway RBAC)
    - ✅ Production secrets isolated from staging
    - ✅ Audit log of all deployments (GitHub commits + Railway logs)
 
 2. **Change Management**:
+
    - ✅ All changes reviewed (GitHub PRs, even if solo founder self-reviews)
    - ✅ Deployment checklist followed (documented above)
    - ✅ Rollback procedure tested quarterly
 
 3. **Data Protection**:
+
    - ✅ Secrets never committed to Git (pre-commit hooks enforce)
    - ✅ Database encrypted at rest (Vercel Postgres default)
    - ✅ Connections encrypted in transit (TLS 1.2+)
@@ -1554,6 +1560,7 @@ git push origin main
 **3. Right-Size Infrastructure**:
 
 - **Monitor resource usage** (Railway dashboard):
+
   - If CPU <30%: Downgrade instance (save $10-20/month)
   - If Memory <50%: Downgrade instance
   - If Celery queue always empty: Reduce workers

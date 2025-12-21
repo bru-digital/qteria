@@ -778,6 +778,7 @@ After copying the scaffold:
    ```
 
 3. **Start implementing backlog**
+
    - Reference `product-guidelines/10-backlog/` for prioritized stories
    - Start with P0 (critical) stories
    - Each story references tech stack and design system

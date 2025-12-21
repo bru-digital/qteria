@@ -290,21 +290,25 @@ You can always count on:
 **What makes us different**:
 
 1. **Evidence-Based AI (Not Black Boxes)**:
+
    - Others: "AI detected an issue" (no proof)
    - Qteria: "FAIL → [Link: test-report.pdf, page 8, section 3.2]" (click and verify)
    - Why it matters: Users trust what they can verify. Transparency builds confidence in AI validation.
 
 2. **Radical Simplicity (Not Enterprise Bloat)**:
+
    - Others: 50 features, overwhelming dashboards, week-long training
    - Qteria: Workflow → Buckets → Criteria → Validate. Create workflow in <30 min.
    - Why it matters: Process Managers succeed immediately without IT department support.
 
 3. **Domain Expertise (Not Generic AI Tools)**:
+
    - Others: Silicon Valley teams applying generic AI to documents
    - Qteria: Built by TIC professionals who understand certification workflows
    - Why it matters: Features match actual needs (document buckets, validation criteria), not theoretical use cases.
 
 4. **White-Glove Partnership (Not Ticket Queues)**:
+
    - Others: Submit ticket, wait 3 days, get generic response
    - Qteria: Dedicated relationship manager, <24 hour response, quarterly reviews
    - Why it matters: Enterprise customers need reliable support for mission-critical validation.
@@ -378,11 +382,13 @@ You can always count on:
 When making decisions, ask:
 
 1. **Does this align with our brand purpose?**
+
    - Are we combining AI with quality management expertise (not just building AI hype)?
    - Are we amplifying expert judgment (not replacing it)?
    - Are we maintaining transparency (evidence traceable)?
 
 2. **Does this reflect our core values?**
+
    - Quality Over Speed: Are we maintaining accuracy while improving speed?
    - Transparency: Can users verify AI decisions with evidence?
    - Simplicity: Does this remove complexity or add it?
@@ -390,12 +396,14 @@ When making decisions, ask:
    - Partnership: Are we building WITH customers or AT them?
 
 3. **Does this match our personality?**
+
    - Professional but not stuffy? (clear, direct communication)
    - Serious but not robotic? (focused on results, not cold)
    - Authoritative but approachable? (expert voice with warmth)
    - Reserved but confident? (results speak, no hype)
 
 4. **Does this deliver on our promise?**
+
    - Clear: Can users understand what happened and why?
    - Accurate: Is the AI validation result correct and proven?
    - Respectful of expertise: Are we treating users as professionals?

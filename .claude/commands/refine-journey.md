@@ -50,15 +50,19 @@ Ask questions **one at a time**, wait for answers, adapt based on responses.
 **Essential Questions** (adapt wording based on context):
 
 1. "What problem are you solving? For whom specifically?"
+
    - Push for specificity: "Can you describe a specific person who has this problem?"
 
 2. "How do they solve this today? What's their current workaround?"
+
    - Understand current state, pain level
 
 3. "What triggers them to seek a new solution? What's the cost of not solving this?"
+
    - Validate problem urgency/importance
 
 4. "What does success look like for them? How will they know it worked?"
+
    - Get concrete success criteria
 
 5. "Walk me through how they'd use your solution. What's step 1? Then what?"
@@ -110,15 +114,18 @@ Once you have complete information, use the template at `/templates/00-user-jour
 **Structure**:
 
 1. Primary User Persona
+
    - Role, context, pain points
    - Current workarounds
    - Success criteria
    - Willingness to pay (with ROI justification)
 
 2. Primary Job-to-Be-Done
+
    - "When I [situation], I want to [motivation], so I can [outcome]"
 
 3. Core User Flow (Happy Path)
+
    - Step 1: Entry point
    - Step 2: Configuration/setup
    - Step 3: **Value realization (AHA MOMENT)** ← Critical!
@@ -126,6 +133,7 @@ Once you have complete information, use the template at `/templates/00-user-jour
    - Each step: User action, system response, emotions, value, friction, metrics
 
 4. Value Definition
+
    - Functional value (quantified: time saved, money saved, risk reduced)
    - Emotional value (how they feel)
    - Economic value (ROI calculation)
@@ -170,6 +178,7 @@ Once you've created the file:
 
 1. **Show a summary**: "✅ User journey defined!"
 2. **Highlight key insights**:
+
    - "Your primary user: [persona]"
    - "Core value: [what they get]"
    - "Aha moment: [Step 3 description]"

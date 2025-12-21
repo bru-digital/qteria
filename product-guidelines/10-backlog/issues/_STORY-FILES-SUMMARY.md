@@ -30,6 +30,7 @@ This backlog contains 42 user stories across 10 epics. Due to the comprehensive 
 Each epic file contains complete story descriptions with RICE scores. To generate individual story files for implementation:
 
 1. **Use the Epic Files**: Each epic file lists all stories with:
+
    - Story title and description
    - RICE score and priority
    - Estimated effort
