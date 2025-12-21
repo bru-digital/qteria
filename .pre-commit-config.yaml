@@ -10,10 +10,10 @@ repos:
     hooks:
       - id: trailing-whitespace
         name: Remove trailing whitespace
-        exclude: ^\.github/workflows/
+        exclude: ^(\.github/|\.claude/|product-guidelines/)
       - id: end-of-file-fixer
         name: Fix end of files
-        exclude: ^\.github/workflows/
+        exclude: ^(\.github/|\.claude/|product-guidelines/)
       - id: check-yaml
         name: Validate YAML syntax
       - id: check-added-large-files
@@ -68,7 +68,7 @@ repos:
       - id: prettier
         name: Format JS/TS/JSON/MD with Prettier
         types_or: [javascript, jsx, ts, tsx, json, markdown, yaml]
-        exclude: ^(apps/api/|\.github/workflows/)
+        exclude: ^(apps/api/|\.github/|\.claude/|product-guidelines/)
         args: ['--write', '--ignore-unknown']
 
 # Global excludes
