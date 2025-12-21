@@ -816,17 +816,20 @@ Configure these in Railway dashboard under your service → Variables:
 **Initial Setup:**
 
 1. **Connect GitHub Repository:**
+
    - Railway dashboard → New Project → Deploy from GitHub repo
    - Select `bru-digital/qteria` repository
    - Select branch: `main`
 
 2. **Configure Service Settings:**
+
    - Root Directory: `/apps/api`
    - Watch Paths: `/apps/api/**`
    - Builder: **Automatic** (Railway will detect Dockerfile)
    - Do NOT set custom build/start commands (Dockerfile handles this)
 
 3. **Set Environment Variables:**
+
    - Copy all required environment variables from the list above
    - **CRITICAL:** Use `PYTHON_ENV=production` (NOT `ENVIRONMENT`)
    - Verify `DATABASE_URL` points to `qteria_prod` (NOT `qteria_dev` or `qteria_test`)
@@ -981,11 +984,13 @@ This deployment went through **3 major iterations** before succeeding:
 If deployment fails or introduces critical bugs:
 
 1. **Railway Dashboard:**
+
    - Deployments → Find last working deployment
    - Click [...] → Redeploy
    - Railway will rollback to previous build
 
 2. **Git Rollback:**
+
    - Find last working commit: `git log --oneline`
    - Revert: `git revert <commit-hash>`
    - Push to main: `git push origin main`

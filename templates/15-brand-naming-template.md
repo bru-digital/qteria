@@ -1,7 +1,6 @@
 # Brand Naming Discovery
 
-> **Generated**: [Date]
-> **Status**: [In Progress/Finalized]
+> **Generated**: [Date] > **Status**: [In Progress/Finalized]
 
 ## Overview
 

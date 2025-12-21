@@ -1,8 +1,6 @@
 # User Experience Design
 
-> **Generated**: [Date]
-> **Product**: [Product Name]
-> **Status**: [Draft/In Progress/Final]
+> **Generated**: [Date] > **Product**: [Product Name] > **Status**: [Draft/In Progress/Final]
 
 ## Overview
 

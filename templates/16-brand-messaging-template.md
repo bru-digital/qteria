@@ -1,8 +1,6 @@
 # Brand Messaging Framework
 
-> **Generated**: [Date]
-> **Brand**: [Brand Name]
-> **Status**: [Draft/Final]
+> **Generated**: [Date] > **Brand**: [Brand Name] > **Status**: [Draft/Final]
 
 ## Overview
 

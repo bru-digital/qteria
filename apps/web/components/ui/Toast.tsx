@@ -89,7 +89,9 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg min-w-[320px] max-w-md ${colors[toast.type]}`}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg min-w-[320px] max-w-md ${
+        colors[toast.type]
+      }`}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
       <p className="text-sm font-medium flex-1">{toast.message}</p>
