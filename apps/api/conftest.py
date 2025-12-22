@@ -65,8 +65,8 @@ def _validate_test_database_url():
     is_ci_test = is_ci and (
         "qteria-test" in database_name.lower()
         or "qteria_test" in database_name.lower()
-        or database_name.endswith("-test")
-        or database_name.endswith("_test")
+        or database_name.lower().endswith("-test")
+        or database_name.lower().endswith("_test")
     )
     if is_ci_test:
         print(f"✅ CI environment detected with test database: {database_name}")
@@ -76,8 +76,8 @@ def _validate_test_database_url():
     is_test_database = (
         "qteria-test" in database_name.lower()
         or "qteria_test" in database_name.lower()
-        or database_name.endswith("-test")
-        or database_name.endswith("_test")
+        or database_name.lower().endswith("-test")
+        or database_name.lower().endswith("_test")
     )
 
     if not is_test_database:
