@@ -65,8 +65,8 @@ def _validate_test_database_url():
     is_ci_test = is_ci and (
         "qteria-test" in database_name.lower()
         or "qteria_test" in database_name.lower()
-        or database_name.endswith("-test")
-        or database_name.endswith("_test")
+        or database_name.lower().endswith("-test")
+        or database_name.lower().endswith("_test")
     )
     if is_ci_test:
         print(f"✅ CI environment detected with test database: {database_name}")
@@ -76,8 +76,8 @@ def _validate_test_database_url():
     is_test_database = (
         "qteria-test" in database_name.lower()
         or "qteria_test" in database_name.lower()
-        or database_name.endswith("-test")
-        or database_name.endswith("_test")
+        or database_name.lower().endswith("-test")
+        or database_name.lower().endswith("_test")
     )
 
     if not is_test_database:
@@ -111,10 +111,13 @@ def pytest_configure(config):
 
     Fail-fast if DATABASE_URL points to production (safety check).
     """
-    # Load .env.test if it exists (don't override existing env vars from CI)
+    # Load .env.test if it exists (MUST override existing env vars for test isolation)
+    # NOTE: override=True is CRITICAL to ensure .env.test takes precedence over shell
+    # environment variables. This prevents accidental test runs against production DB.
+    # See issue #222: Tests were failing to load due to shell DATABASE_URL not being overridden.
     env_test_path = Path(__file__).parent / ".env.test"
     if env_test_path.exists():
-        load_dotenv(env_test_path, override=False)
+        load_dotenv(env_test_path, override=True)
         print(f"✅ Loaded test environment from {env_test_path}")
     else:
         print(f"⚠️  Warning: {env_test_path} not found. Using default .env")
