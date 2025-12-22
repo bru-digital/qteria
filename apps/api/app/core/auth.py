@@ -36,7 +36,7 @@ from jose import JWTError, jwt
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.config import get_settings
 from app.core.dependencies import get_db
 from app.core.exceptions import create_error_response
 from app.models.enums import UserRole, Permission, has_permission
@@ -166,6 +166,7 @@ async def get_current_user(
 
     try:
         # Decode JWT token
+        settings = get_settings()
         payload = jwt.decode(
             token,
             settings.JWT_SECRET,

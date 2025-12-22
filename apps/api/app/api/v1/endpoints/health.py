@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
-from app.core.config import settings
+from app.core.config import get_settings
 
 router = APIRouter()
 
@@ -20,6 +20,7 @@ async def health_check_detailed(db: Session = Depends(get_db)) -> dict[str, str]
     Returns:
         dict: Comprehensive health status including database connection
     """
+    settings = get_settings()
     health_status = {
         "status": "healthy",
         "service": settings.PROJECT_NAME,

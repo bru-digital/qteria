@@ -101,7 +101,9 @@ def calculate_rate_limit_headers(
 
     try:
         if redis and new_upload_count > 0:
-            from app.core.config import settings
+            from app.core.config import get_settings
+
+            settings = get_settings()
 
             # Calculate headers immediately (minimize race window)
             # NOTE: Headers may be briefly stale under high concurrent load.

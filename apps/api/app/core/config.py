@@ -102,5 +102,57 @@ class Settings(BaseSettings):
         extra = "ignore"  # Ignore extra fields from .env
 
 
-# Create global settings instance
-settings = Settings()
+# Thread-safe lazy loading implementation
+import threading
+
+# Global settings instance (lazy-loaded)
+_settings = None
+_settings_lock = threading.Lock()
+
+
+def get_settings() -> Settings:
+    """
+    Get the global settings instance (lazy loading).
+    Creates the instance on first call and returns the cached instance on subsequent calls.
+    Thread-safe implementation using double-checked locking pattern.
+
+    Returns:
+        Settings: The application settings instance
+    """
+    global _settings
+    if _settings is None:
+        with _settings_lock:
+            # Double-check pattern for thread safety
+            if _settings is None:
+                _settings = Settings()
+    return _settings
+
+
+def reset_settings() -> None:
+    """
+    Reset the global settings instance.
+    Used for testing to ensure proper test isolation.
+    """
+    global _settings
+    _settings = None
+
+
+# Backwards compatibility: Create a property that triggers deprecation warning
+# This allows existing code to continue working during migration
+import warnings
+
+
+class _SettingsProxy:
+    """Proxy class to provide backwards compatibility with direct settings import."""
+
+    def __getattr__(self, name):
+        warnings.warn(
+            "Direct import of 'settings' is deprecated. Use 'get_settings()' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return getattr(get_settings(), name)
+
+
+# Create proxy instance for backwards compatibility
+settings = _SettingsProxy()
