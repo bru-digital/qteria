@@ -276,7 +276,12 @@ def create_test_token(
 
 @pytest.fixture(autouse=True)
 def reset_settings_for_test():
-    """Reset settings before each test to ensure proper test isolation."""
+    """
+    Reset settings before and after each test to ensure proper test isolation.
+
+    Pre-test reset: Clears any state from previous tests
+    Post-test reset: Ensures cleanup even if test fails mid-execution
+    """
     reset_settings()
     yield
     reset_settings()

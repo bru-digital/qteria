@@ -55,6 +55,9 @@ coverage/
 htmlcov/
 .pytest_cache/
 .vitest/
+apps/api/coverage.xml
+apps/api/.coverage
+apps/api/htmlcov/
 
 # ----------------------------------------
 # IDE & Editors

@@ -3,6 +3,8 @@ Application configuration management.
 Loads settings from environment variables using pydantic-settings.
 """
 
+import threading
+import warnings
 from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic import Field
@@ -103,8 +105,6 @@ class Settings(BaseSettings):
 
 
 # Thread-safe lazy loading implementation
-import threading
-
 # Global settings instance (lazy-loaded)
 _settings = None
 _settings_lock = threading.Lock()
@@ -132,14 +132,15 @@ def reset_settings() -> None:
     """
     Reset the global settings instance.
     Used for testing to ensure proper test isolation.
+    Thread-safe with lock to prevent race conditions.
     """
     global _settings
-    _settings = None
+    with _settings_lock:
+        _settings = None
 
 
 # Backwards compatibility: Create a property that triggers deprecation warning
 # This allows existing code to continue working during migration
-import warnings
 
 
 class _SettingsProxy:
