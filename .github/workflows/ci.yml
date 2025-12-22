@@ -213,6 +213,30 @@ jobs:
           JWT_SECRET: test-secret-key-for-ci
           ANTHROPIC_API_KEY: test-key
 
+      - name: Validate test collection count
+        run: |
+          cd apps/api
+          # Collect tests and count them
+          TEST_COUNT=$(pytest --collect-only -q 2>/dev/null | grep -E "^[0-9]+ test" | awk '{print $1}')
+          echo "Collected $TEST_COUNT tests"
+
+          # Minimum expected test count (actual is ~244, set threshold at 240)
+          # Note: Originally expected ~300, but actual count is 244 (as of issue #222 fix)
+          MINIMUM_TESTS=240
+
+          if [ "$TEST_COUNT" -lt "$MINIMUM_TESTS" ]; then
+            echo "❌ CRITICAL: Only $TEST_COUNT tests collected, expected at least $MINIMUM_TESTS!"
+            echo "This indicates test discovery is broken (issue #222 regression)."
+            exit 1
+          fi
+
+          echo "✅ Test collection validated: $TEST_COUNT tests (minimum: $MINIMUM_TESTS)"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qteria_test
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET: test-secret-key-for-ci
+          ANTHROPIC_API_KEY: test-key
+
       - name: Run tests with coverage
         run: |
           cd apps/api
