@@ -83,9 +83,6 @@ def test_validate_accepts_qteria_test_uppercase():
 
 
 @pytest.mark.unit
-@pytest.mark.skip(
-    reason="Temporarily disabled - causes CI failure by contaminating DATABASE_URL. See issue #215"
-)
 def test_validate_rejects_neondb():
     """Test that production database name 'neondb' triggers pytest.exit() with appropriate error."""
     with patch.dict(
