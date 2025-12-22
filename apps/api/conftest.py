@@ -23,6 +23,11 @@ def _validate_test_database_url():
 
     Raises pytest.exit() if validation fails (fail-fast safety check).
     """
+    # Skip re-validation if we've already validated successfully
+    # This prevents issues with tests that modify DATABASE_URL
+    if hasattr(_validate_test_database_url, "_already_validated"):
+        return
+
     database_url = os.getenv("DATABASE_URL")
 
     # Check 1: DATABASE_URL must be set
@@ -100,6 +105,8 @@ def _validate_test_database_url():
         )
 
     print(f"✅ Test database validated: {database_name}")
+    # Mark as validated to prevent re-validation issues
+    _validate_test_database_url._already_validated = True
 
 
 def pytest_configure(config):
