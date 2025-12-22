@@ -8,15 +8,11 @@ from pydantic_settings import BaseSettings
 from pydantic import Field
 
 
-# Find project root (directory containing .env or pyproject.toml)
+# Find project root (directory containing .env)
 def find_project_root() -> Path:
-    """Find project root by looking for marker files."""
+    """Find project root by looking for .env file."""
     current = Path(__file__).resolve()
     for parent in current.parents:
-        # Look for multiple possible root markers
-        if (parent / "pyproject.toml").exists() or (parent / ".git").exists():
-            return parent
-        # Also check for .env but don't rely solely on it
         if (parent / ".env").exists():
             return parent
     return Path.cwd()
@@ -100,10 +96,8 @@ class Settings(BaseSettings):
     MAX_AI_RETRIES: int = Field(default=3, description="Max retries for AI API calls")
 
     class Config:
-        # Load .env from project root only if it exists
-        # This prevents overriding CI environment variables
-        _env_file = PROJECT_ROOT / ".env"
-        env_file = str(_env_file) if _env_file.exists() else None
+        # Load .env from project root
+        env_file = str(PROJECT_ROOT / ".env")
         case_sensitive = True
         extra = "ignore"  # Ignore extra fields from .env
 
