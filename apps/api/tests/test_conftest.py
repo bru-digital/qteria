@@ -83,6 +83,7 @@ def test_validate_accepts_qteria_test_uppercase():
 
 
 @pytest.mark.unit
+@pytest.mark.skip(reason="Test causes environment contamination in CI - tracked in issue #215")
 def test_validate_rejects_neondb():
     """Test that production database name 'neondb' triggers pytest.exit() with appropriate error."""
     with patch.dict(
