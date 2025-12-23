@@ -11,6 +11,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 import pytest
 
+# Module-level flag to prevent re-validation
+_DATABASE_VALIDATED = False
+
 
 def _validate_test_database_url():
     """
@@ -126,8 +129,18 @@ def pytest_configure(config):
     # Only validate during initial pytest configuration, not when imported by tests
     # Issue #231: test_conftest.py imports conftest which was triggering re-validation
     # with patched DATABASE_URL values, causing false CI failures
-    if hasattr(config, "_database_validated"):
+    global _DATABASE_VALIDATED
+    if _DATABASE_VALIDATED:
         return  # Already validated in this session
 
-    config._database_validated = True
+    # Skip validation if we're in test collection or execution phase
+    # This prevents re-validation when tests import conftest module
+    if hasattr(config, "workerinput"):
+        return  # This is a worker process, skip validation
+
+    # Check if tests are already being collected or run
+    if hasattr(config, "_collected") or config.option.collectonly:
+        return  # We're collecting or running tests, skip validation
+
+    _DATABASE_VALIDATED = True
     _validate_test_database_url()
