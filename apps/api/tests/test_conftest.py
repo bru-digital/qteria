@@ -12,17 +12,20 @@ import conftest
 from conftest import _validate_test_database_url
 
 
-@pytest.fixture(autouse=True)
-def reset_validation_flag():
-    """Reset the database validation flag before each test.
+@pytest.fixture(autouse=True, scope="function")
+def manage_validation_flag():
+    """Manage the validation flag for test_conftest.py tests.
 
-    This is necessary because the validation function is designed to run only once
-    per test session, but these tests need to call it multiple times with different
-    DATABASE_URL values to test the validation logic.
+    This fixture allows validation tests to run while ensuring the flag
+    is always set to True after each test to prevent duplicate validation
+    errors in CI when other tests fail.
     """
+    # Allow validation for this specific test
     conftest._database_validated = False
     yield
-    conftest._database_validated = False
+    # CRITICAL: Always mark validation as complete after test
+    # This prevents the pytest.exit error when test_config_lazy_loading fails
+    conftest._database_validated = True
 
 
 def test_autouse_blob_mock_available(_auto_mock_vercel_blob):
