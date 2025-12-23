@@ -14,7 +14,7 @@ from sqlalchemy import event
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.core.config import settings
+from app.core.config import get_settings, reset_settings
 from app.models.models import Organization, User
 from app.models.enums import UserRole
 from app.services.audit import AuditService
@@ -270,7 +270,21 @@ def create_test_token(
         for field in missing_fields:
             payload.pop(field, None)
 
+    settings = get_settings()
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
+@pytest.fixture(autouse=True)
+def reset_settings_for_test():
+    """
+    Reset settings before and after each test to ensure proper test isolation.
+
+    Pre-test reset: Clears any state from previous tests
+    Post-test reset: Ensures cleanup even if test fails mid-execution
+    """
+    reset_settings()
+    yield
+    reset_settings()
 
 
 @pytest.fixture

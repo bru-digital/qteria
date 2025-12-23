@@ -12,9 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 
-from app.core.config import settings
+from app.core.config import get_settings
 from app.middleware.multi_tenant import MultiTenantMiddleware
 from app.middleware.request_id import RequestIDMiddleware
+
+# Get settings instance
+settings = get_settings()
 
 # Configure logging
 logging.basicConfig(

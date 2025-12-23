@@ -26,7 +26,7 @@ from fastapi import Depends, Request
 from redis import Redis, ConnectionError as RedisConnectionError, RedisError
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.config import get_settings
 from app.models.base import SessionLocal
 
 if TYPE_CHECKING:
@@ -60,6 +60,7 @@ def initialize_redis_client() -> None:
     """
     global _redis_client
 
+    settings = get_settings()
     redis_url = settings.REDIS_URL
     if not redis_url:
         logger.warning(
@@ -222,6 +223,8 @@ def check_upload_rate_limit(
     from datetime import datetime, timedelta, timezone
     from fastapi import HTTPException, status
     from app.services.audit import AuditService
+
+    settings = get_settings()
 
     # Graceful degradation: If Redis unavailable, log warning and allow upload
     if redis is None:

@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from jose import jwt
 
 from app.main import app
-from app.core.config import settings
+from app.core.config import get_settings
 from app.models.models import Organization, User, AuditLog
 from app.models.enums import UserRole
 
@@ -52,6 +52,7 @@ def create_jwt_token(
         "exp": exp.timestamp(),
     }
 
+    settings = get_settings()
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
