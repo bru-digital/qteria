@@ -8,7 +8,21 @@ and that DATABASE_URL validation logic works as expected.
 import os
 from unittest.mock import patch
 import pytest
+import conftest
 from conftest import _validate_test_database_url
+
+
+@pytest.fixture(autouse=True)
+def reset_validation_flag():
+    """Reset the database validation flag before each test.
+
+    This is necessary because the validation function is designed to run only once
+    per test session, but these tests need to call it multiple times with different
+    DATABASE_URL values to test the validation logic.
+    """
+    conftest._database_validated = False
+    yield
+    conftest._database_validated = False
 
 
 def test_autouse_blob_mock_available(_auto_mock_vercel_blob):

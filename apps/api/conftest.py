@@ -11,6 +11,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 import pytest
 
+# Global flag to track if database validation has been performed
+_database_validated = False
+
 
 def _validate_test_database_url():
     """
@@ -22,7 +25,17 @@ def _validate_test_database_url():
     - CI environment (CI=true) with test database name
 
     Raises pytest.exit() if validation fails (fail-fast safety check).
+
+    Note: This function only performs validation once per test session to prevent
+    issues with tests that manipulate DATABASE_URL for testing purposes.
     """
+    global _database_validated
+
+    # Skip validation if already performed (prevents duplicate validation during test runs)
+    # This is important because test_conftest.py tests manipulate DATABASE_URL
+    if _database_validated:
+        return
+
     database_url = os.getenv("DATABASE_URL")
 
     # Check 1: DATABASE_URL must be set
@@ -100,6 +113,9 @@ def _validate_test_database_url():
         )
 
     print(f"✅ Test database validated: {database_name}")
+
+    # Mark validation as complete to prevent duplicate checks
+    _database_validated = True
 
 
 def pytest_configure(config):
