@@ -212,6 +212,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qteria_test
           JWT_SECRET: test-secret-key-for-ci
           ANTHROPIC_API_KEY: test-key
+          PYTHON_ENV: test  # Suppress Redis error logs in test output
 
       - name: Validate test collection count
         run: |
@@ -236,6 +237,7 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           JWT_SECRET: test-secret-key-for-ci
           ANTHROPIC_API_KEY: test-key
+          PYTHON_ENV: test  # Suppress Redis error logs in test output
 
       - name: Run tests with coverage
         run: |
@@ -246,6 +248,7 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           JWT_SECRET: test-secret-key-for-ci
           ANTHROPIC_API_KEY: test-key
+          PYTHON_ENV: test  # Suppress Redis error logs in test output
           # NOTE: BLOB_READ_WRITE_TOKEN is intentionally NOT set for security.
           # Integration tests use _auto_mock_vercel_blob fixture (conftest.py:148-200)
           # to mock vercel_blob.put and vercel_blob.delete operations. This allows
