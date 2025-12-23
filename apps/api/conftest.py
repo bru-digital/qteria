@@ -123,4 +123,11 @@ def pytest_configure(config):
         print(f"⚠️  Warning: {env_test_path} not found. Using default .env")
 
     # Validate DATABASE_URL points to test database (fail-fast safety check)
+    # Only validate during initial pytest configuration, not when imported by tests
+    # Issue #231: test_conftest.py imports conftest which was triggering re-validation
+    # with patched DATABASE_URL values, causing false CI failures
+    if hasattr(config, "_database_validated"):
+        return  # Already validated in this session
+
+    config._database_validated = True
     _validate_test_database_url()
