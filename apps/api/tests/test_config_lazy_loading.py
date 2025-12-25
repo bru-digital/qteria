@@ -15,6 +15,7 @@ import threading
 from unittest import mock
 import pytest
 
+import app.core.config
 from app.core.config import get_settings, reset_settings
 
 
@@ -44,10 +45,8 @@ class TestLazyLoading:
         # Reset settings to ensure clean state
         reset_settings()
 
-        # Verify settings are None by accessing the module's global directly
-        import app.core.config as config_module
-
-        assert config_module._settings is None, "Settings should be None before first access"
+        # Check _settings directly from the already imported module
+        assert app.core.config._settings is None, "Settings should be None before first access"
 
         # Call get_settings() for the first time
         settings = get_settings()
@@ -58,9 +57,9 @@ class TestLazyLoading:
 
         # Verify the global _settings is now set
         assert (
-            config_module._settings is not None
+            app.core.config._settings is not None
         ), "Global _settings should be set after first access"
-        assert config_module._settings is settings, "Global _settings should be the same instance"
+        assert app.core.config._settings is settings, "Global _settings should be the same instance"
 
     def test_settings_singleton_behavior(self):
         """Multiple calls to get_settings() should return the same instance."""
