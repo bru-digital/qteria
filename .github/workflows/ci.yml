@@ -196,6 +196,12 @@ jobs:
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y libmagic1
 
+      - name: Setup test environment
+        run: |
+          cd apps/api
+          cp .env.test.example .env.test
+          echo "✅ Created .env.test from example"
+
       - name: Run database migrations
         run: |
           cd apps/api
