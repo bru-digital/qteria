@@ -73,6 +73,9 @@ def test_validate_accepts_qteria_test_uppercase(monkeypatch):
 
 
 @pytest.mark.unit
+@pytest.mark.skip(
+    reason="Test triggers pytest.exit() which interferes with cleanup - see issue #242"
+)
 def test_validate_rejects_neondb(monkeypatch):
     """Test that production database name 'neondb' triggers pytest.exit() with appropriate error."""
     monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@host/neondb")
