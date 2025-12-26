@@ -60,100 +60,181 @@ def seed_test_data():
     db = SessionLocal()
 
     try:
-        # Check if data already exists
-        existing_org = db.query(Organization).filter_by(id=ORG_A_UUID).first()
-        if existing_org:
-            print("⚠️  Test data already exists. Skipping seed.")
+        # Check if ALL required seed data exists (not just one org)
+        existing_org_a = db.query(Organization).filter_by(id=ORG_A_UUID).first()
+        existing_org_b = db.query(Organization).filter_by(id=ORG_B_UUID).first()
+        existing_users = (
+            db.query(User)
+            .filter(
+                User.id.in_(
+                    [
+                        USER_A_UUID,
+                        USER_A_PM_UUID,
+                        USER_A_PH_UUID,
+                        USER_B_UUID,
+                        USER_B_PM_UUID,
+                        USER_B_PH_UUID,
+                    ]
+                )
+            )
+            .count()
+        )
+
+        # All 2 orgs and 6 users must exist for complete seed data
+        if existing_org_a and existing_org_b and existing_users == 6:
+            print("⚠️  Test data already exists (2 orgs, 6 users). Skipping seed.")
             print("   To re-seed, first run: python scripts/clear_test_data.py")
             return
+        elif existing_org_a or existing_org_b or existing_users > 0:
+            # Partial data exists - this is a problem
+            print(
+                f"⚠️  WARNING: Partial test data found (orgs: {int(bool(existing_org_a)) + int(bool(existing_org_b))}/2, users: {existing_users}/6)"
+            )
+            print("   Attempting to complete seeding...")
+            # Continue to seed missing data
 
         print("Creating test organizations...")
 
-        # Create 2 test organizations
-        org_a = Organization(
-            id=ORG_A_UUID,
-            name="Test Organization A",
-            subscription_tier="trial",
-            subscription_status="trial",
-        )
+        # Create orgs only if they don't exist (idempotent seeding)
+        if not existing_org_a:
+            org_a = Organization(
+                id=ORG_A_UUID,
+                name="Test Organization A",
+                subscription_tier="trial",
+                subscription_status="trial",
+            )
+            db.add(org_a)
+            print(f"   + Created: Test Organization A ({ORG_A_UUID})")
+        else:
+            org_a = existing_org_a
+            print(f"   ✓ Already exists: Test Organization A ({ORG_A_UUID})")
 
-        org_b = Organization(
-            id=ORG_B_UUID,
-            name="Test Organization B",
-            subscription_tier="trial",
-            subscription_status="trial",
-        )
+        if not existing_org_b:
+            org_b = Organization(
+                id=ORG_B_UUID,
+                name="Test Organization B",
+                subscription_tier="trial",
+                subscription_status="trial",
+            )
+            db.add(org_b)
+            print(f"   + Created: Test Organization B ({ORG_B_UUID})")
+        else:
+            org_b = existing_org_b
+            print(f"   ✓ Already exists: Test Organization B ({ORG_B_UUID})")
 
-        db.add(org_a)
-        db.add(org_b)
         db.flush()
-
-        print("✅ Created 2 test organizations")
-        print(f"   - {org_a.name} ({org_a.id})")
-        print(f"   - {org_b.name} ({org_b.id})")
 
         print("\nCreating test users...")
 
-        # Create test users for Organization A
-        user_a_admin = User(
-            id=USER_A_UUID,
-            organization_id=ORG_A_UUID,
-            email="admin@test-org-a.com",
-            name="Admin User A",
-            role=UserRole.ADMIN,
+        # Get existing users to avoid duplicates
+        existing_user_ids = (
+            db.query(User.id)
+            .filter(
+                User.id.in_(
+                    [
+                        USER_A_UUID,
+                        USER_A_PM_UUID,
+                        USER_A_PH_UUID,
+                        USER_B_UUID,
+                        USER_B_PM_UUID,
+                        USER_B_PH_UUID,
+                    ]
+                )
+            )
+            .all()
         )
+        existing_user_id_set = {str(u[0]) for u in existing_user_ids}
 
-        user_a_pm = User(
-            id=USER_A_PM_UUID,
-            organization_id=ORG_A_UUID,
-            email="pm@test-org-a.com",
-            name="Process Manager A",
-            role=UserRole.PROCESS_MANAGER,
-        )
+        users_to_create = []
 
-        # Create test users for Organization B
-        user_b_admin = User(
-            id=USER_B_UUID,
-            organization_id=ORG_B_UUID,
-            email="admin@test-org-b.com",
-            name="Admin User B",
-            role=UserRole.ADMIN,
-        )
+        # Create test users for Organization A (idempotent)
+        if str(USER_A_UUID) not in existing_user_id_set:
+            user_a_admin = User(
+                id=USER_A_UUID,
+                organization_id=ORG_A_UUID,
+                email="admin@test-org-a.com",
+                name="Admin User A",
+                role=UserRole.ADMIN,
+            )
+            users_to_create.append(user_a_admin)
+            print(f"   + Creating: Admin User A (admin@test-org-a.com)")
+        else:
+            print(f"   ✓ Already exists: Admin User A (admin@test-org-a.com)")
 
-        user_b_pm = User(
-            id=USER_B_PM_UUID,
-            organization_id=ORG_B_UUID,
-            email="pm@test-org-b.com",
-            name="Process Manager B",
-            role=UserRole.PROCESS_MANAGER,
-        )
+        if str(USER_A_PM_UUID) not in existing_user_id_set:
+            user_a_pm = User(
+                id=USER_A_PM_UUID,
+                organization_id=ORG_A_UUID,
+                email="pm@test-org-a.com",
+                name="Process Manager A",
+                role=UserRole.PROCESS_MANAGER,
+            )
+            users_to_create.append(user_a_pm)
+            print(f"   + Creating: Process Manager A (pm@test-org-a.com)")
+        else:
+            print(f"   ✓ Already exists: Process Manager A (pm@test-org-a.com)")
 
-        user_a_ph = User(
-            id=USER_A_PH_UUID,
-            organization_id=ORG_A_UUID,
-            email="ph@test-org-a.com",
-            name="Project Handler A",
-            role=UserRole.PROJECT_HANDLER,
-        )
+        if str(USER_A_PH_UUID) not in existing_user_id_set:
+            user_a_ph = User(
+                id=USER_A_PH_UUID,
+                organization_id=ORG_A_UUID,
+                email="ph@test-org-a.com",
+                name="Project Handler A",
+                role=UserRole.PROJECT_HANDLER,
+            )
+            users_to_create.append(user_a_ph)
+            print(f"   + Creating: Project Handler A (ph@test-org-a.com)")
+        else:
+            print(f"   ✓ Already exists: Project Handler A (ph@test-org-a.com)")
 
-        user_b_ph = User(
-            id=USER_B_PH_UUID,
-            organization_id=ORG_B_UUID,
-            email="ph@test-org-b.com",
-            name="Project Handler B",
-            role=UserRole.PROJECT_HANDLER,
-        )
+        # Create test users for Organization B (idempotent)
+        if str(USER_B_UUID) not in existing_user_id_set:
+            user_b_admin = User(
+                id=USER_B_UUID,
+                organization_id=ORG_B_UUID,
+                email="admin@test-org-b.com",
+                name="Admin User B",
+                role=UserRole.ADMIN,
+            )
+            users_to_create.append(user_b_admin)
+            print(f"   + Creating: Admin User B (admin@test-org-b.com)")
+        else:
+            print(f"   ✓ Already exists: Admin User B (admin@test-org-b.com)")
 
-        db.add_all([user_a_admin, user_a_pm, user_a_ph, user_b_admin, user_b_pm, user_b_ph])
-        db.commit()
+        if str(USER_B_PM_UUID) not in existing_user_id_set:
+            user_b_pm = User(
+                id=USER_B_PM_UUID,
+                organization_id=ORG_B_UUID,
+                email="pm@test-org-b.com",
+                name="Process Manager B",
+                role=UserRole.PROCESS_MANAGER,
+            )
+            users_to_create.append(user_b_pm)
+            print(f"   + Creating: Process Manager B (pm@test-org-b.com)")
+        else:
+            print(f"   ✓ Already exists: Process Manager B (pm@test-org-b.com)")
 
-        print("✅ Created 6 test users")
-        print(f"   - {user_a_admin.name} ({user_a_admin.email}) - {user_a_admin.role}")
-        print(f"   - {user_a_pm.name} ({user_a_pm.email}) - {user_a_pm.role}")
-        print(f"   - {user_a_ph.name} ({user_a_ph.email}) - {user_a_ph.role}")
-        print(f"   - {user_b_admin.name} ({user_b_admin.email}) - {user_b_admin.role}")
-        print(f"   - {user_b_pm.name} ({user_b_pm.email}) - {user_b_pm.role}")
-        print(f"   - {user_b_ph.name} ({user_b_ph.email}) - {user_b_ph.role}")
+        if str(USER_B_PH_UUID) not in existing_user_id_set:
+            user_b_ph = User(
+                id=USER_B_PH_UUID,
+                organization_id=ORG_B_UUID,
+                email="ph@test-org-b.com",
+                name="Project Handler B",
+                role=UserRole.PROJECT_HANDLER,
+            )
+            users_to_create.append(user_b_ph)
+            print(f"   + Creating: Project Handler B (ph@test-org-b.com)")
+        else:
+            print(f"   ✓ Already exists: Project Handler B (ph@test-org-b.com)")
+
+        # Add and commit only new users
+        if users_to_create:
+            db.add_all(users_to_create)
+            db.commit()
+            print(f"\n✅ Created {len(users_to_create)} new test user(s)")
+        else:
+            db.commit()  # Still commit to ensure orgs are persisted
+            print(f"\n✅ All 6 test users already exist")
 
         print("\n✅ Test data seeded successfully!")
         print("\nYou can now run tests:")
