@@ -22,6 +22,7 @@ from fastapi.testclient import TestClient
 from tests.conftest import (
     create_test_token,
     TEST_ORG_A_ID,
+    TEST_USER_A_PH_ID,
 )
 
 
@@ -66,8 +67,11 @@ class TestDocumentUpload:
         pdf_content = b"%PDF-1.4 Test PDF content"
         pdf_file = io.BytesIO(pdf_content)
 
-        # Create auth token
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        # Create auth token with seeded user ID
+        token = create_test_token(
+            user_id=TEST_USER_A_PH_ID,  # Use project handler who can upload documents
+            organization_id=TEST_ORG_A_ID,
+        )
 
         # Mock database dependency
         response = client.post(
@@ -122,7 +126,7 @@ class TestDocumentUpload:
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -165,7 +169,7 @@ class TestDocumentUpload:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
         workflow_id, bucket_id = test_workflow_with_bucket
 
         response = client.post(
@@ -200,7 +204,7 @@ class TestDocumentUpload:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
         # Use a valid UUID that doesn't exist in the database
         invalid_bucket_id = "00000000-0000-0000-0000-000000000000"
 
@@ -241,7 +245,7 @@ class TestDocumentUpload:
         pdf_file = io.BytesIO(pdf_content)
 
         # User from ORG_A trying to access bucket from ORG_B
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
         _, org_b_bucket_id = test_workflow_with_bucket_org_b
 
         response = client.post(
@@ -276,7 +280,7 @@ class TestDocumentUpload:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
         # Use an invalid UUID format
         invalid_bucket_id = "not-a-valid-uuid"
 
@@ -314,7 +318,7 @@ class TestDocumentUpload:
         # Mock JPG MIME type
         mock_magic.from_buffer.return_value = "image/jpeg"
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -356,7 +360,7 @@ class TestDocumentUpload:
         large_content = b"X" * (51 * 1024 * 1024)  # 51MB
         large_file = io.BytesIO(large_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -395,7 +399,7 @@ class TestDocumentUpload:
         empty_content = b""
         empty_file = io.BytesIO(empty_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -458,7 +462,7 @@ class TestDocumentUpload:
 
         mock_blob_storage.upload_file.side_effect = upload_error
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -626,7 +630,7 @@ class TestDocumentUpload:
         # Mock MIME detection failure
         mock_magic.from_buffer.side_effect = Exception("libmagic error")
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -663,7 +667,7 @@ class TestDocumentUpload:
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -714,7 +718,7 @@ class TestDocumentUpload:
         # Mock legacy XLS MIME type
         mock_magic.from_buffer.return_value = "application/vnd.ms-excel"
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -752,7 +756,7 @@ class TestDocumentUpload:
         # Mock CSV MIME type
         mock_magic.from_buffer.return_value = "text/csv"
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -805,7 +809,7 @@ class TestDocumentUpload:
         # Mock ODS MIME type
         mock_magic.from_buffer.return_value = "application/vnd.oasis.opendocument.spreadsheet"
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -870,7 +874,7 @@ class TestDocumentUpload:
         # Mock XLSM MIME type (macro-enabled Excel 2007+)
         mock_magic.from_buffer.return_value = "application/vnd.ms-excel.sheet.macroEnabled.12"
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -924,7 +928,7 @@ class TestDocumentUpload:
         # Mock DOCM MIME type (macro-enabled Word 2007+)
         mock_magic.from_buffer.return_value = "application/vnd.ms-word.document.macroEnabled.12"
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -983,7 +987,7 @@ class TestDocumentUpload:
             "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
         )
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -1056,7 +1060,7 @@ class TestBatchDocumentUpload:
         pdf_content = b"%PDF-1.4 Test PDF content"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.post(
             "/v1/documents",
@@ -1112,7 +1116,7 @@ class TestBatchDocumentUpload:
         ]
         mock_magic.from_buffer.side_effect = mime_types
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Create file objects
         file_objects = [
@@ -1167,7 +1171,7 @@ class TestBatchDocumentUpload:
         # Create 20 test files
         files_data = [(f"file{i}.pdf", b"%PDF-1.4 content") for i in range(1, 21)]
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         file_objects = [
             ("files", (name, io.BytesIO(content), "application/pdf"))
@@ -1208,7 +1212,7 @@ class TestBatchDocumentUpload:
         # Create 21 test files
         files_data = [(f"file{i}.pdf", b"%PDF-1.4 content") for i in range(1, 22)]
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         file_objects = [
             ("files", (name, io.BytesIO(content), "application/pdf"))
@@ -1269,7 +1273,7 @@ class TestBatchDocumentUpload:
         ]
         mock_magic.from_buffer.side_effect = mime_types
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         file_objects = [
             ("files", (name, io.BytesIO(content), "application/octet-stream"))
@@ -1313,7 +1317,7 @@ class TestBatchDocumentUpload:
             ("file3.pdf", b"%PDF-1.4 content"),
         ]
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         file_objects = [
             ("files", (name, io.BytesIO(content), "application/pdf"))
@@ -1363,7 +1367,7 @@ class TestBatchDocumentUpload:
         ]
         mock_magic.from_buffer.side_effect = mime_types
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         file_objects = [
             ("files", (name, io.BytesIO(content), "application/octet-stream"))
@@ -1459,7 +1463,7 @@ class TestDocumentUploadRateLimiting:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock Redis to return count of 101 after increment (limit exceeded)
         # With increment-first approach: was at 100, incremented by 1 → 101 (exceeds limit)
@@ -1513,7 +1517,7 @@ class TestDocumentUploadRateLimiting:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock Redis to return count of 99 after increment (below limit)
         # With increment-first approach: was at 98, incremented by 1 → 99 (below limit)
@@ -1557,7 +1561,7 @@ class TestDocumentUploadRateLimiting:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock Redis to return count of 100 after increment (exactly at limit)
         # With increment-first approach: was at 99, incremented by 1 → 100 (exactly at limit)
@@ -1657,7 +1661,7 @@ class TestDocumentUploadRateLimiting:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock Redis to return count of 50 after increment
         mock_redis.execute.return_value = [50, True]
@@ -1702,7 +1706,7 @@ class TestDocumentUploadRateLimiting:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock Redis to return count of 11 after increment (was 10, +1)
         mock_redis.execute.return_value = [11, True]
@@ -1745,7 +1749,7 @@ class TestDocumentUploadRateLimiting:
         - User at 96 uploads cannot upload 5 files (would be 101)
         - Guideline: "20 files = 20 uploads" (not request count)
         """
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Test 1: User at 96, uploading 5 files = 101 total (should fail)
         # After increment-first: 96 + 5 = 101 (exceeds limit)
@@ -1808,7 +1812,7 @@ class TestDocumentUploadRateLimiting:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock get_redis to return None (Redis unavailable)
         with patch("app.core.dependencies.get_redis", return_value=iter([None])):
@@ -1841,7 +1845,7 @@ class TestDocumentUploadRateLimiting:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock Redis to return count of 101 after increment (limit exceeded)
         mock_redis.execute.side_effect = [
@@ -1886,7 +1890,7 @@ class TestDocumentUploadRateLimiting:
         pdf_content = b"%PDF-1.4 Test PDF"
         pdf_file = io.BytesIO(pdf_content)
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock Redis to return count of 101 after increment (limit exceeded)
         mock_redis.execute.side_effect = [
@@ -1957,7 +1961,7 @@ class TestDocumentUploadRateLimiting:
         from collections import Counter
 
         pdf_content = b"%PDF-1.4 Test PDF"
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Shared counter to simulate Redis behavior
         redis_counter = {"count": 98}  # Start at 98 uploads
@@ -2103,7 +2107,7 @@ class TestDocumentDownload:
         - Audit log created
         """
         test_doc = test_document_in_org_a
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.get(
             f"/v1/documents/{test_doc.id}",
@@ -2137,7 +2141,7 @@ class TestDocumentDownload:
         - X-PDF-Page header present with page number
         """
         test_doc = test_document_in_org_a
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         response = client.get(
             f"/v1/documents/{test_doc.id}?page=8",
@@ -2171,7 +2175,7 @@ class TestDocumentDownload:
         mock_query.filter.return_value = mock_query
         mock_query.first.return_value = None  # Document not found
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
         nonexistent_id = uuid4()
 
         response = client.get(
@@ -2204,7 +2208,7 @@ class TestDocumentDownload:
         - Audit log for security monitoring
         """
         # User from Org A tries to download Org B's document
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
         org_b_document = test_document_in_org_b
 
         response = client.get(
@@ -2250,7 +2254,7 @@ class TestDocumentDownload:
         - Error code DOWNLOAD_URL_FAILED
         """
         test_doc = test_document_in_org_a
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock blob storage failure
         with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:
@@ -2300,7 +2304,7 @@ class TestDocumentDeletion:
         from app.models import Document, AssessmentDocument
 
         test_doc = test_document_in_org_a
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Setup query chain for AssessmentDocument to return None (no assessment)
         def mock_query_handler(model):
@@ -2359,7 +2363,7 @@ class TestDocumentDeletion:
         - Safe to delete documents in pending assessments
         """
         test_doc = test_document_in_org_a
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock assessment_documents query to return document with pending status
         from app.models import Assessment
@@ -2400,7 +2404,7 @@ class TestDocumentDeletion:
         - Audit log created
         """
         test_doc = test_document_in_org_a
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock assessment_documents query to return document in completed assessment
         from uuid import uuid4
@@ -2463,7 +2467,7 @@ class TestDocumentDeletion:
         - Error message indicates assessment is processing
         """
         test_doc = test_document_in_org_a
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock assessment_documents query to return document in processing assessment
         from uuid import uuid4
@@ -2518,7 +2522,7 @@ class TestDocumentDeletion:
         mock_query.filter.return_value = mock_query
         mock_query.first.return_value = None  # Document not found
 
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
         nonexistent_id = uuid4()
 
         response = client.delete(
@@ -2560,7 +2564,7 @@ class TestDocumentDeletion:
         mock_query.first.return_value = None  # Filtered out
 
         # User from Org A tries to delete Org B's document
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
         org_b_doc_id = uuid4()
 
         response = client.delete(
@@ -2589,7 +2593,7 @@ class TestDocumentDeletion:
         - Audit log shows blob_deleted: false
         """
         test_doc = test_document_in_org_a
-        token = create_test_token(organization_id=TEST_ORG_A_ID)
+        token = create_test_token(user_id=TEST_USER_A_PH_ID, organization_id=TEST_ORG_A_ID)
 
         # Mock blob storage failure
         with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:

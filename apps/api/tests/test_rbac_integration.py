@@ -20,12 +20,21 @@ from jose import jwt
 from app.main import app
 from app.core.config import get_settings
 from app.models.models import Organization, User, AuditLog
-from app.models.enums import UserRole
+
+# Import test IDs from conftest - these match the seeded data
+from tests.conftest import (
+    TEST_ORG_A_ID,
+    TEST_ORG_B_ID,
+    TEST_USER_A_ID,
+    TEST_USER_B_ID,
+    TEST_USER_A_PM_ID,
+    TEST_USER_A_PH_ID,
+)
 
 
-# Test data constants
-TEST_ORG_A_NAME = "Integration Test Org A"
-TEST_ORG_B_NAME = "Integration Test Org B"
+# Test data constants - must match seeded data names
+TEST_ORG_A_NAME = "Test Organization A"
+TEST_ORG_B_NAME = "Test Organization B"
 
 
 def create_jwt_token(
@@ -102,12 +111,15 @@ class TestDatabaseSetup:
 @pytest.fixture
 def test_orgs(db_session: Session) -> tuple[Organization, Organization]:
     """
-    Create two test organizations for multi-tenancy tests.
+    Load the seeded test organizations for multi-tenancy tests.
 
-    Note: Cleanup is automatic via db_session transaction rollback.
+    Note: These organizations are already seeded by pytest_sessionstart hook.
     """
-    org_a = TestDatabaseSetup.create_test_organization(db_session, TEST_ORG_A_NAME)
-    org_b = TestDatabaseSetup.create_test_organization(db_session, TEST_ORG_B_NAME)
+    org_a = db_session.query(Organization).filter_by(id=UUID(TEST_ORG_A_ID)).first()
+    org_b = db_session.query(Organization).filter_by(id=UUID(TEST_ORG_B_ID)).first()
+
+    if not org_a or not org_b:
+        pytest.fail("Seeded test organizations not found. Run: python scripts/seed_test_data.py")
 
     return org_a, org_b
 
@@ -115,25 +127,26 @@ def test_orgs(db_session: Session) -> tuple[Organization, Organization]:
 @pytest.fixture
 def test_users(db_session: Session, test_orgs) -> dict:
     """
-    Create test users for each organization and role.
+    Load the seeded test users for each organization and role.
 
-    Note: Cleanup is automatic via db_session transaction rollback.
+    Note: These users are already seeded by pytest_sessionstart hook.
     """
     org_a, org_b = test_orgs
 
+    # Load seeded users
+    org_a_admin = db_session.query(User).filter_by(id=UUID(TEST_USER_A_ID)).first()
+    org_a_pm = db_session.query(User).filter_by(id=UUID(TEST_USER_A_PM_ID)).first()
+    org_a_ph = db_session.query(User).filter_by(id=UUID(TEST_USER_A_PH_ID)).first()
+    org_b_admin = db_session.query(User).filter_by(id=UUID(TEST_USER_B_ID)).first()
+
+    if not all([org_a_admin, org_a_pm, org_a_ph, org_b_admin]):
+        pytest.fail("Seeded test users not found. Run: python scripts/seed_test_data.py")
+
     users = {
-        "org_a_admin": TestDatabaseSetup.create_test_user(
-            db_session, org_a.id, "admin@org-a.test", UserRole.ADMIN.value, "Org A Admin"
-        ),
-        "org_a_process_manager": TestDatabaseSetup.create_test_user(
-            db_session, org_a.id, "pm@org-a.test", UserRole.PROCESS_MANAGER.value, "Org A PM"
-        ),
-        "org_a_project_handler": TestDatabaseSetup.create_test_user(
-            db_session, org_a.id, "ph@org-a.test", UserRole.PROJECT_HANDLER.value, "Org A PH"
-        ),
-        "org_b_admin": TestDatabaseSetup.create_test_user(
-            db_session, org_b.id, "admin@org-b.test", UserRole.ADMIN.value, "Org B Admin"
-        ),
+        "org_a_admin": org_a_admin,
+        "org_a_process_manager": org_a_pm,
+        "org_a_project_handler": org_a_ph,
+        "org_b_admin": org_b_admin,
     }
 
     return users
@@ -493,7 +506,6 @@ class TestAuditLoggingIntegration:
         test_org = Organization(
             id=uuid4(),
             name="Test Org for Audit Log Preservation",
-            slug="test-org-audit-preserve",
         )
         db_session.add(test_org)
         db_session.commit()
@@ -506,11 +518,9 @@ class TestAuditLoggingIntegration:
             user_id=None,
             action="test.action",
             resource_type="test",
-            resource_id=str(uuid4()),
-            status="success",
+            resource_id=uuid4(),
             ip_address="127.0.0.1",
             user_agent="TestAgent",
-            request_id=str(uuid4()),
         )
         db_session.add(audit_log)
         db_session.commit()
