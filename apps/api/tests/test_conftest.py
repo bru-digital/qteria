@@ -240,6 +240,3 @@ def test_accepts_url_with_query_params(monkeypatch):
     monkeypatch.setenv("CI", "")
     # Should not raise pytest.exit()
     _validate_test_database_url()
-
-
-# Trigger CI
