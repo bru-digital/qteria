@@ -2,6 +2,8 @@
 
 You are tasked with creating a detailed implementation plan for a GitHub issue. You will plan this like a 10x senior developer: surgical, elegant, clean, and simple. NEVER implement backwards compatibility.
 
+**⚠️ CRITICAL: This command is NOT complete until you post the plan to the GitHub issue using `gh issue comment`. Creating the plan is only Part A. Posting to GitHub is Part B and is MANDATORY.**
+
 ## Critical Mindset: Tech Lead Perspective
 
 **You are a pragmatic tech lead with 15+ years of experience.** Your approach:
@@ -67,6 +69,8 @@ Analyze the issue to understand:
 - Technical requirements
 - User journey step involved (if applicable)
 - Constraints and dependencies
+
+**Remember:** At the end of this command (Step 5), you will post your plan back to this same issue as a comment using `gh issue comment`. That step is mandatory and part of this workflow.
 
 ## Step 2: Identify Relevant Product Guidelines
 
@@ -712,7 +716,11 @@ No breaking changes (rate limiting is additive feature)
 - All 7 edge cases from Section 2 verified
 ```
 
-## Step 5: Output the Plan
+## Step 5: Create and Post the Implementation Plan
+
+**YOU ARE NOT DONE UNTIL THE PLAN IS POSTED TO GITHUB. This step has TWO required parts:**
+
+### Part A: Create the Implementation Plan
 
 Provide the complete implementation plan following the structure above. Be specific, surgical, and elegant. NO backwards compatibility.
 
@@ -744,11 +752,13 @@ Provide the complete implementation plan following the structure above. Be speci
 
 The plan should be ready to hand off to the implementation agent without further clarification needed. The implementation agent should be able to follow the proven pattern from Section 2 and self-review using the checklist in Section 9.
 
-## Step 6: Post the Plan as a Comment to the Issue ⚠️ MANDATORY
+---
 
-**CRITICAL: You MUST post the plan to the GitHub issue. This is not optional.**
+### Part B: Post the Plan to GitHub ⚠️ REQUIRED - YOU ARE NOT DONE UNTIL THIS IS COMPLETE
 
-After outputting the complete implementation plan, post it as a comment to the GitHub issue:
+**STOP! Do not consider this task complete until you execute the command below.**
+
+After creating the plan above, you MUST immediately post it as a comment to the GitHub issue using this command:
 
 ```bash
 gh issue comment {issue-number} --repo bru-digital/qteria --body "$(cat <<'EOF'
@@ -762,20 +772,35 @@ EOF
 )"
 ```
 
-### Why This is Mandatory
+**Why you MUST post the plan to GitHub:**
 
-1. **Implementation Reference** - The implementation agent needs this plan
-2. **Team Visibility** - Other developers can review and provide feedback
+1. **Implementation Reference** - The `/implement-issue` agent cannot work without this plan in the issue
+2. **Team Visibility** - Other developers need to review and provide feedback before implementation
 3. **Audit Trail** - Documents planning decisions for future reference
-4. **PR Review** - Reviewers can verify implementation matches plan
+4. **PR Review** - Reviewers will verify implementation matches the plan posted in the issue
 5. **Knowledge Sharing** - Team learns from research and edge cases identified
 
-### Verification
+**Verification (required):**
 
-After posting, verify the comment was added:
+After posting, verify the comment was added successfully:
 
 ```bash
 gh issue view {issue-number} --repo bru-digital/qteria --comments
 ```
 
-**Note:** If the comment fails to post, try again. The plan MUST be in the issue before proceeding with implementation.
+You should see your implementation plan as the newest comment on the issue.
+
+**⚠️ CRITICAL: If the gh command fails, try again. Do NOT proceed until the plan is successfully posted to the GitHub issue.**
+
+---
+
+## Task Complete
+
+Once you have:
+1. ✅ Created the implementation plan (Part A)
+2. ✅ Posted it to GitHub using `gh issue comment` (Part B)
+3. ✅ Verified it appears in the issue comments
+
+Then and ONLY then is this `/plan-issue` command complete.
+
+**The next step** is for someone to run `/implement-issue {issue-number}` which will read your plan from the GitHub issue and implement it.
