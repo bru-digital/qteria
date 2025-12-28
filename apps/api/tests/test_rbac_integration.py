@@ -20,6 +20,16 @@ from jose import jwt
 from app.main import app
 from app.core.config import get_settings
 from app.models.models import Organization, User, AuditLog
+from tests.conftest import (
+    TEST_ORG_A_ID,
+    TEST_ORG_B_ID,
+    TEST_USER_A_ID,
+    TEST_USER_A_PM_ID,
+    TEST_USER_A_PH_ID,
+    TEST_USER_B_ID,
+    TEST_USER_B_PM_ID,
+    TEST_USER_B_PH_ID,
+)
 
 
 def create_jwt_token(
@@ -60,8 +70,6 @@ def test_orgs(db_session: Session) -> tuple[Organization, Organization]:
 
     Note: These are seeded organizations from conftest.py (TEST_ORG_A_ID, TEST_ORG_B_ID).
     """
-    from tests.conftest import TEST_ORG_A_ID, TEST_ORG_B_ID
-
     org_a = db_session.query(Organization).filter(Organization.id == TEST_ORG_A_ID).first()
     org_b = db_session.query(Organization).filter(Organization.id == TEST_ORG_B_ID).first()
 
@@ -84,8 +92,6 @@ def test_users(db_session: Session, test_orgs) -> dict:
 
     Note: These are seeded users from conftest.py (TEST_USER_A_ID, etc.).
     """
-    from tests.conftest import TEST_USER_A_ID, TEST_USER_A_PM_ID, TEST_USER_A_PH_ID, TEST_USER_B_ID
-
     org_a, org_b = test_orgs
 
     users = {
@@ -97,6 +103,12 @@ def test_users(db_session: Session, test_orgs) -> dict:
         .filter(User.id == TEST_USER_A_PH_ID)
         .first(),
         "org_b_admin": db_session.query(User).filter(User.id == TEST_USER_B_ID).first(),
+        "org_b_process_manager": db_session.query(User)
+        .filter(User.id == TEST_USER_B_PM_ID)
+        .first(),
+        "org_b_project_handler": db_session.query(User)
+        .filter(User.id == TEST_USER_B_PH_ID)
+        .first(),
     }
 
     # Verify all users exist
@@ -264,9 +276,9 @@ class TestRBACIntegration:
 
         # Verify org B was not modified
         db_session.refresh(org_b)
-        # Re-query org B to get original name and verify it wasn't changed
-        org_b_check = db_session.query(Organization).filter(Organization.id == org_b.id).first()
-        assert org_b_check.name == org_b.name  # Name should be unchanged
+        assert (
+            org_b.name != "Hacked Org"
+        ), "Organization name should not be modified by unauthorized user"
 
     def test_project_handler_cannot_create_organization(
         self, client, test_orgs, test_users, db_session
