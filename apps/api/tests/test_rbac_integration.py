@@ -20,12 +20,16 @@ from jose import jwt
 from app.main import app
 from app.core.config import get_settings
 from app.models.models import Organization, User, AuditLog
-from app.models.enums import UserRole
-
-
-# Test data constants
-TEST_ORG_A_NAME = "Integration Test Org A"
-TEST_ORG_B_NAME = "Integration Test Org B"
+from tests.conftest import (
+    TEST_ORG_A_ID,
+    TEST_ORG_B_ID,
+    TEST_USER_A_ID,
+    TEST_USER_A_PM_ID,
+    TEST_USER_A_PH_ID,
+    TEST_USER_B_ID,
+    TEST_USER_B_PM_ID,
+    TEST_USER_B_PH_ID,
+)
 
 
 def create_jwt_token(
@@ -56,58 +60,24 @@ def create_jwt_token(
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
-class TestDatabaseSetup:
-    """
-    Helper class for database setup.
-
-    Note: Cleanup methods removed - automatic rollback via db_session fixture
-    handles all test data cleanup.
-    """
-
-    @staticmethod
-    def create_test_organization(db: Session, name: str) -> Organization:
-        """Create a test organization."""
-        org = Organization(
-            name=name,
-            subscription_tier="professional",
-            subscription_status="active",
-        )
-        db.add(org)
-        db.commit()
-        db.refresh(org)
-        return org
-
-    @staticmethod
-    def create_test_user(
-        db: Session,
-        organization_id: UUID,
-        email: str,
-        role: str,
-        name: str = "Test User",
-    ) -> User:
-        """Create a test user."""
-        user = User(
-            organization_id=organization_id,
-            email=email,
-            name=name,
-            role=role,
-            password_hash="test_hash",  # Not used for JWT auth
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        return user
-
-
 @pytest.fixture
 def test_orgs(db_session: Session) -> tuple[Organization, Organization]:
     """
-    Create two test organizations for multi-tenancy tests.
+    Retrieve seeded test organizations from database.
 
-    Note: Cleanup is automatic via db_session transaction rollback.
+    Uses the pytest_sessionstart hook's seeded organizations to avoid
+    foreign key violations when audit logging happens in a different session.
+
+    Note: These are seeded organizations from conftest.py (TEST_ORG_A_ID, TEST_ORG_B_ID).
     """
-    org_a = TestDatabaseSetup.create_test_organization(db_session, TEST_ORG_A_NAME)
-    org_b = TestDatabaseSetup.create_test_organization(db_session, TEST_ORG_B_NAME)
+    org_a = db_session.query(Organization).filter(Organization.id == TEST_ORG_A_ID).first()
+    org_b = db_session.query(Organization).filter(Organization.id == TEST_ORG_B_ID).first()
+
+    if not org_a or not org_b:
+        pytest.fail(
+            "Seeded test organizations not found. "
+            "Ensure pytest_sessionstart hook seeded the database."
+        )
 
     return org_a, org_b
 
@@ -115,26 +85,39 @@ def test_orgs(db_session: Session) -> tuple[Organization, Organization]:
 @pytest.fixture
 def test_users(db_session: Session, test_orgs) -> dict:
     """
-    Create test users for each organization and role.
+    Retrieve seeded test users from database.
 
-    Note: Cleanup is automatic via db_session transaction rollback.
+    Uses the pytest_sessionstart hook's seeded users to avoid
+    foreign key violations when audit logging happens in a different session.
+
+    Note: These are seeded users from conftest.py (TEST_USER_A_ID, etc.).
     """
     org_a, org_b = test_orgs
 
     users = {
-        "org_a_admin": TestDatabaseSetup.create_test_user(
-            db_session, org_a.id, "admin@org-a.test", UserRole.ADMIN.value, "Org A Admin"
-        ),
-        "org_a_process_manager": TestDatabaseSetup.create_test_user(
-            db_session, org_a.id, "pm@org-a.test", UserRole.PROCESS_MANAGER.value, "Org A PM"
-        ),
-        "org_a_project_handler": TestDatabaseSetup.create_test_user(
-            db_session, org_a.id, "ph@org-a.test", UserRole.PROJECT_HANDLER.value, "Org A PH"
-        ),
-        "org_b_admin": TestDatabaseSetup.create_test_user(
-            db_session, org_b.id, "admin@org-b.test", UserRole.ADMIN.value, "Org B Admin"
-        ),
+        "org_a_admin": db_session.query(User).filter(User.id == TEST_USER_A_ID).first(),
+        "org_a_process_manager": db_session.query(User)
+        .filter(User.id == TEST_USER_A_PM_ID)
+        .first(),
+        "org_a_project_handler": db_session.query(User)
+        .filter(User.id == TEST_USER_A_PH_ID)
+        .first(),
+        "org_b_admin": db_session.query(User).filter(User.id == TEST_USER_B_ID).first(),
+        "org_b_process_manager": db_session.query(User)
+        .filter(User.id == TEST_USER_B_PM_ID)
+        .first(),
+        "org_b_project_handler": db_session.query(User)
+        .filter(User.id == TEST_USER_B_PH_ID)
+        .first(),
     }
+
+    # Verify all users exist
+    for role, user in users.items():
+        if not user:
+            pytest.fail(
+                f"Seeded test user '{role}' not found. "
+                "Ensure pytest_sessionstart hook seeded the database."
+            )
 
     return users
 
@@ -169,7 +152,7 @@ class TestRBACIntegration:
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == str(org_a.id)
-        assert data["name"] == TEST_ORG_A_NAME
+        assert data["name"] == org_a.name  # Name from seeded organization
 
     def test_process_manager_can_list_own_organization(self, client, test_orgs, test_users):
         """Process manager can list their own organization."""
@@ -293,7 +276,9 @@ class TestRBACIntegration:
 
         # Verify org B was not modified
         db_session.refresh(org_b)
-        assert org_b.name == TEST_ORG_B_NAME
+        assert (
+            org_b.name != "Hacked Org"
+        ), "Organization name should not be modified by unauthorized user"
 
     def test_project_handler_cannot_create_organization(
         self, client, test_orgs, test_users, db_session
@@ -493,7 +478,8 @@ class TestAuditLoggingIntegration:
         test_org = Organization(
             id=uuid4(),
             name="Test Org for Audit Log Preservation",
-            slug="test-org-audit-preserve",
+            subscription_tier="professional",
+            subscription_status="active",
         )
         db_session.add(test_org)
         db_session.commit()
