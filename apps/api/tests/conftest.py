@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.main import app
 from app.core.config import get_settings, reset_settings
+from app.core.dependencies import get_db
 from app.models.models import Organization, User
 from app.models.enums import UserRole
 from app.services.audit import AuditService
@@ -214,10 +215,34 @@ def _auto_mock_vercel_blob(request):
 
 
 @pytest.fixture
-def client() -> Generator[TestClient, None, None]:
-    """Create a test client for the FastAPI app."""
+def client(db_session: Session) -> Generator[TestClient, None, None]:
+    """
+    Create a test client for the FastAPI app with database session override.
+
+    Overrides the get_db dependency to use the test's db_session instead of
+    creating a new session. This ensures all API calls via TestClient see data
+    created in test fixtures (within the same savepoint), fixing session isolation
+    issues that caused 52 integration test failures.
+
+    Args:
+        db_session: The test database session fixture (with savepoint isolation)
+
+    Yields:
+        TestClient: FastAPI test client with overridden database dependency
+
+    Note:
+        This follows FastAPI's recommended testing pattern:
+        https://fastapi.tiangolo.com/advanced/testing-dependencies/
+    """
+
+    def override_get_db():
+        """Override function that yields the test's db_session."""
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as c:
         yield c
+    app.dependency_overrides.clear()  # CRITICAL: prevent test pollution
 
 
 def create_test_token(
