@@ -2060,31 +2060,6 @@ class TestDocumentDownload:
             )
             yield mock_service
 
-    @pytest.fixture
-    def test_document_in_org_a(self):
-        """Mock database with test document."""
-        from uuid import uuid4
-        from app.models import Document
-
-        mock_db = MagicMock()
-        mock_query = MagicMock()
-
-        # Create mock document
-        test_document = MagicMock(spec=Document)
-        test_document.id = uuid4()
-        test_document.organization_id = TEST_ORG_A_ID
-        test_document.file_name = "test-document.pdf"
-        test_document.file_size = 1024000
-        test_document.mime_type = "application/pdf"
-        test_document.storage_key = "https://blob.vercel-storage.com/documents/test.pdf"
-
-        # Setup query mock chain
-        mock_db.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = test_document
-
-        return mock_db, test_document
-
     def test_download_success(
         self,
         client: TestClient,
@@ -2284,6 +2259,7 @@ class TestDocumentDeletion:
     def test_delete_document_not_in_assessment_success(
         self,
         client: TestClient,
+        db_session: Session,
         mock_blob_storage,
         test_document_in_org_a,
         mock_audit_service,
@@ -2297,29 +2273,14 @@ class TestDocumentDeletion:
         - Document deleted from database
         - Audit log created
         """
-        from app.models import Document, AssessmentDocument
+        from app.models import Document
 
         test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Setup query chain for AssessmentDocument to return None (no assessment)
-        def mock_query_handler(model):
-            if model == Document:
-                # Return the mocked document query
-                return test_document_in_org_a[0].query.return_value
-            elif model == AssessmentDocument:
-                # Return empty result for assessment documents
-                mock_assessment_query = MagicMock()
-                mock_join = MagicMock()
-                mock_filter = MagicMock()
-                mock_filter.first.return_value = None
-                mock_join.filter.return_value = mock_filter
-                mock_assessment_query.join.return_value = mock_join
-                return mock_assessment_query
-            else:
-                return MagicMock()
-
-        mock_db.query.side_effect = mock_query_handler
+        # Verify document exists before deletion
+        doc_before = db_session.query(Document).filter(Document.id == test_doc.id).first()
+        assert doc_before is not None
 
         response = client.delete(
             f"/v1/documents/{test_doc.id}",
@@ -2331,9 +2292,10 @@ class TestDocumentDeletion:
         # Verify blob storage delete called
         assert mock_blob_storage.delete_file.called
 
-        # Verify database delete called
-        assert mock_db.delete.called
-        assert mock_db.commit.called
+        # Verify document deleted from database
+        db_session.expire_all()  # Clear SQLAlchemy cache
+        doc_after = db_session.query(Document).filter(Document.id == test_doc.id).first()
+        assert doc_after is None
 
         # Verify audit log
         assert mock_audit_service["log_event"].called
@@ -2347,6 +2309,7 @@ class TestDocumentDeletion:
     def test_delete_document_in_pending_assessment_allowed(
         self,
         client: TestClient,
+        db_session: Session,
         mock_blob_storage,
         test_document_in_org_a,
         mock_audit_service,
@@ -2358,23 +2321,59 @@ class TestDocumentDeletion:
         - Returns 204 No Content
         - Safe to delete documents in pending assessments
         """
+        from app.models import Assessment, AssessmentDocument, Workflow, Bucket
+        from uuid import uuid4
+        from datetime import datetime, timezone
+
         test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock assessment_documents query to return document with pending status
-        from app.models import Assessment
+        # Create a workflow and bucket for the assessment
+        workflow = Workflow(
+            id=str(uuid4()),
+            name="Test Workflow",
+            description="Test workflow for pending assessment",
+            organization_id=TEST_ORG_A_ID,
+            created_by=TEST_USER_A_ADMIN_ID,
+            created_at=datetime.now(timezone.utc),
+        )
+        db_session.add(workflow)
 
-        mock_assessment_doc = MagicMock()
-        mock_assessment_doc.assessment = MagicMock(spec=Assessment)
-        mock_assessment_doc.assessment.status = "pending"
+        bucket = Bucket(
+            id=str(uuid4()),
+            workflow_id=workflow.id,
+            name="Test Bucket",
+            description="Test bucket",
+            is_required=True,
+            display_order=1,
+        )
+        db_session.add(bucket)
+        db_session.flush()
 
-        # First query is for document, second is for assessment_documents
-        mock_assessment_query = MagicMock()
-        mock_assessment_query.first.return_value = None  # No completed/processing assessment
-        mock_db.query.side_effect = [
-            test_document_in_org_a[0].query.return_value,
-            mock_assessment_query,
-        ]
+        # Create a pending assessment with the document
+        assessment = Assessment(
+            id=str(uuid4()),
+            workflow_id=workflow.id,
+            organization_id=TEST_ORG_A_ID,
+            created_by=TEST_USER_A_PH_ID,
+            created_at=datetime.now(timezone.utc),
+            status="pending",
+        )
+        db_session.add(assessment)
+        db_session.flush()
+
+        # Link document to assessment
+        assessment_doc = AssessmentDocument(
+            assessment_id=assessment.id,
+            bucket_id=bucket.id,
+            storage_key=test_doc.storage_key,
+            file_name=test_doc.file_name,
+            file_size=test_doc.file_size,
+            mime_type=test_doc.mime_type,
+            uploaded_at=datetime.now(timezone.utc),
+        )
+        db_session.add(assessment_doc)
+        db_session.commit()
 
         response = client.delete(
             f"/v1/documents/{test_doc.id}",
@@ -2386,6 +2385,7 @@ class TestDocumentDeletion:
     def test_delete_document_in_completed_assessment_conflict(
         self,
         client: TestClient,
+        db_session: Session,
         mock_blob_storage,
         test_document_in_org_a,
         mock_audit_service,
@@ -2399,29 +2399,59 @@ class TestDocumentDeletion:
         - Error message indicates assessment status
         - Audit log created
         """
+        from uuid import uuid4
+        from app.models import Assessment, AssessmentDocument, Workflow, Bucket
+        from datetime import datetime, timezone
+
         test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock assessment_documents query to return document in completed assessment
-        from uuid import uuid4
-        from app.models import Assessment, AssessmentDocument
+        # Create a workflow and bucket for the assessment
+        workflow = Workflow(
+            id=str(uuid4()),
+            name="Test Workflow",
+            description="Test workflow for completed assessment",
+            organization_id=TEST_ORG_A_ID,
+            created_by=TEST_USER_A_ADMIN_ID,
+            created_at=datetime.now(timezone.utc),
+        )
+        db_session.add(workflow)
 
-        mock_assessment = MagicMock(spec=Assessment)
-        mock_assessment.status = "completed"
-        mock_assessment.id = uuid4()
+        bucket = Bucket(
+            id=str(uuid4()),
+            workflow_id=workflow.id,
+            name="Test Bucket",
+            description="Test bucket",
+            is_required=True,
+            display_order=1,
+        )
+        db_session.add(bucket)
+        db_session.flush()
 
-        mock_assessment_doc = MagicMock(spec=AssessmentDocument)
-        mock_assessment_doc.assessment_id = mock_assessment.id
-        mock_assessment_doc.assessment = mock_assessment
-        mock_assessment_doc.storage_key = test_doc.storage_key
+        # Create a completed assessment with the document
+        assessment = Assessment(
+            id=str(uuid4()),
+            workflow_id=workflow.id,
+            organization_id=TEST_ORG_A_ID,
+            created_by=TEST_USER_A_PH_ID,
+            created_at=datetime.now(timezone.utc),
+            status="completed",
+        )
+        db_session.add(assessment)
+        db_session.flush()
 
-        # Setup queries
-        mock_assessment_query = MagicMock()
-        mock_assessment_query.first.return_value = mock_assessment_doc
-        mock_db.query.side_effect = [
-            test_document_in_org_a[0].query.return_value,  # Document query
-            mock_assessment_query,  # AssessmentDocument query
-        ]
+        # Link document to assessment
+        assessment_doc = AssessmentDocument(
+            assessment_id=assessment.id,
+            bucket_id=bucket.id,
+            storage_key=test_doc.storage_key,
+            file_name=test_doc.file_name,
+            file_size=test_doc.file_size,
+            mime_type=test_doc.mime_type,
+            uploaded_at=datetime.now(timezone.utc),
+        )
+        db_session.add(assessment_doc)
+        db_session.commit()
 
         response = client.delete(
             f"/v1/documents/{test_doc.id}",
@@ -2434,9 +2464,8 @@ class TestDocumentDeletion:
         assert "completed" in data["error"]["message"]
         assert data["error"]["details"]["assessment_status"] == "completed"
 
-        # Verify NO blob delete or database delete
+        # Verify NO blob delete
         assert not mock_blob_storage.delete_file.called
-        assert not mock_db.delete.called
 
         # Verify audit log for failed deletion
         assert mock_audit_service["log_event"].called
@@ -2450,6 +2479,7 @@ class TestDocumentDeletion:
     def test_delete_document_in_processing_assessment_conflict(
         self,
         client: TestClient,
+        db_session: Session,
         mock_blob_storage,
         test_document_in_org_a,
         mock_audit_service,
@@ -2462,29 +2492,59 @@ class TestDocumentDeletion:
         - Error code DOCUMENT_IN_USE
         - Error message indicates assessment is processing
         """
+        from uuid import uuid4
+        from app.models import Assessment, AssessmentDocument, Workflow, Bucket
+        from datetime import datetime, timezone
+
         test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
 
-        # Mock assessment_documents query to return document in processing assessment
-        from uuid import uuid4
-        from app.models import Assessment, AssessmentDocument
+        # Create a workflow and bucket for the assessment
+        workflow = Workflow(
+            id=str(uuid4()),
+            name="Test Workflow",
+            description="Test workflow for processing assessment",
+            organization_id=TEST_ORG_A_ID,
+            created_by=TEST_USER_A_ADMIN_ID,
+            created_at=datetime.now(timezone.utc),
+        )
+        db_session.add(workflow)
 
-        mock_assessment = MagicMock(spec=Assessment)
-        mock_assessment.status = "processing"
-        mock_assessment.id = uuid4()
+        bucket = Bucket(
+            id=str(uuid4()),
+            workflow_id=workflow.id,
+            name="Test Bucket",
+            description="Test bucket",
+            is_required=True,
+            display_order=1,
+        )
+        db_session.add(bucket)
+        db_session.flush()
 
-        mock_assessment_doc = MagicMock(spec=AssessmentDocument)
-        mock_assessment_doc.assessment_id = mock_assessment.id
-        mock_assessment_doc.assessment = mock_assessment
-        mock_assessment_doc.storage_key = test_doc.storage_key
+        # Create a processing assessment with the document
+        assessment = Assessment(
+            id=str(uuid4()),
+            workflow_id=workflow.id,
+            organization_id=TEST_ORG_A_ID,
+            created_by=TEST_USER_A_PH_ID,
+            created_at=datetime.now(timezone.utc),
+            status="processing",
+        )
+        db_session.add(assessment)
+        db_session.flush()
 
-        # Setup queries
-        mock_assessment_query = MagicMock()
-        mock_assessment_query.first.return_value = mock_assessment_doc
-        mock_db.query.side_effect = [
-            test_document_in_org_a[0].query.return_value,
-            mock_assessment_query,
-        ]
+        # Link document to assessment
+        assessment_doc = AssessmentDocument(
+            assessment_id=assessment.id,
+            bucket_id=bucket.id,
+            storage_key=test_doc.storage_key,
+            file_name=test_doc.file_name,
+            file_size=test_doc.file_size,
+            mime_type=test_doc.mime_type,
+            uploaded_at=datetime.now(timezone.utc),
+        )
+        db_session.add(assessment_doc)
+        db_session.commit()
 
         response = client.delete(
             f"/v1/documents/{test_doc.id}",
@@ -2576,6 +2636,7 @@ class TestDocumentDeletion:
     def test_delete_blob_failure_still_deletes_db(
         self,
         client: TestClient,
+        db_session: Session,
         test_document_in_org_a,
         mock_audit_service,
     ):
@@ -2588,8 +2649,14 @@ class TestDocumentDeletion:
         - Error logged but operation continues
         - Audit log shows blob_deleted: false
         """
+        from app.models import Document
+
         test_doc = test_document_in_org_a
         token = create_test_token(organization_id=TEST_ORG_A_ID)
+
+        # Verify document exists before deletion
+        doc_before = db_session.query(Document).filter(Document.id == test_doc.id).first()
+        assert doc_before is not None
 
         # Mock blob storage failure
         with patch("app.api.v1.endpoints.documents.BlobStorageService") as mock_service:
@@ -2599,14 +2666,6 @@ class TestDocumentDeletion:
 
             mock_service.delete_file = AsyncMock(side_effect=delete_error)
 
-            # Mock assessment query to return None
-            mock_assessment_query = MagicMock()
-            mock_assessment_query.first.return_value = None
-            mock_db.query.side_effect = [
-                test_document_in_org_a[0].query.return_value,
-                mock_assessment_query,
-            ]
-
             response = client.delete(
                 f"/v1/documents/{test_doc.id}",
                 headers={"Authorization": f"Bearer {token}"},
@@ -2615,9 +2674,10 @@ class TestDocumentDeletion:
         # Should still succeed despite blob deletion failure
         assert response.status_code == 204
 
-        # Database delete should still be called
-        assert mock_db.delete.called
-        assert mock_db.commit.called
+        # Verify document deleted from database
+        db_session.expire_all()  # Clear SQLAlchemy cache
+        doc_after = db_session.query(Document).filter(Document.id == test_doc.id).first()
+        assert doc_after is None
 
         # Verify audit log shows blob deletion failed
         success_logs = [
