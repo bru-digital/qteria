@@ -237,11 +237,11 @@ async def upload_document(
     response: Response,
     redis: RedisClient,
     request: Request,
+    db: Session = Depends(get_db),
     files: list[UploadFile] = File(
         ..., description="Document files (PDF, DOCX, or XLSX) - max 20 files"
     ),
     bucket_id: str | None = Form(None, description="Optional bucket ID for validation"),
-    db: Session = Depends(get_db),
 ) -> list[DocumentResponse]:
     """
     Upload one or more documents to Vercel Blob storage (batch upload).
